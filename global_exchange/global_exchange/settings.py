@@ -23,7 +23,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-a59ch^c$8!qa+s&5@-zq-=q_cyz!e5!x@hsqg8dsa7_sr-t^s&'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -72,11 +71,25 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
+import os
+import environ
+# Inicializar
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+# Leer el archivo .env si existe
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+SECRET_KEY = env('DJANGO_SECRET_KEY')
+DEBUG = env('DJANGO_DEBUG')
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': env('DJANGO_DB_NAME'),
+        'USER': env('DJANGO_DB_USER'),
+        'PASSWORD': env('DJANGO_DB_PASSWORD'),
+        'HOST': env('DJANGO_DB_HOST'),
+        'PORT': env('DJANGO_DB_PORT'),
     }
 }
 
