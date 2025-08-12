@@ -15,7 +15,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from usuarios import views
+from django.conf.urls import handler404
+from django.shortcuts import render
 
 urlpatterns = [
+    path('', views.pagina_aterrizaje,name='pagina_aterrizaje'),
+    path('home/', views.home,name='home'),
+    path('signup/', views.signup,name='signup'),
+    path('logout/', views.signout,name='signout'),
+    path('login/', views.signin,name='login'),
     path('admin/', admin.site.urls),
 ]
+
+
+# Función personalizada para manejar 404
+def custom_404(request, exception):
+    return render(request, "404.html", {"request_path": request.path}, status=404)
+
+handler404 = custom_404
