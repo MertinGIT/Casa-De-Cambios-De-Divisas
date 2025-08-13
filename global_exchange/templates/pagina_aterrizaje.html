@@ -35,7 +35,9 @@
       </select>
     </div>
 
-    <canvas id="graficoMoneda" width="600" height="300"></canvas>
+    <div class="grafico-container">
+      <canvas id="graficoMoneda"></canvas>
+    </div>
   </div>
 
   <div class="grid-right">
@@ -56,9 +58,7 @@
         <li>Transacciones</li>
         <li>Simulacion de Conversión</li>
         <li class="button-contain">
-          <span class="btn">
-            <a href="{% url 'login' %}">Ir a mi cuenta</a>
-          </span>
+          <a href="{% url 'login' %}" class="btn">Ir a mi cuenta</a>
         </li>
       </ul>
 
