@@ -24,7 +24,8 @@ SECRET_KEY = 'django-insecure-a59ch^c$8!qa+s&5@-zq-=q_cyz!e5!x@hsqg8dsa7_sr-t^s&
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+
 
 
 # Application definition
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'usuarios'
 ]
 
 MIDDLEWARE = [
@@ -49,11 +51,11 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'global_exchange.urls'
-
+import os
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -71,16 +73,18 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-import os
+
 import environ
-# Inicializar
+
 env = environ.Env(
     DEBUG=(bool, False)
 )
-# Leer el archivo .env si existe
+
+# Leer archivo .env
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
 SECRET_KEY = env('DJANGO_SECRET_KEY')
-DEBUG = env('DJANGO_DEBUG')
+DEBUG = os.getenv("DEBUG", "True").lower() == "true"
 
 DATABASES = {
     'default': {
@@ -88,10 +92,11 @@ DATABASES = {
         'NAME': env('DJANGO_DB_NAME'),
         'USER': env('DJANGO_DB_USER'),
         'PASSWORD': env('DJANGO_DB_PASSWORD'),
-        'HOST': env('DJANGO_DB_HOST'),
+        'HOST': env('DJANGO_DB_HOST'),  # debe ser 'db' para conectar al contenedor postgres
         'PORT': env('DJANGO_DB_PORT'),
     }
 }
+
 
 
 # Password validation
@@ -128,7 +133,12 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+LOGIN_URL='/login/' #me llevara a esta ruta si no estoy logueado protejiendo las rutas
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
