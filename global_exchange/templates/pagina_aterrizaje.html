@@ -17,7 +17,7 @@
           <p class="simboloTitle">{{ moneda.simbolo }}</p>
           <div class="precios">
             <p class="precioTitle">Compra</p>
-            <p className="simboloTitle">{{ moneda.compra }}</p>
+            <p class="simboloTitle">{{ moneda.compra }}</p>
           </div>
           <div>
             <p class="precioTitle">Venta</p>
@@ -50,28 +50,30 @@
       class="fondo2"
     />
 
-    <ul class="home-info">
-      <li>Cambio de Divisas</li>
-      <li>Transacciones</li>
-      <li>Simulacion de Conversión</li>
-      <li class="button-contain">
-        <span class="btn">
-          <a href="{% url 'login' %}">Ir a mi cuenta</a>
-        </span>
-      </li>
-    </ul>
+    <div class="content-right">
+      <ul class="home-info">
+        <li>Cambio de Divisas</li>
+        <li>Transacciones</li>
+        <li>Simulacion de Conversión</li>
+        <li class="button-contain">
+          <span class="btn">
+            <a href="{% url 'login' %}">Ir a mi cuenta</a>
+          </span>
+        </li>
+      </ul>
 
-    <div class="personajes-container">
-      <img
-        src="{% static 'img/personaje1.svg' %}"
-        alt="Personaje 1"
-        class="personaje1"
-      />
-      <img
-        src="{% static 'img/personaje2.svg' %}"
-        alt="Personaje 2"
-        class="personaje2"
-      />
+      <div class="personajes-container">
+        <img
+          src="{% static 'img/personaje1.svg' %}"
+          alt="Personaje 1"
+          class="personaje1"
+        />
+        <img
+          src="{% static 'img/personaje2.svg' %}"
+          alt="Personaje 2"
+          class="personaje2"
+        />
+      </div>
     </div>
   </div>
 </div>

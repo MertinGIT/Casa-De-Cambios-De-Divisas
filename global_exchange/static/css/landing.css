@@ -1,6 +1,6 @@
 .landing-container {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   min-height: 100vh;
   overflow-x: hidden;
 }
@@ -64,9 +64,17 @@ p {
   height: 50px;
   object-fit: contain;
 }
+
+.simboloTitle{
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
 .grafico-moneda {
   margin-top: 1rem;
+  width: 100%;
 }
+
 .grafico-moneda select {
   appearance: none; /* Quitar estilo por defecto */
   -webkit-appearance: none; /* Safari y Chrome */
@@ -115,9 +123,11 @@ p {
 }
 
 .personajes-container {
+  height: 100%;
   display: flex;
+  align-items: center;
   justify-content: center;
-  position: relative;
+  gap: 30px;
 }
 
 .personaje1 {
@@ -133,16 +143,30 @@ p {
   margin-right: -220px;
 }
 
+.content-right {
+  position: relative;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
 .home-info {
   position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
   align-items: center;
+  padding: 10px 0;
+  font-size: 1.2rem;
 }
 
 .home-info > * {
   text-decoration: none;
   color: #fff;
-  list-style: none;
   margin: 0.5rem;
 }
 .button-contain {
@@ -190,7 +214,7 @@ p {
   .cotizaciones-content {
     grid-template-columns: 1fr 1fr; /* 2 columnas iguales */
   }
-  .landing-container{
-    grid-template-columns: 1fr;
+  .landing-container {
+    grid-template-columns: 1fr 1fr;
   }
 }
