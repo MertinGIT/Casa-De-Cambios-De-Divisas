@@ -24,7 +24,21 @@ SECRET_KEY = 'django-insecure-a59ch^c$8!qa+s&5@-zq-=q_cyz!e5!x@hsqg8dsa7_sr-t^s&
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '192.168.100.235']
+
+#fbkq lrdy qqlp vion
+# Emailing settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_FROM = 'pythonlessons0@gmail.com'
+EMAIL_HOST_USER = 'leandro.f3418@fpuna.edu.py'
+EMAIL_HOST_PASSWORD = 'fbkqlrdyqqlpvion'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+PASSWORD_RESET_TIMEOUT = 14400
+
+
 
 
 
@@ -77,14 +91,14 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 import environ
 
 env = environ.Env(
-    DEBUG=(bool, False)
+    DEBUG=(bool, False)   
 )
 
 # Leer archivo .env
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('DJANGO_SECRET_KEY')
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+DEBUG = os.getenv("DEBUG", "True").lower() == "true" 
 
 DATABASES = {
     'default': {

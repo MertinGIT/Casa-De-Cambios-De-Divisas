@@ -1,0 +1,40 @@
+<!--
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirma tu cuenta</title>
+</head>
+<body>
+    <p>Hola {{ user.username }},</p>
+    <p>Gracias por registrarte. Haz clic en el enlace para activar tu cuenta:</p>
+    <p>
+        <a href="http://{{ domain }}/activate/{{ uidb64 }}/{{ token }}/" 
+           style="display:inline-block;padding:10px 20px;background-color:#0d6efd;color:white;text-decoration:none;border-radius:5px;">
+            Activar cuenta
+        </a>
+    </p>
+    <p>Si no te registraste, ignora este correo.</p>
+</body>
+</html>
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Confirma tu cuenta</title>
+</head>
+
+<body>
+    <h2>Hola {{ user.username }}</h2>
+    <p>Gracias por registrarte. Haz clic en el siguiente enlace para activar tu cuenta:</p>
+    <p>
+        <a href="http://{{ domain }}/activate/{{ uid64 }}/{{ token }}/">
+            Activar cuenta
+        </a>
+    </p>
+    <p>Si no te registraste en nuestro sitio, ignora este mensaje.</p>
+</body>
+</html>
+

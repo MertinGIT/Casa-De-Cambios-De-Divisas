@@ -26,6 +26,7 @@ urlpatterns = [
     path('logout/', views.signout,name='signout'),
     path('login/', views.signin,name='login'),
     path('admin/', admin.site.urls),
+    path('activate/<uidb64>/<token>/', views.activate, name='activate'),
 ]
 
 
