@@ -47,6 +47,23 @@ document.addEventListener("DOMContentLoaded", () => {
             max: 9000,
           },
         },
+        plugins: {
+          legend: {
+            labels: {
+              font: {
+                size: 18, // tamaño del texto "Compra" y "Venta" en la leyenda
+              },
+            },
+          },
+          tooltip: {
+            titleFont: {
+              size: 18,
+            },
+            bodyFont: {
+              size: 18, // tamaño del texto dentro del tooltip
+            },
+          },
+        },
       },
     });
   }

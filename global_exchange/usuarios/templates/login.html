@@ -1,14 +1,34 @@
-{% extends 'usuario_base.html' %}
+{% extends 'usuario_auth_base.html' %}
+{% block form_fields %}
 
-{% block content %}
-<h1>Login</h1>
-{{error}}
-<form method="POST">
-  {% csrf_token %}
-{{form}}
-<button>
-  signin
-</button>
-</form>
+<!-- Usuario -->
+<div class="form-group">
+  <i class="bi bi-person-fill input-icon-left"></i>
+  <input
+    type="text"
+    name="username"
+    id="username"
+    placeholder="Usuario"
+    required
+  />
+  <label for="username">Usuario</label>
+</div>
+
+<!-- Contraseña -->
+<div class="form-group">
+  <i class="bi bi-lock-fill input-icon-left"></i>
+  <input
+    type="password"
+    class="password-field"
+    name="password"
+    id="password"
+    placeholder="Contraseña"
+    required
+  />
+  <label for="password">Contraseña</label>
+  <button type="button" class="toggle-password">
+    <i class="bi bi-eye-slash"></i>
+  </button>
+</div>
 
 {% endblock %}

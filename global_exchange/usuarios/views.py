@@ -11,33 +11,51 @@ def home(request):
   return render(request,'home.html')
   
 def signup(request):
-  if request.user.is_authenticated:
-      return redirect('home')
-  if request.method == 'GET':
-    print('Enviando formulario')
-    return render(request,'registrarse.html',{
-    'form':UserCreationForm
-  })
-  else:
-    print('Obteniendo datos')
-    if request.POST['password1']==request.POST['password2']:
-      try:
-        user=User.objects.create_user(username=request.POST['username'],password=request.POST['password1'])
-        user.save()
-        login(request,user) #para manejar la session del user con los cookies
+    if request.user.is_authenticated:
         return redirect('home')
-      except:
-        return render(request,'registrarse.html',{
-          'form':UserCreationForm,
-          'error':'El usuario ya existe'
-          })
-        
-      
-    else:
-      return render(request,'registrarse.html',{
-        'form':UserCreationForm,
-        'error':'Las contraseñas no coinciden'
+
+    eslogan_lines = ["Empieza", "ahora."]
+    eslogan_spans = ["!Comienza", "ya!"]
+    subtitle = "Crea tu cuenta y empieza ahora."
+
+    if request.method == 'GET':
+        return render(request, 'registrarse.html', {
+            'form': UserCreationForm(),
+            'eslogan_lines': eslogan_lines,
+            'eslogan_spans': eslogan_spans,
+            'subtitle': subtitle,
+            'submit_text': "Registrarse",
+            'active_tab': "register"
         })
+    else:
+        if request.POST['password1'] == request.POST['password2']:
+            try:
+                user = User.objects.create_user(
+                    username=request.POST['username'],
+                    password=request.POST['password1']
+                )
+                user.save()
+                login(request, user)
+                return redirect('home')
+            except:
+                return render(request, 'registrarse.html', {
+                    'form': UserCreationForm(),
+                    'error': 'El usuario ya existe',
+                    'eslogan_lines': eslogan_lines,
+                    'eslogan_spans': eslogan_spans,
+                    'submit_text': "Registrarse",
+                    'active_tab': "register"
+                })
+        else:
+            return render(request, 'registrarse.html', {
+                'form': UserCreationForm(),
+                'error': 'Las contraseñas no coinciden',
+                'eslogan_lines': eslogan_lines,
+                'eslogan_spans': eslogan_spans,
+                'submit_text': "Registrarse",
+                'active_tab': "register"
+            })
+
 
 @login_required
 def signout(request):
@@ -45,23 +63,36 @@ def signout(request):
   return redirect('/')
 
 def signin(request):
-  if request.user.is_authenticated:
-      return redirect('home')
-  if request.method == 'GET':
-    return render(request,'login.html',{
-    'form':AuthenticationForm
-  })
-  else:
-    user=authenticate(username=request.POST['username'],password=request.POST['password'])
-    print(user)
-    if user is None:
-      return render(request,'login.html',{
-    'form':AuthenticationForm,
-    'error':'El usuario o contraseña es incorrecto'
-  })
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    eslogan_lines = ["Tu éxito", "comienza", "aqui."]
+    eslogan_spans = ["¡Accede", "ahora!"]
+    subtitle = "¡Bienvenido de nuevo! Inicia sesión para continuar."
+
+    if request.method == 'GET':
+        return render(request, 'login.html', {
+            'form': AuthenticationForm(),
+            'eslogan_lines': eslogan_lines,
+            'eslogan_spans': eslogan_spans,
+            'subtitle': subtitle,
+            'submit_text': "Acceder",
+            'active_tab': "login"
+        })
     else:
-      login(request,user)
-      return redirect('home')
+        user = authenticate(username=request.POST['username'], password=request.POST['password'])
+        if user is None:
+            return render(request, 'login.html', {
+                'form': AuthenticationForm(),
+                'error': 'Usuario o contraseña incorrectos',
+                'eslogan_lines': eslogan_lines,
+                'eslogan_spans': eslogan_spans,
+                'submit_text': "Acceder",
+                'active_tab': "login"
+            })
+        else:
+            login(request, user)
+            return redirect('home')
       
 def pagina_aterrizaje(request):
   cotizaciones = [
@@ -89,3 +120,4 @@ def pagina_aterrizaje(request):
         'data_por_moneda': json.dumps(data_por_moneda),
     }
   return render(request, 'pagina_aterrizaje.html',context)
+

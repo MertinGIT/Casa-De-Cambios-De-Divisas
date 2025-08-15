@@ -1,9 +1,45 @@
-<h1>Singup</h1>
+{% extends 'usuario_auth_base.html' %} {% block form_fields %}
 
-{{error}}
+<div class="form-group">
+  <i class="bi bi-person-fill input-icon-left"></i>
+  <input type="text" name="username" placeholder="Usuario" required />
+  <label>Usuario</label>
+</div>
 
-<form method="POST">
-  {% csrf_token %}
-  {{form.as_p}}
-  <button>Signup</button>
-</form>
+<div class="form-group">
+  <i class="bi bi-envelope-fill input-icon-left"></i>
+  <input type="email" name="email" placeholder="Correo" required />
+  <label>Correo</label>
+</div>
+
+<div class="form-group">
+  <i class="bi bi-lock-fill input-icon-left"></i>
+  <input
+    type="password"
+    class="password-field"
+    name="password"
+    placeholder="Contraseña"
+    required
+  />
+  <label>Contraseña</label>
+  <button type="button" class="toggle-password">
+    <i class="bi-eye-slash"></i>
+  </button>
+</div>
+
+<div class="form-group">
+  <i class="bi bi-lock-fill input-icon-left"></i>
+  <input
+    type="password"
+    class="password-field"
+    name="password2"
+    placeholder="Repetir contraseña"
+    required
+  />
+  <label>Repetir contraseña</label>
+  <button type="button" class="toggle-password">
+    <i class="bi bi-eye-slash"></i>
+  </button>
+</div>
+
+{% endblock %}

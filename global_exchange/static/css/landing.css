@@ -1,8 +1,7 @@
 .landing-container {
   display: grid;
   grid-template-columns: 1fr;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh; /* no min-height */
 }
 
 p {
@@ -65,7 +64,7 @@ p {
   object-fit: contain;
 }
 
-.simboloTitle{
+.simboloTitle {
   font-size: 1.1rem;
   font-weight: 600;
 }
@@ -225,5 +224,26 @@ p {
   }
   .landing-container {
     grid-template-columns: 1fr 1fr;
+    overflow: hidden; /* oculta X y Y */
+  }
+}
+
+/* Para Celulares */
+@media (max-width: 500px) {
+  .grafico-container {
+    width: 90%;
+  }
+  .personaje2 {
+    width: 240px;
+    margin-right: -160px;
+  }
+  .home-info {
+    padding: 5px 0;
+    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .grid-left {
+    margin: 1rem 0rem;
   }
 }
