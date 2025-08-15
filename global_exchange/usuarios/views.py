@@ -27,16 +27,17 @@ import json
 def home(request):
   return render(request,'home.html')
 
-
 def signup(request):
     #if request.user.is_authenticated:
     #    return redirect('home')
+    
     print("Correo de confirmación enviado1", flush=True)
 
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print("Correo de confirmación enviado2", flush=True)
-
+        
+       
         if form.is_valid():
           try:
               print("entro en try", flush=True)
@@ -45,26 +46,22 @@ def signup(request):
               user.is_active = False
               user.save()
               activateEmail(request, user, user.email)
-              return render(request, 'email_confirm.html', {'email': user.email})
+              return render(request, 'registrarse.html', {
+                    'form': form,
+                    'messages': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo."
+                }) 
+              
           except Exception as e:
               print("Error al guardar usuario:", e, flush=True)
-              return render(request, 'registrarse.html', {
-                  'form': form,
-                  'error': 'El usuario ya existe'
-              })
-          
+              return render(request, 'registrarse.html', {'form': form})
         else:    
-            print("Formulario no válido", flush=True)
-            return render(request, 'registrarse.html', {
-                'form': form,
-                'error': 'Corrige los errores en el formulario'
-            })
-        
+            return render(request, 'registrarse.html', {'form': form})
+    
     else:
+        storage = messages.get_messages(request)
+        storage.used = True  #limpia todos los mensajes previos
         form = CustomUserCreationForm()
-        return render(request, 'registrarse.html', {
-            'form': form
-        })
+    return render(request, 'registrarse.html', {'form': form})
 
 def activate(request, uidb64, token):
   print('Activando cuenta', flush=True)
@@ -161,76 +158,35 @@ def error_404_view(request, exception):
     return render(request, '404.html', status=404)
 
 
+@login_required
 def editarPerfil(request):
+    storage = messages.get_messages(request)
+    storage.used = True  # Limpia todos los mensajes previos
+    
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
-        
-        if form.is_valid():
-            user = request.user
-            cd = form.cleaned_data
-            #Si escribió algo en contraseña actual, obligar nueva y confirmación
-            if cd.get('password_actual'):
-              print("Intentando cambiar contraseña", flush=True)
-              #Verificar si se quiere cambiar contraseña
-              if cd['password_nuevo'] or cd['password_confirmacion']:
-                  print("tiene pass nuevo o confirmacion", flush=True)
-                  # Revisar que la contraseña actual sea correcta
-                  if not user.check_password(cd['password_actual']):
-                      messages.success(request,"La contraseña actual no es correcta.")
-                      return render(request, 'editarperfil.html', {'form': form})
-
-                  # Revisar que las contraseñas nuevas coincidan
-                  if cd['password_nuevo'] != cd['password_confirmacion']:
-                      messages.success(request,"La nueva contraseña y su confirmación no coinciden.")
-                      return render(request, 'editarperfil.html', {'form': form})
-
-                  # Guardar la nueva contraseña
-                  user.set_password(cd['password_nuevo'])
-                  update_session_auth_hash(request, user)  # Mantener sesión activa
-              else:
-                messages.success(request,"Para cambiar la contraseña debes escribir la contraseña nueva y de confirmacion") 
-                return render(request, 'editarperfil.html', {'form': form})
-          
-              # Verificar si se quiere cambiar username
-              if User.objects.filter(username=cd['username']).exclude(pk=user.pk).exists():
-                  messages.success(request, "El nombre de usuario ya está en uso.")
-                  return render(request, 'editarperfil.html', {'form': form})
-
-              # Guardar cambios
-              user.save()
-              messages.success(request, "Perfil actualizado correctamente.")
-              return redirect('home')
+        action = request.POST.get('action')
+        # Guardar cambios
+        if action == 'guardar':
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "Perfil actualizado correctamente."} )
             else:
-              # si no escribió la actual pero sí alguna de las nuevas, marcar error
-              if cd.get('password_nuevo') or cd.get('password_confirmacion'):
-                  messages.success(request,"Para cambiar la contraseña debes escribir la contraseña actual.")
-                  return render(request, 'editarperfil.html', {'form': form})
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "Corrige los errores en el formulario."} )
+        # Eliminar cuenta
+        elif action == 'eliminar':
+            password = request.POST.get('password_actual')
+            if not password:
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "Debes ingresar tu contraseña para eliminar la cuenta."} )
+            elif not request.user.check_password(password):
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "La contraseña no es correcta."} )
+            else:
+                request.user.delete()
+                logout(request)
+                return render(request, 'pagina_aterrizaje.html', {'form': form, 'messages': "Tu cuenta ha sido eliminada correctamente."} )
     else:
         form = CustomUserChangeForm(instance=request.user)
 
     return render(request, 'editarperfil.html', {'form': form})
-
-@login_required
-def eliminarPerfil(request):
-    if request.method == 'POST':
-        password = request.POST.get('password_actual')
-
-        # Verificar que puso la contraseña actual
-        if not password:
-          messages.error(request, "Debes ingresar tu contraseña para eliminar la cuenta.")
-          return render(request, 'eliminarperfil.html')
-
-        user = request.user
-        if not user.check_password(password):
-          messages.error(request, "La contraseña no es correcta.")
-          return render(request, 'eliminarperfil.html')
-
-        # Eliminar usuario
-        user.delete()
-        logout(request)  # Cerrar sesión
-        messages.success(request, "Tu cuenta ha sido eliminada correctamente.")
-        return redirect('home')
-
-    return render(request, 'eliminarperfil.html')
-
 

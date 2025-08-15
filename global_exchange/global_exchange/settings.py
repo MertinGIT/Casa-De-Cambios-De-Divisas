@@ -14,10 +14,12 @@ from logging import config
 from pathlib import Path
 import environ
 import os
+
 env = environ.Env(
     DEBUG=(bool, False)   
 )
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 # Leer archivo .env
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
@@ -36,7 +38,7 @@ SECRET_KEY = 'django-insecure-a59ch^c$8!qa+s&5@-zq-=q_cyz!e5!x@hsqg8dsa7_sr-t^s&
 
 ALLOWED_HOSTS = ['localhost', '192.168.100.235']
 
-#fbkq lrdy qqlp vion
+
 # Emailing settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
