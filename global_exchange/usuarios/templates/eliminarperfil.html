@@ -1,0 +1,31 @@
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} mt-2">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<form method="POST" class="w-50 mx-auto">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label for="password_actual" class="form-label">Contraseña Actual</label>
+        <input type="password" name="password_actual" id="password_actual" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-danger" id="btnEliminar">Eliminar Cuenta</button>
+</form>
+
+
+
+
+
+
+
+
+
+
+
+
+

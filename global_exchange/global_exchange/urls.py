@@ -20,18 +20,14 @@ from django.conf.urls import handler404
 from django.shortcuts import render
 
 urlpatterns = [
-    path('', views.pagina_aterrizaje,name='pagina_aterrizaje'),
-    path('home/', views.home,name='home'),
-    path('signup/', views.signup,name='signup'),
-    path('logout/', views.signout,name='signout'),
-    path('login/', views.signin,name='login'),
+    path('', views.pagina_aterrizaje, name='pagina_aterrizaje'),
+    path('home/', views.home, name='home'),
+    path('signup/', views.signup, name='signup'),
+    path('logout/', views.signout, name='signout'),
+    path('login/', views.signin, name='login'),
+    path('editarperfil/', views.editarPerfil, name='editarperfil'),
     path('admin/', admin.site.urls),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
 ]
 
 
-# Función personalizada para manejar 404
-def custom_404(request, exception):
-    return render(request, "404.html", {"request_path": request.path}, status=404)
-
-handler404 = custom_404
