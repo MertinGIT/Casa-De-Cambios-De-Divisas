@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-
+from django.contrib.auth.forms import UserChangeForm
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     ci_ruc = forms.CharField(max_length=20, required=True)
@@ -35,3 +35,28 @@ class CustomUserCreationForm(UserCreationForm):
             if messages:
                 raise ValidationError(messages)
         return password1
+
+class CustomUserChangeForm(UserChangeForm):
+    password_actual = forms.CharField(
+        label="Contraseña actual",
+        widget=forms.PasswordInput,
+        required=False
+    )
+    password_nuevo = forms.CharField(
+        label="Contraseña nueva",
+        widget=forms.PasswordInput,
+        required=False
+    )
+    password_confirmacion = forms.CharField(
+        label="Confirmación de contraseña",
+        widget=forms.PasswordInput,
+        required=False
+    )
+
+    class Meta:
+        model = User
+        fields = ['email', 'username']  # Solo los campos reales del modelo
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['email'].disabled = True  # Hacer email de solo lectura

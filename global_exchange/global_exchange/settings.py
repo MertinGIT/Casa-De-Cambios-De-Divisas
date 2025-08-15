@@ -10,10 +10,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
+from logging import config
 from pathlib import Path
+import environ
+import os
+env = environ.Env(
+    DEBUG=(bool, False)   
+)
+BASE_DIR = Path(__file__).resolve().parent.parent
+# Leer archivo .env
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -30,9 +40,8 @@ ALLOWED_HOSTS = ['localhost', '192.168.100.235']
 # Emailing settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_FROM = 'pythonlessons0@gmail.com'
-EMAIL_HOST_USER = 'leandro.f3418@fpuna.edu.py'
-EMAIL_HOST_PASSWORD = 'fbkqlrdyqqlpvion'
+EMAIL_HOST_USER = env('EMAIL_USER')
+EMAIL_HOST_PASSWORD = env('EMAIL_PASSWORD')
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
@@ -65,7 +74,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'global_exchange.urls'
-import os
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -88,14 +97,7 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-import environ
 
-env = environ.Env(
-    DEBUG=(bool, False)   
-)
-
-# Leer archivo .env
-environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 DEBUG = os.getenv("DEBUG", "True").lower() == "true" 
