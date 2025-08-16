@@ -50,9 +50,6 @@ EMAIL_USE_TLS = True
 PASSWORD_RESET_TIMEOUT = 14400
 
 
-
-
-
 # Application definition
 
 INSTALLED_APPS = [

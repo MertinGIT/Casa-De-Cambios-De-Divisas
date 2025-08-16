@@ -30,6 +30,9 @@ def home(request):
 def signup(request):
     #if request.user.is_authenticated:
     #    return redirect('home')
+    eslogan_lines = ["Empieza", "ahora."]
+    eslogan_spans = ["!Comienza", "ya!"]
+    subtitle = "Crea tu cuenta y empieza ahora."
     
     print("Correo de confirmación enviado1", flush=True)
 
@@ -47,21 +50,47 @@ def signup(request):
               user.save()
               activateEmail(request, user, user.email)
               return render(request, 'registrarse.html', {
-                    'form': form,
-                    'messages': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo."
-                }) 
+                      'form': form,
+                      'messages': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
+                      'error': 'El usuario ya existe',
+                      'eslogan_lines': eslogan_lines,
+                      'eslogan_spans': eslogan_spans,
+                      'submit_text': "Registrarse",
+                      'active_tab': "register"
+                  })
               
           except Exception as e:
               print("Error al guardar usuario:", e, flush=True)
-              return render(request, 'registrarse.html', {'form': form})
+              return render(request, 'registrarse.html', {
+                        'form': form,
+                        'error': 'El usuario ya existe',
+                        'eslogan_lines': eslogan_lines,
+                        'eslogan_spans': eslogan_spans,
+                        'submit_text': "Registrarse",
+                        'active_tab': "register"
+                    })
         else:    
-            return render(request, 'registrarse.html', {'form': form})
+            return render(request, 'registrarse.html', {
+                        'form': form,
+                        'error': 'El usuario ya existe',
+                        'eslogan_lines': eslogan_lines,
+                        'eslogan_spans': eslogan_spans,
+                        'submit_text': "Registrarse",
+                        'active_tab': "register"
+                    })
     
     else:
         storage = messages.get_messages(request)
         storage.used = True  #limpia todos los mensajes previos
         form = CustomUserCreationForm()
-    return render(request, 'registrarse.html', {'form': form})
+    return render(request, 'registrarse.html', {
+              'form': UserCreationForm(),
+              'eslogan_lines': eslogan_lines,
+              'eslogan_spans': eslogan_spans,
+              'subtitle': subtitle,
+              'submit_text': "Registrarse",
+              'active_tab': "register"
+          })
 
 def activate(request, uidb64, token):
   print('Activando cuenta', flush=True)
@@ -109,23 +138,36 @@ def signout(request):
   return redirect('/')
 
 def signin(request):
-  if request.user.is_authenticated:
-      return redirect('home')
-  if request.method == 'GET':
-    return render(request,'login.html',{
-    'form':AuthenticationForm
-  })
-  else:
-    user=authenticate(username=request.POST['username'],password=request.POST['password'])
-    print(user)
-    if user is None:
-      return render(request,'login.html',{
-    'form':AuthenticationForm,
-    'error':'El usuario o contraseña es incorrecto'
-  })
+    if request.user.is_authenticated:
+        return redirect('home')
+
+    eslogan_lines = ["Tu éxito", "comienza", "aqui."]
+    eslogan_spans = ["¡Accede", "ahora!"]
+    subtitle = "¡Bienvenido de nuevo! Inicia sesión para continuar."
+
+    if request.method == 'GET':
+        return render(request, 'login.html', {
+            'form': AuthenticationForm(),
+            'eslogan_lines': eslogan_lines,
+            'eslogan_spans': eslogan_spans,
+            'subtitle': subtitle,
+            'submit_text': "Acceder",
+            'active_tab': "login"
+        })
     else:
-      login(request,user)
-      return redirect('home')
+        user = authenticate(username=request.POST['username'], password=request.POST['password'])
+        if user is None:
+            return render(request, 'login.html', {
+                'form': AuthenticationForm(),
+                'error': 'Usuario o contraseña incorrectos',
+                'eslogan_lines': eslogan_lines,
+                'eslogan_spans': eslogan_spans,
+                'submit_text': "Acceder",
+                'active_tab': "login"
+            })
+        else:
+            login(request, user)
+            return redirect('home')
       
 def pagina_aterrizaje(request):
   cotizaciones = [
@@ -156,7 +198,6 @@ def pagina_aterrizaje(request):
 
 def error_404_view(request, exception):
     return render(request, '404.html', status=404)
-
 
 @login_required
 def editarPerfil(request):
@@ -189,4 +230,3 @@ def editarPerfil(request):
         form = CustomUserChangeForm(instance=request.user)
 
     return render(request, 'editarperfil.html', {'form': form})
-
