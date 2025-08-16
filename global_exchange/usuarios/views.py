@@ -4,59 +4,134 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login,logout,authenticate
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from .forms import CustomUserCreationForm
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib.sites.shortcuts import get_current_site
+# Para enviar correos
+from django.core.mail import send_mail
+# Para renderizar templates a string
+from django.template.loader import render_to_string
+# Para codificar el ID de usuario en base64
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from django.core.mail import EmailMessage
+from usuarios.forms import CustomUserChangeForm
+from django.contrib.auth import update_session_auth_hash
+from django.contrib import messages
+from .tokens import account_activation_token
 import json
 # Create your views here.
 @login_required #con esto protejemos las rutas
 def home(request):
   return render(request,'home.html')
-  
-def signup(request):
-    if request.user.is_authenticated:
-        return redirect('home')
 
+def signup(request):
+    #if request.user.is_authenticated:
+    #    return redirect('home')
     eslogan_lines = ["Empieza", "ahora."]
     eslogan_spans = ["!Comienza", "ya!"]
     subtitle = "Crea tu cuenta y empieza ahora."
+    
+    print("Correo de confirmación enviado1", flush=True)
 
-    if request.method == 'GET':
-        return render(request, 'registrarse.html', {
-            'form': UserCreationForm(),
-            'eslogan_lines': eslogan_lines,
-            'eslogan_spans': eslogan_spans,
-            'subtitle': subtitle,
-            'submit_text': "Registrarse",
-            'active_tab': "register"
-        })
-    else:
-        if request.POST['password1'] == request.POST['password2']:
-            try:
-                user = User.objects.create_user(
-                    username=request.POST['username'],
-                    password=request.POST['password1']
-                )
-                user.save()
-                login(request, user)
-                return redirect('home')
-            except:
-                return render(request, 'registrarse.html', {
-                    'form': UserCreationForm(),
-                    'error': 'El usuario ya existe',
-                    'eslogan_lines': eslogan_lines,
-                    'eslogan_spans': eslogan_spans,
-                    'submit_text': "Registrarse",
-                    'active_tab': "register"
-                })
-        else:
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        print("Correo de confirmación enviado2", flush=True)
+        
+       
+        if form.is_valid():
+          try:
+              print("entro en try", flush=True)
+              # Guardar usuario inactivo
+              user = form.save(commit=False)
+              user.is_active = False
+              user.save()
+              activateEmail(request, user, user.email)
+              return render(request, 'registrarse.html', {
+                      'form': form,
+                      'messages': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
+                      'error': 'El usuario ya existe',
+                      'eslogan_lines': eslogan_lines,
+                      'eslogan_spans': eslogan_spans,
+                      'submit_text': "Registrarse",
+                      'active_tab': "register"
+                  })
+              
+          except Exception as e:
+              print("Error al guardar usuario:", e, flush=True)
+              return render(request, 'registrarse.html', {
+                        'form': form,
+                        'error': 'El usuario ya existe',
+                        'eslogan_lines': eslogan_lines,
+                        'eslogan_spans': eslogan_spans,
+                        'submit_text': "Registrarse",
+                        'active_tab': "register"
+                    })
+        else:    
             return render(request, 'registrarse.html', {
-                'form': UserCreationForm(),
-                'error': 'Las contraseñas no coinciden',
-                'eslogan_lines': eslogan_lines,
-                'eslogan_spans': eslogan_spans,
-                'submit_text': "Registrarse",
-                'active_tab': "register"
-            })
+                        'form': form,
+                        'error': 'El usuario ya existe',
+                        'eslogan_lines': eslogan_lines,
+                        'eslogan_spans': eslogan_spans,
+                        'submit_text': "Registrarse",
+                        'active_tab': "register"
+                    })
+    
+    else:
+        storage = messages.get_messages(request)
+        storage.used = True  #limpia todos los mensajes previos
+        form = CustomUserCreationForm()
+    return render(request, 'registrarse.html', {
+              'form': UserCreationForm(),
+              'eslogan_lines': eslogan_lines,
+              'eslogan_spans': eslogan_spans,
+              'subtitle': subtitle,
+              'submit_text': "Registrarse",
+              'active_tab': "register"
+          })
+
+def activate(request, uidb64, token):
+  print('Activando cuenta', flush=True)
+  try:
+      print("Intentando activar cuenta", flush=True)
+      # Decodificar el UID
+      uid = force_str(urlsafe_base64_decode(uidb64))
+      user = User.objects.get(pk=uid)
+  except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+      print("Error al activar cuenta", flush=True)
+      user = None
+
+  # Validar que el token sea correcto
+  print(user)
+  if user is not None and account_activation_token.check_token(user, token):
+      print("Token válido, activando cuenta", flush=True)
+      user.is_active = True
+      user.save()
+      print(request, 'Tu cuenta ha sido activada con éxito. Ahora puedes iniciar sesión.')
+      return redirect('login')
+  else:
+      print("Token inválido", flush=True)
+      print( 'El enlace de activación no es válido o ha expirado.')
+      return redirect('home')
 
 
+def activateEmail(request, user, to_email):
+    mail_subject = 'Activate your user account.'
+    message = render_to_string('email_confirm.html', {
+        'user': user.username,
+        'domain': get_current_site(request).domain,
+        'uid64': urlsafe_base64_encode(force_bytes(user.pk)),
+        'token': account_activation_token.make_token(user),
+        'protocol': 'https' if request.is_secure() else 'http'
+    })
+
+    email = EmailMessage(mail_subject, message, to=[to_email])
+    email.content_subtype = 'html'  # Esto indica que el cuerpo es HTML
+    email.send()
+        
+    
 @login_required
 def signout(request):
   logout(request)
@@ -121,3 +196,37 @@ def pagina_aterrizaje(request):
     }
   return render(request, 'pagina_aterrizaje.html',context)
 
+def error_404_view(request, exception):
+    return render(request, '404.html', status=404)
+
+@login_required
+def editarPerfil(request):
+    storage = messages.get_messages(request)
+    storage.used = True  # Limpia todos los mensajes previos
+    
+    if request.method == 'POST':
+        form = CustomUserChangeForm(request.POST, instance=request.user)
+        action = request.POST.get('action')
+        # Guardar cambios
+        if action == 'guardar':
+            if form.is_valid():
+                user = form.save()
+                update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "Perfil actualizado correctamente."} )
+            else:
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "Corrige los errores en el formulario."} )
+        # Eliminar cuenta
+        elif action == 'eliminar':
+            password = request.POST.get('password_actual')
+            if not password:
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "Debes ingresar tu contraseña para eliminar la cuenta."} )
+            elif not request.user.check_password(password):
+                return render(request, 'editarperfil.html', {'form': form, 'messages': "La contraseña no es correcta."} )
+            else:
+                request.user.delete()
+                logout(request)
+                return render(request, 'pagina_aterrizaje.html', {'form': form, 'messages': "Tu cuenta ha sido eliminada correctamente."} )
+    else:
+        form = CustomUserChangeForm(instance=request.user)
+
+    return render(request, 'editarperfil.html', {'form': form})
