@@ -5,3 +5,4 @@ tzdata==2025.2
 django-environ
 psycopg2-binary
 six
+django-widget-tweaks

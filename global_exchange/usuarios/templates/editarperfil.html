@@ -1,67 +1,348 @@
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+{% extends 'usuario_base.html' %} {% load static %} {% block content %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Editar Perfil</title>
+    <link rel="stylesheet" href="{% static 'css/login.css' %}" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
+    />
 
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} mt-2">
-      {{ message }}
-    </div>
-  {% endfor %}
-{% endif %}
+    <style>
+      /* Tu CSS existente permanece igual */
+      body,
+      html {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        background-color: #f8f9fa;
+        font-family: Arial, sans-serif;
+      }
+      .d-flex {
+        display: flex;
+      }
+      .vh-100 {
+        height: 100vh;
+      }
+      .justify-content-center {
+        justify-content: center;
+      }
+      .align-items-center {
+        align-items: center;
+      }
 
-<h1 class="mb-4 text-center">EDITAR PERFIL</h1>
-<form method="POST" class="w-50 mx-auto">
-    {% csrf_token %}
+      .form-container {
+        max-width: 600px;
+        width: 100%;
+        background-color: #fff;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        position: relative;
+      }
 
-    <div class="mb-3">
-        <label for="id_username" class="form-label">Username</label>
-        {{ form.username }}
-        {% for error in form.username.errors %}
+      h1 {
+        text-align: center;
+        margin-bottom: 1.5rem;
+        font-size: 2.5rem;
+      }
+
+      form {
+        width: 100%;
+      }
+
+      .form-group {
+        position: relative;
+        margin-bottom: 1.5rem;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 1rem 1rem 1rem 3rem;
+        font-size: 1.2rem;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        outline: none;
+        transition: 0.2s;
+      }
+      .form-group input:focus {
+        border-color: #6c63ff;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: white;
+        transform: scale(1.01);
+      }
+
+      .form-group label {
+        position: absolute;
+        left: 3rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        pointer-events: none;
+        transition: 0.2s ease all;
+      }
+      .form-group input:focus + label,
+      .form-group input:not(:placeholder-shown) + label {
+        top: -0.5rem;
+        left: 2.5rem;
+        font-size: 0.85rem;
+        color: #6c63ff;
+        background: #fff;
+        border-radius: 10px;
+        padding: 0.2rem;
+      }
+
+      .input-icon-left {
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #495057;
+        font-size: 1.2rem;
+      }
+      .input-disabled input {
+        background-color: #c8cbcfb7;
+        cursor: not-allowed;
+      }
+
+      .toggle-password {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #495057;
+      }
+
+      .btn {
+        width: 48%;
+        padding: 0.8rem;
+        font-size: 1.1rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+      }
+
+      .btn-primary {
+        background-color: #007bff;
+        color: #fff;
+      }
+      .btn-primary:hover {
+        background-color: #0056b3;
+      }
+      .btn-danger {
+        background-color: #dc3545;
+        color: #fff;
+      }
+      .btn-danger:hover {
+        background-color: #a71d2a;
+      }
+
+      .d-flex.justify-content-between {
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .text-danger {
+        color: #dc3545;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+      }
+
+      @media (max-width: 576px) {
+        .form-container {
+          width: 100%;
+          height: 100vh;
+          border-radius: 0;
+          padding: 2rem 1rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+
+        .form-group input {
+          font-size: 1.4rem;
+          padding: 1.2rem 1rem 1.2rem 3rem;
+        }
+        .toggle-password {
+          font-size: 1.4rem;
+        }
+        .btn {
+          width: 100%;
+          font-size: 1.4rem;
+          margin-bottom: 0.5rem;
+        }
+        .d-flex.justify-content-between {
+          flex-direction: column;
+          gap: 0.5rem;
+        }
+        h1 {
+          font-size: 3rem;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- Contenedor centrado en la pantalla -->
+    <div class="d-flex vh-100 justify-content-center align-items-center">
+      <div class="form-container">
+        <h1>EDITAR PERFIL</h1>
+
+        {% if messages %} {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} mt-2">{{ message }}</div>
+        {% endfor %} {% endif %}
+
+        <form method="POST">
+          {% csrf_token %}
+
+          <!-- Username -->
+          <div class="form-group">
+            <i class="bi bi-person-fill input-icon-left"></i>
+            <input
+              type="text"
+              name="username"
+              value="{{ form.username.value }}"
+              placeholder=" "
+              required
+            />
+            <label>Usuario</label>
+            {% for error in form.username.errors %}
             <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-    </div>
+            {% endfor %}
+          </div>
 
-    <div class="mb-3">
-        <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
-        {{ form.email }}
-        {% for error in form.email.errors %}
+          <!-- Email -->
+          <div class="form-group input-disabled">
+            <i class="bi bi-envelope-fill input-icon-left"></i>
+            <input
+              type="email"
+              name="email"
+              value="{{ form.email.value }}"
+              disabled
+              placeholder=" "
+            />
+            <label>Correo</label>
+            {% for error in form.email.errors %}
             <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-    </div>
+            {% endfor %}
+          </div>
 
-    <div class="mb-3">
-        <label for="{{ form.password_actual.id_for_label }}" class="form-label">Contraseña Actual</label>
-        {{ form.password_actual }}
-        {% for error in form.password_actual.errors %}
+          <!-- Contraseña actual -->
+          <div class="form-group">
+            <i class="bi bi-lock-fill input-icon-left"></i>
+            <input
+              type="password"
+              name="password_actual"
+              class="password-field"
+              placeholder=" "
+            />
+            <label>Contraseña Actual</label>
+            <button type="button" class="toggle-password">
+              <i class="bi bi-eye-slash"></i>
+            </button>
+            {% for error in form.password_actual.errors %}
             <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-    </div>
+            {% endfor %}
+          </div>
 
-    <div class="mb-3">
-        <label for="{{ form.password_nuevo.id_for_label }}" class="form-label">Contraseña Nueva</label>
-        {{ form.password_nuevo }}
-        {% for error in form.password_nuevo.errors %}
+          <!-- Nueva contraseña -->
+          <div class="form-group">
+            <i class="bi bi-lock-fill input-icon-left"></i>
+            <input
+              type="password"
+              name="password_nuevo"
+              class="password-field"
+              placeholder=" "
+            />
+            <label>Contraseña Nueva</label>
+            <button type="button" class="toggle-password">
+              <i class="bi bi-eye-slash"></i>
+            </button>
+            {% for error in form.password_nuevo.errors %}
             <div class="text-danger">{{ error }}</div>
-        {% endfor %}
-    </div>
+            {% endfor %}
+          </div>
 
-    <div class="mb-3">
-        <label for="{{ form.password_confirmacion.id_for_label }}" class="form-label">Confirmación de Contraseña</label>
-        {{ form.password_confirmacion }}
-        {% for error in form.password_confirmacion.errors %}
+          <!-- Confirmación de contraseña -->
+          <div class="form-group">
+            <i class="bi bi-lock-fill input-icon-left"></i>
+            <input
+              type="password"
+              name="password_confirmacion"
+              class="password-field"
+              placeholder=" "
+            />
+            <label>Confirmación de Contraseña</label>
+            <button type="button" class="toggle-password">
+              <i class="bi bi-eye-slash"></i>
+            </button>
+            {% for error in form.password_confirmacion.errors %}
             <div class="text-danger">{{ error }}</div>
-        {% endfor %}
+            {% endfor %}
+          </div>
+
+          <!-- Botones -->
+          <div class="d-flex justify-content-between">
+            <button
+              type="submit"
+              name="action"
+              value="guardar"
+              class="btn btn-primary"
+            >
+              Guardar Cambios
+            </button>
+            <button
+              type="submit"
+              name="action"
+              value="eliminar"
+              class="btn btn-danger"
+              id="btnEliminar"
+            >
+              Eliminar Cuenta
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-    
-    <button type="submit"  name="action" value="guardar" class="btn btn-primary">Guardar Cambios</button>
-    <button type="submit" name="action" value="eliminar" class="btn btn-danger" id="btnEliminar">Eliminar Cuenta</button>
 
-</form>
+    <script>
+      document.querySelectorAll(".toggle-password").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const input =
+            this.closest(".form-group").querySelector(".password-field");
+          const icon = this.querySelector("i");
+          if (input.type === "password") {
+            input.type = "text";
+            icon.classList.replace("bi-eye-slash", "bi-eye");
+          } else {
+            input.type = "password";
+            icon.classList.replace("bi-eye", "bi-eye-slash");
+          }
+        });
+      });
 
-<script>
-document.getElementById('btnEliminar').addEventListener('click', function() {
-    if (confirm("¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.")) {
-        this.closest('form').submit();
-    }
-});
-</script>
-
+      document
+        .getElementById("btnEliminar")
+        .addEventListener("click", function (e) {
+          if (
+            !confirm(
+              "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer."
+            )
+          ) {
+            e.preventDefault();
+          }
+        });
+    </script>
+  </body>
+</html>
+{% endblock %}

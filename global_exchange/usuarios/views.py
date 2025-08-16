@@ -199,7 +199,7 @@ def pagina_aterrizaje(request):
 def error_404_view(request, exception):
     return render(request, '404.html', status=404)
 
-@login_required
+#@login_required
 def editarPerfil(request):
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
@@ -228,5 +228,19 @@ def editarPerfil(request):
                 return render(request, 'pagina_aterrizaje.html', {'form': form, 'messages': "Tu cuenta ha sido eliminada correctamente."} )
     else:
         form = CustomUserChangeForm(instance=request.user)
+
+    return render(request, 'editarperfil.html', {'form': form})
+
+def editarperfilDesing (request):
+# Creamos un usuario temporal para la vista
+    mock_user = User(
+        username='usuario_ejemplo',
+        email='usuario@example.com',
+        first_name='Juan',
+        last_name='Pérez'
+    )
+
+    # Instanciamos el formulario con ese usuario ficticio
+    form = CustomUserChangeForm(instance=mock_user)
 
     return render(request, 'editarperfil.html', {'form': form})
