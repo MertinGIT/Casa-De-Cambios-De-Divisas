@@ -1,0 +1,410 @@
+:root {
+  --primary-color: #6c63ff;
+  --bg-color: #f8f2fd;
+  --text-color: #333;
+  --scroll-color: #bbb;
+  --hover-bg: rgba(108, 99, 255, 0.1);
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 65px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: var(--bg-color);
+  overflow-y: auto;
+  transition: width 0.3s ease;
+  border-right: 4px solid var(--primary-color);
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  z-index: 1000;
+}
+
+.sidebar.active {
+  width: 220px;
+}
+
+/* LOGO */
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  position: relative;
+}
+
+.logo-container img {
+  width: 100px;
+  transition: transform 0.3s ease-in-out;
+  animation: float 2s ease-in-out infinite alternate;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(15px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.logo-container h2 {
+  display: none;
+  margin: 10px 0 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-align: center;
+}
+
+.sidebar.active .logo-container h2 {
+  display: block;
+}
+
+.logout-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* BOTON DE ABRIR/CERRAR */
+#sidebar-toggle {
+  position: fixed;
+  top: 20px;
+  left: 45px;
+  width: 35px;
+  height: 35px;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.2rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  transition: all 0.4s ease;
+  transform-origin: center;
+}
+
+.sidebar.active + #sidebar-toggle {
+  left: 200px;
+  transform: rotate(180deg);
+}
+
+#sidebar-toggle:hover {
+  transform: scale(1.3);
+}
+
+/* LINKS */
+.nav-links {
+  list-style: none;
+  padding: 0;
+  margin-top: 30px;
+}
+
+.nav-links li {
+  width: 100%;
+}
+
+.nav-links a {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-color);
+  padding: 15px 20px;
+
+  background: none;
+  cursor: pointer;
+  font-size: 1rem;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  -webkit-transition: all 0.3s ease;
+  -moz-transition: all 0.3s ease;
+  -ms-transition: all 0.3s ease;
+  -o-transition: all 0.3s ease;
+}
+
+.nav-links a:hover {
+  background-color: var(--primary-color);
+  color: var(--bg-color);
+  transform: scale(1.1);
+}
+
+.nav-links .icon {
+  margin-right: 15px;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 25px;
+}
+
+.nav-links .label {
+  display: none;
+  font-weight: 500;
+}
+
+.sidebar.active .nav-links .label {
+  display: inline;
+}
+
+/* DIVIDER */
+hr {
+  border: 0;
+  height: 1px;
+  background: var(--primary-color);
+  margin: 15px 0;
+}
+
+/* SCROLLBAR */
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background-color: var(--scroll-color);
+  border-radius: 10px;
+}
+
+/* --- LOGOUT --- */
+.logout-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 15px 0;
+  position: relative;
+}
+
+/* Ícono siempre visible */
+/* Icono de cerrar sesión por defecto (sidebar cerrado) */
+.logout-card .logout-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  background: none;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.logout-card .logout-icon:hover {
+  background-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+/* Cuando el sidebar está activo */
+.sidebar.active .logout-card .logout-icon {
+  width: 60px;
+  height: 60px;
+  background: var(--primary-color);
+  color: #fff;
+  border-radius: 50%; /* redondo */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Card interna (solo visible cuando sidebar abierto) */
+.logout-card .card-content {
+  display: none;
+}
+
+.sidebar.active .logout-card .card-content {
+  display: block;
+  position: relative;
+  background: var(--primary-color);
+  border-radius: 12px;
+  padding: 2rem 1rem 1.5rem 1rem;
+  overflow: hidden;
+  color: white;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  top: -15px;
+}
+
+.sidebar.active .logout-card .card-content h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.logout-card .circle1,
+.logout-card .circle2 {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.logout-card .circle1 {
+  width: 90px;
+  height: 90px;
+  top: -40px;
+  left: -40px;
+}
+.logout-card .circle2 {
+  width: 120px;
+  height: 120px;
+  bottom: -60px;
+  right: -60px;
+}
+
+.logout-btn-card {
+  background: #fff;
+  color: var(--primary-color);
+  font-weight: 600;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logout-btn-card:hover {
+  transform: scale(1.1);
+  -webkit-transform: scale(1.1);
+  -moz-transform: scale(1.1);
+  -ms-transform: scale(1.1);
+  -o-transform: scale(1.1);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -220px;
+    transition: left 0.3s ease;
+  }
+  .sidebar.active {
+    left: 0;
+  }
+  #sidebar-toggle {
+    right: -18px;
+  }
+}
+
+/* ================== ESTILOS MENÚ HAMBURGUESA MÓVIL ================== */
+
+/* Solo visible en móviles */
+@media (max-width: 768px) {
+  /* Asegurar que el hamburger siempre esté encima */
+  .hamburger-container {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  z-index: 3000;
+  width: 60px;              /* ancho fijo */
+  height: 60px;             /* alto fijo */
+  display: flex;            /* centrar el ícono */
+  justify-content: center;
+  align-items: center;
+  background: rgba(108, 92, 231, 0.7); /* lila translúcido */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-radius: 50%;       /* círculo perfecto */
+  color: #fff;
+  font-size: 22px;          /* tamaño del ícono ☰ o ✕ */
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(108,92,231,0.4);
+  transition: background 0.3s ease;
+}
+
+
+
+  #hamburger {
+    font-size: 2rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: white;
+  }
+  .mobile-navbar {
+    display: block;
+    position: fixed;
+    width: 100%;
+    z-index: 2000;
+  }
+
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(255, 255, 255, 0.7); /* fondo semi-transparente */
+    backdrop-filter: blur(6px);
+    transform: translateY(-100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    z-index: 2000;
+  }
+
+  .mobile-menu.active {
+    transform: translateY(0);
+  }
+
+  .mobile-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    text-align: center;
+  }
+
+  .mobile-menu ul li {
+    margin: 15px 0;
+  }
+
+  .mobile-menu ul li a {
+    text-decoration: none;
+    font-size: 1.5rem;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .mobile-menu ul li a:hover {
+    background-color: var(--primary-color);
+    color: #fff;
+  }
+
+  /* Logout móvil */
+  .logout-mobile {
+    font-weight: 600;
+  }
+
+  .mobile-menu hr {
+    width: 80%;
+    border: 1px solid var(--primary-color);
+    margin: 20px auto;
+  }
+
+  /* Ocultar sidebar desktop en móviles */
+  .sidebar,
+  #sidebar-toggle {
+    display: none;
+  }
+}
+
+/* Mantener sidebar visible en desktop */
+@media (min-width: 769px) {
+  .mobile-navbar {
+    display: none;
+  }
+}
