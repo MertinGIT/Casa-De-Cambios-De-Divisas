@@ -18,6 +18,8 @@ from django.urls import path
 from usuarios import views
 from django.conf.urls import handler404
 from django.shortcuts import render
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.pagina_aterrizaje, name='pagina_aterrizaje'),
@@ -29,6 +31,7 @@ urlpatterns = [
     path('editarperfil-design/', views.editarperfilDesing, name='editarperfil'),
     path('admin/', admin.site.urls),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
+     path('empleados/', views.crud_empleados, name='empleados'),
+    path('roles/', views.crud_roles, name='roles'),
 ]
-
 

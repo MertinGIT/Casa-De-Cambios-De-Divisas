@@ -8,25 +8,37 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import UserChangeForm
 
 class CustomUserCreationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-    ci_ruc = forms.CharField(max_length=20, required=True)
-
+    username = forms.CharField(
+        max_length=150,
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': ' '})
+    )
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={'placeholder': ' '})
+    )
+    ci_ruc = forms.CharField(
+        max_length=20,
+        required=True,
+        widget=forms.TextInput(attrs={'placeholder': ' '})
+    )
     password1 = forms.CharField(
         label="Password",
         strip=False,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'placeholder': ' '}),
         help_text="Your password must contain at least 8 characters. Your password can’t be entirely numeric."
     )
     password2 = forms.CharField(
         label="Password confirmation",
         strip=False,
-        widget=forms.PasswordInput,
+        widget=forms.PasswordInput(attrs={'placeholder': ' '}),
         help_text="Enter the same password as before, for verification."
     )
 
     class Meta:
         model = User
         fields = ('username', 'email', 'ci_ruc', 'password1', 'password2')
+
 
     def clean_email(self):
         email = self.cleaned_data.get('email')

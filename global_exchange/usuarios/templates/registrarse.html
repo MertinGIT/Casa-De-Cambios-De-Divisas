@@ -1,46 +1,32 @@
-{% extends 'usuario_auth_base.html' %} {% block form_fields %}
-{% if messages %}
-    <div class="alert alert-{{ messages.tags }} mt-2">
-      {{ messages }}
-    </div>
+{% extends 'usuario_auth_base.html' %} {% block form_fields %} {% if messages %}
+<div class="alert alert-{{ messages.tags }} mt-2">{{ messages }}</div>
 {% endif %}
 
 <div class="form-group">
   <i class="bi bi-person-fill input-icon-left"></i>
-  <input type="text" name="username" placeholder="Usuario" required />
+  {{ form.username }}
   <label>Usuario</label>
-   {{ form.username }}
-    {% for error in form.username.errors %}
-      <div class="text-danger">{{ error }}</div>
-    {% endfor %}
+  {% for error in form.username.errors %}
+  <div class="text-danger">{{ error }}</div>
+  {% endfor %}
 </div>
 
 <div class="form-group">
   <i class="bi bi-envelope-fill input-icon-left"></i>
-  <input type="email" name="email" placeholder="Correo" required />
-  <label>Correo</label>
   {{ form.email }}
-    {% for error in form.email.errors %}
-      <div class="text-danger">{{ error }}</div>
-    {% endfor %}
+  <label>Correo</label>
+  {% for error in form.email.errors %}
+  <div class="text-danger">{{ error }}</div>
+  {% endfor %}
 </div>
 
 <div class="form-group">
   <i class="bi bi-lock-fill input-icon-left"></i>
-  <input
-    type="password"
-    class="password-field"
-    name="password"
-    placeholder="Contraseña"
-    required
-  />
-  <label>Contraseña</label>
   {{ form.password1 }}
-    {% if form.password1.errors %}
-    {% for error in form.password1.errors %}
-      <div class="text-danger">{{ error }}</div>
-    {% endfor %}
-      {% endif %}
+  <label>Contraseña</label>
+  {% if form.password1.errors %} {% for error in form.password1.errors %}
+  <div class="text-danger">{{ error }}</div>
+  {% endfor %} {% endif %}
   <button type="button" class="toggle-password">
     <i class="bi-eye-slash"></i>
   </button>
@@ -48,20 +34,11 @@
 
 <div class="form-group">
   <i class="bi bi-lock-fill input-icon-left"></i>
-  <input
-    type="password"
-    class="password-field"
-    name="password2"
-    placeholder="Repetir contraseña"
-    required
-  />
-  <label>Repetir contraseña</label>
   {{ form.password2 }}
-    {% if form.password2.errors %}
-    {% for error in form.password2.errors %}
-      <div class="text-danger">{{ error }}</div>
-    {% endfor %}
-    {% endif %}
+  <label>Repetir contraseña</label>
+  {% if form.password2.errors %} {% for error in form.password2.errors %}
+  <div class="text-danger">{{ error }}</div>
+  {% endfor %} {% endif %}
   <button type="button" class="toggle-password">
     <i class="bi bi-eye-slash"></i>
   </button>

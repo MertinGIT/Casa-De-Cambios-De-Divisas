@@ -186,6 +186,19 @@
   font-weight: bold;
 }
 
+.form-group label {
+  position: absolute;
+  pointer-events: none;
+  transition: 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  transform: scale(1.01);
+}
+
 .form-group input:focus {
   border-bottom: 2px solid #6c63ff;
 }
@@ -198,6 +211,7 @@
   transform: translateY(-50%);
   color: #999;
   font-size: 18px;
+  z-index: 10;
 }
 
 /* Botón mostrar/ocultar contraseña */
