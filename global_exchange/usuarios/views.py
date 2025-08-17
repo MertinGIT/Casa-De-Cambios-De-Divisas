@@ -84,7 +84,7 @@ def signup(request):
         storage.used = True  #limpia todos los mensajes previos
         form = CustomUserCreationForm()
     return render(request, 'registrarse.html', {
-              'form': UserCreationForm(),
+              'form': form,
               'eslogan_lines': eslogan_lines,
               'eslogan_spans': eslogan_spans,
               'subtitle': subtitle,
