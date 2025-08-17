@@ -22,6 +22,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from .tokens import account_activation_token
 import json
+from collections import namedtuple
 # Create your views here.
 @login_required #con esto protejemos las rutas
 def home(request):
@@ -244,3 +245,31 @@ def editarperfilDesing (request):
     form = CustomUserChangeForm(instance=mock_user)
 
     return render(request, 'editarperfil.html', {'form': form})
+
+def crud_roles(request):
+    # Creamos un "rol" ficticio usando namedtuple
+    Rol = namedtuple('Rol', ['id', 'nombre', 'descripcion', 'permisos'])
+    
+    # Creamos datos de ejemplo
+    roles = [
+        Rol(id=1, nombre="Administrador", descripcion="Acceso total al sistema", permisos=["Crear", "Editar", "Eliminar"]),
+        Rol(id=2, nombre="Usuario", descripcion="Acceso limitado", permisos=["Ver"]),
+        Rol(id=3, nombre="Supervisor", descripcion="Acceso parcial", permisos=["Ver", "Editar"]),
+    ]
+    
+    # Pasamos los datos al template
+    return render(request, 'roles.html', {'roles': roles})
+
+def crud_empleados(request):
+    # Creamos un "Empleado" ficticio usando namedtuple
+    Empleado = namedtuple('Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
+    
+    # Datos de ejemplo
+    empleados = [
+        Empleado(id=1, nombre="Juan Pérez", cedula="12345678", email="juan.perez@email.com", cargo="Administrador"),
+        Empleado(id=2, nombre="María Gómez", cedula="87654321", email="maria.gomez@email.com", cargo="Supervisor"),
+        Empleado(id=3, nombre="Carlos López", cedula="11223344", email="carlos.lopez@email.com", cargo="Empleado"),
+    ]
+    
+    # Pasamos los datos al template
+    return render(request, 'empleados.html', {'empleados': empleados})
