@@ -13,7 +13,7 @@ body {
   width: 100%;
   height: 100%;
   overflow-y: auto; /* scroll vertical si es necesario */
-  background-color: rgba(0,0,0,0.5); /* fondo opaco */
+  background-color: rgba(0, 0, 0, 0.5); /* fondo opaco */
   justify-content: center;
   align-items: center;
   padding: 10px; /* espacio lateral en móviles */
@@ -27,7 +27,7 @@ body {
   max-width: 100%; /* nunca más ancho que la pantalla */
   position: relative;
   z-index: 2001; /* encima del fondo */
-  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Cerrar modal */
@@ -52,7 +52,8 @@ button.active {
   table-layout: auto;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   padding: 8px 12px;
   text-align: left;
   word-wrap: break-word;
@@ -67,10 +68,11 @@ button.active {
 /* Media queries para móviles */
 @media (max-width: 768px) {
   /* Dashboard contenido ocupa todo el ancho */
-  .dashboard-content {
-    margin-left: 0;
-    width: 100%;
+  .layout-container .dashboard-content {
+    margin-left: 0 !important;
+    width: 100% !important;
     padding: 10px;
+    transition: none;
   }
 
   /* Tabla se apila en móviles */

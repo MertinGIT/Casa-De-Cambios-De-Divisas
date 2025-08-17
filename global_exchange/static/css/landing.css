@@ -228,6 +228,36 @@ p {
   }
 }
 
+/* Para pantallas laptop o menos */
+@media (max-width: 1400px) {
+  .grid-left h1 {
+    font-size: 1.9rem;
+  }
+  .cotizaciones-title {
+    font-size: 1.6rem;
+  }
+  .cotizaciones-divisa img {
+    width: 36px;
+    height: 36px;
+  }
+  .simboloTitle {
+    font-size: 1rem;
+  }
+
+  .grafico-moneda {
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+  .grafico-moneda select {
+    padding: 0.2rem 0.7rem 0.2rem 0.7rem; /* espacio para el texto y la flecha */
+    font-size: 1rem;
+    width: 130px;
+  }
+  .grafico-container {
+    width: 90%;
+  }
+}
+
 /* Para Celulares */
 @media (max-width: 500px) {
   .grafico-container {
