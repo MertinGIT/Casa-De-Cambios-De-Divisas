@@ -238,13 +238,22 @@ def editarperfilDesing (request):
         username='usuario_ejemplo',
         email='usuario@example.com',
         first_name='Juan',
-        last_name='Pérez'
+        last_name='Pérez',
     )
+    # Agregamos atributos extra dinámicamente
+    mock_user.role = 'Superadmin'
+    mock_user.avatar = None  # o URL de imagen
+    mock_user.clientes_asociados = [
+        {"id": 1, "nombre": "Cliente A"},
+        {"id": 2, "nombre": "Cliente B"},
+        {"id": 3, "nombre": "Cliente C"},
+    ]
+    
 
     # Instanciamos el formulario con ese usuario ficticio
     form = CustomUserChangeForm(instance=mock_user)
 
-    return render(request, 'editarperfil.html', {'form': form})
+    return render(request, 'editarperfil.html', {'form': form,'user_fake': mock_user})
 
 def crud_roles(request):
     # Creamos un "rol" ficticio usando namedtuple
@@ -273,3 +282,4 @@ def crud_empleados(request):
     
     # Pasamos los datos al template
     return render(request, 'empleados.html', {'empleados': empleados})
+

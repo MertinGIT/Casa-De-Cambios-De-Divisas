@@ -7,6 +7,7 @@
     <!-- Sidebar -->
     {% include 'sidebar.html' %}
 
+    {% include 'perfil_usuario.html' %}
     <!-- Contenido principal -->
     <div class="dashboard-content">
         {% block dashboard_content %}
@@ -15,12 +16,14 @@
         <p>Este bloque se ajustará automáticamente al ancho del sidebar.</p>
         {% endblock %}
     </div>
+    
 </div>
 
 <style>
 /* Contenedor principal: flex para sidebar + contenido */
 .layout-container {
     display: flex;
+    justify-content: center;
     width: 100%;
     min-height: 100vh;
 }
@@ -53,6 +56,14 @@
 .sidebar.active ~ .dashboard-content {
     margin-left: 220px;
     width: calc(100% - 220px);
+}
+@media (max-width: 768px) {
+    .dashboard-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 10px;
+        transition: none;
+    }
 }
 </style>
 
