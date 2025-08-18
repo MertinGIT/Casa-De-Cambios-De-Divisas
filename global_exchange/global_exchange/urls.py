@@ -35,3 +35,12 @@ urlpatterns = [
     path('roles/', views.crud_roles, name='roles'),
 ]
 
+def custom_404_view(request, exception):
+    return render(request, "404.html", status=404)
+
+handler404 = custom_404_view
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+
+    

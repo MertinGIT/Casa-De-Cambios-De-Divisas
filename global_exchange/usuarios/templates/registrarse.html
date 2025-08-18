@@ -1,4 +1,6 @@
 {% extends 'usuario_auth_base.html' %} {% block form_fields %} {% if messages %}
+{% load widget_tweaks %}
+
 <div class="alert alert-{{ messages.tags }} mt-2">{{ messages }}</div>
 {% endif %}
 
@@ -22,7 +24,7 @@
 
 <div class="form-group">
   <i class="bi bi-lock-fill input-icon-left"></i>
-  {{ form.password1 }}
+  {{ form.password1|add_class:"form-control password-field" }}
   <label>Contraseña</label>
   {% if form.password1.errors %} {% for error in form.password1.errors %}
   <div class="text-danger">{{ error }}</div>
@@ -34,7 +36,7 @@
 
 <div class="form-group">
   <i class="bi bi-lock-fill input-icon-left"></i>
-  {{ form.password2 }}
+  {{ form.password2|add_class:"form-control password-field" }}
   <label>Repetir contraseña</label>
   {% if form.password2.errors %} {% for error in form.password2.errors %}
   <div class="text-danger">{{ error }}</div>
