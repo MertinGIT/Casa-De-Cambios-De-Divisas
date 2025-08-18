@@ -201,9 +201,9 @@
       <div class="form-container">
         <h1>EDITAR PERFIL</h1>
 
-        {% if messages %} {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} mt-2">{{ message }}</div>
-        {% endfor %} {% endif %}
+        {% if messages %} 
+        <div class="alert alert-{{ messages.tags }} mt-2">{{ messages }}</div>
+        {% endif %} 
 
         <form method="POST">
           {% csrf_token %}
@@ -239,6 +239,23 @@
             <div class="text-danger">{{ error }}</div>
             {% endfor %}
           </div>
+
+          <!-- Cedula/Ruc -->
+          <div class="form-group input-disabled">
+            <i class="bi bi-envelope-fill input-icon-left"></i>
+            <input
+              type="text"
+              name="cedula"
+              value="{{ form.cedula.value }}"
+              disabled
+              placeholder=" "
+            />
+            <label>C.I/R.U.C</label>
+            {% for error in form.cedula.errors %}
+            <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+          </div>
+
 
           <!-- Contraseña actual -->
           <div class="form-group">

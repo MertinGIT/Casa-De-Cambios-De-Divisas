@@ -160,3 +160,5 @@ LOGIN_URL='/login/' #me llevara a esta ruta si no estoy logueado protejiendo las
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'usuarios.CustomUser'

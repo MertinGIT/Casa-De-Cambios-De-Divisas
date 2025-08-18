@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth import login,logout,authenticate
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -23,6 +23,8 @@ from django.contrib import messages
 from .tokens import account_activation_token
 import json
 from collections import namedtuple
+
+User = get_user_model()
 # Create your views here.
 @login_required #con esto protejemos las rutas
 def home(request):
@@ -36,7 +38,7 @@ def signup(request):
     subtitle = "Crea tu cuenta y empieza ahora."
     
     print("Correo de confirmación enviado1", flush=True)
-
+   
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print("Correo de confirmación enviado2", flush=True)
@@ -44,11 +46,13 @@ def signup(request):
        
         if form.is_valid():
           try:
+              
               print("entro en try", flush=True)
               # Guardar usuario inactivo
               user = form.save(commit=False)
               user.is_active = False
               user.save()
+              print(user, flush=True)
               activateEmail(request, user, user.email)
               return render(request, 'registrarse.html', {
                       'form': form,
@@ -79,7 +83,6 @@ def signup(request):
                         'submit_text': "Registrarse",
                         'active_tab': "register"
                     })
-    
     else:
         storage = messages.get_messages(request)
         storage.used = True  #limpia todos los mensajes previos
@@ -121,7 +124,7 @@ def activate(request, uidb64, token):
 def activateEmail(request, user, to_email):
     mail_subject = 'Activate your user account.'
     message = render_to_string('email_confirm.html', {
-        'user': user.username,
+        'user': user,
         'domain': get_current_site(request).domain,
         'uid64': urlsafe_base64_encode(force_bytes(user.pk)),
         'token': account_activation_token.make_token(user),
@@ -212,6 +215,7 @@ def editarPerfil(request):
         if action == 'guardar':
             if form.is_valid():
                 user = form.save()
+                print(user, flush=True)
                 update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
                 return render(request, 'editarperfil.html', {'form': form, 'messages': "Perfil actualizado correctamente."} )
             else:
