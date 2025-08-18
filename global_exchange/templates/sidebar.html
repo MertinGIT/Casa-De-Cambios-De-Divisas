@@ -10,18 +10,43 @@
   </div>
 
   <ul class="nav-links">
-    <li><a href="#"><span class="icon">&#x1F4C8;</span> <span class="label">Dashboard</span></a></li>
-    <li><a href="#"><span class="icon">&#x1F4CA;</span> <span class="label">Reports</span></a></li>
-    <li><a href="#"><span class="icon">&#9881;</span> <span class="label">Settings</span></a></li>
+    <li>
+      <a href="{% url 'home' %}"
+        ><span class="icon">&#x1F4C8;</span>
+        <span class="label">Dashboard</span></a
+      >
+    </li>
+    <li>
+      <a href="#"
+        ><span class="icon">&#x1F4CA;</span>
+        <span class="label">Reports</span></a
+      >
+    </li>
+    <li>
+      <a href="#"
+        ><span class="icon">&#9881;</span>
+        <span class="label">Settings</span></a
+      >
+    </li>
+    <li>
+      <a href="{% url 'editarperfil' %}">
+        <span class="icon">&#x1F464;</span>
+        <span class="label">Mi Perfil</span>
+      </a>
+    </li>
   </ul>
 
   <hr />
 
   <ul class="nav-links secondary">
-    <li><a href="#"><span class="icon">&#x2753;</span> <span class="label">Help</span></a></li>
+    <li>
+      <a href="#"
+        ><span class="icon">&#x2753;</span> <span class="label">Help</span></a
+      >
+    </li>
     <li>
       <div class="logout-card">
-        <a href="#" class="logout-icon">&#x1F6AA;</a>
+        <a href="{% url 'signout' %}" class="logout-icon">&#x1F6AA;</a>
         <div class="card-content">
           <div class="circle1"></div>
           <div class="circle2"></div>
@@ -42,16 +67,37 @@
 <!-- ================== MENÚ HAMBURGUESA (MÓVIL) ================== -->
 <nav class="mobile-navbar">
   <div class="hamburger-container">
-    <span id="hamburger">&#9776;</span> <!-- Cambia a X -->
+    <span id="hamburger">&#9776;</span>
+    <!-- Cambia a X -->
   </div>
   <div id="mobile-menu" class="mobile-menu">
     <ul>
-      <li><a href="#"><span class="icon">&#x1F4C8;</span> Dashboard</a></li>
-      <li><a href="#"><span class="icon">&#x1F4CA;</span> Reports</a></li>
-      <li><a href="#"><span class="icon">&#9881;</span> Settings</a></li>
-      <hr>
-      <li><a href="#"><span class="icon">&#x2753;</span> Help</a></li>
-      <li><a href="#" class="logout-mobile"><span class="icon">&#x1F6AA;</span> Cerrar sesión</a></li>
+      <li>
+        <a href="{% url 'home' %}"
+          ><span class="icon">&#x1F4C8;</span> Dashboard</a
+        >
+      </li>
+      <li>
+        <a href="#"><span class="icon">&#x1F4CA;</span> Reports</a>
+      </li>
+      <li>
+        <a href="#"><span class="icon">&#9881;</span> Settings</a>
+      </li>
+      <li>
+        <a href="{% url 'editarperfil' %}">
+          <span class="icon">&#x1F464;</span>
+          <span class="label">Mi Perfil</span>
+        </a>
+      </li>
+      <hr />
+      <li>
+        <a href="#"><span class="icon">&#x2753;</span> Help</a>
+      </li>
+      <li>
+        <a href="{% url 'signout' %}" class="logout-mobile"
+          ><span class="icon">&#x1F6AA;</span> Cerrar sesión</a
+        >
+      </li>
     </ul>
   </div>
 </nav>
