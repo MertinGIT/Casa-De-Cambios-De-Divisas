@@ -72,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'global_exchange.middleware.Custom404Middleware',
 ]
 
 ROOT_URLCONF = 'global_exchange.urls'
@@ -101,7 +102,7 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 
 
 SECRET_KEY = env('DJANGO_SECRET_KEY')
-DEBUG = os.getenv("DEBUG", "True").lower() == "true" 
+DEBUG = os.getenv("DEBUG", "true").lower() == "true" 
 
 DATABASES = {
     'default': {
@@ -161,3 +162,5 @@ LOGIN_URL='/login/' #me llevara a esta ruta si no estoy logueado protejiendo las
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+AUTH_USER_MODEL = 'usuarios.CustomUser'

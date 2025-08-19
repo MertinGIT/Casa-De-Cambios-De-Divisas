@@ -300,8 +300,8 @@ hr {
   /* Asegurar que el hamburger siempre esté encima */
   .hamburger-container {
   position: fixed;
-  top: 15px;
-  right: 15px;
+  bottom: 30px;
+  right: 20px;
   z-index: 3000;
   width: 60px;              /* ancho fijo */
   height: 60px;             /* alto fijo */

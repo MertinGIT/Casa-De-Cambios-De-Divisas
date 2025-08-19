@@ -1,0 +1,33 @@
+{% load static %}
+
+<!-- Componente del perfil del usuario -->
+<div class="user-profile">
+    <div class="user-info" onclick="toggleDropdown()">
+        <!-- Si el usuario tiene avatar se usa, si no se carga uno por defecto -->
+        <img src="{% static 'usuarios/img/default-avatar.svg' %}" 
+             alt="Usuario" 
+             class="user-avatar" />
+
+        <div class="user-details">
+            <span class="user-name">{{ user_fake.username }}</span>
+            <span class="user-role">{{ user_fake.profile.role }}</span>
+        </div>
+
+        <i class="arrow-down">&#9662;</i>
+    </div>
+
+    <!-- Dropdown de clientes -->
+    <div class="user-dropdown" id="userDropdown">
+        <p class="dropdown-title">Seleccionar Cliente</p>
+        <ul>
+            {% for cliente in user_fake.clientes_asociados %}
+                <li><a href="#">{{ cliente.nombre }}</a></li>
+            {% empty %}
+                <li><span>No tiene clientes asignados</span></li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'usuarios/css/perfil_usuario.css' %}">
+<script src="{% static 'usuarios/js/perfil_usuario.js' %}"></script>

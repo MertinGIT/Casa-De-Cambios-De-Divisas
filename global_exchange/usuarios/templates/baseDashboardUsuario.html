@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="layout-container">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    {% include 'perfil_usuario.html' %}
+    <!-- Contenido principal -->
+    <div class="dashboard-content">
+        {% block dashboard_content %}
+        <!-- Aquí va tu contenido principal, formularios, tablas, etc. -->
+        <h2>Contenido Principal</h2>
+        <p>Este bloque se ajustará automáticamente al ancho del sidebar.</p>
+        {% endblock %}
+    </div>
+    
+</div>
+
+<style>
+/* Contenedor principal: flex para sidebar + contenido */
+.layout-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 65px; /* ancho cerrado */
+    transition: width 0.3s ease;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+}
+
+/* Sidebar expandido */
+.sidebar.active {
+    width: 220px;
+}
+
+/* Contenido principal ajustable */
+.dashboard-content {
+    margin-left: 65px; /* mismo ancho que el sidebar cerrado */
+    width: calc(100% - 65px);
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+/* Cuando el sidebar está activo, ajustar margen y ancho */
+.sidebar.active ~ .dashboard-content {
+    margin-left: 220px;
+    width: calc(100% - 220px);
+}
+@media (max-width: 768px) {
+    .dashboard-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 10px;
+        transition: none;
+    }
+}
+</style>
+
+{% endblock %}

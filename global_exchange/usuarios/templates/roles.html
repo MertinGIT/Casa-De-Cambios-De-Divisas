@@ -1,0 +1,61 @@
+{% extends "baseDashboardUsuario.html" %}
+{% load static %}
+
+{% block page_title %}Gestión de Roles{% endblock %}
+
+{% block dashboard_content %}
+
+<a href="#" class="btn btn-primary mb-3" id="btnNuevoRol">Nuevo Rol</a>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>Nombre</th>
+      <th>Descripción</th>
+      <th>Permisos</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for rol in roles %}
+    <tr>
+      <td data-label="Nombre">{{ rol.nombre }}</td>
+    <td data-label="Descripción">{{ rol.descripcion }}</td>
+    <td data-label="Permisos">{{ rol.permisos|join:", " }}</td>
+      <td data-label="Acciones">
+        <a href="#" class="btn btn-warning btn-sm btnEditar">Editar</a>
+        <a href="#" class="btn btn-danger btn-sm btnEliminar">Eliminar</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div id="roleModal" class="modal">
+  <div class="modal-content">
+    <span class="close" id="modalClose">&times;</span>
+    <h2 id="modalTitle">Nuevo Rol</h2>
+    <form id="roleForm">
+      <div class="mb-3">
+        <label for="rolNombre" class="form-label">Nombre</label>
+        <input type="text" class="form-control" id="rolNombre" name="nombre" required>
+      </div>
+      <div class="mb-3">
+        <label for="rolDescripcion" class="form-label">Descripción</label>
+        <input type="text" class="form-control" id="rolDescripcion" name="descripcion">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Permisos</label>
+        <div id="permisosContainer"></div>
+      </div>
+      <button type="submit" class="btn btn-success">Guardar</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<link rel="stylesheet" href="{% static 'usuarios/css/roles.css' %}">
+<script src="{% static 'usuarios/js/roles.js' %}"></script>
+{% endblock %}

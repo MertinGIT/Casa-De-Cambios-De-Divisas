@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth import login,logout,authenticate
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
@@ -22,6 +22,9 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib import messages
 from .tokens import account_activation_token
 import json
+from collections import namedtuple
+
+User = get_user_model()
 # Create your views here.
 @login_required #con esto protejemos las rutas
 def home(request):
@@ -35,7 +38,7 @@ def signup(request):
     subtitle = "Crea tu cuenta y empieza ahora."
     
     print("Correo de confirmación enviado1", flush=True)
-
+   
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print("Correo de confirmación enviado2", flush=True)
@@ -43,11 +46,13 @@ def signup(request):
        
         if form.is_valid():
           try:
+              
               print("entro en try", flush=True)
               # Guardar usuario inactivo
               user = form.save(commit=False)
               user.is_active = False
               user.save()
+              print(user, flush=True)
               activateEmail(request, user, user.email)
               return render(request, 'registrarse.html', {
                       'form': form,
@@ -78,13 +83,12 @@ def signup(request):
                         'submit_text': "Registrarse",
                         'active_tab': "register"
                     })
-    
     else:
         storage = messages.get_messages(request)
         storage.used = True  #limpia todos los mensajes previos
         form = CustomUserCreationForm()
     return render(request, 'registrarse.html', {
-              'form': UserCreationForm(),
+              'form': form,
               'eslogan_lines': eslogan_lines,
               'eslogan_spans': eslogan_spans,
               'subtitle': subtitle,
@@ -120,7 +124,7 @@ def activate(request, uidb64, token):
 def activateEmail(request, user, to_email):
     mail_subject = 'Activate your user account.'
     message = render_to_string('email_confirm.html', {
-        'user': user.username,
+        'user': user,
         'domain': get_current_site(request).domain,
         'uid64': urlsafe_base64_encode(force_bytes(user.pk)),
         'token': account_activation_token.make_token(user),
@@ -211,6 +215,7 @@ def editarPerfil(request):
         if action == 'guardar':
             if form.is_valid():
                 user = form.save()
+                print(user, flush=True)
                 update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
                 return render(request, 'editarperfil.html', {'form': form, 'messages': "Perfil actualizado correctamente."} )
             else:
@@ -237,10 +242,48 @@ def editarperfilDesing (request):
         username='usuario_ejemplo',
         email='usuario@example.com',
         first_name='Juan',
-        last_name='Pérez'
+        last_name='Pérez',
     )
+    # Agregamos atributos extra dinámicamente
+    mock_user.role = 'Superadmin'
+    mock_user.avatar = None  # o URL de imagen
+    mock_user.clientes_asociados = [
+        {"id": 1, "nombre": "Cliente A"},
+        {"id": 2, "nombre": "Cliente B"},
+        {"id": 3, "nombre": "Cliente C"},
+    ]
+    
 
     # Instanciamos el formulario con ese usuario ficticio
     form = CustomUserChangeForm(instance=mock_user)
 
-    return render(request, 'editarperfil.html', {'form': form})
+    return render(request, 'editarperfil.html', {'form': form,'user_fake': mock_user})
+
+def crud_roles(request):
+    # Creamos un "rol" ficticio usando namedtuple
+    Rol = namedtuple('Rol', ['id', 'nombre', 'descripcion', 'permisos'])
+    
+    # Creamos datos de ejemplo
+    roles = [
+        Rol(id=1, nombre="Administrador", descripcion="Acceso total al sistema", permisos=["Crear", "Editar", "Eliminar"]),
+        Rol(id=2, nombre="Usuario", descripcion="Acceso limitado", permisos=["Ver"]),
+        Rol(id=3, nombre="Supervisor", descripcion="Acceso parcial", permisos=["Ver", "Editar"]),
+    ]
+    
+    # Pasamos los datos al template
+    return render(request, 'roles.html', {'roles': roles})
+
+def crud_empleados(request):
+    # Creamos un "Empleado" ficticio usando namedtuple
+    Empleado = namedtuple('Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
+    
+    # Datos de ejemplo
+    empleados = [
+        Empleado(id=1, nombre="Juan Pérez", cedula="12345678", email="juan.perez@email.com", cargo="Administrador"),
+        Empleado(id=2, nombre="María Gómez", cedula="87654321", email="maria.gomez@email.com", cargo="Supervisor"),
+        Empleado(id=3, nombre="Carlos López", cedula="11223344", email="carlos.lopez@email.com", cargo="Empleado"),
+    ]
+    
+    # Pasamos los datos al template
+    return render(request, 'empleados.html', {'empleados': empleados})
+
