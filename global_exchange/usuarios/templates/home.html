@@ -1,5 +1,11 @@
-{% extends 'baseDashboardUsuario.html' %}
-
+{% extends 'baseDashboardUsuario.html' %} 
+{% load static %}
 {% block dashboard_content %}
-<h1>Home</h1>
+<link rel="stylesheet" href="{% static 'usuarios/css/home.css' %}" />
+<div class="home-content">
+  <h1>Home</h1>
+  <div class="home-main">
+    {% include 'cotizaciones.html' %} {% include 'graficoMoneda.html' %}
+  </div>
+</div>
 {% endblock %}

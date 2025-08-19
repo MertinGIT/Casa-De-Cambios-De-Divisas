@@ -51,7 +51,7 @@
           <div class="circle1"></div>
           <div class="circle2"></div>
           <h3>Cerrar sesión</h3>
-          <form method="POST" action="#" class="logout-form">
+          <form method="POST" action="{% url 'signout' %}" class="logout-form">
             {% csrf_token %}
             <button type="submit" class="logout-btn-card">Salir</button>
           </form>

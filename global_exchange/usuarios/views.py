@@ -28,7 +28,32 @@ User = get_user_model()
 # Create your views here.
 @login_required #con esto protejemos las rutas
 def home(request):
-    return render(request,'home.html',{"user": request.user})
+    cotizaciones = [
+        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
+        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
+        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
+        # agrega más monedas aquí...
+    ]
+    data_por_moneda = {
+            "USD": [
+                {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
+                {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
+                {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
+                {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
+            ],
+            "EUR": [
+                {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
+                {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
+                {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
+                {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
+            ],
+        }
+    context = {
+            'cotizaciones': cotizaciones,
+            'data_por_moneda': json.dumps(data_por_moneda),
+            "user": request.user
+        }
+    return render(request,'home.html',context)
 
 def signup(request):
     if request.user.is_authenticated:
