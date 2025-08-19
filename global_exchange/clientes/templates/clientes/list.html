@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Historial de Clientes{% endblock %}
+{% block content %}
+<div>
+  <h2>Historial de Clientes</h2>
+
+  <!-- Filtros/búsqueda -->
+  <form method="get">
+    <input name="q" value="{{ q }}" type="search" placeholder="Buscar...">
+    <select name="seg">
+      <option value="">Segmentación</option>
+      {% for s in segmentaciones %}
+        <option value="{{ s.id }}" {% if seg_selected|add:'' == s.id|stringformat:'s' %}selected{% endif %}>{{ s.nombre }}</option>
+      {% endfor %}
+    </select>
+    <select name="mes">
+      <option value="">Mes</option>
+      {% for m in meses %}
+        <option value="{{ m }}" {% if mes_selected == m %}selected{% endif %}>{{ m }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Buscar</button>
+  </form>
+
+  <!-- Tabla -->
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Nombre</th>
+        <th>Email</th>
+        <th>Teléfono</th>
+        <th>Segmentación</th>
+        <th>Creado</th>
+        <th>Actualizado</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in clientes %}
+        <tr>
+          <td>#{{ c.id }}</td>
+          <td>{{ c.nombre }}</td>
+          <td>{{ c.email }}</td>
+          <td>{{ c.telefono|default:'—' }}</td>
+          <td>{{ c.segmentacion.nombre }}</td>
+          <td>{{ c.creado_en|date:'d-m-Y' }}</td>
+          <td>{{ c.actualizado_en }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7">Sin resultados.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- Paginación simple -->
+  <div>
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&laquo; Prev</a>
+    {% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">Next &raquo;</a>
+    {% endif %}
+  </div>
+
+  <!-- Descargas -->
+  <div>
+    <a href="{% url 'clientes_export_csv' %}?{{ request.GET.urlencode }}">Descargar CSV</a>
+    <a href="{% url 'clientes_export_xlsx' %}?{{ request.GET.urlencode }}">Descargar Excel</a>
+  </div>
+</div>
+{% endblock %}
