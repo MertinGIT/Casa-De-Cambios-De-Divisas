@@ -1,0 +1,22 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'usuarios/css/cotizaciones.css' %}" />
+
+<div class="cotizaciones-container">
+  <h2 class="cotizaciones-title">Cotizaciones</h2>
+  <div class="cotizaciones-content">
+    {% for moneda in cotizaciones %}
+      <div class="cotizaciones-divisa">
+        <img src="{% static moneda.logo %}" alt="Logo {{ moneda.simbolo }}" />
+        <p class="simboloTitle">{{ moneda.simbolo }}</p>
+        <div class="precios">
+          <p class="precioTitle">Compra</p>
+          <p class="simboloTitle">{{ moneda.compra }}</p>
+        </div>
+        <div>
+          <p class="precioTitle">Venta</p>
+          <p class="simboloTitle">{{ moneda.venta }}</p>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>

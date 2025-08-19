@@ -28,11 +28,39 @@ User = get_user_model()
 # Create your views here.
 @login_required #con esto protejemos las rutas
 def home(request):
-  return render(request,'home.html')
+    cotizaciones = [
+        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
+        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
+        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
+        # agrega más monedas aquí...
+    ]
+    data_por_moneda = {
+            "USD": [
+                {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
+                {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
+                {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
+                {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
+            ],
+            "EUR": [
+                {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
+                {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
+                {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
+                {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
+            ],
+        }
+    context = {
+            'cotizaciones': cotizaciones,
+            'data_por_moneda': json.dumps(data_por_moneda),
+            "user": request.user
+        }
+    return render(request,'home.html',context)
 
 def signup(request):
-    #if request.user.is_authenticated:
-    #    return redirect('home')
+    if request.user.is_authenticated:
+        if request.user.is_superuser:
+            return redirect('admin:index')
+        else:
+            return redirect('home')
     eslogan_lines = ["Empieza", "ahora."]
     eslogan_spans = ["!Comienza", "ya!"]
     subtitle = "Crea tu cuenta y empieza ahora."
@@ -132,18 +160,22 @@ def activateEmail(request, user, to_email):
     })
 
     email = EmailMessage(mail_subject, message, to=[to_email])
-    email.content_subtype = 'html'  # Esto indica que el cuerpo es HTML
+    email.content_subtype = 'html'
     email.send()
         
     
 @login_required
 def signout(request):
   logout(request)
-  return redirect('/')
+  return redirect('pagina_aterrizaje')
 
 def signin(request):
     if request.user.is_authenticated:
-        return redirect('home')
+        # Redirige según tipo de usuario
+        if request.user.is_superuser:
+            return redirect('admin:index')
+        else:
+            return redirect('home')
 
     eslogan_lines = ["Tu éxito", "comienza", "aqui."]
     eslogan_spans = ["¡Accede", "ahora!"]
@@ -171,7 +203,10 @@ def signin(request):
             })
         else:
             login(request, user)
-            return redirect('home')
+            if user.is_superuser:
+                return redirect('admin:index')
+            else:
+                return redirect('home')
       
 def pagina_aterrizaje(request):
   cotizaciones = [
@@ -236,6 +271,7 @@ def editarPerfil(request):
 
     return render(request, 'editarperfil.html', {'form': form})
 
+"""
 def editarperfilDesing (request):
 # Creamos un usuario temporal para la vista
     mock_user = User(
@@ -258,7 +294,7 @@ def editarperfilDesing (request):
     form = CustomUserChangeForm(instance=mock_user)
 
     return render(request, 'editarperfil.html', {'form': form,'user_fake': mock_user})
-
+"""
 def crud_roles(request):
     # Creamos un "rol" ficticio usando namedtuple
     Rol = namedtuple('Rol', ['id', 'nombre', 'descripcion', 'permisos'])
@@ -272,6 +308,7 @@ def crud_roles(request):
     
     # Pasamos los datos al template
     return render(request, 'roles.html', {'roles': roles})
+
 
 def crud_empleados(request):
     # Creamos un "Empleado" ficticio usando namedtuple
