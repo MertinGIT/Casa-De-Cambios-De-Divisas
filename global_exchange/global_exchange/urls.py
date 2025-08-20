@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from usuarios import views
+from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
 from django.shortcuts import render
 from django.conf import settings
@@ -29,10 +30,10 @@ urlpatterns = [
     path('logout/', views.signout, name='signout'),
     path('login/', views.signin, name='login'),
     path('editarperfil/', views.editarPerfil, name='editarperfil'),
-    path('admin/', admin.site.urls),
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
     
     # Rutas solo para administradores
+    path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', views.crud_empleados, name='empleados'),
     path('admin/roles/', views.crud_roles, name='roles'),
 ]

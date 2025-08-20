@@ -1,0 +1,94 @@
+{% extends 'base_admin.html' %} {% load static %} {% block dashboard_content %}
+<link
+  rel="stylesheet"
+  href="{% static 'admin_dashboard/css/dashboard.css' %}"
+/>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<div class="container-fluid dashboard-container">
+  <h1 class="mb-4">📊 Dashboard - Panel de Administración</h1>
+
+  <!-- Tarjetas resumen -->
+  <div class="row g-4">
+    <div class="col-md-3">
+      <div class="card">
+        <h3>Ganancias Hoy</h3>
+        <p>USD 1,250</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <h3>Transacciones</h3>
+        <p>45</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <h3>Clientes</h3>
+        <p>320</p>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card">
+        <h3>Total en Caja</h3>
+        <p>USD 15,000</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gráfico -->
+  <div class="chart-container mt-4">
+    <h3>Ganancias Diarias (USD)</h3>
+    <canvas id="gananciasChart"></canvas>
+  </div>
+
+  <!-- Tabla de últimas transacciones -->
+  <div class="table-container mt-4">
+    <h3>Últimas Transacciones</h3>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Moneda</th>
+          <th>Operación</th>
+          <th>Monto</th>
+          <th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td data-label="Cliente">Juan Pérez</td>
+          <td data-label="Moneda">USD</td>
+          <td data-label="Operación">
+            <span class="estado estado-venta">Venta</span>
+          </td>
+          <td data-label="Monto">500</td>
+          <td data-label="Fecha">20/08/25</td>
+        </tr>
+        <tr>
+          <td data-label="Cliente">María López</td>
+          <td data-label="Moneda">EUR</td>
+          <td data-label="Operación">
+            <span class="estado estado-compra">Compra</span>
+          </td>
+          <td data-label="Monto">300</td>
+          <td data-label="Fecha">20/08/25</td>
+        </tr>
+        <tr>
+          <td data-label="Cliente">Carlos Gómez</td>
+          <td data-label="Moneda">BRL</td>
+          <td data-label="Operación">
+            <span class="estado estado-venta">Venta</span>
+          </td>
+          <td data-label="Monto">1500</td>
+          <td data-label="Fecha">19/08/25</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- JS del gráfico -->
+<script src="{% static 'admin_dashboard/js/graficoGanancias.js' %}"></script>
+
+{% endblock %}
