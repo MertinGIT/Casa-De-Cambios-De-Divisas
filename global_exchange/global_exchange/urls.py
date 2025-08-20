@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from usuarios import views
+from clientes import views as clientes_views
 from django.conf.urls import handler404
 from django.shortcuts import render
 from django.conf import settings
@@ -33,6 +34,7 @@ urlpatterns = [
     path('activate/<uidb64>/<token>/', views.activate, name='activate'),
      path('empleados/', views.crud_empleados, name='empleados'),
     path('roles/', views.crud_roles, name='roles'),
+    path('clientes/', clientes_views.clientes, name='clientes'), 
 ]
 
 def custom_404_view(request, exception):
