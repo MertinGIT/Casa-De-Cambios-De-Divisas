@@ -24,6 +24,7 @@ body {
   border-right: 4px solid var(--primary-color);
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
   z-index: 1000;
+  overflow-x: hidden;
 }
 
 .sidebar.active {
