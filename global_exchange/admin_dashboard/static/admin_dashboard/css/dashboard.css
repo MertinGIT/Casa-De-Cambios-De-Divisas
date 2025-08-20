@@ -1,0 +1,158 @@
+body {
+  background-color: #f5f7fa;
+  font-family: "Segoe UI", sans-serif;
+}
+.dashboard-container {
+  padding: 20px;
+}
+.card {
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  text-align: center;
+  padding: 20px;
+  transition: transform 0.2s;
+}
+.card:hover {
+  transform: translateY(-5px);
+}
+.card h3 {
+  font-size: 1rem;
+  color: #666;
+}
+.card p {
+  font-size: 1.6rem;
+  font-weight: bold;
+  margin: 0;
+}
+.chart-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+  max-height: 500px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+.table-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  margin-top: 20px;
+  overflow-x: auto;
+}
+table th {
+  background-color: #007bff !important;
+  color: white;
+}
+/* Estados de transacciones */
+.estado {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 2px dashed;
+  border-radius: 8px;
+  font-weight: bold;
+}
+.estado-compra {
+  border-color: green;
+  color: green;
+}
+.estado-venta {
+  border-color: red;
+  color: red;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .card {
+    padding: 15px;
+    margin-bottom: 15px;
+  }
+
+  .card h3 {
+    font-size: 0.9rem;
+  }
+
+  .card p {
+    font-size: 1.2rem;
+  }
+
+  .chart-container {
+    padding: 15px;
+  }
+
+  .table-container {
+    padding: 10px;
+    overflow-x: auto; /* Para que la tabla se pueda scrollear en móvil */
+  }
+
+  table {
+    font-size: 0.9rem;
+  }
+
+  table th,
+  table td {
+    padding: 8px;
+  }
+}
+
+@media (max-width: 576px) {
+  h1 {
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .dashboard-container {
+    padding: 10px;
+  }
+
+  .row.g-4 {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .col-md-3 {
+    width: 100%;
+  }
+
+  .card {
+    margin-bottom: 12px;
+  }
+  table.table {
+    border: 0; /* quita bordes de tabla */
+  }
+
+  table thead {
+    display: none; /* oculta encabezado */
+  }
+
+  table tbody tr {
+    display: block;
+    margin-bottom: 15px;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+
+  table tbody td {
+    display: flex;
+    justify-content: space-between;
+    padding: 5px 0;
+    border: 0;
+  }
+
+  table tbody td::before {
+    content: attr(data-label); /* muestra la etiqueta de cada columna */
+    font-weight: bold;
+    flex: 1;
+    color: #555;
+  }
+
+  table tbody td span.estado {
+    margin-left: auto; /* mantén los badges de compra/venta alineados a la derecha */
+  }
+}

@@ -53,7 +53,6 @@ PASSWORD_RESET_TIMEOUT = 14400
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -61,6 +60,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'usuarios',
     'widget_tweaks',
+    'admin_dashboard',
 ]
 
 MIDDLEWARE = [

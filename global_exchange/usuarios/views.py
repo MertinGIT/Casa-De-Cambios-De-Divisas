@@ -35,7 +35,7 @@ def user_required(view_func):
         if request.user.is_authenticated:
             if request.user.is_superuser:
                 # Si es superadmin, lo redirige al panel de admin
-                return redirect('admin:index')
+                return redirect('admin_dashboard')
             else:
                 return view_func(request, *args, **kwargs)
         # Si no está logueado, redirige a login
@@ -87,7 +87,7 @@ def home(request):
 def signup(request):
     if request.user.is_authenticated:
         if request.user.is_superuser:
-            return redirect('admin:index')
+            return redirect('admin')
         else:
             return redirect('home')
     eslogan_lines = ["Empieza", "ahora."]
@@ -192,8 +192,7 @@ def activateEmail(request, user, to_email):
     email.content_subtype = 'html'
     email.send()
         
-    
-@user_required
+#cierra sesion tanto usuarios como admins
 def signout(request):
   logout(request)
   return redirect('pagina_aterrizaje')
@@ -202,7 +201,7 @@ def signin(request):
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
         if request.user.is_superuser:
-            return redirect('admin:index')
+            return redirect('admin_dashboard')
         else:
             return redirect('home')
 
@@ -233,7 +232,7 @@ def signin(request):
         else:
             login(request, user)
             if user.is_superuser:
-                return redirect('admin:index')
+                return redirect('admin_dashboard')
             else:
                 return redirect('home')
       
