@@ -295,19 +295,6 @@ def editarperfilDesing (request):
 
     return render(request, 'editarperfil.html', {'form': form,'user_fake': mock_user})
 """
-def crud_roles(request):
-    # Creamos un "rol" ficticio usando namedtuple
-    Rol = namedtuple('Rol', ['id', 'nombre', 'descripcion', 'permisos'])
-    
-    # Creamos datos de ejemplo
-    roles = [
-        Rol(id=1, nombre="Administrador", descripcion="Acceso total al sistema", permisos=["Crear", "Editar", "Eliminar"]),
-        Rol(id=2, nombre="Usuario", descripcion="Acceso limitado", permisos=["Ver"]),
-        Rol(id=3, nombre="Supervisor", descripcion="Acceso parcial", permisos=["Ver", "Editar"]),
-    ]
-    
-    # Pasamos los datos al template
-    return render(request, 'roles.html', {'roles': roles})
 
 
 def crud_empleados(request):
