@@ -13,9 +13,10 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path
-from usuarios import views
+# from django.contrib import admin
+from django.urls import path, include
+from usuarios import views as usuarios_views
+from roles_permisos import views as roles_views
 from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
 from django.shortcuts import render
@@ -24,26 +25,29 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     # Clientes
-    path('', views.pagina_aterrizaje, name='pagina_aterrizaje'),
-    path('home/', views.home, name='home'),
-    path('signup/', views.signup, name='signup'),
-    path('logout/', views.signout, name='signout'),
-    path('login/', views.signin, name='login'),
-    path('editarperfil/', views.editarPerfil, name='editarperfil'),
-    path('activate/<uidb64>/<token>/', views.activate, name='activate'),
-    
+    # path('admin/', admin.site.urls),
+    path('', usuarios_views.pagina_aterrizaje, name='pagina_aterrizaje'),
+    path('home/', usuarios_views.home, name='home'),
+    path('signup/', usuarios_views.signup, name='signup'),
+    path('logout/', usuarios_views.signout, name='signout'),
+    path('login/', usuarios_views.signin, name='login'),
+    path('editarperfil/', usuarios_views.editarPerfil, name='editarperfil'),
+    path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
+
     # Rutas solo para administradores
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
-    path('admin/empleados/', views.crud_empleados, name='empleados'),
-    path('admin/roles/', views.crud_roles, name='roles'),
+    path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
+    path('roles/', include('roles_permisos.urls')),
+    
 ]
+
 
 def custom_404_view(request, exception):
     return render(request, "404.html", status=404)
 
+
 handler404 = custom_404_view
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
-
-    
+    urlpatterns += static(settings.STATIC_URL,
+                          document_root=settings.STATICFILES_DIRS[0])
