@@ -1,0 +1,189 @@
+<!-- Modal Crear / Editar -->
+<div id="modal-accion" class="custom-modal">
+  <div class="custom-modal-content">
+    <form method="POST" id="form-accion">
+      {% csrf_token %}
+      <input type="hidden" name="cliente_id" id="cliente_id">
+
+      <div class="modal-header">
+        <h2 id="modal-title">Agregar Cliente</h2>
+        <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <label>Nombre</label>
+        <input type="text" name="nombre" class="search-input" required>
+
+        <label>Email</label>
+        <input type="email" name="email" class="search-input" required>
+
+        <label>Teléfono</label>
+        <input type="text" name="telefono" class="search-input">
+
+        <label>Segmentación</label>
+        <select name="segmentacion" class="search-input">
+          {% for s in segmentaciones %}
+            <option value="{{ s.id }}">{{ s.nombre }}</option>
+          {% endfor %}
+        </select>
+
+        <label>Estado</label>
+        <select name="estado" class="search-input">
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-confirmar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div id="modal-delete" class="custom-modal">
+  <div class="custom-modal-content">
+    <form method="POST" id="delete-form">
+      {% csrf_token %}
+      <input type="hidden" name="cliente_id" id="delete_cliente_id">
+      <p>¿Seguro que deseas eliminar al cliente <strong id="delete_cliente_nombre"></strong>?</p>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-confirmar">Eliminar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* ==== Modal estilo acorde a la página ==== */
+.custom-modal {
+  display: none; /* hidden por defecto */
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  background-color: rgba(0,0,0,0.4);
+  justify-content: center;
+  align-items: center;
+}
+
+.custom-modal-content {
+  background: #fff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  font-weight: bold;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.modal-body {
+  font-size: 14px;
+  color: #374151;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn-cancelar {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-cancelar:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-confirmar {
+  background-color: #5D5FEF;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btn-confirmar:hover {
+  background-color: #4f46e5;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0; transform: scale(0.9);}
+  to {opacity: 1; transform: scale(1);}
+}
+</style>
+
+<script>
+function openCreateModal() {
+  document.getElementById('modal-title').innerText = "Agregar Cliente";
+  document.getElementById('form-accion').reset();
+  document.getElementById('form-accion').action = "{% url 'clientes-agregar' %}";
+  document.getElementById('modal-accion').style.display = "flex";
+}
+
+function openEditModal(id, nombre, email, telefono, segmentacion, estado) {
+  document.getElementById('modal-title').innerText = "Editar Cliente";
+  document.getElementById('cliente_id').value = id;
+  document.querySelector('[name=nombre]').value = nombre;
+  document.querySelector('[name=email]').value = email;
+  document.querySelector('[name=telefono]').value = telefono;
+  document.querySelector('[name=segmentacion]').value = segmentacion;
+  document.querySelector('[name=estado]').value = estado;
+
+  document.getElementById('form-accion').action = `/clientes/editar/${id}/`;
+
+  document.getElementById('modal-accion').style.display = "flex";
+}
+
+function openDeleteModal(id, nombre) {
+  document.getElementById('delete_cliente_id').value = id;
+  document.getElementById('delete_cliente_nombre').innerText = nombre;
+  document.getElementById('delete-form').action = `/clientes/eliminar/${id}/`;
+
+  document.getElementById('modal-delete').style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById('modal-accion').style.display = "none";
+  document.getElementById('modal-delete').style.display = "none";
+}
+
+</script>
