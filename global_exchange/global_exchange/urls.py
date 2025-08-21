@@ -37,7 +37,7 @@ urlpatterns = [
     # Rutas solo para administradores
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
-    path('roles/', include('roles_permisos.urls')),
+    path('admin/roles/', include('roles_permisos.urls')),
     
 ]
 

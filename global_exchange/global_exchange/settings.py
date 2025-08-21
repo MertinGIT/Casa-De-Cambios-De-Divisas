@@ -61,7 +61,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'usuarios',
     'widget_tweaks',
-    'roles_permisos'
+    'roles_permisos',
     'admin_dashboard',
 ]
 
