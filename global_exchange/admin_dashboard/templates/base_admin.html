@@ -5,15 +5,13 @@
 
 <div class="layout-container">
     <!-- Sidebar -->
-    {% include 'sidebar.html' %}
+    {% include 'sidebar_admin.html' %}
 
-    {% include 'perfil_usuario.html' %}
+    {% include 'perfil_admin.html' %}
     <!-- Contenido principal -->
     <div class="dashboard-content">
         {% block dashboard_content %}
         <!-- Aquí va tu contenido principal, formularios, tablas, etc. -->
-        <h2>Contenido Principal</h2>
-        <p>Este bloque se ajustará automáticamente al ancho del sidebar.</p>
         {% endblock %}
     </div>
     
