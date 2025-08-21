@@ -1,6 +1,7 @@
-{% extends 'base.html' %}
+{% extends 'base_admin.html' %}
 {% load humanize %}
-{% block content %}
+{% block dashboard_content %}
+
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 body {
@@ -106,8 +107,19 @@ body {
 
 .btn-add {
   font-family: 'Poppins', sans-serif; 
-  background-color: #5D5FEF;
+  background-color: #152C70;
   color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+  background-color: #1a2f7a;
 }
 
 .table-container {
@@ -172,6 +184,37 @@ body {
 .status-inactivo {
   background-color: #FFC5C5;
   color: #DF0404;
+}
+
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  margin-right: 4px;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #5D5FEF;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
 }
 
 .pagination-wrapper {
@@ -263,8 +306,20 @@ body {
     gap: 16px;
   }
   
-  .search-input {
+  .header-right {
     width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .header-right form {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  .search-input {
+    width: 100% !important;
     max-width: none;
   }
   
@@ -281,6 +336,108 @@ body {
   .pagination-wrapper {
     flex-direction: column;
     gap: 16px;
+  }
+  
+  /* Mobile Table Responsiveness - Convert to Cards */
+  .table-container {
+    border: none;
+    border-radius: 0;
+  }
+  
+  .custom-table {
+    font-size: 13px;
+  }
+  
+  .custom-table thead {
+    display: none;
+  }
+  
+  .custom-table tbody tr {
+    display: block;
+    margin-bottom: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .custom-table tbody tr:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .custom-table tbody td {
+    display: block;
+    padding: 4px 0;
+    border: none;
+    text-align: left;
+  }
+  
+  .custom-table tbody td:before {
+    content: attr(data-label) ": ";
+    font-weight: 500;
+    color: #5D5FEF;
+    display: inline-block;
+    min-width: 100px;
+    margin-bottom: 2px;
+  }
+  
+  .custom-table tbody td:last-child {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .custom-table tbody td:last-child:before {
+    content: "Acciones: ";
+  }
+  
+  .btn {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-wrapper {
+    padding: 12px;
+  }
+  
+  .page-container {
+    padding: 16px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .custom-table tbody td:before {
+    min-width: 80px;
+    font-size: 12px;
+  }
+  
+  .custom-table tbody td {
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    font-size: 12px;
+    padding: 4px 12px;
+    min-width: 70px;
+  }
+  
+  .btn {
+    padding: 6px 8px;
+    font-size: 11px;
+    margin: 2px 2px 2px 0;
+  }
+  
+  .custom-pagination .page-link {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 32px;
   }
 }
 </style>
@@ -302,36 +459,33 @@ body {
           
           <span class="buscar-por-text">Buscar por</span>
           
-          <!-- Selector de mes -->
-        <select name="campo" class="search-field-selector">
-          <option value="">Buscar por</option>
-          <option value="nombre">Nombre</option>
-          <option value="email">Email</option>
-          <option value="telefono">Teléfono</option>
-          <option value="segmento">Segmento</option>
-        </select>
+          <!-- Selector de campo -->
+          <select name="campo" class="search-field-selector">
+            <option value="">Buscar por</option>
+            <option value="nombre">Nombre</option>
+            <option value="email">Email</option>
+            <option value="telefono">Teléfono</option>
+            <option value="segmento">Segmento</option>
+          </select>
         </form>
       </div>
-
     </div>
     
     <div class="filters-section">
       <form method="get" class="filters-row">
         <input name="q" value="{{ q }}" type="hidden">
         <input name="mes" value="{{ mes_selected }}" type="hidden">
-        
-
       </form>
     </div>
 
     <button onclick="openCreateModal()" 
-    class="btn-add rounded border-0 my-2">Agregar Cliente</button>
+      class="btn-add rounded border-0 my-2">+ Agregar Cliente</button>
+    
     <!-- Tabla -->
     <div class="table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th>Id</th>
             <th>Nombre</th>
             <th>Email</th>
             <th>Teléfono</th>
@@ -344,33 +498,32 @@ body {
         <tbody>
           {% for c in clientes %}
             <tr>
-              <td>#{{ c.id }}</td>
-              <td>{{ c.nombre }}</td>
-              <td>{{ c.email }}</td>
-              <td>{{ c.telefono|default:"—" }}</td>
-              <td>{{ c.segmentacion.nombre|default:"Sin segmento" }}</td>
-              <td>{{ c.segmentacion.descuento|default:"0" }}</td>
-              <td>{% if c.estado == 'activo' %}
-                    <span class="status-badge status-activo">Activo</span>
-                  {% else %}
-                    <span class="status-badge status-inactivo">Inactivo</span>
-                  {% endif %}
+              <td data-label="Nombre">{{ c.nombre }}</td>
+              <td data-label="Email">{{ c.email }}</td>
+              <td data-label="Teléfono">{{ c.telefono|default:"—" }}</td>
+              <td data-label="Segmento">{{ c.segmentacion.nombre|default:"Sin segmento" }}</td>
+              <td data-label="Descuento">{{ c.segmentacion.descuento|default:"0" }}%</td>
+              <td data-label="Estado">
+                {% if c.estado == 'activo' %}
+                  <span class="status-badge status-activo">Activo</span>
+                {% else %}
+                  <span class="status-badge status-inactivo">Inactivo</span>
+                {% endif %}
               </td>
-              <td>
-                 <button onclick="openEditModal('{{ c.id }}', '{{ c.nombre }}', '{{ c.email }}', '{{ c.telefono }}', '{{ c.segmentacion.id }}', '{{ c.estado }}')" 
+              <td data-label="Acciones">
+                <button onclick="openEditModal('{{ c.id }}', '{{ c.nombre }}', '{{ c.email }}', '{{ c.telefono }}', '{{ c.segmentacion.id }}', '{{ c.estado }}')" 
                   class="btn btn-sm btn-primary">
                   Editar
-                 </button>
-              <button onclick="openDeleteModal('{{ c.id }}', '{{ c.nombre }}')" 
-                class="btn btn-sm btn-danger">
-                Eliminar
-              </button>
-
+                </button>
+                <button onclick="openDeleteModal('{{ c.id }}', '{{ c.nombre }}')" 
+                  class="btn btn-sm btn-danger">
+                  Eliminar
+                </button>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="7" class="no-results">Sin resultados encontrados.</td>
+              <td colspan="8" class="no-results">Sin resultados encontrados.</td>
             </tr>
           {% endfor %}
         </tbody>
@@ -433,11 +586,8 @@ body {
       </nav>
     </div>
     {% endif %}
-
-  
   </div>
 </div>
 
 {% include "clientes/form.html" %}
 {% endblock %}
-

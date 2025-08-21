@@ -38,7 +38,7 @@ urlpatterns = [
     path('login/', usuarios_views.signin, name='login'),
     path('editarperfil/', usuarios_views.editarPerfil, name='editarperfil'),
     path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
-    path('clientes/', include('clientes.urls')), 
+    path('clientes/', include('clientes.urls'), name = 'clientes'), 
 
     # Rutas solo para administradores
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
