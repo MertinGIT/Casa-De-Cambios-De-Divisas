@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'usuarios',
     'widget_tweaks',
     'roles_permisos'
+    'admin_dashboard',
 ]
 
 MIDDLEWARE = [

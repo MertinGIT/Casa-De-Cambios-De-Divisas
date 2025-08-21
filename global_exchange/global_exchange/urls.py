@@ -17,6 +17,7 @@ Including another URLconf
 from django.urls import path, include
 from usuarios import views as usuarios_views
 from roles_permisos import views as roles_views
+from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
 from django.shortcuts import render
 from django.conf import settings
@@ -34,8 +35,10 @@ urlpatterns = [
     path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
 
     # Rutas solo para administradores
+    path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
     path('roles/', include('roles_permisos.urls')),
+    
 ]
 
 

@@ -26,7 +26,36 @@ from collections import namedtuple
 
 User = get_user_model()
 # Create your views here.
-@login_required #con esto protejemos las rutas
+from functools import wraps
+
+# Solo usuarios normales (no superadmin)
+def user_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_authenticated:
+            if request.user.is_superuser:
+                # Si es superadmin, lo redirige al panel de admin
+                return redirect('admin_dashboard')
+            else:
+                return view_func(request, *args, **kwargs)
+        # Si no está logueado, redirige a login
+        return redirect('login')
+    return _wrapped_view
+
+# Solo superadmin
+def superadmin_required(view_func):
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if request.user.is_authenticated:
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            else:
+                # Usuario normal no tiene acceso
+                return redirect('home')
+        return redirect('login')
+    return _wrapped_view
+
+@user_required #con esto protejemos las rutas
 def home(request):
     cotizaciones = [
         {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
@@ -58,7 +87,7 @@ def home(request):
 def signup(request):
     if request.user.is_authenticated:
         if request.user.is_superuser:
-            return redirect('admin:index')
+            return redirect('admin')
         else:
             return redirect('home')
     eslogan_lines = ["Empieza", "ahora."]
@@ -163,8 +192,7 @@ def activateEmail(request, user, to_email):
     email.content_subtype = 'html'
     email.send()
         
-    
-@login_required
+#cierra sesion tanto usuarios como admins
 def signout(request):
   logout(request)
   return redirect('pagina_aterrizaje')
@@ -173,7 +201,7 @@ def signin(request):
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
         if request.user.is_superuser:
-            return redirect('admin:index')
+            return redirect('admin_dashboard')
         else:
             return redirect('home')
 
@@ -204,7 +232,7 @@ def signin(request):
         else:
             login(request, user)
             if user.is_superuser:
-                return redirect('admin:index')
+                return redirect('admin_dashboard')
             else:
                 return redirect('home')
       
@@ -238,7 +266,7 @@ def pagina_aterrizaje(request):
 def error_404_view(request, exception):
     return render(request, '404.html', status=404)
 
-#@login_required
+@user_required
 def editarPerfil(request):
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
