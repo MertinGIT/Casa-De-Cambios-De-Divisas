@@ -14,6 +14,6 @@ class Cliente(models.Model):
     email = models.EmailField(unique=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     segmentacion = models.ForeignKey(Segmentacion, on_delete=models.PROTECT)
-
+    estado = models.CharField(max_length=10, default='activo')
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
