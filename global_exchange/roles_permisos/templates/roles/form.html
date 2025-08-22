@@ -1,0 +1,234 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'roles_permisos/css/components.css' %}">
+<div id="modal-accion" class="custom-modal" {% if show_modal %}style="display: flex;" {% endif %}>
+  <div class="custom-modal-content">
+    <form method="POST" id="form-accion">
+      {% csrf_token %}
+      <input type="hidden" name="rol_id" id="rol_id">
+
+      <div class="modal-header">
+        <h2 id="modal-title">
+          {% if modal_type == 'edit' %}Editar Rol{% else %}Agregar Rol{% endif %}
+        </h2>
+        <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" id="form-fields-container">
+        <div class="form-group" style="gap: 5px">
+          <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+          {{ form.nombre }}
+          {% if form.nombre.errors %}
+          <div class="error-messages">
+            {% for error in form.nombre.errors %}
+            <span class="error-text">{{ error }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+          {{ form.descripcion }}
+          {% if form.descripcion.errors %}
+          <div class="error-messages">
+            {% for error in form.descripcion.errors %}
+            <span class="error-text">{{ error }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.permisos.id_for_label }}">{{ form.permisos.label }}</label>
+          <div class="d-flex flex-wrap gap-2">
+            {% for checkbox in form.permisos %}
+            <input type="checkbox" class="btn-check" id="permiso{{ forloop.counter }}" name="{{ checkbox.data.name }}"
+              value="{{ checkbox.data.value }}" {% if checkbox.data.selected %}checked{% endif %}>
+            <label class="btn custom-btn" for="permiso{{ forloop.counter }}">
+              {{ checkbox.choice_label }}
+            </label>
+            {% endfor %}
+          </div>
+          {% if form.permisos.errors %}
+          <div class="error-messages">
+            {% for error in form.permisos.errors %}
+            <span class="error-text">{{ error }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-confirmar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div id="modal-delete" class="custom-modal">
+  <div class="custom-modal-content">
+    <form method="POST" id="delete-form">
+      {% csrf_token %}
+      <input type="hidden" name="rol_id" id="delete_rol_id">
+      <p>¿Seguro que deseas eliminar este rol?</p>
+
+      <div class="modal-footer">
+        <button type="submit" class="btn-confirmar">Eliminar</button>
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  /* ==== Modal estilo acorde a la página ==== */
+  .custom-modal {
+    display: none;
+    /* hidden por defecto */
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
+  }
+
+  .custom-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    font-weight: bold;
+    color: #6b7280;
+    cursor: pointer;
+  }
+
+  .modal-body {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .btn-cancelar {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-cancelar:hover {
+    background-color: #e5e7eb;
+  }
+
+  .btn-confirmar {
+    background-color: #5D5FEF;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-confirmar:hover {
+    background-color: #4f46e5;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+</style>
+
+<script>
+  function openCreateModal() {
+    document.getElementById('modal-title').innerText = "Agregar Rol";
+    document.getElementById('form-accion').action = "{% url 'rol_nuevo' %}";
+
+    document.getElementById('form-accion').reset();
+
+    clearFormErrors();
+
+    document.getElementById('modal-accion').style.display = "flex";
+  }
+
+  function openEditModal(id, nombre, descripcion) {
+    document.getElementById('modal-title').innerText = "Editar Rol";
+    document.getElementById('rol_id').value = id;
+    document.getElementById('form-accion').action = "{% url 'rol_editar' 0 %}".replace("0", id);
+
+    fetch("{% url 'rol_detalle' 0 %}".replace("0", id))
+      .then(response => response.json())
+      .then(data => {
+        document.getElementById('form-fields-container').innerHTML = data.form_html;
+        document.getElementById('modal-accion').style.display = "flex";
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('id_nombre').value = nombre;
+        document.getElementById('id_descripcion').value = descripcion;
+        document.getElementById('modal-accion').style.display = "flex";
+      });
+  }
+  function clearFormErrors() {
+    const errorMessages = document.querySelectorAll('.error-messages');
+    errorMessages.forEach(error => error.remove());
+  }
+
+  function openDeleteModal(id, nombre) {
+    document.getElementById('delete_rol_id').value = id;
+    document.getElementById('delete-form').action = "{% url 'rol_eliminar' 0 %}".replace("0", id);
+
+    document.getElementById('modal-delete').style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById('modal-accion').style.display = "none";
+    document.getElementById('modal-delete').style.display = "none";
+  }
+
+</script>
