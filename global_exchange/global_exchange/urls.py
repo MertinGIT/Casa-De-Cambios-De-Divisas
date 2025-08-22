@@ -25,6 +25,7 @@ from django.conf.urls import handler404
 from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
+from asignar_clientes_usuarios import views as asignar_clientes_views
 
 urlpatterns = [
 
@@ -43,8 +44,8 @@ urlpatterns = [
     # Rutas solo para administradores
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
-    path('admin/roles/', include('roles_permisos.urls')),
-    
+    path('admin/roles/', include('roles_permisos.urls'), name='roles'),
+    path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
 ]
 
 
