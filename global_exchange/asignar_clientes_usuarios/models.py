@@ -14,6 +14,7 @@ class Usuario_Rol_Cliente(models.Model):
         on_delete=models.CASCADE,
         related_name="clientes"
     )
+    
 
     class Meta:
         db_table = "usuario_rol_cliente"  # Nombre de tabla en la BD

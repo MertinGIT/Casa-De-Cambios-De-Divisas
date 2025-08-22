@@ -109,7 +109,7 @@ def signup(request):
               user = form.save(commit=False)
               user.is_active = False
               # Asignamos el rol 'usuario'
-              rol_usuario = Rol.objects.get(nombre="usuario")
+              rol_usuario = Rol.objects.get(id=1)
               user.rol = rol_usuario
               user.save()
               print(user, flush=True)

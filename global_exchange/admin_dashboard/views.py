@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 from django.shortcuts import render, redirect
 from functools import wraps
-=======
-from functools import wraps
-from django.shortcuts import render, get_object_or_404, redirect
->>>>>>> 6153e52de51997660bde5daa93774dd53c1189f9
 
 # Create your views here.
 
@@ -21,12 +16,7 @@ def superadmin_required(view_func):
         return redirect('login')
     return _wrapped_view
 
-<<<<<<< HEAD
-
-@superadmin_required 
-=======
 @superadmin_required
->>>>>>> 6153e52de51997660bde5daa93774dd53c1189f9
 def admin_dashboard(request):
     """
     Render the admin dashboard page.

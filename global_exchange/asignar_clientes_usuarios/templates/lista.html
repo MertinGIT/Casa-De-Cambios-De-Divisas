@@ -445,7 +445,7 @@ body {
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
-      <h1 class="page-title">Asignar Clientes a Usuarios</h1>
+      <h1 class="page-title">Usuarios</h1>
       <div class="header-right">
         <form method="get" style="display: flex; align-items: center; gap: 12px;">
           <input name="seg" value="{{ seg_selected }}" type="hidden">
@@ -497,7 +497,7 @@ body {
       <tr>
         <td data-label="Usuario">{{ urc.id_usuario.username }}</td>
         <td data-label="Cliente">{{ urc.id_cliente.nombre }}</td>
-        <td data-label="Rol">{{ urc.id_usuario.rol.nombre }}</td>
+        <td data-label="Rol">{{ urc.id_usuario.rol.nombre|default:"No posee rol" }}</td>
         <td data-label="Acciones">
             <button onclick="openEditModal('{{ urc.id }}', '{{ urc.id_usuario.id }}', '{{ urc.id_cliente.id }}')" 
                 class="btn btn-sm btn-primary">Editar</button>
