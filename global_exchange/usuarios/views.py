@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import login,logout,authenticate
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
+from roles_permisos.models import Rol
 from .forms import CustomUserCreationForm
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
@@ -103,24 +104,24 @@ def signup(request):
        
         if form.is_valid():
           try:
-              
               print("entro en try", flush=True)
               # Guardar usuario inactivo
               user = form.save(commit=False)
               user.is_active = False
+              # Asignamos el rol 'usuario'
+              rol_usuario = Rol.objects.get(nombre="usuario")
+              user.rol = rol_usuario
               user.save()
               print(user, flush=True)
               activateEmail(request, user, user.email)
               return render(request, 'registrarse.html', {
                       'form': form,
                       'messages': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
-                      'error': 'El usuario ya existe',
                       'eslogan_lines': eslogan_lines,
                       'eslogan_spans': eslogan_spans,
                       'submit_text': "Registrarse",
                       'active_tab': "register"
                   })
-              
           except Exception as e:
               print("Error al guardar usuario:", e, flush=True)
               return render(request, 'registrarse.html', {
