@@ -25,7 +25,7 @@
           {% endfor %}
         </select>
         <label for="rol">Rol del Usuario</label>
-        <select name="rol" id="rol" class="search-field-selector">
+        <select name="rol" id="rol" class="search-input">
           <option value="">No posee rol</option>
           {% for rol in roles %}
           {% if urc.id_usuario.rol_id %}
@@ -162,11 +162,12 @@
     document.getElementById('modal-usuario-rol').style.display = "flex";
   }
 
-  function openEditModal(id, usuarioId, clienteId) {
+  function openEditModal(id, usuarioId, clienteId, rolId) {
     document.getElementById('modal-usuario-rol-title').innerText = "Editar Asignación";
     document.getElementById('usuario_rol_id').value = id;
     document.querySelector('[name=usuario]').value = usuarioId;
     document.querySelector('[name=cliente]').value = clienteId;
+    document.querySelector('[name=rol]').value = rolId;
 
     // Genera la URL correcta usando el nombre de la URL de Django
     document.getElementById('form-usuario-rol').action = "{% url 'usuario_rol_editar' 0 %}".replace('/0/', '/' + id + '/');

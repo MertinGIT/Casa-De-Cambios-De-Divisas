@@ -479,7 +479,7 @@ body {
     </div>
 
     <button onclick="openCreateModal()" 
-      class="btn-add rounded border-0 my-2">+ Asignar nuevo cliente</button>
+      class="btn-add rounded border-0 my-2">+ Asignar</button>
     
     <!-- Tabla -->
 <div class="table-container">
@@ -499,7 +499,7 @@ body {
         <td data-label="Cliente">{{ urc.id_cliente.nombre }}</td>
         <td data-label="Rol">{{ urc.id_usuario.rol.nombre|default:"No posee rol" }}</td>
         <td data-label="Acciones">
-            <button onclick="openEditModal('{{ urc.id }}', '{{ urc.id_usuario.id }}', '{{ urc.id_cliente.id }}')" 
+            <button onclick="openEditModal('{{ urc.id }}', '{{ urc.id_usuario.id }}', '{{ urc.id_cliente.id }}', '{{ urc.id_usuario.rol.id }}')" 
                 class="btn btn-sm btn-primary">Editar</button>
             <button onclick="openDeleteModal('{{ urc.id }}', '{{ urc.id_usuario.username }}')" 
                 class="btn btn-sm btn-danger">Eliminar</button>
