@@ -1,0 +1,46 @@
+{% comment %}
+Campos del formulario de rol para renderizar vía AJAX en el modal de edición
+{% endcomment %}
+<div class="form-group" style="gap: 5px">
+  <label for="{{ form.nombre.id_for_label }}">{{ form.nombre.label }}</label>
+  {{ form.nombre }}
+  {% if form.nombre.errors %}
+  <div class="error-messages">
+    {% for error in form.nombre.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.descripcion.id_for_label }}">{{ form.descripcion.label }}</label>
+  {{ form.descripcion }}
+  {% if form.descripcion.errors %}
+  <div class="error-messages">
+    {% for error in form.descripcion.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.permisos.id_for_label }}">{{ form.permisos.label }}</label>
+  <div class="d-flex flex-wrap gap-2">
+    {% for checkbox in form.permisos %}
+    <input type="checkbox" class="btn-check" id="permiso{{ forloop.counter }}" name="{{ checkbox.data.name }}"
+      value="{{ checkbox.data.value }}" {% if checkbox.data.selected %}checked{% endif %}>
+    <label class="btn custom-btn" for="permiso{{ forloop.counter }}">
+      {{ checkbox.choice_label }}
+    </label>
+    {% endfor %}
+  </div>
+  {% if form.permisos.errors %}
+  <div class="error-messages">
+    {% for error in form.permisos.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
