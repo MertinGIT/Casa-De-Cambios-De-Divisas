@@ -6,3 +6,6 @@ django-environ
 psycopg2-binary
 six
 django-widget-tweaks
+sphinx
+sphinx-rtd-theme
+

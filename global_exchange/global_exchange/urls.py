@@ -26,6 +26,7 @@ from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
 from asignar_clientes_usuarios import views as asignar_clientes_views
+from django.views.generic import TemplateView
 
 urlpatterns = [
 
@@ -46,6 +47,7 @@ urlpatterns = [
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
     path('admin/roles/', include('roles_permisos.urls'), name='roles'),
     path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
+    path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
 ]
 
 

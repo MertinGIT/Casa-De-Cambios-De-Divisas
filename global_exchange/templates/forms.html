@@ -1,0 +1,138 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'css/components.css' %}">
+
+<!-- Modal Genérico -->
+<div id="custom-modal" class="custom-modal" style="display: none;">
+  <div class="custom-modal-content">
+
+    <form method="POST" id="generic-form">
+      {% csrf_token %}
+      
+      <div class="modal-header">
+        <h2 id="modal-title">Añadir</h2>
+        <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+
+      <!-- Aquí se renderizan dinámicamente los campos -->
+      <div class="modal-body" id="modal-form-fields">
+        <!-- Inputs dinámicos segun el módulo -->
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-confirmar">Añadir</button>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<style>
+  /* ==== Modal Genérico ==== */
+  .custom-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
+  }
+
+  .custom-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    font-weight: bold;
+    color: #6b7280;
+    cursor: pointer;
+  }
+
+  .modal-body {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .btn-cancelar {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-cancelar:hover {
+    background-color: #e5e7eb;
+  }
+
+  .btn-confirmar {
+    background-color: #5D5FEF;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-confirmar:hover {
+    background-color: #4f46e5;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+</style>
+
+<script>
+  // Abrir modal (reutilizable)
+  function openModal(title = "Añadir", actionUrl = "#", fieldsHtml = "") {
+    document.getElementById('modal-title').innerText = title;
+    document.getElementById('generic-form').action = actionUrl;
+    document.getElementById('modal-form-fields').innerHTML = fieldsHtml;
+    document.getElementById('custom-modal').style.display = "flex";
+  }
+
+  // Cerrar modal
+  function closeModal() {
+    document.getElementById('custom-modal').style.display = "none";
+  }
+</script>
