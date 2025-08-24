@@ -59,7 +59,7 @@ ENV/
 env/
 env.bak/
 venv.bak/
-
+docker-compose.yml
 # IDEs
 .vscode/
 .idea/
