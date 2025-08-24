@@ -45,6 +45,13 @@ def user_required(view_func):
 
 # Solo superadmin
 def superadmin_required(view_func):
+    """
+    Decorador que limita el acceso únicamente a usuarios superadministradores.
+
+    - Si el usuario no está autenticado, se lo redirige a ``login``.
+    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
+    - Si el usuario es superadmin, se ejecuta la vista original.
+    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -58,6 +65,12 @@ def superadmin_required(view_func):
 
 @user_required #con esto protejemos las rutas
 def home(request):
+    """
+    Vista principal para usuarios normales.
+
+    Muestra las cotizaciones de distintas monedas y los datos del usuario
+    autenticado en el contexto del template `home.html`.
+    """
     cotizaciones = [
         {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
         {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
@@ -86,6 +99,13 @@ def home(request):
     return render(request,'home.html',context)
 
 def signup(request):
+    """
+    Vista para registrar nuevos usuarios.
+
+    - GET: Muestra el formulario de registro.
+    - POST: Valida el formulario, crea un usuario inactivo, asigna el rol 'usuario'
+      y envía un correo de activación.
+    """
     if request.user.is_authenticated:
         if request.user.is_superuser:
             return redirect('admin')
@@ -95,13 +115,11 @@ def signup(request):
     eslogan_spans = ["!Comienza", "ya!"]
     subtitle = "Crea tu cuenta y empieza ahora."
     
-    print("Correo de confirmación enviado1", flush=True)
+    print("Fuera del POST", flush=True)
    
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
-        print("Correo de confirmación enviado2", flush=True)
-        
-       
+        print("Entra en POST", flush=True)
         if form.is_valid():
           try:
               print("entro en try", flush=True)
@@ -155,6 +173,20 @@ def signup(request):
           })
 
 def activate(request, uidb64, token):
+  """
+    **activate(request, uidb64, token)**: Activa la cuenta de un usuario a través del enlace de activación enviado por email.
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+        - uidb64: UID del usuario codificado en base64.
+        - token: token de activación generado para el usuario.
+
+    - **Funcionamiento**:
+        - Decodifica el UID y busca el usuario correspondiente.
+        - Verifica que el token sea válido.
+        - Si es válido, activa al usuario y redirige al login.
+        - Si no es válido, redirige a la página principal.
+    """
   print('Activando cuenta', flush=True)
   try:
       print("Intentando activar cuenta", flush=True)
@@ -180,6 +212,20 @@ def activate(request, uidb64, token):
 
 
 def activateEmail(request, user, to_email):
+    """
+    **activateEmail(request, user, to_email)**  
+    Envía un correo electrónico de activación al usuario recién registrado.
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+        - user: instancia del usuario a activar.
+        - to_email: dirección de correo electrónico del destinatario.
+
+    - **Funcionamiento**:
+        - Renderiza el template `email_confirm.html`.
+        - Genera el token de activación.
+        - Envía el email en formato HTML.
+    """
     mail_subject = 'Activate your user account.'
     message = render_to_string('email_confirm.html', {
         'user': user,
@@ -195,10 +241,29 @@ def activateEmail(request, user, to_email):
         
 #cierra sesion tanto usuarios como admins
 def signout(request):
+  """
+    **signout(request)**: Cierra la sesión del usuario y lo redirige a la página de aterrizaje.
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+    """
   logout(request)
   return redirect('pagina_aterrizaje')
 
 def signin(request):
+    """
+    **signin(request)**  
+    Maneja el inicio de sesión de usuarios y superadmins.
+
+    - **GET**: Muestra el formulario de login.
+    - **POST**: Autentica al usuario con `username` y `password`.
+        - Si las credenciales son correctas:
+            - Redirige a `admin_dashboard` si es superadmin.
+            - Redirige a `home` si es usuario normal.
+        - Si las credenciales son incorrectas, vuelve a mostrar el formulario con mensaje de error.
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+    """
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
         if request.user.is_superuser:
@@ -238,6 +303,19 @@ def signin(request):
                 return redirect('home')
       
 def pagina_aterrizaje(request):
+  """
+    **pagina_aterrizaje(request)**  
+    Renderiza la página principal de aterrizaje mostrando cotizaciones y datos de ejemplo por moneda.
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+
+    - **Funcionamiento**:
+        - Define una lista de cotizaciones de monedas con compra, venta y logo.
+        - Define datos históricos de ejemplo por moneda en `data_por_moneda`.
+        - Convierte `data_por_moneda` a JSON y lo pasa al contexto.
+        - Renderiza el template `pagina_aterrizaje.html` con el contexto.
+    """
   cotizaciones = [
         {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
         {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
@@ -265,10 +343,38 @@ def pagina_aterrizaje(request):
   return render(request, 'pagina_aterrizaje.html',context)
 
 def error_404_view(request, exception):
+    """
+    **error_404_view(request, exception)**  
+    Muestra una página personalizada cuando se produce un error 404 (página no encontrada).
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+        - exception: objeto de excepción.
+    
+    - **Funcionamiento**:
+        Renderiza el template `404.html` con código de estado 404.
+    """
     return render(request, '404.html', status=404)
 
 @user_required
 def editarPerfil(request):
+    """
+    **editarPerfil(request)**  
+    Permite a un usuario autenticado editar su perfil.
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+
+    - **Funcionamiento**:
+        - Limpia mensajes previos.
+        - Si el método es POST:
+            - Guarda cambios si `action` es 'guardar' y el formulario es válido.
+            - Mantiene la sesión activa si cambia contraseña.
+            - Devuelve mensajes de error si el formulario no es válido.
+        - Si el método es GET:
+            - Crea un formulario con los datos actuales del usuario.
+        - Renderiza `editarperfil.html` con el formulario y mensajes.
+    """
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
     
@@ -284,6 +390,7 @@ def editarPerfil(request):
                 return render(request, 'editarperfil.html', {'form': form, 'messages': "Perfil actualizado correctamente."} )
             else:
                 return render(request, 'editarperfil.html', {'form': form, 'messages': "Corrige los errores en el formulario."} )
+        """
         # Eliminar cuenta
         elif action == 'eliminar':
             password = request.POST.get('password_actual')
@@ -295,6 +402,7 @@ def editarPerfil(request):
                 request.user.delete()
                 logout(request)
                 return render(request, 'pagina_aterrizaje.html', {'form': form, 'messages': "Tu cuenta ha sido eliminada correctamente."} )
+        """
     else:
         form = CustomUserChangeForm(instance=request.user)
 
@@ -327,6 +435,18 @@ def editarperfilDesing (request):
 
 
 def crud_empleados(request):
+    """
+    **crud_empleados(request)**  
+    Muestra un ejemplo de gestión de empleados con datos ficticios.
+
+    - **Parámetros**:
+        - request: objeto HttpRequest.
+
+    - **Funcionamiento**:
+        - Crea un namedtuple `Empleado` para simular un modelo de empleado.
+        - Define una lista de empleados de ejemplo con id, nombre, cédula, email y cargo.
+        - Renderiza `empleados.html` pasando los empleados al template.
+    """
     # Creamos un "Empleado" ficticio usando namedtuple
     Empleado = namedtuple('Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
     

@@ -10,7 +10,27 @@ from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
 User = get_user_model()
+
 class CustomUserCreationForm(UserCreationForm):
+    """
+    Formulario personalizado para la creación de usuarios.
+
+    Extiende de :class:`django.contrib.auth.forms.UserCreationForm` y agrega
+    validaciones extra como la unicidad del email y mensajes personalizados
+    para la contraseña.
+
+    Campos:
+        - **username** (*CharField*): Nombre de usuario obligatorio.
+        - **email** (*EmailField*): Correo electrónico único y obligatorio.
+        - **cedula** (*CharField*): Documento de identidad obligatorio.
+        - **password1** (*CharField*): Contraseña.
+        - **password2** (*CharField*): Confirmación de contraseña.
+
+    Métodos:
+        - **clean_email()**: Verifica que el email no esté registrado.
+        - **clean_password1()**: Valida la contraseña según las políticas de Django y traduce los mensajes de error al español.
+        - **save(commit=True)**: Guarda el usuario incluyendo la cédula.
+    """
     username = forms.CharField(
         max_length=150,
         required=True,
@@ -28,39 +48,60 @@ class CustomUserCreationForm(UserCreationForm):
     password1 = forms.CharField(
         label="Password",
         strip=False,
-        widget=forms.PasswordInput(attrs={'placeholder': ' '}),
-        help_text="Your password must contain at least 8 characters. Your password can’t be entirely numeric."
+        widget=forms.PasswordInput(attrs={'placeholder': ' '})
     )
     password2 = forms.CharField(
         label="Password confirmation",
         strip=False,
-        widget=forms.PasswordInput(attrs={'placeholder': ' '}),
-        help_text="Enter the same password as before, for verification."
+        widget=forms.PasswordInput(attrs={'placeholder': ' '})
     )
 
-    class Meta:
-        model = User
-        fields = ('username', 'email', 'cedula', 'password1', 'password2')
-
-
     def clean_email(self):
+        """
+        Verifica si el email ingresado ya existe en la base de datos.
+
+        :raises ValidationError: Si el email ya está registrado.
+        :return: Email validado.
+        :rtype: str
+        """
         email = self.cleaned_data.get('email')
         if User.objects.filter(email=email).exists():
             self.add_error('email', "Este email ya está registrado.")
         return email
     
     def clean_password1(self):
+        """
+        Valida la contraseña ingresada de acuerdo con las reglas de seguridad.
+
+        Reemplaza los mensajes por versiones en español más claras.
+
+        :return: Contraseña validada.
+        :rtype: str
+        """
         password1 = self.cleaned_data.get("password1")
         try:
             validate_password(password1, self.instance)
         except ValidationError as e:
             # Filtramos los mensajes para que solo aparezcan los que queremos
-            messages = [msg for msg in e.messages if "at least 8 characters" in msg or "entirely numeric" in msg]
+            messages = []
+            for msg in e.messages:
+                if "at least 8 characters" in msg:
+                    messages.append("La contraseña debe tener al menos 8 caracteres.")
+                elif "entirely numeric" in msg:
+                    messages.append("La contraseña no puede ser solo números.")
             if messages:
                self.add_error('password1', messages)
         return password1
         
     def save(self, commit=True):
+        """
+        Guarda el usuario en la base de datos.
+
+        :param commit: Si es True, guarda el usuario inmediatamente.
+        :type commit: bool
+        :return: Instancia del usuario creado.
+        :rtype: User
+        """
         user = super().save(commit=False)
         # Guardamos el cedula
         user.cedula = self.cleaned_data.get('cedula')
@@ -68,8 +109,34 @@ class CustomUserCreationForm(UserCreationForm):
             user.save()
         return user
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].error_messages['required'] = 'Debes ingresar un nombre de usuario.'
+        self.fields['email'].error_messages['required'] = 'Debes ingresar un email.'
+        self.fields['cedula'].error_messages['required'] = 'Debes ingresar la cédula.'
+    class Meta:
+            model = User
+            fields = ('username', 'email', 'cedula', 'password1', 'password2')
+
 
 class CustomUserChangeForm(UserChangeForm):
+    """
+    Formulario personalizado para la actualización de datos de usuario.
+
+    Extiende de :class:`django.contrib.auth.forms.UserChangeForm` y permite
+    cambiar datos básicos del usuario y su contraseña.
+
+    Campos adicionales:
+        - **password_actual** (*CharField*): Contraseña actual para validación.
+        - **password_nuevo** (*CharField*): Nueva contraseña.
+        - **password_confirmacion** (*CharField*): Confirmación de la nueva contraseña.
+        - **cedula** (*CharField*): Documento de identidad obligatorio.
+        - **email** (*CharField*): Correo electrónico, solo lectura.
+
+    **Métodos:**
+        - **clean()**: Verifica que las contraseñas sean correctas y coincidan.
+        - **save(commit=True)**: Actualiza la información del usuario y cambia la contraseña si fue ingresada.
+    """
     password_actual = forms.CharField(
         label="Contraseña actual",
         widget=forms.PasswordInput,
@@ -92,6 +159,13 @@ class CustomUserChangeForm(UserChangeForm):
         required=True,
         max_length=20  
     )
+
+    email = forms.CharField(
+        label="email",
+        required=True,
+        max_length=40  
+    )
+ 
  
     class Meta:
         model = User
@@ -103,6 +177,17 @@ class CustomUserChangeForm(UserChangeForm):
         self.fields['email'].disabled = True
 
     def clean(self):
+        """
+        Realiza las validaciones personalizadas del formulario.
+
+        - Comprueba que la contraseña actual sea correcta.
+        - Valida la seguridad de la nueva contraseña.
+        - Verifica que la nueva contraseña y su confirmación coincidan.
+
+        :raises ValidationError: Si alguna validación falla.
+        :return: Datos validados del formulario.
+        :rtype: dict
+        """
         cleaned_data = super().clean()
         password_actual = cleaned_data.get('password_actual')
         password_nuevo = cleaned_data.get('password_nuevo')
@@ -119,7 +204,7 @@ class CustomUserChangeForm(UserChangeForm):
             except ValidationError as e:
                 mensajes_filtrados = [
                     msg for msg in e.messages
-                    if "at least 8 characters" in msg or "entirely numeric" in msg
+                    if "al menos 8 caracteres" in msg or "totalmente numérico" in msg
                 ]
                 if mensajes_filtrados:
                     self.add_error('password_nuevo', mensajes_filtrados)
@@ -133,6 +218,14 @@ class CustomUserChangeForm(UserChangeForm):
         return cleaned_data
 
     def save(self, commit=True):
+        """
+        Guarda los cambios del usuario en la base de datos.1
+
+        :param commit: Si es True, guarda el usuario inmediatamente.
+        :type commit: bool
+        :return: Instancia del usuario actualizado.
+        :rtype: User
+        """
         user = super().save(commit=False)
         password_nuevo = self.cleaned_data.get('password_nuevo')
         if password_nuevo:
