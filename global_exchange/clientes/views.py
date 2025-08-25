@@ -51,7 +51,7 @@ class ClienteListView(ListView):
 class ClienteCreateView(CreateView):
     model = Cliente
     form_class = ClienteForm
-    template_name = 'clientes/lista.html'  # ⚡ aquí usamos la lista
+    template_name = 'clientes/lista.html'  # Template para el modal o formulario
     success_url = reverse_lazy('clientes')
 
     def get_context_data(self, **kwargs):
@@ -61,7 +61,9 @@ class ClienteCreateView(CreateView):
         context["modal_title"] = "Agregar Cliente"
         context["form_action"] = reverse_lazy('clientesAgregar')
         return context
-
+    def form_valid(self, form):
+        form.instance.estado = 'activo'  # valor por default al guardar
+        return super().form_valid(form)
 
 
 @method_decorator(superadmin_required, name='dispatch')
@@ -75,7 +77,6 @@ class ClienteUpdateView(UpdateView):
         context = super().get_context_data(**kwargs)
         context["segmentaciones"] = Segmentacion.objects.all()
         return context
-
 
 @method_decorator(superadmin_required, name='dispatch')
 class ClienteDeleteView(DeleteView):
@@ -93,6 +94,6 @@ def cliente_detalle(request, pk):
         "nombre": cliente.nombre,
         "email": cliente.email,
         "telefono": cliente.telefono,
-        "segmentacion": cliente.segmentacion_id,
+        "segmentacion": cliente.segmentacion.id,
         "estado": cliente.estado,
     })

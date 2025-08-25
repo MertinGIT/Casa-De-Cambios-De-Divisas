@@ -478,8 +478,13 @@ body {
       </form>
     </div>
 
-    <button onclick="openCreateModal('{% url 'clientesAgregar' %}')" 
-      class="btn-add rounded border-0 my-2">+ Agregar Cliente</button>
+<button class="btn-add rounded border-0 my-2"
+        data-url="{% url 'clientesAgregar' %}"
+        onclick="openCreateModal(this.dataset.url)">
+  Agregar Cliente
+</button>
+
+
     
     <!-- Tabla -->
     <div class="table-container">
@@ -512,15 +517,15 @@ body {
               </td>
               <td data-label="Acciones">
                 <button class="btn-edit btn btn-sm btn-primary"
-        data-id="{{ cliente.id }}"
-        data-edit="{% url 'cliente_editar' 0 %}"
-        data-detalle="{% url 'cliente_detalle' cliente.id %}">
+        data-id="{{ c.id }}"
+        data-edit="{% url 'clientes-editar' 0 %}"
+        data-detalle="{% url 'clientes-detalle' c.id %}">
   Editar
 </button>
 
 <button class="btn-delete btn btn-sm btn-danger"
-        data-id="{{ cliente.id }}"
-        data-delete="{% url 'cliente_eliminar' 0 %}">
+        data-id="{{ c.id }}"
+        data-delete="{% url 'clientes-eliminar' 0 %}">
   Eliminar
 </button>
 

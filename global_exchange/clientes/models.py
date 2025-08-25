@@ -9,6 +9,9 @@ class Segmentacion(models.Model):
         help_text="Descuento en porcentaje para este tipo de cliente"
     )
     
+    def __str__(self):
+        return self.nombre
+    
 class Cliente(models.Model):
     nombre = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
