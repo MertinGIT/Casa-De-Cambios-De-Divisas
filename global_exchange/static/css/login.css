@@ -42,16 +42,38 @@
 }
 
 .text-inicio {
-  font-size: 1rem;
-  display: flex;
-  justify-content: center;
+  font-size: 1.4rem;              /* más grande */
+  font-weight: 600;               /* negrita */
+  text-align: center;
+  color: #6c63ff;                 /* color principal */
+  background: linear-gradient(90deg, #6c63ff, #a17cff); /* degradado bonito */
+  -webkit-background-clip: text;  /* para aplicar degradado al texto */
+  -webkit-text-fill-color: transparent;
+  line-height: 1.5;
   padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+.text-inicio span {
+  color: #ff6363; /* resalta una palabra diferente */
+  font-weight: 700;
 }
 
 .text-error {
-  color: #6c63ff; /* v.colorPrincipal */
+  font-size: 1.1rem;                   /* tamaño legible */
+  font-weight: 600;                     /* un poco más de énfasis */
   text-align: center;
-  font-size: 1.1rem;
+  color: #6c63ff;                       /* color principal */
+  background: linear-gradient(90deg, #6c63ff, #a17cff); /* degradado bonito */
+  -webkit-background-clip: text;       /* aplica degradado al texto */
+  -webkit-text-fill-color: transparent;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* sombra ligera */
+  margin-top: 0.3rem;                  /* espacio respecto al input */
+  line-height: 1.4;
+}
+/* Opcional: resaltar palabra específica dentro del error */
+.text-error span {
+  color: #ff6363;
+  font-weight: 700;
 }
 
 .button-contain-login {

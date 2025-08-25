@@ -7,8 +7,29 @@ from usuarios.forms import CustomUserCreationForm
 User = get_user_model()
 
 class UsuariosTestCase(TestCase):
+    """
+    TestCase para las funcionalidades de usuarios.
 
+    Este conjunto de pruebas verifica la creación de usuarios, 
+    la validez de los formularios y el comportamiento de las vistas
+    relacionadas con el registro y acceso de usuarios.
+
+    Métodos de prueba:
+        setUp(): Configura el entorno de prueba creando un rol
+            de ejemplo y un usuario de prueba.
+        test_usuario_str(): Comprueba que el método __str__ del usuario
+            devuelve el username correctamente.
+        test_signup_form_valid(): Verifica que el formulario de registro
+            es válido con datos correctos.
+        test_signup_view_get(): Comprueba que la vista de registro
+            responde correctamente a una solicitud GET.
+        test_signup_view_post(): Comprueba que la vista de registro
+            crea un usuario correctamente mediante POST.
+        test_home_view_requires_login(): Verifica que la vista 'home'
+            redirige a login si no se está autenticado.
+    """
     def setUp(self):
+      """Configura el entorno de prueba."""
     # Crear un rol de ejemplo con id=1
       self.rol_usuario = Rol.objects.create(id=1, nombre="Usuario")
     
