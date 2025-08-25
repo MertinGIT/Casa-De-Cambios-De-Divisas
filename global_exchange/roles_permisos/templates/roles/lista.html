@@ -468,7 +468,7 @@ body {
       </div>
     </div>
 
-    <button onclick="openCreateModal()" 
+    <button onclick="openCreateModal('{% url 'rol_nuevo' %}')" 
       class="btn-add rounded border-0 my-2">+ Agregar Rol</button>
     
     <!-- Tabla -->
@@ -493,12 +493,16 @@ body {
                 {% endif %}
               </td>
               <td data-label="Acciones" style="vertical-align: middle; min-width: 160px; text-align: center;">
-                <button onclick="openEditModal('{{ r.id }}', '{{ r.permisos }}')" 
-                  class="btn btn-sm btn-primary">
+                <button class="btn-edit btn btn-sm btn-primary" 
+                    data-id="{{ r.id }}" 
+                    data-edit="{% url 'rol_editar' 0 %}" 
+                    data-detalle="{% url 'rol_detalle' r.id %}">
                   Editar
                 </button>
-                <button onclick="openDeleteModal('{{ r.id }}', '{{ r.permisos }}')" 
-                  class="btn btn-sm btn-danger">
+                <button 
+                    class="btn-delete btn btn-sm btn-danger"
+                    data-id="{{ r.id }}"
+                    data-delete="{% url 'rol_eliminar' 0 %}">
                   Eliminar
                 </button>
               </td>

@@ -1,189 +1,124 @@
-<!-- Modal Crear / Editar -->
-<div id="modal-accion" class="custom-modal">
-  <div class="custom-modal-content">
-    <form method="POST" id="form-accion">
-      {% csrf_token %}
-      <input type="hidden" name="cliente_id" id="cliente_id">
+{% extends "base_forms.html" %} 
 
-      <div class="modal-header">
-        <h2 id="modal-title">Agregar Cliente</h2>
-        <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
-      </div>
+{% load widget_tweaks %} 
 
-      <div class="modal-body">
-        <label>Nombre</label>
-        <input type="text" name="nombre" class="search-input" required>
+{% block form_title %}Agregar Cliente{% endblock %} 
 
-        <label>Email</label>
-        <input type="email" name="email" class="search-input" required>
+{% block form_fields %}
 
-        <label>Teléfono</label>
-        <input type="text" name="telefono" class="search-input">
-
-        <label>Segmentación</label>
-        <select name="segmentacion" class="search-input">
-          {% for s in segmentaciones %}
-            <option value="{{ s.id }}">{{ s.nombre }}</option>
-          {% endfor %}
-        </select>
-
-        <label>Estado</label>
-        <select name="estado" class="search-input">
-          <option value="activo">Activo</option>
-          <option value="inactivo">Inactivo</option>
-        </select>
-      </div>
-
-      <div class="modal-footer">
-        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
-        <button type="submit" class="btn-confirmar">Guardar</button>
-      </div>
-    </form>
+<div class="form-group">
+  <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    {{ form.nombre|add_class:"custom-input" }}
   </div>
+  {% if form.nombre.errors %}
+  <div class="error-messages">
+    {% for error in form.nombre.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
-<!-- Modal Eliminar -->
-<div id="modal-delete" class="custom-modal">
-  <div class="custom-modal-content">
-    <form method="POST" id="delete-form">
-      {% csrf_token %}
-      <input type="hidden" name="cliente_id" id="delete_cliente_id">
-      <p>¿Seguro que deseas eliminar al cliente <strong id="delete_cliente_nombre"></strong>?</p>
-      
-      <div class="modal-footer">
-        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
-        <button type="submit" class="btn-confirmar">Eliminar</button>
-      </div>
-    </form>
+<div class="form-group">
+  <label for="{{ form.email.id_for_label }}">Email</label>
+  <div class="input-icon">
+    <span class="icon">📧</span>
+    {{ form.email|add_class:"custom-input" }}
   </div>
+  {% if form.email.errors %}
+  <div class="error-messages">
+    {% for error in form.email.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
+  <div class="input-icon">
+    <span class="icon">📞</span>
+    {{ form.telefono|add_class:"custom-input" }}
+  </div>
+  {% if form.telefono.errors %}
+  <div class="error-messages">
+    {% for error in form.telefono.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.segmentacion.id_for_label }}">Segmentación</label>
+  <div class="input-icon">
+    <span class="icon">🏷️</span>
+    {{ form.segmentacion|add_class:"custom-input" }}
+  </div>
+  {% if form.segmentacion.errors %}
+  <div class="error-messages">
+    {% for error in form.segmentacion.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.estado.id_for_label }}">Estado</label>
+  <div class="input-icon">
+    <span class="icon">⚡</span>
+    {{ form.estado|add_class:"custom-input" }}
+  </div>
+  {% if form.estado.errors %}
+  <div class="error-messages">
+    {% for error in form.estado.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
 </div>
 
 <style>
-/* ==== Modal estilo acorde a la página ==== */
-.custom-modal {
-  display: none; /* hidden por defecto */
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  background-color: rgba(0,0,0,0.4);
-  justify-content: center;
-  align-items: center;
-}
-
-.custom-modal-content {
-  background: #fff;
-  border-radius: 12px;
+.custom-input {
   width: 100%;
-  max-width: 500px;
-  padding: 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  animation: fadeIn 0.3s ease-in-out;
+  padding: 8px 12px 8px 36px; /* espacio para icono */
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #f0edff;
+  font-size: 14px;
+  outline: none;
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.modal-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin: 0;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 22px;
-  font-weight: bold;
+.custom-input::placeholder {
   color: #6b7280;
-  cursor: pointer;
 }
 
-.modal-body {
-  font-size: 14px;
-  color: #374151;
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
+.input-icon {
+  position: relative;
+  margin-bottom: 10px;
 }
 
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+.input-icon .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  color: #5d5fef;
 }
 
-.btn-cancelar {
-  background-color: #f3f4f6;
-  color: #374151;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
+.error-messages {
+  margin-top: 4px;
 }
 
-.btn-cancelar:hover {
-  background-color: #e5e7eb;
-}
-
-.btn-confirmar {
-  background-color: #5D5FEF;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.btn-confirmar:hover {
-  background-color: #4f46e5;
-}
-
-@keyframes fadeIn {
-  from {opacity: 0; transform: scale(0.9);}
-  to {opacity: 1; transform: scale(1);}
+.error-text {
+  color: #ef4444;
+  font-size: 13px;
 }
 </style>
 
-<script>
-function openCreateModal() {
-  document.getElementById('modal-title').innerText = "Agregar Cliente";
-  document.getElementById('form-accion').reset();
-  document.getElementById('form-accion').action = "{% url 'clientes-agregar' %}";
-  document.getElementById('modal-accion').style.display = "flex";
-}
-
-function openEditModal(id, nombre, email, telefono, segmentacion, estado) {
-  document.getElementById('modal-title').innerText = "Editar Cliente";
-  document.getElementById('cliente_id').value = id;
-  document.querySelector('[name=nombre]').value = nombre;
-  document.querySelector('[name=email]').value = email;
-  document.querySelector('[name=telefono]').value = telefono;
-  document.querySelector('[name=segmentacion]').value = segmentacion;
-  document.querySelector('[name=estado]').value = estado;
-
-  document.getElementById('form-accion').action = `/clientes/editar/${id}/`;
-
-  document.getElementById('modal-accion').style.display = "flex";
-}
-
-function openDeleteModal(id, nombre) {
-  document.getElementById('delete_cliente_id').value = id;
-  document.getElementById('delete_cliente_nombre').innerText = nombre;
-  document.getElementById('delete-form').action = `/clientes/eliminar/${id}/`;
-
-  document.getElementById('modal-delete').style.display = "flex";
-}
-
-function closeModal() {
-  document.getElementById('modal-accion').style.display = "none";
-  document.getElementById('modal-delete').style.display = "none";
-}
-
-</script>
+{% endblock %}
