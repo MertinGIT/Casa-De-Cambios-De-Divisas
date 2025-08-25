@@ -46,12 +46,12 @@ class CustomUserCreationForm(UserCreationForm):
         widget=forms.TextInput(attrs={'placeholder': ' '})
     )
     password1 = forms.CharField(
-        label="Password",
+        label="Contraseña",
         strip=False,
         widget=forms.PasswordInput(attrs={'placeholder': ' '})
     )
     password2 = forms.CharField(
-        label="Password confirmation",
+        label="Repetir contraseña",
         strip=False,
         widget=forms.PasswordInput(attrs={'placeholder': ' '})
     )
@@ -69,30 +69,29 @@ class CustomUserCreationForm(UserCreationForm):
             self.add_error('email', "Este email ya está registrado.")
         return email
     
-    def clean_password1(self):
-        """
-        Valida la contraseña ingresada de acuerdo con las reglas de seguridad.
-
-        Reemplaza los mensajes por versiones en español más claras.
-
-        :return: Contraseña validada.
-        :rtype: str
-        """
-        password1 = self.cleaned_data.get("password1")
+    
+    def _validate_password_rules(self, password, field_name):
         try:
-            validate_password(password1, self.instance)
+            validate_password(password, self.instance)
         except ValidationError as e:
-            # Filtramos los mensajes para que solo aparezcan los que queremos
-            messages = []
+            mensajes_traducidos = []
             for msg in e.messages:
-                if "at least 8 characters" in msg:
-                    messages.append("La contraseña debe tener al menos 8 caracteres.")
-                elif "entirely numeric" in msg:
-                    messages.append("La contraseña no puede ser solo números.")
-            if messages:
-               self.add_error('password1', messages)
+                if "This password is too short" in msg:
+                    mensajes_traducidos.append("Debe contener al menos 8 caracteres.")
+                elif "This password is too common" in msg:
+                    mensajes_traducidos.append("La contraseña es demasiado común.")
+                elif "This password is entirely numeric" in msg:
+                    mensajes_traducidos.append("La contraseña no puede ser solo numérica.")
+                else:
+                    mensajes_traducidos.append(msg)  
+            self.add_error(field_name, mensajes_traducidos)
+
+    def clean_password1(self):
+        password1 = self.cleaned_data.get("password1")
+        self._validate_password_rules(password1, "password1")
         return password1
-        
+
+
     def save(self, commit=True):
         """
         Guarda el usuario en la base de datos.
@@ -114,10 +113,14 @@ class CustomUserCreationForm(UserCreationForm):
         self.fields['username'].error_messages['required'] = 'Debes ingresar un nombre de usuario.'
         self.fields['email'].error_messages['required'] = 'Debes ingresar un email.'
         self.fields['cedula'].error_messages['required'] = 'Debes ingresar la cédula.'
+        self.fields['password1'].error_messages['required'] = 'Debes ingresar una contraseña.'
+        self.fields['password2'].error_messages['required'] = 'Debes repetir la contraseña.'
+
     class Meta:
             model = User
             fields = ('username', 'email', 'cedula', 'password1', 'password2')
 
+    
 
 class CustomUserChangeForm(UserChangeForm):
     """
@@ -145,19 +148,22 @@ class CustomUserChangeForm(UserChangeForm):
     password_nuevo = forms.CharField(
         label="Contraseña nueva",
         widget=forms.PasswordInput,
-        required=False,
-        help_text="Debe tener al menos 8 caracteres y no puede ser completamente numérica."
+        required=False
     )
     password_confirmacion = forms.CharField(
-        label="Confirmación de contraseña",
+        label="Repetir contraseña nueva",
         widget=forms.PasswordInput,
         required=False
     )
 
     cedula = forms.CharField(
-        label="cedula",
+        label="Cédula",
         required=True,
-        max_length=20  
+        max_length=20,
+        error_messages={
+            'required': 'La cédula es obligatoria.',
+            'max_length': 'La cédula no puede superar los 20 caracteres.'
+        }
     )
 
     email = forms.CharField(
@@ -165,8 +171,6 @@ class CustomUserChangeForm(UserChangeForm):
         required=True,
         max_length=40  
     )
- 
- 
     class Meta:
         model = User
         fields = ('email', 'username', 'cedula')
@@ -192,6 +196,7 @@ class CustomUserChangeForm(UserChangeForm):
         password_actual = cleaned_data.get('password_actual')
         password_nuevo = cleaned_data.get('password_nuevo')
         password_confirmacion = cleaned_data.get('password_confirmacion')
+        cedula = cleaned_data.get('cedula')
 
         if password_nuevo or password_confirmacion:
             if not password_actual:
@@ -213,8 +218,9 @@ class CustomUserChangeForm(UserChangeForm):
                 self.add_error('password_confirmacion', "Las contraseñas no coinciden.")
         else:
             if not self.instance.check_password(password_actual):
-                self.add_error('password_actual', "La contraseña actual no es correcta.")
-            
+                self.add_error('password_actual', "Para realizar cambios debe ingresar la contraseña actual.")
+    
+
         return cleaned_data
 
     def save(self, commit=True):

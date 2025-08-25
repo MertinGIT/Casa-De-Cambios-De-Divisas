@@ -156,9 +156,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
     },
     {
@@ -171,12 +168,12 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internacionalización
 # ============================================================================
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es'
 
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
+USE_L10N = True  # 👈 importante también
 USE_TZ = True
 
 

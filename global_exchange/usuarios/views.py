@@ -134,7 +134,7 @@ def signup(request):
               activateEmail(request, user, user.email)
               return render(request, 'registrarse.html', {
                       'form': form,
-                      'messages': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
+                      'subtitle': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
                       'eslogan_lines': eslogan_lines,
                       'eslogan_spans': eslogan_spans,
                       'submit_text': "Registrarse",
@@ -144,7 +144,6 @@ def signup(request):
               print("Error al guardar usuario:", e, flush=True)
               return render(request, 'registrarse.html', {
                         'form': form,
-                        'error': 'El usuario ya existe',
                         'eslogan_lines': eslogan_lines,
                         'eslogan_spans': eslogan_spans,
                         'submit_text': "Registrarse",
@@ -153,10 +152,10 @@ def signup(request):
         else:    
             return render(request, 'registrarse.html', {
                         'form': form,
-                        'error': 'El usuario ya existe',
                         'eslogan_lines': eslogan_lines,
                         'eslogan_spans': eslogan_spans,
                         'submit_text': "Registrarse",
+                        'subtitle': subtitle,
                         'active_tab': "register"
                     })
     else:
@@ -289,7 +288,7 @@ def signin(request):
         if user is None:
             return render(request, 'login.html', {
                 'form': AuthenticationForm(),
-                'error': 'Usuario o contraseña incorrectos',
+                'subtitle': "Usuario o contraseña incorrectos. Inténtalo de nuevo.",
                 'eslogan_lines': eslogan_lines,
                 'eslogan_spans': eslogan_spans,
                 'submit_text': "Acceder",
@@ -387,9 +386,9 @@ def editarPerfil(request):
                 user = form.save()
                 print(user, flush=True)
                 update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
-                return render(request, 'editarperfil.html', {'form': form, 'messages': "Perfil actualizado correctamente."} )
+                return render(request, 'editarperfil.html', {'form': form,  'success': True} )
             else:
-                return render(request, 'editarperfil.html', {'form': form, 'messages': "Corrige los errores en el formulario."} )
+                return render(request, 'editarperfil.html', {'form': form} )
         """
         # Eliminar cuenta
         elif action == 'eliminar':
