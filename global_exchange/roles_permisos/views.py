@@ -62,21 +62,24 @@ def rol_nuevo(request):
     if request.method == "POST":
         form = RolForm(request.POST)
         if form.is_valid():
-            form.save()
+            rol = form.save(commit=False)
+            rol.save()
+            # Guardar permisos
+            permisos = request.POST.getlist('permisos')
+            rol.permisos.set(permisos)
             return redirect("roles")
         else:
-            # Si hay errores, renderizar la página con errores
             roles = Rol.objects.all().order_by('-id')
-            permisos = Permiso.objects.all().order_by('nombre')
+            permisos_all = Permiso.objects.all().order_by('nombre')
             return render(request, "roles/lista.html", {
                 "roles": roles, 
-                "permisos": permisos,
+                "permisos": permisos_all,
                 "form": form,
-                "show_modal": True,  
-                "modal_type": "create"
+                "show_modal": True,
+                "modal_type": "create",
             })
-    
     return redirect("roles")
+
 
 @superadmin_required
 def rol_editar(request, pk):
@@ -95,26 +98,40 @@ def rol_editar(request, pk):
         - ``roles/lista.html`` (cuando hay errores)
     """
     rol = get_object_or_404(Rol, pk=pk)
-    
+
     if request.method == "POST":
         form = RolForm(request.POST, instance=rol)
         if form.is_valid():
-            form.save()
+            rol = form.save()
+            permisos_ids = request.POST.getlist('permisos')
+            rol.permisos.set(permisos_ids)
             return redirect("roles")
         else:
-            # Si hay errores, renderizar la página con errores
-            roles = Rol.objects.all().order_by('-id')
-            permisos = Permiso.objects.all().order_by('nombre')
-            return render(request, "roles/lista.html", {
-                "roles": roles, 
-                "permisos": permisos,
+            # POST con errores: mostrar modal con errores
+            roles = Rol.objects.filter(pk=pk)
+            print(roles)
+            permisos_all = Permiso.objects.all().order_by('nombre')
+            return render(request, "roles/form.html", {
+                "roles": roles,
                 "form": form,
-                "show_modal": True,  
-                "modal_type": "edit",
-                "edit_rol": rol
+                "permisos": permisos_all,
+                "modal_title": "Editar Rol",
+                "form_action": request.path,
+                "obj_id": rol.id,
             })
-    
-    return redirect("roles")
+    else:
+        # GET: abrir modal con form precargado
+        form = RolForm(instance=rol)
+        print(form)
+        permisos_all = Permiso.objects.all().order_by('nombre')
+        return render(request, "roles/lista.html", {
+            "form": form,
+            "permisos": permisos_all,
+            "modal_title": "Editar Rol",
+            "form_action": request.path,
+            "obj_id": rol.id,
+        })
+
 
 @superadmin_required
 def rol_eliminar(request, pk):
@@ -155,13 +172,12 @@ def rol_detalle(request, pk):
         - ``roles/form_fields.html``
     """
     rol = get_object_or_404(Rol, pk=pk)
-    form = RolForm(instance=rol)
-    
-    data = {
-        'id': rol.id,
-        'nombre': rol.nombre,
-        'descripcion': rol.descripcion,
-        'permisos': list(rol.permisos.values_list('id', flat=True)),
-        'form_html': render(request, 'roles/form_fields.html', {'form': form}).content.decode('utf-8')
-    }
-    return JsonResponse(data)
+    print("rol detalle:", rol)
+    permisos_ids = list(rol.permisos.values_list('id', flat=True))
+    return JsonResponse({
+        "nombre": rol.nombre,
+        "descripcion": rol.descripcion,
+        "permisos": permisos_ids
+    })
+
+

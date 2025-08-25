@@ -5,9 +5,9 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
-
+from django.http import JsonResponse
 from .models import Cliente, Segmentacion
-
+from .forms import ClienteForm
 
 def superadmin_required(view_func):
     """
@@ -67,6 +67,8 @@ class ClienteListView(ListView):
         """Agrega las segmentaciones al contexto de la vista."""
         context = super().get_context_data(**kwargs)
         context["segmentaciones"] = Segmentacion.objects.all()
+        context["form"] = ClienteForm()  # formulario vacío para el modal
+        context["form_action"] = reverse_lazy('clientesAgregar')
         return context
 
 
@@ -85,15 +87,19 @@ class ClienteCreateView(CreateView):
         - ``segmentaciones``: lista completa de segmentaciones.
     """
     model = Cliente
-    template_name = 'clientes/form.html'
-    fields = ['nombre', 'email', 'telefono', 'segmentacion', 'estado']
+    form_class = ClienteForm
+    template_name = 'clientes/lista.html'  # ⚡ aquí usamos la lista
     success_url = reverse_lazy('clientes')
 
     def get_context_data(self, **kwargs):
         """Agrega las segmentaciones al contexto de la vista."""
         context = super().get_context_data(**kwargs)
+        context["clientes"] = Cliente.objects.all().order_by('-id')
         context["segmentaciones"] = Segmentacion.objects.all()
+        context["modal_title"] = "Agregar Cliente"
+        context["form_action"] = reverse_lazy('clientesAgregar')
         return context
+
 
 
 @method_decorator(superadmin_required, name='dispatch')
@@ -143,3 +149,13 @@ class ClienteDeleteView(DeleteView):
         """Elimina el cliente y muestra un mensaje de confirmación."""
         messages.success(request, "Cliente eliminado correctamente.")
         return super().delete(request, *args, **kwargs)
+
+def cliente_detalle(request, pk):
+    cliente = get_object_or_404(Cliente, pk=pk)
+    return JsonResponse({
+        "nombre": cliente.nombre,
+        "email": cliente.email,
+        "telefono": cliente.telefono,
+        "segmentacion": cliente.segmentacion_id,
+        "estado": cliente.estado,
+    })

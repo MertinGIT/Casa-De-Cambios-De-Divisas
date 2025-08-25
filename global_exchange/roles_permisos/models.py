@@ -37,5 +37,6 @@ class Rol(models.Model):
     permisos = models.ManyToManyField(Permiso, blank=True)
     #usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="usuarios", null=True)
     def __str__(self):
-        """Devuelve el nombre del rol."""
-        return self.nombre
+        permisos_str = ", ".join([p.nombre for p in self.permisos.all()])
+        return f"{self.nombre} {self.descripcion} ({permisos_str})"
+

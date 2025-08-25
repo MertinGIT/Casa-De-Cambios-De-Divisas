@@ -478,7 +478,7 @@ body {
       </form>
     </div>
 
-    <button onclick="openCreateModal()" 
+    <button onclick="openCreateModal('{% url 'clientesAgregar' %}')" 
       class="btn-add rounded border-0 my-2">+ Agregar Cliente</button>
     
     <!-- Tabla -->
@@ -511,14 +511,19 @@ body {
                 {% endif %}
               </td>
               <td data-label="Acciones">
-                <button onclick="openEditModal('{{ c.id }}', '{{ c.nombre }}', '{{ c.email }}', '{{ c.telefono }}', '{{ c.segmentacion.id }}', '{{ c.estado }}')" 
-                  class="btn btn-sm btn-primary">
-                  Editar
-                </button>
-                <button onclick="openDeleteModal('{{ c.id }}', '{{ c.nombre }}')" 
-                  class="btn btn-sm btn-danger">
-                  Eliminar
-                </button>
+                <button class="btn-edit btn btn-sm btn-primary"
+        data-id="{{ cliente.id }}"
+        data-edit="{% url 'cliente_editar' 0 %}"
+        data-detalle="{% url 'cliente_detalle' cliente.id %}">
+  Editar
+</button>
+
+<button class="btn-delete btn btn-sm btn-danger"
+        data-id="{{ cliente.id }}"
+        data-delete="{% url 'cliente_eliminar' 0 %}">
+  Eliminar
+</button>
+
               </td>
             </tr>
           {% empty %}
@@ -588,6 +593,5 @@ body {
     {% endif %}
   </div>
 </div>
-
 {% include "clientes/form.html" %}
 {% endblock %}
