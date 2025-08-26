@@ -1,5 +1,5 @@
 # usuarios/models.py
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
@@ -33,7 +33,6 @@ class CustomUser(AbstractUser):
     # Nuevo campo
     cedula = models.CharField(max_length=20,unique=True,error_messages={'unique': 'Ya existe un usuario con esta cédula.','blank': 'La cédula es obligatoria.', 'null': 'La cédula no puede ser nula.'}
     )
-
     def __str__(self):
         """Retorna el nombre de usuario como string representativo."""
         return self.username

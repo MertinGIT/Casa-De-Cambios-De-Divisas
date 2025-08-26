@@ -136,7 +136,7 @@ def signup(request):
               user = form.save(commit=False)
               user.is_active = False
                 # Asignamos el rol 'usuario'
-              rol_usuario = Group.objects.get(name="usuario")
+              rol_usuario = Group.objects.get(name="Usuario")
               user.save()
               user.groups.add(rol_usuario)  
               print(user, flush=True)

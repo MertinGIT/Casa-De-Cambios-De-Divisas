@@ -1,4 +1,4 @@
-"""# views.py
+# views.py
 from functools import wraps
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -109,4 +109,3 @@ def eliminar_usuario_rol(request, id):
     asignacion = get_object_or_404(Usuario_Rol_Cliente, id=id)
     asignacion.delete()
     return redirect('usuarios_roles_lista')
-"""

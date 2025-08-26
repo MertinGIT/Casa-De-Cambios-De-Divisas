@@ -15,32 +15,38 @@ Campos del formulario de rol para renderizar vía AJAX en el modal de edición
 
 <div class="form-group">
   <label for="{{ form.permisos.id_for_label }}">{{ form.permisos.label }}</label>
+
+  {% with asignados=permisos_asignados|default:form.permisos.value %}
   <div class="dual-listbox">
     <div>
       <h5>Permisos disponibles</h5>
       <select id="available-perms" multiple size="15">
         {% for permiso in permisos %}
-        {% if permiso.id|stringformat:"s" not in form.permisos.value|default_if_none:"" %}
+        {% if permiso.id|stringformat:"s" not in asignados %}
         <option value="{{ permiso.id }}">{{ permiso.name }}</option>
         {% endif %}
         {% endfor %}
       </select>
     </div>
+
     <div class="dual-buttons">
       <button type="button" id="add-perm-modal" class="btn btn-primary">→</button>
       <button type="button" id="remove-perm-modal" class="btn btn-secondary">←</button>
     </div>
+
     <div>
       <h5>Permisos asignados</h5>
       <select id="selected-perms" multiple size="15" name="permisos">
         {% for permiso in permisos %}
-        {% if permiso.id|stringformat:"s" in form.permisos.value|default_if_none:"" %}
+        {% if permiso.id|stringformat:"s" in asignados %}
         <option value="{{ permiso.id }}" selected>{{ permiso.name }}</option>
         {% endif %}
         {% endfor %}
       </select>
     </div>
   </div>
+  {% endwith %}
+
   {% if form.permisos.errors %}
   <div class="error-messages">
     {% for error in form.permisos.errors %}

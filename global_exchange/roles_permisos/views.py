@@ -42,7 +42,7 @@ def rol_lista(request):
     Plantilla:
         - ``roles/lista.html``
     """
-    
+
     return render(request, "roles/lista.html", {
         "roles": roles,
         "permisos": permisos,
@@ -74,6 +74,7 @@ def rol_nuevo(request):
     return render(request, "roles/lista.html", {
         "form": form,
         "permisos": permisos_all,
+        "permisos_asignados": [],
         "show_modal": True,
         "modal_type": "create",
     })
@@ -104,9 +105,11 @@ def rol_editar(request, pk):
     else:
         form = RolForm(instance=group)
     permisos_all = Permission.objects.all().order_by('name')
+    permisos_asignados = list(group.permissions.values_list('id', flat=True))
     return render(request, "roles/lista.html", {
         "form": form,
         "permisos": permisos_all,
+        "permisos_asignados": permisos_asignados,
         "show_modal": True,
         "modal_type": "edit",
         "obj_id": group.id,
@@ -135,8 +138,6 @@ def rol_eliminar(request, pk):
 # Vista para obtener datos de un rol via AJAX (para llenar el modal de edición)
 @superadmin_required
 def rol_detalle(request, pk):
-    rol = get_object_or_404(Group, pk=pk)
-    permisos_ids = list(rol.permissions.values_list('id', flat=True))
     """
     Vista que obtiene los datos de un rol para edición mediante AJAX.
 
@@ -154,9 +155,9 @@ def rol_detalle(request, pk):
     Plantilla parcial:
         - ``roles/form_fields.html``
     """
-    print("rol detalle:", rol)
-    permisos_ids = list(rol.permisos.values_list('id', flat=True))
+    rol = get_object_or_404(Group, pk=pk)
+    permisos_ids = list(rol.permissions.values_list('id', flat=True))
     return JsonResponse({
         "name": rol.name,
-        "permisos": permisos_ids
+        "permisos_asignados": permisos_ids
     })
