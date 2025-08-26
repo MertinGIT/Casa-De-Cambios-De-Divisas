@@ -7,78 +7,78 @@
 {% block form_fields %}
 
 <div class="form-group">
-  <label for="{{ form.nombre.id_for_label }}">Nombre</label>
-  <div class="input-icon">
-    <span class="icon">👤</span>
-    {{ form.nombre|add_class:"custom-input" }}
-  </div>
-  {% if form.nombre.errors %}
-  <div class="error-messages">
-    {% for error in form.nombre.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+    <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+    <div class="input-icon">
+        <span class="icon">👤</span>
+        {{ form.nombre|add_class:"custom-input" }}
+    </div>
+    {% if form.nombre.errors %}
+        <div class="error-messages">
+            {% for error in form.nombre.errors %}
+                <span class="error-text">{{ error }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 
 <div class="form-group">
-  <label for="{{ form.email.id_for_label }}">Email</label>
-  <div class="input-icon">
-    <span class="icon">📧</span>
-    {{ form.email|add_class:"custom-input" }}
-  </div>
-  {% if form.email.errors %}
-  <div class="error-messages">
-    {% for error in form.email.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+    <label for="{{ form.email.id_for_label }}">Email</label>
+    <div class="input-icon">
+        <span class="icon">📧</span>
+        {{ form.email|add_class:"custom-input" }}
+    </div>
+    {% if form.email.errors %}
+        <div class="error-messages">
+            {% for error in form.email.errors %}
+                <span class="error-text">{{ error }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 
 <div class="form-group">
-  <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
-  <div class="input-icon">
-    <span class="icon">📞</span>
-    {{ form.telefono|add_class:"custom-input" }}
-  </div>
-  {% if form.telefono.errors %}
-  <div class="error-messages">
-    {% for error in form.telefono.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+    <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
+    <div class="input-icon">
+        <span class="icon">📞</span>
+        {{ form.telefono|add_class:"custom-input" }}
+    </div>
+    {% if form.telefono.errors %}
+        <div class="error-messages">
+            {% for error in form.telefono.errors %}
+                <span class="error-text">{{ error }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 
 <div class="form-group">
-  <label for="{{ form.segmentacion.id_for_label }}">Segmentación</label>
-  <div class="input-icon">
-    <span class="icon">🏷️</span>
-    {{ form.segmentacion|add_class:"custom-input" }}
-  </div>
-  {% if form.segmentacion.errors %}
-  <div class="error-messages">
-    {% for error in form.segmentacion.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+    <label for="{{ form.segmentacion.id_for_label }}">Segmentación</label>
+    <div class="input-icon">
+        <span class="icon">🏷️</span>
+        {{ form.segmentacion|add_class:"custom-input" }}
+    </div>
+    {% if form.segmentacion.errors %}
+        <div class="error-messages">
+            {% for error in form.segmentacion.errors %}
+                <span class="error-text">{{ error }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 
 <div class="form-group">
-  <label for="{{ form.estado.id_for_label }}">Estado</label>
-  <div class="input-icon">
-    <span class="icon">⚡</span>
-    {{ form.estado|add_class:"custom-input" }}
-  </div>
-  {% if form.estado.errors %}
-  <div class="error-messages">
-    {% for error in form.estado.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+    <label for="{{ form.estado.id_for_label }}">Estado</label>
+    <div class="input-icon">
+        <span class="icon">⚡</span>
+        {{ form.estado|add_class:"custom-input" }}
+    </div>
+    {% if form.estado.errors %}
+        <div class="error-messages">
+            {% for error in form.estado.errors %}
+                <span class="error-text">{{ error }}</span>
+            {% endfor %}
+        </div>
+    {% endif %}
 </div>
 
 <style>
