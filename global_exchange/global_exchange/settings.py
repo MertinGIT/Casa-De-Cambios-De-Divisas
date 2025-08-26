@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'roles_permisos',
     'admin_dashboard',
     'asignar_clientes_usuarios',
+    'configuracion',
 ]
 
 MIDDLEWARE = [
