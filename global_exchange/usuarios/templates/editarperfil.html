@@ -1,254 +1,277 @@
-
-{% extends 'baseDashboardUsuario.html' %} 
+{% extends 'baseDashboardUsuario.html' %}
 {% block page_title %}Mi Perfil{% endblock %}
 {% load static %} {% block dashboard_content %}
 
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Editar Perfil</title>
-    <link rel="stylesheet" href="{% static 'css/login.css' %}" />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
-    />
 
-    <style>
-      body,
-      html {
+<head>
+  <meta charset="UTF-8" />
+  <title>Editar Perfil</title>
+  <link rel="stylesheet" href="{% static 'css/login.css' %}" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" />
+
+  <style>
+    body,
+    html {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      background-color: #f8f9fa;
+      font-family: Arial, sans-serif;
+    }
+
+    .d-flex {
+      display: flex;
+    }
+
+    .vh-100 {
+      height: 100vh;
+    }
+
+    .justify-content-center {
+      justify-content: center;
+    }
+
+    .align-items-center {
+      align-items: center;
+    }
+
+    .form-container {
+      max-width: 600px;
+      width: 100%;
+      background-color: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      position: relative;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 2.5rem;
+    }
+
+    form {
+      width: 100%;
+    }
+
+    .form-group {
+      position: relative;
+      margin-bottom: 0 !important;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 1rem 1rem 1rem 3rem;
+      font-size: 1.2rem;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+      transition: 0.2s;
+    }
+
+    .form-group input:focus {
+      border-color: #6c63ff;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      background-color: white;
+      transform: scale(1.01);
+    }
+
+    .form-group label {
+      position: absolute;
+      left: 3rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #999;
+      pointer-events: none;
+      transition: 0.2s ease all;
+    }
+
+    .form-group input:focus+label,
+    .form-group input:not(:placeholder-shown)+label {
+      top: -0.5rem;
+      left: 2.5rem;
+      font-size: 0.85rem;
+      color: #6c63ff;
+      background: #fff;
+      border-radius: 10px;
+      padding: 0.2rem;
+    }
+
+    .input-icon-left {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #495057;
+      font-size: 1.2rem;
+    }
+
+    .input-disabled input {
+      background-color: #c8cbcfb7;
+      cursor: not-allowed;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: #495057;
+    }
+
+    .btn {
+      width: 48%;
+      padding: 0.8rem;
+      font-size: 1.1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-guardar-cambios {
+      background-color: #6c63ff;
+      color: #fff;
+    }
+
+    .btn-guardar-cambios:hover {
+      background-color: #534afe;
+      color: #fff;
+    }
+
+    .btn-cambiar-cancelar {
+      background-color: #026f6e;
+      color: #fff;
+    }
+
+    .btn-cambiar-cancelar:hover {
+      background-color: #024342;
+      color: #fff;
+    }
+
+    .d-flex.justify-content-between {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .text-danger {
+      color: #dc3545;
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    @media (max-width: 576px) {
+      .form-container {
         width: 100%;
-        height: 100%;
-        margin: 0;
-        background-color: #f8f9fa;
-        font-family: Arial, sans-serif;
-      }
-      .d-flex {
-        display: flex;
-      }
-      .vh-100 {
         height: 100vh;
-      }
-      .justify-content-center {
+        border-radius: 0;
+        padding: 2rem 1rem;
+        display: flex;
+        flex-direction: column;
         justify-content: center;
       }
-      .align-items-center {
-        align-items: center;
-      }
 
-      .form-container {
-        max-width: 600px;
-        width: 100%;
-        background-color: #fff;
-        padding: 2rem;
-        border-radius: 12px;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
-        position: relative;
-      }
-
-      h1 {
-        text-align: center;
-        margin-bottom: 1.5rem;
-        font-size: 2.5rem;
-      }
-
-      form {
-        width: 100%;
-      }
-
-      .form-group {
-        position: relative;
-        margin-bottom: 1.5rem;
-      }
       .form-group input {
-        width: 100%;
-        padding: 1rem 1rem 1rem 3rem;
-        font-size: 1.2rem;
-        border: 1px solid #ccc;
-        border-radius: 8px;
-        outline: none;
-        transition: 0.2s;
-      }
-      .form-group input:focus {
-        border-color: #6c63ff;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        background-color: white;
-        transform: scale(1.01);
-      }
-
-      .form-group label {
-        position: absolute;
-        left: 3rem;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #999;
-        pointer-events: none;
-        transition: 0.2s ease all;
-      }
-      .form-group input:focus + label,
-      .form-group input:not(:placeholder-shown) + label {
-        top: -0.5rem;
-        left: 2.5rem;
-        font-size: 0.85rem;
-        color: #6c63ff;
-        background: #fff;
-        border-radius: 10px;
-        padding: 0.2rem;
-      }
-
-      .input-icon-left {
-        position: absolute;
-        left: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #495057;
-        font-size: 1.2rem;
-      }
-      .input-disabled input {
-        background-color: #c8cbcfb7;
-        cursor: not-allowed;
+        font-size: 1.4rem;
+        padding: 1.2rem 1rem 1.2rem 3rem;
       }
 
       .toggle-password {
-        position: absolute;
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        font-size: 1.2rem;
-        color: #495057;
+        font-size: 1.4rem;
       }
 
       .btn {
-        width: 48%;
-        padding: 0.8rem;
-        font-size: 1.1rem;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        transition: 0.2s;
-      }
-
-      .btn-primary {
-        background-color: #007bff;
-        color: #fff;
-      }
-      .btn-primary:hover {
-        background-color: #0056b3;
-      }
-      .btn-danger {
-        background-color: #dc3545;
-        color: #fff;
-      }
-      .btn-danger:hover {
-        background-color: #a71d2a;
+        width: 100%;
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
       }
 
       .d-flex.justify-content-between {
-        display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        gap: 0.5rem;
       }
 
-      .text-danger {
-        color: #dc3545;
-        font-size: 0.9rem;
-        margin-top: 0.25rem;
+      h1 {
+        font-size: 3rem;
       }
+    }
 
-      @media (max-width: 576px) {
-        .form-container {
-          width: 100%;
-          height: 100vh;
-          border-radius: 0;
-          padding: 2rem 1rem;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
+    input[readonly] {
+      background-color: #d0cfcf;
+      /* gris claro */
+      color: #555;
+      /* texto más oscuro */
+      cursor: not-allowed;
+      /* mano bloqueada */
+    }
 
-        .form-group input {
-          font-size: 1.4rem;
-          padding: 1.2rem 1rem 1.2rem 3rem;
-        }
-        .toggle-password {
-          font-size: 1.4rem;
-        }
-        .btn {
-          width: 100%;
-          font-size: 1.4rem;
-          margin-bottom: 0.5rem;
-        }
-        .d-flex.justify-content-between {
-          flex-direction: column;
-          gap: 0.5rem;
-        }
-        h1 {
-          font-size: 3rem;
-        }
-      }
-    </style>
-  </head>
+    .username-error {
+      color: #dc3545;
+      /* rojo */
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+  </style>
+</head>
 
-  <body>
-    <!-- Contenedor centrado en la pantalla -->
-    <div class="d-flex vh-100 justify-content-center align-items-center">
-      <div class="form-container">
-        <h1>EDITAR PERFIL</h1>
+<body>
+  <div class="d-flex vh-100 justify-content-center align-items-center">
 
-        {% if messages %} 
+    <div class="form-container ">
+      <div class="flex-column">
+        <!-- Avatar + título -->
+        <div class="text-center mb-3">
+          <i class="bi bi-person-circle" style="font-size: 4rem; color:#6c63ff;"></i>
+          <h1>Mi Perfil</h1>
+          <p class="text-muted">Actualiza tu información personal</p>
+        </div>
+
+        {% if messages %}
         <div class="alert alert-{{ messages.tags }} mt-2">{{ messages }}</div>
-        {% endif %} 
+        {% endif %}
 
         <form method="POST">
           {% csrf_token %}
 
-          <!-- Username -->
-          <div class="form-group">
-            <i class="bi bi-person-fill input-icon-left"></i>
-            <input
-              type="text"
-              name="username"
-              value="{{ form.username.value }}"
-              placeholder=" "
-              required
-            />
-            <label>Usuario</label>
+          <!-- Usuario -->
+          <div class="mb-3">
+            <div class="form-group">
+              <i class="bi bi-person-fill input-icon-left"></i>
+              <input type="text" name="username" value="{{ form.username.value }}" placeholder=" " required />
+              <label>Usuario</label>
+            </div>
             {% for error in form.username.errors %}
-            <div class="text-danger">{{ error }}</div>
+            <div class="username-error">{{ error }}</div>
             {% endfor %}
           </div>
 
           <!-- Email -->
-          <div class="form-group">
-            <i class="bi bi-envelope-fill input-icon-left"></i>
-            <input
-              type="email"
-              name="email"
-              value="{{ form.email.value }}"
-              placeholder=" "
-            />
-            <label>Correo</label>
+          <div class="mb-3">
+            <div class="form-group">
+              <i class="bi bi-envelope-fill input-icon-left"></i>
+              <input type="email" name="email" value="{{ form.email.value }}" placeholder=" " readonly />
+              <label>Correo</label>
+            </div>
             {% for error in form.email.errors %}
             <div class="text-danger">{{ error }}</div>
             {% endfor %}
           </div>
 
-          <!-- Cedula/Ruc -->
-          <div class="form-group">
-            <i class="bi bi-envelope-fill input-icon-left"></i>
-            <input
-              type="text"
-              name="cedula"
-              value="{{ form.cedula.value }}"
-              placeholder=" "
-            />
-            <label>C.I/R.U.C</label>
+          <!-- Cedula -->
+          <div class="mb-3">
+            <div class="form-group">
+              <i class="bi bi-person-vcard input-icon-left"></i>
+              <input type="text" name="cedula" value="{{ form.cedula.value }}" placeholder=" " />
+              <label>C.I / R.U.C</label>
+            </div>
             {% for error in form.cedula.errors %}
             <div class="text-danger">{{ error }}</div>
             {% endfor %}
@@ -256,111 +279,182 @@
 
 
           <!-- Contraseña actual -->
-          <div class="form-group">
-            <i class="bi bi-lock-fill input-icon-left"></i>
-            <input
-              type="password"
-              name="password_actual"
-              class="password-field"
-              placeholder=" "
-            />
-            <label>Contraseña Actual</label>
-            <button type="button" class="toggle-password">
-              <i class="bi bi-eye-slash"></i>
-            </button>
+          <div class="mb-3">
+            <div class="form-group">
+              <i class="bi bi-lock-fill input-icon-left"></i>
+              <input type="password" name="password_actual" class="password-field" placeholder=" " />
+              <label>Contraseña actual</label>
+              <button type="button" class="toggle-password">
+                <i class="bi bi-eye-slash"></i>
+              </button>
+            </div>
             {% for error in form.password_actual.errors %}
             <div class="text-danger">{{ error }}</div>
             {% endfor %}
           </div>
 
-          <!-- Nueva contraseña -->
-          <div class="form-group">
-            <i class="bi bi-lock-fill input-icon-left"></i>
-            <input
-              type="password"
-              name="password_nuevo"
-              class="password-field"
-              placeholder=" "
-            />
-            <label>Contraseña Nueva</label>
-            <button type="button" class="toggle-password">
-              <i class="bi bi-eye-slash"></i>
-            </button>
-            {% for error in form.password_nuevo.errors %}
-            <div class="text-danger">{{ error }}</div>
-            {% endfor %}
-          </div>
+          <!-- Contraseña nueva y confirmación -->
+          <div id="password-section" style="display:none;">
+            <div class="mb-3">
+              <div class="form-group">
+                <i class="bi bi-lock-fill input-icon-left"></i>
+                <input type="password" name="password_nuevo" class="password-field" placeholder=" " />
+                <label>Contraseña nueva</label>
+                <button type="button" class="toggle-password">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              </div>
+              {% for error in form.password_nuevo.errors %}
+              <div class="text-danger">{{ error }}</div>
+              {% endfor %}
+            </div>
 
-          <!-- Confirmación de contraseña -->
-          <div class="form-group">
-            <i class="bi bi-lock-fill input-icon-left"></i>
-            <input
-              type="password"
-              name="password_confirmacion"
-              class="password-field"
-              placeholder=" "
-            />
-            <label>Confirmación de Contraseña</label>
-            <button type="button" class="toggle-password">
-              <i class="bi bi-eye-slash"></i>
-            </button>
-            {% for error in form.password_confirmacion.errors %}
-            <div class="text-danger">{{ error }}</div>
-            {% endfor %}
+            <div class="mb-3">
+              <div class="form-group">
+                <i class="bi bi-lock-fill input-icon-left"></i>
+                <input type="password" name="password_confirmacion" class="password-field" placeholder=" " />
+                <label>Repetir contraseña nueva</label>
+                <button type="button" class="toggle-password">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              </div>
+              {% for error in form.password_confirmacion.errors %}
+                <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            </div>
           </div>
+      </div>
+      <!-- Botones -->
+      <div class="d-flex justify-content-between pt-3">
+        <button type="button" id="btn-cambiar-contraseña" class="btn btn-cambiar-cancelar">
+          Cambiar Contraseña
+        </button>
+        <button type="submit" name="action" value="guardar" class="btn btn-guardar-cambios">
+          Guardar Cambios
+        </button>
+      </div>
+      </form>
+    </div>
+  </div>
+  </div>
 
-          <!-- Botones -->
-          <div class="d-flex justify-content-between">
-            <button
-              type="submit"
-              name="action"
-              value="guardar"
-              class="btn btn-primary"
-            >
-              Guardar Cambios
-            </button>
-            <button
-              type="submit"
-              name="action"
-              value="eliminar"
-              class="btn btn-danger"
-              id="btnEliminar"
-            >
-              Eliminar Cuenta
-            </button>
-          </div>
-        </form>
+  <!-- Modal de éxito -->
+  <div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header text-white" style=" background-color: #6c63ff;">
+          <h5 class="modal-title w-100 text-center" id="successModalLabel" style="font-weight: bold;">Éxito</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body text-center" style="font-weight: 600;">
+          Perfil actualizado correctamente.
+        </div>
+        <div class="modal-footer justify-content-center">
+          <button type="button" class="btn btn-success" data-bs-dismiss="modal" style=" background-color: #6c63ff; font-weight: 600;">Aceptar</button>
+        </div>
       </div>
     </div>
+  </div>
 
-    <script>
-      document.querySelectorAll(".toggle-password").forEach((btn) => {
-        btn.addEventListener("click", function () {
-          const input =
-            this.closest(".form-group").querySelector(".password-field");
-          const icon = this.querySelector("i");
-          if (input.type === "password") {
-            input.type = "text";
-            icon.classList.replace("bi-eye-slash", "bi-eye");
-          } else {
-            input.type = "password";
-            icon.classList.replace("bi-eye", "bi-eye-slash");
-          }
-        });
+
+  <script>
+    document.querySelectorAll(".toggle-password").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const input =
+          this.closest(".form-group").querySelector(".password-field");
+        const icon = this.querySelector("i");
+        if (input.type === "password") {
+          input.type = "text";
+          icon.classList.replace("bi-eye-slash", "bi-eye");
+        } else {
+          input.type = "password";
+          icon.classList.replace("bi-eye", "bi-eye-slash");
+        }
       });
+    });
 
-      document
-        .getElementById("btnEliminar")
-        .addEventListener("click", function (e) {
-          if (
-            !confirm(
-              "¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer."
-            )
-          ) {
-            e.preventDefault();
-          }
-        });
-    </script>
-  </body>
+    const btnCambiar = document.getElementById('btn-cambiar-contraseña');
+    const btnGuardar = document.getElementById('btn-guardar-cambios');
+    const passwordSection = document.getElementById('password-section');
+
+    // Leer estado al cargar la página
+    let estado = localStorage.getItem('passwordSectionVisible') === 'true';
+
+    function actualizarVista() {
+      if (estado) {
+        passwordSection.style.display = 'block';
+        btnCambiar.textContent = 'Cancelar Cambio';
+      } else {
+        passwordSection.style.display = 'none';
+        btnCambiar.textContent = 'Cambiar Contraseña';
+        passwordSection.querySelectorAll('input').forEach(input => input.value = '');
+      }
+    }
+
+    // Inicializar vista al cargar
+    actualizarVista();
+
+    // Evento para abrir/cerrar con el botón
+    btnCambiar.addEventListener('click', () => {
+      estado = !estado;
+      localStorage.setItem('passwordSectionVisible', estado);
+      actualizarVista();
+    });
+
+    // Evento guardar
+    btnGuardar.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      // Inputs de la sección de contraseña
+      const passActual = document.querySelector('input[name="password_actual"]');
+      const passNuevo = document.querySelector('input[name="password_nuevo"]');
+      const passConfirm = document.querySelector('input[name="password_confirmacion"]');
+
+      // Validar si la sección está visible
+      if (passwordSection.style.display !== 'none') {
+
+        // Verificar vacíos
+        if (!passActual.value.trim() || !passNuevo.value.trim() || !passConfirm.value.trim()) {
+          alert('Por favor, completa todos los campos.');
+          return;
+        }
+
+        // Verificar coincidencia de contraseñas nuevas
+        if (passNuevo.value !== passConfirm.value) {
+          alert('La nueva contraseña y la confirmación no coinciden.');
+          return;
+        }
+
+        // Si todo está bien 👉 ocultamos la sección
+        passwordSection.style.display = 'none';
+        btnCambiar.textContent = 'Cambiar Contraseña';
+
+        // Limpiar campos
+        passActual.value = '';
+        passNuevo.value = '';
+        passConfirm.value = '';
+
+        // Guardar estado en localStorage
+        localStorage.setItem('passwordSectionVisible', false);
+      }
+
+      // Mostrar mensaje de éxito (acá podrías usar tu modal también)
+      alert('Perfil actualizado correctamente ✅');
+    });
+
+
+  </script>
+  {% if success %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+      successModal.show();
+    });
+  </script>
+  {% endif %}
+
+
+</body>
+
 </html>
 {% endblock %}

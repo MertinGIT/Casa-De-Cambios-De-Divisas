@@ -1,10 +1,18 @@
 """
-ASGI config for global_exchange project.
+ASGI configuration for the ``global_exchange`` project.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
+Este archivo expone el callable ASGI a nivel de módulo como ``application``.  
+ASGI es el estándar de Python para la comunicación asíncrona entre servidores web 
+y aplicaciones Django (soporta WebSockets y HTTP).
 
-For more information on this file, see
-https://docs.djangoproject.com/en/4.1/howto/deployment/asgi/
+Uso:
+    - Este archivo es usado por servidores ASGI como Daphne o Uvicorn.
+    - No necesita modificación para entornos de producción típicos.
+    - Asegura que Django cargue la configuración correcta del proyecto.
+
+Referencias:
+    - Documentación de despliegue Django ASGI: 
+      https://docs.djangoproject.com/en/4.1/howto/deployment/asgi/
 """
 
 import os

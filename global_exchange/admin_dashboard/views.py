@@ -5,6 +5,13 @@ from functools import wraps
 
 # Solo superadmin
 def superadmin_required(view_func):
+    """
+    Decorador que limita el acceso únicamente a usuarios superadministradores.
+
+    - Si el usuario no está autenticado, se lo redirige a ``login``.
+    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
+    - Si el usuario es superadmin, se ejecuta la vista original.
+    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -19,6 +26,6 @@ def superadmin_required(view_func):
 @superadmin_required
 def admin_dashboard(request):
     """
-    Render the admin dashboard page.
+    Renderiza la página del panel de administración.
     """
     return render(request, 'dashboard.html')

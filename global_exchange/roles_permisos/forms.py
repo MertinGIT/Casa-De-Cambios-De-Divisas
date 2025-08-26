@@ -2,6 +2,27 @@ from django import forms
 from django.contrib.auth.models import Group, Permission
 
 class RolForm(forms.ModelForm):
+    """
+    Formulario para la creación y edición de roles en el sistema.
+
+    Campos:
+        - ``nombre`` (CharField): Nombre del rol.  
+        - ``descripcion`` (TextField): Descripción detallada del rol.  
+        - ``permisos`` (ModelMultipleChoiceField): Lista de permisos asociados al rol, 
+          representados como checkboxes.
+
+    Widgets:
+        - ``nombre``: Campo de texto con estilo Bootstrap (``form-control``).  
+        - ``descripcion``: Área de texto con estilo Bootstrap (``form-control``).  
+        - ``permisos``: Checkboxes múltiples para la selección de permisos.  
+
+    Notas:
+        - Se utiliza un ``ModelMultipleChoiceField`` con widget ``CheckboxSelectMultiple`` 
+          para asignar múltiples permisos a un rol.  
+        - En el método ``__init__`` se asegura que todos los campos tengan la clase CSS 
+          adecuada (``form-control`` o ``permisos-checkbox``).
+    """
+
     permisos = forms.ModelMultipleChoiceField(
         queryset=Permission.objects.all(),
         widget=forms.SelectMultiple(attrs={'size': 15}),  # tamaño select
