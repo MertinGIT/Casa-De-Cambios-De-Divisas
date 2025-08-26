@@ -1,4 +1,4 @@
-from django.db import models
+"""from django.db import models
 from django.contrib.auth import get_user_model
 
 #User = get_user_model()
@@ -17,3 +17,4 @@ class Rol(models.Model):
     def __str__(self):
         permisos_str = ", ".join([p.nombre for p in self.permisos.all()])
         return f"{self.nombre} {self.descripcion} ({permisos_str})"
+"""

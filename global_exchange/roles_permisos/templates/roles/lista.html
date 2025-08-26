@@ -477,21 +477,13 @@ body {
         <thead>
           <tr>
             <th style="vertical-align: middle; min-width: 160px; text-align: left;">Nombre</th>
-            <th style="vertical-align: middle; min-width: 220px; text-align: left;">Permisos</th>
             <th style="vertical-align: middle; min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for r in roles %}
             <tr>
-              <td data-label="Nombre" style="vertical-align: middle; min-width: 160px;">{{ r.nombre }}</td>
-              <td data-label="Permisos" style="vertical-align: middle; min-width: 220px;">
-                {% if r.permisos.all %}
-                  {{ r.permisos.all|join:", " }}
-                {% else %}
-                  <span class="text-muted">Sin permisos</span>
-                {% endif %}
-              </td>
+              <td data-label="Nombre" style="vertical-align: middle; min-width: 160px;">{{ r.name }}</td>
               <td data-label="Acciones" style="vertical-align: middle; min-width: 160px; text-align: center;">
                 <button class="btn-edit btn btn-sm btn-primary" 
                     data-id="{{ r.id }}" 

@@ -46,7 +46,7 @@ urlpatterns = [
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
     path('admin/roles/', include('roles_permisos.urls'), name='roles'),
-    path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
+    #path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
     path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
 ]
 

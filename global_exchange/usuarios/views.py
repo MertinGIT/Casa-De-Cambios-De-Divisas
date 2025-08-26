@@ -1,10 +1,11 @@
-from django.shortcuts import render,redirect
-from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
+from functools import wraps
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
-from django.contrib.auth import login,logout,authenticate
+from django.contrib.auth import login, logout, authenticate
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from roles_permisos.models import Rol
+from django.contrib.auth.models import Group
 from .forms import CustomUserCreationForm
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
@@ -27,9 +28,10 @@ from collections import namedtuple
 
 User = get_user_model()
 # Create your views here.
-from functools import wraps
 
 # Solo usuarios normales (no superadmin)
+
+
 def user_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
@@ -44,6 +46,8 @@ def user_required(view_func):
     return _wrapped_view
 
 # Solo superadmin
+
+
 def superadmin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
@@ -56,12 +60,16 @@ def superadmin_required(view_func):
         return redirect('login')
     return _wrapped_view
 
-@user_required #con esto protejemos las rutas
+
+@user_required  # con esto protejemos las rutas
 def home(request):
     cotizaciones = [
-        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
-        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
-        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
+        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645,
+            'logo': 'img/logoMoneda/ARS.png'},
+        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000,
+            'logo': 'img/logoMoneda/USD.svg'},
+        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000,
+            'logo': 'img/logoMoneda/EUR.svg'},
         # agrega más monedas aquí...
     ]
     data_por_moneda = {
@@ -83,7 +91,8 @@ def home(request):
             'data_por_moneda': json.dumps(data_por_moneda),
             "user": request.user
         }
-    return render(request,'home.html',context)
+    return render(request, 'home.html', context)
+
 
 def signup(request):
     if request.user.is_authenticated:
@@ -94,24 +103,23 @@ def signup(request):
     eslogan_lines = ["Empieza", "ahora."]
     eslogan_spans = ["!Comienza", "ya!"]
     subtitle = "Crea tu cuenta y empieza ahora."
-    
+
     print("Correo de confirmación enviado1", flush=True)
-   
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print("Correo de confirmación enviado2", flush=True)
-        
-       
+
         if form.is_valid():
           try:
               print("entro en try", flush=True)
               # Guardar usuario inactivo
               user = form.save(commit=False)
               user.is_active = False
-              # Asignamos el rol 'usuario'
-              rol_usuario = Rol.objects.get(id=1)
-              user.rol = rol_usuario
+                # Asignamos el rol 'usuario'
+              rol_usuario = Group.objects.get(name="usuario")
               user.save()
+              user.groups.add(rol_usuario)  
               print(user, flush=True)
               activateEmail(request, user, user.email)
               return render(request, 'registrarse.html', {

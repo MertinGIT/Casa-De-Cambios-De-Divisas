@@ -2,75 +2,137 @@
 {% load widget_tweaks %}
 {% block form_title %}Agregar Rol{% endblock %}
 {% block form_fields %}
+
+<!-- Nombre del rol -->
 <div class="form-group">
-  <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+  <label for="{{ form.name.id_for_label }}">Nombre</label>
   <div class="input-icon">
     <span class="icon">👤</span>
-    {{ form.nombre|add_class:"custom-input" }}
+    {{ form.name|add_class:"custom-input" }}
   </div>
-  {% if form.nombre.errors %}
+  {% if form.name.errors %}
   <div class="error-messages">
-    {% for error in form.nombre.errors %}
-      <span class="error-text">{{ error }}</span>
+    {% for error in form.name.errors %}
+    <span class="error-text">{{ error }}</span>
     {% endfor %}
   </div>
   {% endif %}
 </div>
 
+<!-- Dual listbox de permisos -->
 <div class="form-group">
-  <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
-  <div class="input-icon">
-    <span class="icon">📝</span>
-    {{ form.descripcion|add_class:"custom-input" }}
-  </div>
-  {% if form.descripcion.errors %}
-  <div class="error-messages">
-    {% for error in form.descripcion.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
-</div>
+  <div class="dual-listbox">
+    <div>
+      <div>
+        <h5>Permisos disponibles</h5>
+        <select id="available-perms" multiple size="15">
+          {% for permiso in permisos %}
+          {% if permiso.id|stringformat:"s" not in form.permisos.value|default_if_none:"" %}
+          <option value="{{ permiso.id }}">{{ permiso.name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="dual-buttons">
+        <button type="button" id="add-perm" class="btn btn-primary">→</button>
+        <button type="button" id="remove-perm" class="btn btn-secondary">←</button>
+      </div>
 
-<div class="form-group">
-    <label>Permisos</label>
-    <div class="d-flex flex-wrap gap-2">
-        {% for permiso in permisos %}
-            <input type="checkbox" id="permiso{{ permiso.id }}" name="permisos" value="{{ permiso.id }}"
-                {% if permiso.id in form.initial.permisos|default:list %}checked{% endif %}>
-            <label for="permiso{{ permiso.id }}">{{ permiso.nombre }}</label>
-        {% endfor %}
+      <div>
+        <h5>Permisos asignados</h5>
+        <select id="selected-perms" multiple size="15" name="permisos">
+          {% for permiso in permisos %}
+          {% if permiso.id|stringformat:"s" in form.permisos.value|default_if_none:"" %}
+          <option value="{{ permiso.id }}" selected>{{ permiso.name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
     </div>
-</div>
+  </div>
+
+  <style>
+    .custom-modal-content {
+      max-width: 900px !important;
+    }
+
+    .custom-input {
+      width: 100%;
+      padding: 8px 12px 8px 36px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      background-color: #F0EDFF;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .custom-input::placeholder {
+      color: #6b7280;
+    }
+
+    .input-icon {
+      position: relative;
+    }
+
+    .input-icon .icon {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+      font-size: 16px;
+      color: #5D5FEF;
+    }
+
+    /* Dual listbox */
+    .dual-listbox {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .dual-listbox select {
+      width: 220px;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+      padding: 5px;
+      font-size: 14px;
+    }
+
+    .dual-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .dual-buttons button {
+      width: 50px;
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const addBtn = document.getElementById("add-perm");
+      const removeBtn = document.getElementById("remove-perm");
+      const available = document.getElementById("available-perms");
+      const selected = document.getElementById("selected-perms");
+
+      addBtn.addEventListener("click", () => moveOptions(available, selected));
+      removeBtn.addEventListener("click", () => moveOptions(selected, available));
+
+      function moveOptions(from, to) {
+        Array.from(from.selectedOptions).forEach(opt => {
+          to.add(opt);
+          opt.selected = to === selected;
+        });
+      }
+
+      // Asegura que todos los seleccionados se envíen al hacer submit
+      selected.closest("form").addEventListener("submit", () => {
+        Array.from(selected.options).forEach(opt => opt.selected = true);
+      });
+    });
+  </script>
 
 
-<style>
-.custom-input {
-  width: 100%;
-  padding: 8px 12px 8px 36px; /* espacio para icono */
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: #F0EDFF;
-  font-size: 14px;
-  outline: none;
-}
-
-.custom-input::placeholder {
-  color: #6b7280;
-}
-
-.input-icon {
-  position: relative;
-}
-
-.input-icon .icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 16px;
-  color: #5D5FEF;
-}
-</style>
-{% endblock %}
+  {% endblock %}
