@@ -1,9 +1,10 @@
+@@ -0,0 +1,232 @@
 {% load static %}
 
 <!-- Modal Crear/Editar -->
 <div id="modal-accion" class="custom-modal">
   <div class="custom-modal-content">
-    <form method="POST" id="form-accion" action="{{ form_action }}" novalidate>
+    <form method="POST" id="form-accion" action="{{ form_action }}">
       {% csrf_token %}
       <input
         type="hidden"
@@ -63,7 +64,6 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    
   }
   .custom-modal-content {
     background: #fff;
@@ -105,6 +105,7 @@
   .modal-body {
     display: flex;
     flex-direction: column;
+    gap: 12px;
     font-size: 14px;
     color: #374151;
   }
@@ -136,71 +137,6 @@
   .btn-confirmar:hover {
     background-color: #4f46e5;
   }
-  
-  /* Estilos para los formularios */
-  .form-group {
-    margin-bottom: 5px;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-    color: #374151;
-  }
-  
-  .custom-input {
-    width: 100%;
-    padding: 8px 12px 8px 36px;
-    border-radius: 6px;
-    border: 1px solid #d1d5db;
-    background-color: #f0edff;
-    font-size: 14px;
-    outline: none;
-    box-sizing: border-box;
-  }
-  
-  .custom-input:focus {
-    border-color: #5d5fef;
-    box-shadow: 0 0 0 2px rgba(93, 95, 239, 0.1);
-  }
-  
-  .custom-input.error {
-    border-color: #ef4444;
-    background-color: #fef2f2;
-  }
-  
-  .custom-input::placeholder {
-    color: #6b7280;
-  }
-  
-  .input-icon {
-    position: relative;
-    margin-bottom: 5px;
-  }
-  
-  .input-icon .icon {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    font-size: 16px;
-    color: #5d5fef;
-    z-index: 1;
-  }
-  
-  .error-messages {
-    margin-top: 4px;
-  }
-  
-  .error-text {
-    color: #ef4444;
-    font-size: 13px;
-    display: block;
-    margin-bottom: 2px;
-  }
-  
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -219,7 +155,6 @@
     document.getElementById("form-accion").action = createUrl;
     document.getElementById("form-accion").reset();
     clearFormErrors();
-    document.getElementById("modal-title").textContent = "Agregar Cliente";
     document.getElementById("modal-accion").style.display = "flex";
   }
 
@@ -236,10 +171,11 @@
 
         Object.entries(data).forEach(([key, value]) => {
           const fields = form.querySelectorAll(`[name="${key}"]`);
-          if (!fields.length) return;
+          if (!fields.length) return; // si no existe en el form, saltar
 
           fields.forEach((field) => {
             if (field.type === "checkbox") {
+              // ✅ Soporta múltiples checkboxes (arrays)
               if (Array.isArray(value)) {
                 field.checked = value.includes(parseInt(field.value));
               } else {
@@ -254,12 +190,8 @@
             }
           });
         });
-      })
-      .catch(error => {
-        console.error("Error fetching details:", error);
       });
 
-    document.getElementById("modal-title").textContent = "Editar Cliente";
     document.getElementById("modal-accion").style.display = "flex";
   }
 
@@ -277,111 +209,25 @@
   function closeModal() {
     document.getElementById("modal-accion").style.display = "none";
     document.getElementById("modal-delete").style.display = "none";
-    clearFormErrors();
   }
 
   function clearFormErrors() {
-    // Remover mensajes de error
     const errorMessages = document.querySelectorAll(".error-messages");
     errorMessages.forEach((error) => error.remove());
-    
-    // Remover clases de error de los inputs
-    const errorInputs = document.querySelectorAll(".custom-input.error");
-    errorInputs.forEach((input) => input.classList.remove("error"));
   }
 
-  // Event listeners para botones
-  document.addEventListener("DOMContentLoaded", function () {
-    // Botones de editar
-    document.querySelectorAll(".btn-edit").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle);
-      });
+  document.querySelectorAll(".btn-edit").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle);
     });
-    
-    // Botones de eliminar
-    document.querySelectorAll(".btn-delete").forEach(btn => {
-      btn.addEventListener("click", () => {
+  });
+  
+  document.querySelectorAll(".btn-delete").forEach(btn => {
+    btn.addEventListener("click", () => {
         const id = btn.dataset.id;
         const deleteUrl = btn.dataset.delete.replace("0", id);
         openDeleteModal(id, deleteUrl);
-      });
     });
+});
 
-    // Manejar envío del formulario principal
-    const form = document.getElementById("form-accion");
-    if (!form) return;
-
-    form.addEventListener("submit", function (e) {
-      e.preventDefault();
-      
-      const url = form.action;
-      const formData = new FormData(form);
-      
-      // Mostrar indicador de carga (opcional)
-      const submitBtn = form.querySelector('.btn-confirmar');
-      const originalText = submitBtn.textContent;
-      submitBtn.textContent = 'Guardando...';
-      submitBtn.disabled = true;
-
-      fetch(url, {
-        method: "POST",
-        body: formData,
-        headers: { 
-          "X-Requested-With": "XMLHttpRequest",
-        }
-      })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then(data => {
-        console.log("Response data:", data);
-        
-        if (data.success) {
-          closeModal();
-          location.reload(); // refresca la lista
-        } else if (data.html_form) {
-          // Crear un documento temporal para parsear el HTML
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = data.html_form;
-          
-          // Extraer solo el contenido del formulario (sin el template base)
-          const formContent = tempDiv.querySelector('#form-fields-container') || tempDiv;
-          
-          // Reemplazar solo el contenido del cuerpo del modal
-          const container = document.getElementById("form-fields-container");
-          if (container && formContent) {
-            container.innerHTML = formContent.innerHTML;
-            
-            // Marcar inputs con errores
-            const errorFields = container.querySelectorAll('.error-messages');
-            errorFields.forEach(errorDiv => {
-              const fieldName = errorDiv.previousElementSibling?.querySelector('input, select')?.name;
-              if (fieldName) {
-                const input = container.querySelector(`[name="${fieldName}"]`);
-                if (input) {
-                  input.classList.add('error');
-                }
-              }
-            });
-          }
-        } else {
-          console.error("Respuesta inesperada:", data);
-          alert("Error inesperado. Por favor intente nuevamente.");
-        }
-      })
-      .catch(err => {
-        console.error("Error AJAX:", err);
-        alert("Error de conexión. Por favor intente nuevamente.");
-      })
-      .finally(() => {
-        // Restaurar botón
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-      });
-    });
-  });
 </script>
