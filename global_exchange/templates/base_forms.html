@@ -1,4 +1,4 @@
-@@ -0,0 +1,232 @@
+
 {% load static %}
 
 <!-- Modal Crear/Editar -->
@@ -43,10 +43,10 @@
     <form method="POST" id="delete-form">
       {% csrf_token %}
       <input type="hidden" name="obj_id" id="delete_obj_id" />
-      <p id="delete-message">¿Seguro que deseas eliminar este registro?</p>
+      <p id="delete-message">¿Seguro que deseas desactivar este registro?</p>
 
       <div class="modal-footer">
-        <button type="submit" class="btn-confirmar">Eliminar</button>
+        <button type="submit" class="btn-confirmar">Desactivar</button>
         <button type="button" class="btn-cancelar" onclick="closeModal()">
           Cancelar
         </button>
@@ -198,11 +198,11 @@
   function openDeleteModal(
     id,
     deleteUrl,
-    message = "¿Seguro que deseas eliminar este registro?"
+    message
   ) {
     document.getElementById("delete_obj_id").value = id;
     document.getElementById("delete-form").action = deleteUrl.replace("0", id);
-    document.getElementById("delete-message").innerText = message;
+    document.getElementById("delete-message").innerText = message || "¿Seguro que deseas realizar esta operacion?";
     document.getElementById("modal-delete").style.display = "flex";
   }
 

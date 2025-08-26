@@ -59,17 +59,26 @@ class ClienteCreateView(CreateView):
         context["modal_title"] = "Agregar Cliente"
         context["form_action"] = reverse_lazy('clientes-agregar')
         return context
-    def form_invalid(self, form):
-        logger.error("❌ Errores en formulario: %s", form.errors)
-        messages.error(self.request, f"Errores en el formulario: {form.errors}")
-        return super().form_invalid(form)
+    
 
-    def form_valid(self, form):
-        logger.info("✅ Formulario válido, guardando cliente")
-        messages.success(self.request, "Cliente agregado correctamente.")
-        return super().form_valid(form)
-
-
+@superadmin_required
+def check_email(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        obj_id = request.POST.get('obj_id')
+        
+        # Debug: imprimir valores recibidos
+        print(f"Email: {email}, obj_id: {obj_id}")
+        
+        query = Cliente.objects.filter(email=email)
+        
+        # Si hay obj_id, excluir ese registro de la validación
+        if obj_id and obj_id != 'null' and obj_id != '':
+            query = query.exclude(id=obj_id)
+        
+        exists = query.exists()
+        
+        return JsonResponse(not exists, safe=False)           
 @method_decorator(superadmin_required, name='dispatch')
 class ClienteUpdateView(UpdateView):
     model = Cliente
@@ -91,17 +100,40 @@ class ClienteDeleteView(DeleteView):
     success_url = reverse_lazy('clientes')
 
     def delete(self, request, *args, **kwargs):
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            try:
-                cliente = self.get_object()
-                cliente_nombre = cliente.nombre
-                cliente.delete()
-                return JsonResponse({'success': True})
-            except Exception as e:
-                return JsonResponse({'success': False, 'error': 'Error interno del servidor'})
-        
         messages.success(request, "Cliente eliminado correctamente.")
         return super().delete(request, *args, **kwargs)
+        
+
+
+@method_decorator(superadmin_required, name='dispatch')
+class ClienteDesactivateView(UpdateView):
+    model = Cliente
+    template_name = 'clientes/form.html'
+    success_url = reverse_lazy('clientes')
+    fields = []  # No necesitamos formulario, solo acción de desactivar
+
+    def post(self, request, *args, **kwargs):
+        cliente = self.get_object()
+        cliente.estado = 'inactivo'
+        cliente.save()
+        messages.success(request, "Cliente desactivado correctamente.")
+        return redirect(self.success_url)
+    
+@method_decorator(superadmin_required, name='dispatch')
+class ClienteActivateView(UpdateView):
+    model = Cliente
+    template_name = 'clientes/form.html'
+    success_url = reverse_lazy('clientes')
+    fields = [] 
+
+    def post(self, request, *args, **kwargs):
+        cliente = self.get_object()
+        cliente.estado = 'activo'
+        cliente.save()
+        messages.success(request, "Cliente activo correctamente.")
+        return redirect(self.success_url)
+
+        
 
 def cliente_detalle(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)

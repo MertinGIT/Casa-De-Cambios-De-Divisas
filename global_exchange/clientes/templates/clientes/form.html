@@ -7,78 +7,48 @@
 {% block form_fields %}
 
 <div class="form-group">
-    <label for="{{ form.nombre.id_for_label }}">Nombre</label>
-    <div class="input-icon">
-        <span class="icon">👤</span>
-        {{ form.nombre|add_class:"custom-input" }}
-    </div>
-    {% if form.nombre.errors %}
-        <div class="error-messages">
-            {% for error in form.nombre.errors %}
-                <span class="error-text">{{ error }}</span>
-            {% endfor %}
-        </div>
-    {% endif %}
+  <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    {{ form.nombre|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 
 <div class="form-group">
-    <label for="{{ form.email.id_for_label }}">Email</label>
-    <div class="input-icon">
-        <span class="icon">📧</span>
-        {{ form.email|add_class:"custom-input" }}
-    </div>
-    {% if form.email.errors %}
-        <div class="error-messages">
-            {% for error in form.email.errors %}
-                <span class="error-text">{{ error }}</span>
-            {% endfor %}
-        </div>
-    {% endif %}
+  <label for="{{ form.email.id_for_label }}">Email *</label>
+  <div class="input-icon">
+    <span class="icon">📧</span>
+    {{ form.email|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 
 <div class="form-group">
-    <label for="{{ form.telefono.id_for_label }}">Teléfono</label>
-    <div class="input-icon">
-        <span class="icon">📞</span>
-        {{ form.telefono|add_class:"custom-input" }}
-    </div>
-    {% if form.telefono.errors %}
-        <div class="error-messages">
-            {% for error in form.telefono.errors %}
-                <span class="error-text">{{ error }}</span>
-            {% endfor %}
-        </div>
-    {% endif %}
+  <label for="{{ form.telefono.id_for_label }}">Teléfono *</label>
+  <div class="input-icon">
+    <span class="icon">📞</span>
+    {{ form.telefono|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 
 <div class="form-group">
-    <label for="{{ form.segmentacion.id_for_label }}">Segmentación</label>
-    <div class="input-icon">
-        <span class="icon">🏷️</span>
-        {{ form.segmentacion|add_class:"custom-input" }}
-    </div>
-    {% if form.segmentacion.errors %}
-        <div class="error-messages">
-            {% for error in form.segmentacion.errors %}
-                <span class="error-text">{{ error }}</span>
-            {% endfor %}
-        </div>
-    {% endif %}
+  <label for="{{ form.segmentacion.id_for_label }}">Segmentación *</label>
+  <div class="input-icon">
+    <span class="icon">🏷️</span>
+    {{ form.segmentacion|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 
 <div class="form-group">
-    <label for="{{ form.estado.id_for_label }}">Estado</label>
-    <div class="input-icon">
-        <span class="icon">⚡</span>
-        {{ form.estado|add_class:"custom-input" }}
-    </div>
-    {% if form.estado.errors %}
-        <div class="error-messages">
-            {% for error in form.estado.errors %}
-                <span class="error-text">{{ error }}</span>
-            {% endfor %}
-        </div>
-    {% endif %}
+  <label for="{{ form.estado.id_for_label }}">Estado *</label>
+  <div class="input-icon">
+    <span class="icon">⚡</span>
+    {{ form.estado|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 
 <style>
@@ -90,15 +60,32 @@
   background-color: #f0edff;
   font-size: 14px;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .custom-input::placeholder {
   color: #6b7280;
 }
 
+.custom-input:focus {
+  border-color: #5d5fef;
+  box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+}
+
+/* Estilos para validación */
+.custom-input.error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.custom-input.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
 .input-icon {
   position: relative;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .input-icon .icon {
@@ -109,16 +96,252 @@
   pointer-events: none;
   font-size: 16px;
   color: #5d5fef;
+  z-index: 1;
 }
 
 .error-messages {
-  margin-top: 4px;
+  min-height: 18px;
+  margin-bottom: 8px;
+  display: block;
 }
 
-.error-text {
-  color: #ef4444;
-  font-size: 13px;
+.error-messages .error-message {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
+  margin: 2px 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  background: none !important;
+  border: none !important;
+  text-align: left !important;
+  line-height: 1.4 !important;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
+
+<!-- jQuery Validate Script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+<script>
+// Variable global para el validador
+let clienteValidator = null;
+
+// Configurar mensajes en español
+jQuery.extend(jQuery.validator.messages, {
+    required: "Este campo es obligatorio.",
+    email: "Por favor, escribe una dirección de correo válida.",
+    digits: "Por favor, escribe sólo números.",
+    minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+    maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres.")
+});
+
+// Función para inicializar validación
+function setupClienteValidation() {
+    const $form = $("#form-accion");
+    
+    if (!$form.length) {
+        console.log("Formulario no encontrado");
+        return null;
+    }
+
+    // Destruir validador existente si existe
+    if (clienteValidator) {
+        clienteValidator.destroy();
+        clienteValidator = null;
+    }
+
+    console.log("Configurando validación del formulario cliente");
+    
+    clienteValidator = $form.validate({
+        rules: {
+            nombre: {
+                required: true,
+                minlength: 2,
+                maxlength: 100
+            },
+            email: {
+                required: true,
+                email: true,
+                maxlength: 150,
+                remote: {
+                    url: "/clientes/check-email/",
+                    type: "post",
+                    data: {
+                        email: function() {
+                            return $("#form-accion input[name='email']").val();
+                        },
+                        obj_id: function() {
+                            // Obtener directamente del campo que ya existe en tu modal
+                            let objId = $("#obj_id").val();
+                            
+                            console.log("obj_id encontrado para validación:", objId);
+                            
+                            // Si está vacío, devolver null para que sea tratado como creación
+                            return (objId && objId !== '') ? objId : null;
+                        },
+                        csrfmiddlewaretoken: function() {
+                            return $("input[name='csrfmiddlewaretoken']").val();
+                        }
+                    },
+                    // Agregar callback para debug
+                    beforeSend: function(xhr, settings) {
+                        console.log("Enviando validación remota:", settings.data);
+                    }
+                }
+            },
+            telefono: {
+                required: true,
+                minlength: 8,
+                digits: true,
+                maxlength: 15
+            },
+            segmentacion: {
+                required: true
+            },
+            estado: {
+                required: true
+            }
+        },
+        messages: {
+            nombre: {
+                required: "El nombre es obligatorio",
+                minlength: "El nombre debe tener al menos 2 caracteres",
+                maxlength: "El nombre no puede exceder 100 caracteres"
+            },
+            email: {
+                required: "El email es obligatorio",
+                email: "Ingrese un email válido",
+                maxlength: "El email no puede exceder 150 caracteres",
+                remote: "Este email ya está en uso"
+            },
+            telefono: {
+                required: "El teléfono es obligatorio",
+                digits: "El teléfono debe contener solo números",
+                minlength: "El teléfono debe tener al menos 8 caracteres",
+                maxlength: "El teléfono no puede exceder 15 caracteres"
+            },
+            segmentacion: {
+                required: "Debe seleccionar una segmentación"
+            },
+            estado: {
+                required: "Debe seleccionar un estado"
+            }
+        },
+        errorElement: 'div',
+        errorClass: 'error-message',
+        validClass: 'valid',
+        errorPlacement: function(error, element) {
+            console.log("Colocando error:", error.text(), "para elemento:", element.attr('name'));
+            let formGroup = element.closest('.form-group');
+            let errorContainer = formGroup.find('.error-messages');
+            
+            if (!errorContainer.length) {
+                errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
+            }
+            errorContainer.html(error);
+        },
+        highlight: function(element, errorClass, validClass) {
+            $(element).addClass('error').removeClass(validClass);
+            console.log("Marcando campo con error:", $(element).attr('name'));
+        },
+        unhighlight: function(element, errorClass, validClass) {
+            $(element).removeClass('error').addClass(validClass);
+            console.log("Limpiando error de campo:", $(element).attr('name'));
+        },
+        success: function(label, element) {
+            console.log("Campo válido:", $(element).attr('name'));
+            $(element).closest('.form-group').find('.error-messages').empty();
+        },
+        submitHandler: function(form) {
+            console.log("Formulario válido, enviando...");
+            form.submit();
+        },
+        invalidHandler: function(event, validator) {
+            console.log("Formulario inválido, errores:", validator.numberOfInvalids());
+        }
+    });
+  $("#form-accion input[name='telefono']").on("input", function() {
+      this.value = this.value.replace(/[^0-9]/g,''); // solo números
+  });
+    return clienteValidator;
+}
+
+// Sobrescribir funciones del modal para incluir validación
+$(document).ready(function() {
+    // Guardar funciones originales
+    const originalOpenCreateModal = window.openCreateModal;
+    const originalOpenEditModal = window.openEditModal;
+    const originalCloseModal = window.closeModal;
+
+    // Nueva función para crear modal
+    window.openCreateModal = function(createUrl) {
+        console.log("Abriendo modal crear con validación");
+        
+        if (originalOpenCreateModal) {
+            originalOpenCreateModal(createUrl);
+        }
+        
+        // Configurar validación después de que el modal se abra
+        setTimeout(function() {
+            setupClienteValidation();
+        }, 200);
+    };
+
+    // Nueva función para editar modal
+    window.openEditModal = function(id, editUrl, detalle) {
+        console.log("Abriendo modal editar con validación, ID:", id);
+        
+        if (originalOpenEditModal) {
+            originalOpenEditModal(id, editUrl, detalle);
+        }
+        
+        // Configurar validación después de cargar datos
+        setTimeout(function() {
+            // Asegurar que el campo obj_id tenga el ID correcto
+            const objIdField = $("#obj_id");
+            if (objIdField.length) {
+                objIdField.val(id);
+                console.log("Campo obj_id actualizado con valor:", id);
+            }
+            
+            setupClienteValidation();
+        }, 1000); // Timeout más largo para que el fetch termine
+    };
+
+    // Nueva función para cerrar modal
+    window.closeModal = function() {
+        console.log("Cerrando modal y limpiando validación");
+        
+        // Limpiar validación
+        if (clienteValidator) {
+            clienteValidator.destroy();
+            clienteValidator = null;
+        }
+        
+        // Limpiar clases y mensajes manualmente
+        $("#form-accion .error").removeClass('error');
+        $("#form-accion .valid").removeClass('valid');
+        $(".error-messages").empty();
+        
+        if (originalCloseModal) {
+            originalCloseModal();
+        }
+    };
+
+    console.log("Sistema de validación de cliente inicializado");
+});
+</script>
 
 {% endblock %}
