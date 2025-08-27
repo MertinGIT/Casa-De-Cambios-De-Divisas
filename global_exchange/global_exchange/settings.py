@@ -86,6 +86,8 @@ INSTALLED_APPS = [
     'admin_dashboard',
     'asignar_clientes_usuarios',
     'cliente_segmentacion',
+    'cotizaciones',
+    'monedas',
 ]
 # ============================================================================
 # Middleware

@@ -1,0 +1,373 @@
+{% extends "base_forms.html" %}
+{% load widget_tweaks %}
+
+<p>{{modal_type}}</p>
+{% block form_title %}
+  Agregar Tasa
+{% endblock %}
+
+{% block form_fields %}
+
+<div class="form-group">
+  <label for="{{ form.moneda_origen.id_for_label }}">Moneda base</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    {{ form.moneda_origen|add_class:"custom-input"|attr:"disabled:true"}}
+    <!-- Campo hidden para enviar el valor por POST -->
+    <input type="hidden" name="moneda_origen" value="{{ form.moneda_origen.value }}">
+  </div>
+  {% if form.moneda_origen.errors %}
+  <div class="error-messages">
+    {% for error in form.moneda_origen.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.moneda_destino.id_for_label }}">Moneda destino</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    {{ form.moneda_destino|add_class:"custom-input" }}
+  </div>
+  {% if form.moneda_destino.errors %}
+  <div class="error-messages">
+    {% for error in form.moneda_destino.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+
+<div class="form-group">
+  <label for="{{ form.monto_compra.id_for_label }}">Compra</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-arrow-right-short" style="color: black;"></i> </span>
+    {{ form.monto_compra|add_class:"custom-input" }}
+  </div>
+  {% if form.monto_compra.errors %}
+    <div class="error-messages">
+      {% for error in form.monto_compra.errors %}
+        <span class="error-text">{{ error }}</span>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.monto_venta.id_for_label }}">Venta</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-arrow-right-short" style="color: black;"></i> </span>
+    {{ form.monto_venta|add_class:"custom-input" }}
+  </div>
+  {% if form.monto_venta.errors %}
+  <div class="error-messages">
+    {% for error in form.monto_venta.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.vigencia.id_for_label }}">Vigencia</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-calendar" style="color: black;"></i> </span>
+    {{ form.vigencia|add_class:"custom-input" }}
+  </div>
+  
+  {% if form.vigencia.errors %}
+  <div class="error-messages">
+    {% for error in form.vigencia.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+
+{% if show_modal and modal_type == "edit" %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    openEditModal(
+      {{ obj_id }},
+      "{% url 'cotizacion_editar' 0 %}",   // URL de guardado
+      "{% url 'cotizacion_detalle' obj_id %}"  // URL para cargar los datos
+    );
+  });
+</script>
+{% endif %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+<script>
+// Variable global para el validador
+let tasaValidator = null;
+
+// Configurar mensajes en español
+jQuery.extend(jQuery.validator.messages, {
+    required: "Este campo es obligatorio.",
+    number: "Ingrese un número válido.",
+    min: jQuery.validator.format("El valor no puede ser menor a {0}."),
+});
+
+// Inicializar validación
+function setupTasaValidation() {
+    const $form = $("#form-accion");
+
+    if (!$form.length) {
+        console.log("Formulario no encontrado");
+        return null;
+    }
+
+    // Destruir validador existente si ya hay uno
+    if (tasaValidator) {
+        tasaValidator.destroy();
+        tasaValidator = null;
+    }
+
+    tasaValidator = $form.validate({
+        rules: {
+            moneda_origen: { required: true },
+            moneda_destino: { required: true },
+            monto_compra: { required: true, number: true, min: 0 },
+            monto_venta: { required: true, number: true, min: 0 },
+            vigencia: { required: true }
+        },
+        messages: {
+            moneda_origen: { required: "Debes seleccionar una moneda de origen." },
+            moneda_destino: { required: "Debes seleccionar una moneda de destino." },
+            monto_compra: {
+                required: "Debes ingresar el monto de compra.",
+                number: "Ingrese un número válido",
+                min: "El valor no puede ser negativo."
+            },
+            monto_venta: {
+                required: "Debes ingresar el monto de venta.",
+                number: "Ingrese un número válido",
+                min: "El valor no puede ser negativo."
+            },
+            vigencia: { required: "Debes ingresar la fecha y hora de vigencia." }
+        },
+        errorElement: "div",
+        errorClass: "error-message",
+        validClass: "valid",
+        errorPlacement: function(error, element) {
+            let formGroup = element.closest(".form-group");
+            let errorContainer = formGroup.find(".error-messages");
+
+            if (!errorContainer.length) {
+                errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
+            }
+            errorContainer.html(error);
+        },
+        highlight: function(element, errorClass, validClass) {
+            $(element).addClass("error custom-input").removeClass(validClass);
+        },
+        unhighlight: function(element, errorClass, validClass) {
+            $(element).removeClass("error").addClass(validClass);
+        },
+        success: function(label, element) {
+            $(element).closest(".form-group").find(".error-messages").empty();
+        },
+        submitHandler: function(form) {
+            console.log("Formulario válido, enviando AJAX...");
+            const $form = $(form);
+
+            $.ajax({
+                url: $form.attr("action"),
+                type: "POST",
+                data: $form.serialize(),
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+                success: function(data) {
+                  
+                    $form.find(".error-messages").html(""); // limpia errores previos
+                    if (data.success) {
+                      // limpiar estilos y mensajes después de guardar
+                        $form.find(".error").removeClass("error");
+                        $form.find(".valid").removeClass("valid");
+                        $form.find(".error-messages").empty();
+                        $("#modal-accion").hide(); // cierra modal
+                        $form[0].reset();          // limpia inputs
+                        const t = data.tasa;
+                        const newRow = `
+                            <tr>
+                                <td>${t.origen}</td>
+                                <td>${t.destino}</td>
+                                <td style="text-align:center;">${parseFloat(t.compra).toFixed(2)}</td>
+                                <td style="text-align:center;">${parseFloat(t.venta).toFixed(2)}</td>
+                                <td style="text-align:center;">${t.vigencia}</td>
+                                <td style="text-align:center;">
+                                    <button class="btn-edit btn btn-sm btn-primary" data-id="${t.id}">Editar</button>
+                                    <button class="btn-delete btn btn-sm btn-danger" data-id="${t.id}">Eliminar</button>
+                                </td>
+                            </tr>`;
+                        $(".custom-table tbody").append(newRow);
+                    } else {
+                        $.each(data.errors, function(field, messages) {
+                            const input = $form.find(`#id_${field}`);
+                            if (!input.length) return;
+                            let errorDiv = input.parent().find(".error-messages");
+                            if (!errorDiv.length) {
+                                errorDiv = $('<div class="error-messages"></div>').appendTo(input.parent());
+                            }
+                            errorDiv.html(messages.map(m => `<span class="error-message">${m}</span>`).join(""));
+                            input.addClass("error custom-input");
+                        });
+                    }
+                },
+                error: function() {
+                    alert("Ocurrió un error en el servidor.");
+                }
+            });
+            return false;
+        },
+        invalidHandler: function(event, validator) {
+            console.log("Formulario inválido, errores:", validator.numberOfInvalids());
+        }
+    });
+
+    // Forzar que monto_compra y monto_venta solo acepten números
+    $("#form-accion input[name='monto_compra'], #form-accion input[name='monto_venta']").on("input", function() {
+        this.value = this.value.replace(/[^0-9.]/g,'');
+    });
+
+    return tasaValidator;
+}
+
+// Inicializar al abrir modal
+$(document).ready(function() {
+    setupTasaValidation();
+
+    // Abrir selector de fecha al hacer foco
+    const inputDate = document.getElementById("id_vigencia");
+    if (inputDate) {
+        inputDate.addEventListener("focus", function() {
+            if (this.showPicker) this.showPicker();
+        });
+        inputDate.addEventListener("click", function() {
+            if (this.showPicker) this.showPicker();
+        });
+    }
+});
+</script>
+
+
+
+<style>
+  .custom-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    /* espacio para icono */
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background-color: #F0EDFF;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .custom-input::placeholder {
+    color: #6b7280;
+  }
+
+  .input-icon {
+    position: relative;
+  }
+
+  .input-icon .icon {
+    position: absolute;
+    left: 10px;   /* ícono a la izquierda */
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 16px;
+    color: #5D5FEF;
+  }
+  
+    /* Ocultar el ícono nativo */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;              /* 🔥 lo quita completamente */
+  -webkit-appearance: none;
+  }
+
+  /* Para datetime-local */
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+  }
+  
+    .error-text {
+    color: red;         /* 🔥 color rojo para el texto del error */
+    font-size: 13px;    /* opcional: un poco más chico */
+    margin-top: 4px;    /* opcional: separa del input */
+  }
+  /* Estilos para validación */
+.custom-input.error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.custom-input.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.input-icon {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.input-icon .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  color: #5d5fef;
+  z-index: 1;
+}
+
+.input-wrapper {
+    position: relative;
+}
+.error-messages {
+  position: absolute;
+  left: 0px;
+  bottom: -30px;
+  transform: translateY(-50%);
+  color: red;
+  font-size: 12px;
+}
+
+
+
+.error-messages .error-message {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
+  margin: 2px 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  background: none !important;
+  border: none !important;
+  text-align: left !important;
+  line-height: 1.4 !important;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+</style>
+{% endblock %}
+
