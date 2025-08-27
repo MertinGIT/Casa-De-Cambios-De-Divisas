@@ -159,5 +159,6 @@ def rol_detalle(request, pk):
     permisos_ids = list(map(str, rol.permissions.values_list('id', flat=True)))
     return JsonResponse({
         "name": rol.name,
-        "permisos": permisos_ids
+        "permisos": permisos_ids,
+        "modal_title": "Editar Rol"
     })

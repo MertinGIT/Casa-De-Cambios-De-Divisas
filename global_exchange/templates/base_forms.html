@@ -1,16 +1,12 @@
 {% load static %}
 
+
 <!-- Modal Crear/Editar -->
 <div id="modal-accion" class="custom-modal">
   <div class="custom-modal-content">
     <form method="POST" id="form-accion" action="{{ form_action }}">
       {% csrf_token %}
-      <input
-        type="hidden"
-        name="obj_id"
-        id="obj_id"
-        value="{{ obj_id|default:'' }}"
-      />
+      <input type="hidden" name="obj_id" id="obj_id" value="{{ obj_id|default:'' }}" />
 
       <!-- Header -->
       <div class="modal-header">
@@ -34,7 +30,7 @@
       </div>
     </form>
   </div>
-</div>
+</div>  
 
 <!-- Modal Eliminar -->
 <div id="modal-delete" class="custom-modal">
@@ -43,12 +39,9 @@
       {% csrf_token %}
       <input type="hidden" name="obj_id" id="delete_obj_id" />
       <p id="delete-message">¿Seguro que deseas eliminar este registro?</p>
-
       <div class="modal-footer">
         <button type="submit" class="btn-confirmar">Eliminar</button>
-        <button type="button" class="btn-cancelar" onclick="closeModal()">
-          Cancelar
-        </button>
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
       </div>
     </form>
   </div>
@@ -64,6 +57,7 @@
     align-items: center;
     z-index: 1000;
   }
+
   .custom-modal-content {
     background: #fff;
     border-radius: 12px;
@@ -73,6 +67,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     animation: fadeIn 0.3s ease-in-out;
   }
+
   .modal-header {
     display: flex;
     justify-content: center;
@@ -80,12 +75,14 @@
     margin-bottom: 16px;
     position: relative;
   }
+
   .modal-header h2 {
     font-size: 20px;
     font-weight: 600;
     color: #1a1a1a;
     margin: 0;
   }
+
   .close-btn {
     position: absolute;
     right: 16px;
@@ -97,10 +94,12 @@
     color: #6b7280;
     cursor: pointer;
   }
+
   .close-btn:hover {
     color: #ef4444;
     transform: scale(1.2);
   }
+
   .modal-body {
     display: flex;
     flex-direction: column;
@@ -108,12 +107,14 @@
     font-size: 14px;
     color: #374151;
   }
+
   .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
     margin-top: 16px;
   }
+
   .btn-cancelar {
     background-color: #f3f4f6;
     color: #374151;
@@ -122,9 +123,11 @@
     border-radius: 6px;
     cursor: pointer;
   }
+
   .btn-cancelar:hover {
     background-color: #e5e7eb;
   }
+
   .btn-confirmar {
     background-color: #5d5fef;
     color: white;
@@ -133,14 +136,17 @@
     border-radius: 6px;
     cursor: pointer;
   }
+
   .btn-confirmar:hover {
     background-color: #4f46e5;
   }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
       transform: scale(0.9);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
@@ -149,11 +155,29 @@
 </style>
 
 <script>
-  function openCreateModal(createUrl) {
-    console.log("Opening create modal with URL:", createUrl);
-    document.getElementById("form-accion").action = createUrl;
-    document.getElementById("form-accion").reset();
+  function openCreateModal(createUrl, modalTitleText = "Agregar") {
+    const form = document.getElementById("form-accion");
+    form.action = createUrl;
+    form.reset();
     clearFormErrors();
+    document.getElementById("modal-title").textContent = modalTitleText;
+
+    // --- RESET DUAL LISTBOX ---
+    const available = document.getElementById("available-perms");
+    const selected = document.getElementById("selected-perms");
+    if (available && selected) {
+      // Mover todos los options de selected a available
+      const allOptions = [];
+      Array.from(available.options).forEach(opt => allOptions.push(opt));
+      Array.from(selected.options).forEach(opt => allOptions.push(opt));
+      available.innerHTML = "";
+      selected.innerHTML = "";
+      allOptions.forEach(opt => {
+        opt.selected = false;
+        available.appendChild(opt);
+      });
+    }
+    // --- FIN RESET DUAL LISTBOX ---
     document.getElementById("modal-accion").style.display = "flex";
   }
 
@@ -208,6 +232,9 @@
             }
           });
         });
+        const modalTitle = document.getElementById("modal-title");
+        modalTitle.textContent = data.modal_title;
+
       });
 
     document.getElementById("modal-accion").style.display = "flex";
@@ -218,10 +245,12 @@
     deleteUrl,
     message = "¿Seguro que deseas eliminar este registro?"
   ) {
+    console.log("entra pio");
     document.getElementById("delete_obj_id").value = id;
     document.getElementById("delete-form").action = deleteUrl.replace("0", id);
     document.getElementById("delete-message").innerText = message;
     document.getElementById("modal-delete").style.display = "flex";
+    console.log("Llega hasta aca")
   }
 
   function closeModal() {
@@ -234,17 +263,4 @@
     errorMessages.forEach((error) => error.remove());
   }
 
-  document.querySelectorAll(".btn-edit").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle);
-    });
-  });
-  
-  document.querySelectorAll(".btn-delete").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        const deleteUrl = btn.dataset.delete.replace("0", id);
-        openDeleteModal(id, deleteUrl);
-    });
-});
 </script>
