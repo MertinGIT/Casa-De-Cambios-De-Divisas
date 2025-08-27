@@ -3,8 +3,6 @@
 {% block dashboard_content %}
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 <style>
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
@@ -202,12 +200,13 @@ body {
 }
 
 .btn-primary {
-  background-color: #5D5FEF;
+  background-color: #5D5FEF !important; 
+  border-color: #5D5FEF !important; 
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #4338ca;
+  background-color: #4338ca !important;
 }
 
 .btn-danger {
@@ -447,14 +446,15 @@ body {
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
-      <h1 class="page-title">Clientes</h1>
+      <h1 class="page-title">Tasas de Cambio</h1>
       <div class="header-right">
         <form method="get" style="display: flex; align-items: center; gap: 12px;">
           <input name="seg" value="{{ seg_selected }}" type="hidden">
           
           <!-- Ícono de búsqueda -->
           <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         
           <input name="q" value="{{ q }}" class="search-input" type="search" placeholder="Buscar...">
@@ -464,91 +464,61 @@ body {
           <!-- Selector de campo -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
-            <option value="nombre">Nombre</option>
-            <option value="email">Email</option>
-            <option value="telefono">Teléfono</option>
-            <option value="segmento">Segmento</option>
+            <option value="moneda_origen">Moneda Origen</option>
+            <option value="moneda_destino">Moneda Destino</option>
           </select>
         </form>
       </div>
     </div>
-    
-    <div class="filters-section">
-      <form method="get" class="filters-row">
-        <input name="q" value="{{ q }}" type="hidden">
-        <input name="mes" value="{{ mes_selected }}" type="hidden">
-      </form>
-    </div>
 
-  <button class="btn-add rounded border-0 my-2"
-        data-url="{% url 'clientes-agregar' %}"
-        onclick="openCreateModal(this.dataset.url)">
-        Agregar Cliente
-  </button>
-
-
+    <button onclick="openCreateModal('{% url 'cotizacion_nuevo' %}', 'Agregar Tasa' )" 
+      class="btn-add rounded border-0 my-2">+ Agregar Tasa</button>
     
     <!-- Tabla -->
     <div class="table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Teléfono</th>
-            <th>Segmento</th>
-            <th>Descuento (%)</th>
-            <th>Estado</th>
-            <th>Acciones</th>
+            <th style="min-width: 160px; text-align: left;">Moneda Base</th>
+            <th style="min-width: 160px; text-align: left;">Moneda Destino</th>
+            <th style="min-width: 120px; text-align: center;">Compra</th>
+            <th style="min-width: 120px; text-align: center;">Venta</th>
+            <th style="min-width: 120px; text-align: center;">Vigencia</th>
+            <th style="min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {% for c in clientes %}
+          {% for t in tasas %}
             <tr>
-              <td data-label="Nombre">{{ c.nombre }}</td>
-              <td data-label="Email">{{ c.email }}</td>
-              <td data-label="Teléfono">{{ c.telefono|default:"—" }}</td>
-              <td data-label="Segmento">{{ c.segmentacion.nombre|default:"Sin segmento" }}</td>
-              <td data-label="Descuento">{{ c.segmentacion.descuento|default:"0" }}%</td>
-              <td data-label="Estado">
-                {% if c.estado == 'activo' %}
-                  <span class="status-badge status-activo">Activo</span>
-                {% else %}
-                  <span class="status-badge status-inactivo">Inactivo</span>
-                {% endif %}
-              </td>
-              <td data-label="Acciones">
-
-        <button class="btn-edit btn btn-sm btn-primary"
-        data-id="{{ c.id }}"
-        data-edit="{% url 'clientes-editar' 0 %}"
-        data-detalle="{% url 'clientes-detalle' c.id %}">
-  Editar
-</button>
-{% if c.estado == 'activo' %}
-  <button type="button"
-          class="btn-delete btn btn-sm btn-danger"
-          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-desactivate' 0 %}', '¿Seguro que deseas desactivar este registro?')">
-    Desactivar
-  </button>
-{% else %}
-  <button type="button"
-          class="btn-delete btn btn-sm btn-success"
-          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-activate' 0 %}', '¿Seguro que deseas activar este registro?')">
-    Activar
-  </button>
-{% endif %}
-
+              <td>{{ t.moneda_origen }}</td>
+              <td>{{ t.moneda_destino }}</td>
+              <td style="text-align: center;">{{ t.monto_compra|floatformat:2 }}</td>
+              <td style="text-align: center;">{{ t.monto_venta|floatformat:2 }}</td>
+              <td style="text-align: center;">{{ t.vigencia|date:"d/m/Y H:i" }}</td>
+              <td style="text-align: center;">
+                <button class="btn-edit btn btn-sm btn-primary" 
+                        data-id="{{ t.id }}" 
+                        data-edit="{% url 'cotizacion_editar' 0 %}" 
+                        data-detalle="{% url 'cotizacion_detalle' t.id %}"
+                        data-title="Editar Tasa">
+                  Editar
+                </button>
+                <button class="btn-delete btn btn-sm btn-danger"
+                        data-id="{{ t.id }}"
+                        data-delete="{% url 'cotizacion_eliminar' 0 %}">
+                  Eliminar
+                </button>
               </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="8" class="no-results">Sin resultados encontrados.</td>
+              <td colspan="6" class="no-results">Sin resultados encontrados.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
+      
       
     <!-- Paginación -->
     {% if page_obj %}
@@ -608,5 +578,6 @@ body {
     {% endif %}
   </div>
 </div>
-{% include "clientes/form.html" %}
+
+{% include "cotizaciones/form.html" %}
 {% endblock %}
