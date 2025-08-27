@@ -1,3 +1,16 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+</head>
+
+</html>
+
+
 {% load static %}
 
 <!-- Modal Crear/Editar -->
@@ -42,10 +55,9 @@
     <form method="POST" id="delete-form">
       {% csrf_token %}
       <input type="hidden" name="obj_id" id="delete_obj_id" />
-      <p id="delete-message">¿Seguro que deseas eliminar este registro?</p>
-
+      <p id="delete-message">¿Seguro que deseas desactivar este registro?</p>
       <div class="modal-footer">
-        <button type="submit" class="btn-confirmar">Eliminar</button>
+        <button type="submit" class="btn-confirmar">Desactivar</button>
         <button type="button" class="btn-cancelar" onclick="closeModal()">
           Cancelar
         </button>
@@ -149,15 +161,19 @@
 </style>
 
 <script>
-  function openCreateModal(createUrl) {
+  function openCreateModal(createUrl, model_title) {
     console.log("Opening create modal with URL:", createUrl);
     document.getElementById("form-accion").action = createUrl;
     document.getElementById("form-accion").reset();
+
     clearFormErrors();
     document.getElementById("modal-accion").style.display = "flex";
+    
+    const modalTitle = document.getElementById("modal-title");
+    modalTitle.textContent = model_title;
   }
 
-  function openEditModal(id, editUrl, detalle) {
+  function openEditModal(id, editUrl, detalle, title) {
     const form = document.getElementById("form-accion");
     form.action = editUrl.replace("0", id);
     form.reset();
@@ -192,18 +208,23 @@
       });
 
     document.getElementById("modal-accion").style.display = "flex";
+    const modalTitle = document.getElementById("modal-title");
+    modalTitle.textContent = title;
   }
 
   function openDeleteModal(
     id,
     deleteUrl,
-    message = "¿Seguro que deseas eliminar este registro?"
+    message
   ) {
+    console.log("id:",id)
+    console.log("prueba:",deleteUrl.replace("0", id))
     document.getElementById("delete_obj_id").value = id;
     document.getElementById("delete-form").action = deleteUrl.replace("0", id);
-    document.getElementById("delete-message").innerText = message;
+    document.getElementById("delete-message").innerText = message || "¿Seguro que deseas realizar esta operacion?";
     document.getElementById("modal-delete").style.display = "flex";
   }
+  
 
   function closeModal() {
     document.getElementById("modal-accion").style.display = "none";
@@ -216,17 +237,20 @@
   }
 
   document.querySelectorAll(".btn-edit").forEach((btn) => {
+
     btn.addEventListener("click", () => {
-      openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle);
+      openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle, btn.dataset.title);
     });
+    
+
   });
   
   document.querySelectorAll(".btn-delete").forEach(btn => {
     btn.addEventListener("click", () => {
         const id = btn.dataset.id;
-        const deleteUrl = btn.dataset.delete.replace("0", id);
+        const deleteUrl = btn.dataset.delete;
         openDeleteModal(id, deleteUrl);
+        console.log("deleteurl:",deleteUrl)
     });
 });
 
-</script>
