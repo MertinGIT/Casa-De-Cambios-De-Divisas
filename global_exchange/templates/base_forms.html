@@ -166,15 +166,34 @@
     fetch(detalle)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
+        // --- DUAL LISTBOX LOGIC ---
+        const available = document.getElementById("available-perms");
+        const selected = document.getElementById("selected-perms");
+        // 1. Mover todos los options de ambos selects a available
+        const allOptions = [];
+        Array.from(available.options).forEach(opt => allOptions.push(opt));
+        Array.from(selected.options).forEach(opt => allOptions.push(opt));
+        // Vaciar ambos selects
+        available.innerHTML = "";
+        selected.innerHTML = "";
+        // 2. Repartir según permisos asignados
+        allOptions.forEach(opt => {
+          if (data.permisos && data.permisos.includes(opt.value) || data.permisos_asignados && data.permisos_asignados.includes(parseInt(opt.value))) {
+            selected.appendChild(opt);
+            opt.selected = true;
+          } else {
+            available.appendChild(opt);
+            opt.selected = false;
+          }
+        });
+        // --- FIN DUAL LISTBOX ---
 
+        // Setear otros campos simples
         Object.entries(data).forEach(([key, value]) => {
           const fields = form.querySelectorAll(`[name="${key}"]`);
-          if (!fields.length) return; // si no existe en el form, saltar
-
+          if (!fields.length) return;
           fields.forEach((field) => {
             if (field.type === "checkbox") {
-              // ✅ Soporta múltiples checkboxes (arrays)
               if (Array.isArray(value)) {
                 field.checked = value.includes(parseInt(field.value));
               } else {
@@ -182,7 +201,7 @@
               }
             } else if (field.tagName === "SELECT" && field.multiple) {
               Array.from(field.options).forEach((opt) => {
-                opt.selected = value.includes(parseInt(opt.value));
+                opt.selected = value.includes(parseInt(opt.value)) || value.includes(opt.value);
               });
             } else {
               field.value = value;
@@ -228,5 +247,4 @@
         openDeleteModal(id, deleteUrl);
     });
 });
-
 </script>

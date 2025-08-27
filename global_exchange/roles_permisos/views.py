@@ -156,8 +156,8 @@ def rol_detalle(request, pk):
         - ``roles/form_fields.html``
     """
     rol = get_object_or_404(Group, pk=pk)
-    permisos_ids = list(rol.permissions.values_list('id', flat=True))
+    permisos_ids = list(map(str, rol.permissions.values_list('id', flat=True)))
     return JsonResponse({
         "name": rol.name,
-        "permisos_asignados": permisos_ids
+        "permisos": permisos_ids
     })
