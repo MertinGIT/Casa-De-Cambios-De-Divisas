@@ -1,0 +1,195 @@
+{% extends "base_forms.html" %}
+{% load widget_tweaks %}
+{% block form_title %}Agregar Moneda{% endblock %}
+{% block form_fields %}
+
+
+<div class="form-group">
+  <label for="{{ form.moneda.id_for_label }}">Nombre</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    {{ form.nombre|add_class:"custom-input" }}
+  </div>
+
+</div>
+
+<div class="form-group">
+  <label for="{{ form.abreviacion.id_for_label }}">Abreviación</label>
+  <div class="input-icon">
+    <span class="icon"><i class="bi bi-card-heading" style="color: black;"></i></span>
+    {{ form.abreviacion|add_class:"custom-input" }}
+  </div>
+  
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const formAccion = document.querySelector("#form-accion");
+  
+  formAccion.addEventListener("submit", function(e){
+      e.preventDefault(); // evita recarga
+
+      const formData = new FormData(formAccion);
+      const url = formAccion.getAttribute("action"); // form_action dinámico
+
+      // Limpiar errores previos
+      formAccion.querySelectorAll(".error-messages").forEach(div => div.innerHTML = "");
+      formAccion.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+      formAccion.querySelectorAll(".valid").forEach(el => el.classList.remove("valid"));
+
+      fetch(url, {
+          method: "POST",
+          body: formData,
+          headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(response => response.json())
+      .then(data => {
+          if(data.success){
+              // Éxito: cerrar modal, limpiar y resetear estilos
+              const modal = document.querySelector("#modal-accion");
+              if (modal) modal.style.display = "none";
+
+              formAccion.reset();
+
+              // 🔹 reset visual
+              formAccion.querySelectorAll(".error").forEach(el => el.classList.remove("error"));
+              formAccion.querySelectorAll(".valid").forEach(el => el.classList.remove("valid"));
+              formAccion.querySelectorAll(".error-messages").forEach(div => div.innerHTML = "");
+
+              // Recargar tabla o página
+              location.reload();
+          } else {
+              // mostrar errores en los inputs
+              for(const [field, messages] of Object.entries(data.errors)){
+                  const input = formAccion.querySelector(`#id_${field}`);
+                  if (!input) continue;
+
+                  // marcar como error
+                  input.classList.add("error","custom-input");
+
+                  // buscar/crear contenedor de errores
+                  let errorDiv = input.parentElement.querySelector(".error-messages");
+                  if(!errorDiv){
+                      errorDiv = document.createElement("div");
+                      errorDiv.classList.add("error-messages");
+                      input.parentElement.appendChild(errorDiv);
+                  }
+                  errorDiv.innerHTML = messages.map(m => `<span class="error-message">${m}</span>`).join("");
+              }
+          }
+      });
+  });
+});
+</script>
+
+
+
+
+<style>
+  .custom-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    /* espacio para icono */
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background-color: #F0EDFF;
+    font-size: 14px;
+    outline: none;
+  }
+
+  .custom-input::placeholder {
+    color: #6b7280;
+  }
+
+  .input-icon {
+    position: relative;
+  }
+
+  .input-icon .icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 16px;
+    color: #5D5FEF;
+  }
+    /* Texto del error en rojo */
+  .error-text {
+    color: #dc2626;   /* rojo tailwind-500 */
+    font-size: 13px;
+    margin-top: 4px;
+    display: block;
+  }
+
+  /* Borde rojo al input con error */
+  .custom-input.error {
+    border-color: #dc2626;
+    background-color: #fef2f2; /* rosado clarito para destacar */
+  }
+
+  /* Estilos para validación */
+.custom-input.error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.custom-input.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.input-icon {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.input-icon .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  color: #5d5fef;
+  z-index: 1;
+}
+.input-wrapper {
+    position: relative;
+}
+.error-messages {
+  position: absolute;
+  left: 0px;
+  bottom: -30px;
+  transform: translateY(-50%);
+  color: red;
+  font-size: 12px;
+}
+
+.error-messages .error-message {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
+  margin: 2px 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  background: none !important;
+  border: none !important;
+  text-align: left !important;
+  line-height: 1.4 !important;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+{% endblock %}
