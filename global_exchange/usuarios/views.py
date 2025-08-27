@@ -24,6 +24,8 @@ from django.contrib import messages
 from .tokens import account_activation_token
 import json
 from collections import namedtuple
+from django.urls import reverse
+from django.utils.http import urlencode
 
 User = get_user_model()
 # Create your views here.
@@ -65,38 +67,140 @@ def superadmin_required(view_func):
 
 @user_required #con esto protejemos las rutas
 def home(request):
+    # views.py - home
     """
     Vista principal para usuarios normales.
 
     Muestra las cotizaciones de distintas monedas y los datos del usuario
     autenticado en el contexto del template `home.html`.
     """
+from django.http import JsonResponse
+
+from datetime import datetime
+
+@user_required
+def home(request):
+    # Cotizaciones y monedas
     cotizaciones = [
         {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
         {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
         {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
-        # agrega más monedas aquí...
     ]
+
+    monedas = [
+        {"abreviacion": "USD", "nombre": "Dólar"},
+        {"abreviacion": "EUR", "nombre": "Euro"},
+        {"abreviacion": "BRL", "nombre": "Real"},
+        {"abreviacion": "PYG", "nombre": "Guaraní"},
+    ]
+
     data_por_moneda = {
-            "USD": [
-                {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
-                {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
-                {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
-                {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
-            ],
-            "EUR": [
-                {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
-                {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
-                {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
-                {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
-            ],
-        }
+        "USD": [
+            {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
+            {"fecha": "11 Jul", "compra": 7300, "venta": 7400}
+        ],
+        "EUR": [
+            {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
+            {"fecha": "11 Jul", "compra": 8520, "venta": 8720}
+        ],
+        "ARS": [
+            {"fecha": "10 Jul", "compra": 54564, "venta": 55645},
+            {"fecha": "11 Jul", "compra": 68000, "venta": 77000},
+            {"fecha": "12 Jul", "compra": 60000, "venta": 78000}
+        ],
+    }
+
+    COMISION_VTA = 100
+    COMISION_COM = 50
+    segmentos = {"VIP": 10, "Corporativo": 5, "Minorista": 0}
+
+    resultado = ""
+    ganancia_total = 0
+    valor_input = ""
+    moneda_seleccionada = ""
+    operacion = "venta"
+    segmento = "Minorista"
+    origen = ""
+    destino = ""
+
+    if request.method == "POST":
+        print("POST:", dict(request.POST), flush=True)
+        
+        valor_input = request.POST.get("valor", "").strip()
+        operacion = request.POST.get("operacion")
+        segmento = request.POST.get("segmento", "Minorista")
+        origen = request.POST.get("origen", "")
+        destino = request.POST.get("destino", "")
+        
+        if operacion == "venta":
+            # vendo PYG y quiero otra moneda => la moneda relevante es el destino
+            moneda_seleccionada = destino
+        else:
+            # compro (entrego otra moneda y quiero PYG) => moneda relevante es el origen
+            moneda_seleccionada = origen
+
+        try:
+            valor = float(valor_input)
+            if valor <= 0:
+                resultado = "Monto inválido"
+            else:
+                descuento = 10
+
+                # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
+                registros = data_por_moneda.get(moneda_seleccionada, [])
+                if registros:
+                    # convertir "10 Jul" → datetime (suponiendo mismo año)
+                    registros_ordenados = sorted(
+                        registros,
+                        key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
+                        reverse=True
+                    )
+                    ultimo = registros_ordenados[0]  # el más reciente
+                    if operacion == "venta":
+                        PB_MONEDA = ultimo["venta"]
+                    else:
+                        PB_MONEDA = ultimo["compra"]
+                else:
+                    PB_MONEDA = 0  # si no hay datos
+
+                # === CÁLCULOS ===
+                if operacion == "venta":  # Vender PYG → otra moneda
+                    TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                    resultado = round(valor / TC_VTA, 2)
+                    ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                else:  # Compra: otra moneda → PYG
+                    print(PB_MONEDA, flush=True)
+                    TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+                    resultado = round(valor * TC_COMP, 2)
+                    ganancia_total = round(
+                        (valor * COMISION_COM * (1 - descuento / 100)) +
+                        (valor * COMISION_VTA * (descuento / 100)),
+                        2
+                    )
+
+        except ValueError:
+            resultado = "Monto inválido"
+
+        # Respuesta AJAX
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({"resultado": resultado, "ganancia_total": ganancia_total})
+
     context = {
-            'cotizaciones': cotizaciones,
-            'data_por_moneda': json.dumps(data_por_moneda),
-            "user": request.user
-        }
-    return render(request,'home.html',context)
+        'cotizaciones': cotizaciones,
+        'monedas': monedas,
+        'resultado': resultado,
+        'ganancia_total': ganancia_total,
+        'valor_input': valor_input,
+        'moneda_seleccionada': moneda_seleccionada,
+        'operacion': operacion,
+        'segmento': segmento,
+        "user": request.user,
+        "origen": origen,
+        "destino": destino,
+        'data_por_moneda': json.dumps(data_por_moneda),
+    }
+    return render(request, 'home.html', context)
+
 
 def signup(request):
     """
@@ -458,4 +562,3 @@ def crud_empleados(request):
     
     # Pasamos los datos al template
     return render(request, 'empleados.html', {'empleados': empleados})
-

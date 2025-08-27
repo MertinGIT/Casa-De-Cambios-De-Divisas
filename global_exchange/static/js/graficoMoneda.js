@@ -1,21 +1,26 @@
-// static/js/graficoMoneda.js
-
 document.addEventListener("DOMContentLoaded", () => {
-  const dataPorMoneda = JSON.parse(
-    document.getElementById("data-por-moneda").textContent
-  );
+  const dataPorMoneda = JSON.parse(document.getElementById("data-por-moneda").textContent);
   const ctx = document.getElementById("graficoMoneda").getContext("2d");
-  let currentMoneda = "USD";
+
+  // Generar dinámicamente las opciones del select según dataPorMoneda
+  const monedaSelect = document.getElementById("monedaSelect");
+  monedaSelect.innerHTML = "";
+  Object.keys(dataPorMoneda).forEach(moneda => {
+    const option = document.createElement("option");
+    option.value = moneda;
+    option.textContent = moneda;
+    monedaSelect.appendChild(option);
+  });
+
+  let currentMoneda = monedaSelect.value; // primera moneda de la lista
 
   function crearGrafico(moneda) {
     const data = dataPorMoneda[moneda];
-    const fechas = data.map((d) => d.fecha);
-    const compra = data.map((d) => d.compra);
-    const venta = data.map((d) => d.venta);
+    const fechas = data.map(d => d.fecha);
+    const compra = data.map(d => d.compra);
+    const venta = data.map(d => d.venta);
 
-    if (window.miGrafico) {
-      window.miGrafico.destroy();
-    }
+    if (window.miGrafico) window.miGrafico.destroy();
 
     window.miGrafico = new Chart(ctx, {
       type: "line",
@@ -41,36 +46,18 @@ document.addEventListener("DOMContentLoaded", () => {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        scales: {
-          y: {
-            min: 7500,
-            max: 9000,
-          },
-        },
         plugins: {
-          legend: {
-            labels: {
-              font: {
-                size: 18, // tamaño del texto "Compra" y "Venta" en la leyenda
-              },
-            },
-          },
-          tooltip: {
-            titleFont: {
-              size: 18,
-            },
-            bodyFont: {
-              size: 18, // tamaño del texto dentro del tooltip
-            },
-          },
+          legend: { labels: { font: { size: 18 } } },
+          tooltip: { titleFont: { size: 18 }, bodyFont: { size: 18 } },
+        },
+        scales: {
+          y: { beginAtZero: false }, // se ajusta automáticamente según datos
         },
       },
     });
   }
 
-  document.getElementById("monedaSelect").addEventListener("change", (e) => {
-    crearGrafico(e.target.value);
-  });
+  monedaSelect.addEventListener("change", (e) => crearGrafico(e.target.value));
 
   crearGrafico(currentMoneda);
 });

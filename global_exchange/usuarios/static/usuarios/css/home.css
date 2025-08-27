@@ -4,8 +4,25 @@
 }
 
 .home-main{
-  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+.flex-content{
+  display: flex;
+  justify-content: space-around;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+.chart-content{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+@media (max-width: 1024px) {
+  .flex-content {
+    flex-direction: column; /* 2 columnas iguales */
+  }
 }
