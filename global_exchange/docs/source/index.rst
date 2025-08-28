@@ -16,4 +16,9 @@ documentation for details.
    :caption: Contents:
    
    usuarios
-
+   admin_dashboard
+   asignar_clientes_usuarios
+   clientes
+   global_exchange
+   roles_permisos
+   

@@ -3,6 +3,8 @@
 {% block dashboard_content %}
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
 <style>
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
@@ -478,8 +480,13 @@ body {
       </form>
     </div>
 
-    <button onclick="openCreateModal('{% url 'clientesAgregar' %}')" 
-      class="btn-add rounded border-0 my-2">+ Agregar Cliente</button>
+  <button class="btn-add rounded border-0 my-2"
+        data-url="{% url 'clientes-agregar' %}"
+        onclick="openCreateModal(this.dataset.url)">
+        Agregar Cliente
+  </button>
+
+
     
     <!-- Tabla -->
     <div class="table-container">
@@ -511,18 +518,26 @@ body {
                 {% endif %}
               </td>
               <td data-label="Acciones">
-                <button class="btn-edit btn btn-sm btn-primary"
-        data-id="{{ cliente.id }}"
-        data-edit="{% url 'cliente_editar' 0 %}"
-        data-detalle="{% url 'cliente_detalle' cliente.id %}">
+
+        <button class="btn-edit btn btn-sm btn-primary"
+        data-id="{{ c.id }}"
+        data-edit="{% url 'clientes-editar' 0 %}"
+        data-detalle="{% url 'clientes-detalle' c.id %}">
   Editar
 </button>
-
-<button class="btn-delete btn btn-sm btn-danger"
-        data-id="{{ cliente.id }}"
-        data-delete="{% url 'cliente_eliminar' 0 %}">
-  Eliminar
-</button>
+{% if c.estado == 'activo' %}
+  <button type="button"
+          class="btn-delete btn btn-sm btn-danger"
+          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-desactivate' 0 %}', '¿Seguro que deseas desactivar este registro?')">
+    Desactivar
+  </button>
+{% else %}
+  <button type="button"
+          class="btn-delete btn btn-sm btn-success"
+          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-activate' 0 %}', '¿Seguro que deseas activar este registro?')">
+    Activar
+  </button>
+{% endif %}
 
               </td>
             </tr>

@@ -17,9 +17,10 @@
 
       <p>{{error}}</p>
       {% if error %}
-      <p class="text-error">Datos incorrectos</p>
+      <p class="text-error">{{form.username.errors}}</p>
       {% endif %}
-      <p class="text-inicio">{{ subtitle }}</p>
+      <p class="text-inicio">{{ subtitle|safe }}</p>
+
 
       <div class="button-contain-login">
         <a
