@@ -23,6 +23,7 @@ from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from configuracion import views as configuracion_views
 
 
 urlpatterns = [
@@ -45,6 +46,7 @@ urlpatterns = [
     path('admin/roles/', include('roles_permisos.urls'), name='roles'),
     path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
     path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
+    path('admin/configuracion/', configuracion_views.configuracion_view, name='configuracion'),
     path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
     path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),
 ]

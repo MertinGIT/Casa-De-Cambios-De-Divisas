@@ -1,0 +1,97 @@
+{% extends 'base_admin.html' %} 
+{% load static %} 
+{% block dashboard_content %}
+
+<main class="main-container">
+
+  <div class="modules">
+
+    <a href="#" class="module-btn active">💰 Monedas</a>
+
+    <a href="#" class="module-btn">💱 Tasa de Cambio</a>
+
+    <a href="#" class="module-btn">💳 Métodos de Pago</a>
+
+    <a href="#" class="module-btn">👥 Segmentacion</a>
+
+    <a href="#" class="module-btn">🔒 Seguridad</a>
+
+  </div>
+
+</main>
+
+<style>
+body, html {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f4f6fb;
+}
+
+.main-container {
+  text-align: center;
+  padding: 3rem 2rem;
+  margin: 2rem 0;
+  border-radius: 24px;
+  background-color: #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.main-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  justify-content: center;
+}
+
+.module-btn {
+  display: inline-block; /* Importante para que los <a> se vean como botones */
+  padding: 0.9rem 1.8rem;
+  border-radius: 14px;
+  text-decoration: none;
+  background-color: #737791;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.module-btn:hover {
+  background-color: #5d5fef;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.module-btn.active {
+  background-color: #5d5fef;
+  box-shadow: 0 6px 20px rgba(93, 95, 239, 0.4);
+}
+
+.sidebar.active ~ .dashboard-content {
+  width: 100% !important;
+}
+</style>
+
+<script>
+// Mantener solo un link activo
+const buttons = document.querySelectorAll('.module-btn');
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  });
+});
+</script>
+
+{% endblock %}
