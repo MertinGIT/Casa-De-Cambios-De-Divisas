@@ -445,7 +445,7 @@
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
-      <h1 class="page-title">Roles</h1>
+      <h1 class="page-title">Usuarios</h1>
       <div class="header-right">
         <form method="get" style="display: flex; align-items: center; gap: 12px;">
           <input name="seg" value="{{ seg_selected }}" type="hidden">
@@ -469,32 +469,25 @@
       </div>
     </div>
 
-    <button onclick="openCreateModal('{% url 'rol_nuevo' %}', 'Agregar Rol')" class="btn-add rounded border-0 my-2">+
-      Agregar
-      Rol</button>
 
     <!-- Tabla -->
     <div class="table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th style="vertical-align: middle; min-width: 160px; text-align: left;">Nombre</th>
+            <th style="vertical-align: middle; min-width: 160px; text-align: left;">Usuario</th>
             <th style="vertical-align: middle; min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          {% for r in roles %}
+          {% for u in usuarios %}
           <tr>
-            <td data-label="Nombre" style="vertical-align: middle; min-width: 160px;">{{ r.name }}</td>
+            <td data-label="Usuario" style="vertical-align: middle; min-width: 160px;">{{ u.username }}</td>
             <td data-label="Acciones" style="vertical-align: middle; min-width: 160px; text-align: center;">
-              <button class="btn-edit btn btn-sm btn-primary"
-                onclick="openEditModal('{{ r.id }}', '{% url 'rol_editar' 0 %}', '{% url 'rol_detalle' r.id %}')"
-                type="button">
+              <button class="btn-edit btn btn-sm btn-primary" data-id="{{ u.id }}"
+                data-edit="{% url 'user_roles_edit' 0 %}" data-detalle="{% url 'user_roles_detalle' u.id %}"
+                data-title="Editar Usuario">
                 Editar
-              </button>
-              <button class="btn-delete btn btn-sm btn-danger" type="button"
-                onclick="openDeleteModal('{{ r.id }}', '{% url 'rol_eliminar' 0 %}')">
-                Desactivar
               </button>
             </td>
           </tr>
@@ -537,7 +530,8 @@
           {% with current_minus_2=page_obj.number|add:"-2" current_plus_2=page_obj.number|add:"2" %}
           {% if i <= 2 or i > page_obj.paginator.num_pages|add:"-2" or i >= current_minus_2 and i <= current_plus_2 %}
               <li class="page-item">
-              <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i }}</a>
+              <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i
+                }}</a>
               </li>
               {% elif i == 3 and page_obj.number > 5 %}
               <li class="page-item disabled">
@@ -569,5 +563,5 @@
   </div>
 </div>
 
-{% include "roles/form.html" %}
+{% include "user_roles_form.html" %}
 {% endblock %}

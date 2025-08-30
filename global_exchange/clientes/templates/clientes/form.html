@@ -286,11 +286,11 @@ $(document).ready(function() {
     const originalCloseModal = window.closeModal;
 
     // Nueva función para crear modal
-    window.openCreateModal = function(createUrl) {
+    window.openCreateModal = function(createUrl, title) {
         console.log("Abriendo modal crear con validación");
         
         if (originalOpenCreateModal) {
-            originalOpenCreateModal(createUrl);
+            originalOpenCreateModal(createUrl, title);
         }
         
         // Configurar validación después de que el modal se abra
@@ -300,11 +300,11 @@ $(document).ready(function() {
     };
 
     // Nueva función para editar modal
-    window.openEditModal = function(id, editUrl, detalle) {
+    window.openEditModal = function(id, editUrl, detalle, title) {
         console.log("Abriendo modal editar con validación, ID:", id);
         
         if (originalOpenEditModal) {
-            originalOpenEditModal(id, editUrl, detalle);
+            originalOpenEditModal(id, editUrl, detalle, title);
         }
         
         // Configurar validación después de cargar datos

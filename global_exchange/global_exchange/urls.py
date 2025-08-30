@@ -16,7 +16,7 @@ Including another URLconf
 
 # from django.contrib import admin
 from django.urls import path, include
-from usuarios import views as usuarios_views
+from usuarios import views as usuarios_views, urls as usuarios_urls
 from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
 from django.shortcuts import render
@@ -44,11 +44,12 @@ urlpatterns = [
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
     path('admin/roles/', include('roles_permisos.urls'), name='roles'),
-    path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
+    #path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
     path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
     path('admin/configuracion/', configuracion_views.configuracion_view, name='configuracion'),
     path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
     path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),
+    path('admin/usuarios/', include(usuarios_urls), name='usuarios_roles_permisos')
 ]
 
 

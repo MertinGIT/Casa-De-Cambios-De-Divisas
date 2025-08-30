@@ -1,8 +1,15 @@
-
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
+  <!-- jQuery (debe ir primero) -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <!-- Select2 -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <meta charset="UTF-8">
@@ -10,20 +17,12 @@
 
 </html>
 
-
-{% load static %}
-
 <!-- Modal Crear/Editar -->
 <div id="modal-accion" class="custom-modal">
   <div class="custom-modal-content">
     <form method="POST" id="form-accion" action="{{ form_action }}">
       {% csrf_token %}
-      <input
-        type="hidden"
-        name="obj_id"
-        id="obj_id"
-        value="{{ obj_id|default:'' }}"
-      />
+      <input type="hidden" name="obj_id" id="obj_id" value="{{ obj_id|default:'' }}" />
 
       <!-- Header -->
       <div class="modal-header">
@@ -76,6 +75,7 @@
     align-items: center;
     z-index: 1000;
   }
+
   .custom-modal-content {
     background: #fff;
     border-radius: 12px;
@@ -85,6 +85,7 @@
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
     animation: fadeIn 0.3s ease-in-out;
   }
+
   .modal-header {
     display: flex;
     justify-content: center;
@@ -92,12 +93,14 @@
     margin-bottom: 16px;
     position: relative;
   }
+
   .modal-header h2 {
     font-size: 20px;
     font-weight: 600;
     color: #1a1a1a;
     margin: 0;
   }
+
   .close-btn {
     position: absolute;
     right: 16px;
@@ -109,10 +112,12 @@
     color: #6b7280;
     cursor: pointer;
   }
+
   .close-btn:hover {
     color: #ef4444;
     transform: scale(1.2);
   }
+
   .modal-body {
     display: flex;
     flex-direction: column;
@@ -120,12 +125,14 @@
     font-size: 14px;
     color: #374151;
   }
+
   .modal-footer {
     display: flex;
     justify-content: flex-end;
     gap: 12px;
     margin-top: 16px;
   }
+
   .btn-cancelar {
     background-color: #f3f4f6;
     color: #374151;
@@ -135,9 +142,11 @@
     cursor: pointer;
     z-index:100;
   }
+
   .btn-cancelar:hover {
     background-color: #e5e7eb;
   }
+
   .btn-confirmar {
     background-color: #5d5fef;
     color: white;
@@ -146,14 +155,17 @@
     border-radius: 6px;
     cursor: pointer;
   }
+
   .btn-confirmar:hover {
     background-color: #4f46e5;
   }
+
   @keyframes fadeIn {
     from {
       opacity: 0;
       transform: scale(0.9);
     }
+
     to {
       opacity: 1;
       transform: scale(1);
@@ -162,14 +174,33 @@
 </style>
 
 <script>
+
   function openCreateModal(createUrl, model_title) {
     console.log("Opening create modal with URL:", createUrl);
     document.getElementById("form-accion").action = createUrl;
     document.getElementById("form-accion").reset();
 
     clearFormErrors();
+    document.getElementById("modal-title").textContent = model_title;
+
+    // --- RESET DUAL LISTBOX ---
+    const available = document.getElementById("available-perms");
+    const selected = document.getElementById("selected-perms");
+    if (available && selected) {
+      // Mover todos los options de selected a available
+      const allOptions = [];
+      Array.from(available.options).forEach(opt => allOptions.push(opt));
+      Array.from(selected.options).forEach(opt => allOptions.push(opt));
+      available.innerHTML = "";
+      selected.innerHTML = "";
+      allOptions.forEach(opt => {
+        opt.selected = false;
+        available.appendChild(opt);
+      });
+    }
+    // --- FIN RESET DUAL LISTBOX ---
     document.getElementById("modal-accion").style.display = "flex";
-    
+
     const modalTitle = document.getElementById("modal-title");
     modalTitle.textContent = model_title;
   }
@@ -183,15 +214,178 @@
     fetch(detalle)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
+        console.log("=== DATOS RECIBIDOS ===", data);
 
+        // ================== DETECTAR TIPO DE MODAL ==================
+        const isUserModal = document.getElementById("user-available-groups") !== null;
+        const isRoleModal = document.getElementById("available-perms") !== null;
+
+        console.log("Tipo de modal detectado:", {
+          isUserModal: isUserModal,
+          isRoleModal: isRoleModal
+        });
+
+        if (isUserModal) {
+          // ================== LÓGICA PARA USUARIOS ==================
+          console.log("=== EJECUTANDO LÓGICA DE USUARIOS ===");
+
+          // GRUPOS
+          const userAvailableGroups = document.getElementById("user-available-groups");
+          const userSelectedGroups = document.getElementById("user-selected-groups");
+
+          if (userAvailableGroups && userSelectedGroups) {
+            console.log("=== PROCESANDO GRUPOS DE USUARIO ===");
+
+            // Limpiar ambos contenedores
+            userAvailableGroups.innerHTML = "";
+            userSelectedGroups.innerHTML = "";
+
+            // Popular select con todos los grupos disponibles
+            if (data.all_groups && Array.isArray(data.all_groups)) {
+              data.all_groups.forEach(group => {
+                // Si el grupo NO está asignado, ponerlo en disponibles
+                if (!data.groups.includes(group.id)) {
+                  const option = document.createElement("option");
+                  option.value = group.id;
+                  option.textContent = group.name;
+                  userAvailableGroups.appendChild(option);
+                } else {
+                  // Si el grupo SÍ está asignado, crear checkbox
+                  const wrapper = document.createElement("div");
+                  wrapper.className = "checkbox-wrapper";
+                  wrapper.style.marginBottom = "5px";
+
+                  const label = document.createElement("label");
+                  label.style.display = "block";
+                  label.innerHTML = `
+                    <input type="checkbox" name="groups" value="${group.id}" checked>
+                    ${group.name}
+                  `;
+
+                  // Agregar evento para devolver al select si se desmarca
+                  label.querySelector("input").addEventListener("change", function (e) {
+                    if (!e.target.checked) {
+                      const opt = document.createElement("option");
+                      opt.value = group.id;
+                      opt.textContent = group.name;
+                      userAvailableGroups.appendChild(opt);
+                      wrapper.remove();
+                    }
+                  });
+
+                  wrapper.appendChild(label);
+                  userSelectedGroups.appendChild(wrapper);
+                }
+              });
+            }
+
+            console.log("Grupos cargados - Disponibles:", userAvailableGroups.options.length);
+            console.log("Grupos cargados - Seleccionados:", userSelectedGroups.children.length);
+          }
+
+          // PERMISOS
+          const userAvailablePerms = document.getElementById("user-available-perms");
+          const userSelectedPerms = document.getElementById("user-selected-perms");
+
+          if (userAvailablePerms && userSelectedPerms) {
+            console.log("=== PROCESANDO PERMISOS DE USUARIO ===");
+
+            // Limpiar ambos contenedores
+            userAvailablePerms.innerHTML = "";
+            userSelectedPerms.innerHTML = "";
+
+            // Popular select con todos los permisos disponibles
+            if (data.all_permissions && Array.isArray(data.all_permissions)) {
+              data.all_permissions.forEach(permission => {
+                // Si el permiso NO está asignado, ponerlo en disponibles
+                if (!data.user_permissions.includes(permission.id)) {
+                  const option = document.createElement("option");
+                  option.value = permission.id;
+                  option.textContent = permission.name;
+                  userAvailablePerms.appendChild(option);
+                } else {
+                  // Si el permiso SÍ está asignado, crear checkbox
+                  const wrapper = document.createElement("div");
+                  wrapper.className = "checkbox-wrapper";
+                  wrapper.style.marginBottom = "5px";
+
+                  const label = document.createElement("label");
+                  label.style.display = "block";
+                  label.innerHTML = `
+                    <input type="checkbox" name="user_permissions" value="${permission.id}" checked>
+                    ${permission.name}
+                  `;
+
+                  // Agregar evento para devolver al select si se desmarca
+                  label.querySelector("input").addEventListener("change", function (e) {
+                    if (!e.target.checked) {
+                      const opt = document.createElement("option");
+                      opt.value = permission.id;
+                      opt.textContent = permission.name;
+                      userAvailablePerms.appendChild(opt);
+                      wrapper.remove();
+                    }
+                  });
+
+                  wrapper.appendChild(label);
+                  userSelectedPerms.appendChild(wrapper);
+                }
+              });
+            }
+
+            console.log("Permisos cargados - Disponibles:", userAvailablePerms.options.length);
+            console.log("Permisos cargados - Seleccionados:", userSelectedPerms.children.length);
+          }
+
+          // Setear el username para usuarios
+          const usernameField = form.querySelector('[name="username"]');
+          if (usernameField && data.username) {
+            usernameField.value = data.username;
+          }
+
+        } else if (isRoleModal) {
+          // ================== LÓGICA PARA ROLES/PERMISOS EXISTENTE ==================
+          console.log("=== EJECUTANDO LÓGICA DE ROLES/PERMISOS ===");
+
+          const available = document.getElementById("available-perms");
+          const selected = document.getElementById("selected-perms");
+
+          if (available && selected) {
+            console.log("=== DUALLISTBOX EXISTENTE ENCONTRADO ===");
+            // Tu lógica existente del duallistbox
+            const allOptions = [];
+            Array.from(available.options).forEach(opt => allOptions.push(opt));
+            Array.from(selected.options).forEach(opt => allOptions.push(opt));
+
+            // Vaciar ambos selects
+            available.innerHTML = "";
+            selected.innerHTML = "";
+
+            // Repartir según permisos asignados
+            allOptions.forEach(opt => {
+              if (data.permisos && data.permisos.includes(opt.value) || data.permisos_asignados && data.permisos_asignados.includes(parseInt(opt.value))) {
+                selected.appendChild(opt);
+                opt.selected = true;
+              } else {
+                available.appendChild(opt);
+                opt.selected = false;
+              }
+            });
+          }
+        }
+
+        // ================== CAMPOS COMUNES ==================
+        // Setear otros campos simples (excluyendo los específicos que ya manejamos)
         Object.entries(data).forEach(([key, value]) => {
+          // Saltar campos específicos que ya manejamos
+          if (key === 'groups' || key === 'user_permissions' || key === 'all_groups' || key === 'all_permissions') return;
+          if (key === 'permisos' || key === 'permisos_asignados') return; // Para el duallistbox existente
+
           const fields = form.querySelectorAll(`[name="${key}"]`);
-          if (!fields.length) return; // si no existe en el form, saltar
+          if (!fields.length) return;
 
           fields.forEach((field) => {
             if (field.type === "checkbox") {
-              // ✅ Soporta múltiples checkboxes (arrays)
               if (Array.isArray(value)) {
                 field.checked = value.includes(parseInt(field.value));
               } else {
@@ -199,33 +393,41 @@
               }
             } else if (field.tagName === "SELECT" && field.multiple) {
               Array.from(field.options).forEach((opt) => {
-                opt.selected = value.includes(parseInt(opt.value));
+                opt.selected = (value || []).includes(parseInt(opt.value)) || (value || []).includes(opt.value);
               });
             } else {
               field.value = value;
             }
           });
         });
+
+        // Setear título del modal
+        const modalTitle = document.getElementById("modal-title");
+        if (modalTitle && data.modal_title) {
+          modalTitle.textContent = data.modal_title;
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar datos del usuario:', error);
       });
 
+    // Mostrar modal
     document.getElementById("modal-accion").style.display = "flex";
     const modalTitle = document.getElementById("modal-title");
     modalTitle.textContent = title;
   }
-
   function openDeleteModal(
     id,
     deleteUrl,
     message
   ) {
-    console.log("id:",id)
-    console.log("prueba:",deleteUrl.replace("0", id))
+
     document.getElementById("delete_obj_id").value = id;
     document.getElementById("delete-form").action = deleteUrl.replace("0", id);
     document.getElementById("delete-message").innerText = message || "¿Seguro que deseas realizar esta operacion?";
     document.getElementById("modal-delete").style.display = "flex";
   }
-  
+
 
   function closeModal() {
     document.getElementById("modal-accion").style.display = "none";
@@ -242,16 +444,115 @@
     btn.addEventListener("click", () => {
       openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle, btn.dataset.title);
     });
-    
+
 
   });
-  
+
   document.querySelectorAll(".btn-delete").forEach(btn => {
     btn.addEventListener("click", () => {
-        const id = btn.dataset.id;
-        const deleteUrl = btn.dataset.delete;
-        openDeleteModal(id, deleteUrl);
-        console.log("deleteurl:",deleteUrl)
+      const id = btn.dataset.id;
+      const deleteUrl = btn.dataset.delete;
+      openDeleteModal(id, deleteUrl);
+      console.log("deleteurl:", deleteUrl)
     });
-});
+  });
 
+  // Agregar este script al final de base_forms.html
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form-accion");
+
+    if (form) {
+      form.addEventListener("submit", function (e) {
+        // Detectar si es un formulario de usuario (tiene los elementos específicos)
+        const isUserForm = document.getElementById("user-available-groups") !== null;
+
+        if (isUserForm) {
+          e.preventDefault(); // Prevenir envío normal
+
+          console.log("=== ENVIANDO FORMULARIO DE USUARIO VIA AJAX ===");
+
+          const formData = new FormData();
+
+          // Agregar CSRF token
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+          if (csrfToken) {
+            formData.append('csrfmiddlewaretoken', csrfToken.value);
+          }
+
+          // Obtener todos los checkboxes marcados de grupos
+          const groupCheckboxes = document.querySelectorAll('input[name="groups"]:checked');
+          console.log("Grupos seleccionados:", groupCheckboxes.length);
+          groupCheckboxes.forEach(checkbox => {
+            formData.append('groups', checkbox.value);
+            console.log("Grupo agregado:", checkbox.value);
+          });
+
+          // Obtener todos los checkboxes marcados de permisos
+          const permCheckboxes = document.querySelectorAll('input[name="user_permissions"]:checked');
+          console.log("Permisos seleccionados:", permCheckboxes.length);
+          permCheckboxes.forEach(checkbox => {
+            formData.append('user_permissions', checkbox.value);
+            console.log("Permiso agregado:", checkbox.value);
+          });
+
+          // Agregar otros campos del formulario
+          const otherInputs = form.querySelectorAll('input:not([name="groups"]):not([name="user_permissions"]), select:not(#user-available-groups):not(#user-available-perms), textarea');
+          otherInputs.forEach(input => {
+            if (input.name && input.value) {
+              formData.append(input.name, input.value);
+            }
+          });
+
+          // Enviar via AJAX
+          fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+            }
+          })
+            .then(response => {
+              if (response.redirected) {
+                // Si hay redirección, seguirla
+                window.location.href = response.url;
+              } else {
+                return response.json();
+              }
+            })
+            .then(data => {
+              if (data && data.success) {
+                closeModal();
+                location.reload(); // Recargar la página para ver los cambios
+              } else if (data && data.errors) {
+                console.error('Errores del formulario:', data.errors);
+                // Mostrar errores en el formulario
+                displayFormErrors(data.errors);
+              }
+            })
+            .catch(error => {
+              console.error('Error en el envío:', error);
+              alert('Error al guardar los cambios');
+            });
+        }
+        // Si no es formulario de usuario, permitir envío normal
+      });
+    }
+  });
+
+  function displayFormErrors(errors) {
+    // Limpiar errores anteriores
+    clearFormErrors();
+
+    // Mostrar nuevos errores
+    Object.entries(errors).forEach(([field, messages]) => {
+      const fieldElement = document.querySelector(`[name="${field}"]`);
+      if (fieldElement) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-messages text-red-600 text-sm mt-1';
+        errorDiv.textContent = messages.join(', ');
+        fieldElement.parentNode.appendChild(errorDiv);
+      }
+    });
+  }
+</script>
