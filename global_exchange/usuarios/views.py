@@ -1,5 +1,5 @@
 from functools import wraps
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
 from django.contrib.auth import login, logout, authenticate
@@ -25,6 +25,11 @@ from django.contrib import messages
 from .tokens import account_activation_token
 import json
 from collections import namedtuple
+from .models import CustomUser
+from .forms import UserRolePermissionForm
+from django.http import JsonResponse
+import sys
+
 
 User = get_user_model()
 # Create your views here.
@@ -86,24 +91,24 @@ def home(request):
         # agrega más monedas aquí...
     ]
     data_por_moneda = {
-            "USD": [
-                {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
-                {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
-                {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
-                {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
-            ],
-            "EUR": [
-                {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
-                {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
-                {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
-                {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
-            ],
-        }
+        "USD": [
+            {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
+            {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
+            {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
+            {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
+        ],
+        "EUR": [
+            {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
+            {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
+            {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
+            {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
+        ],
+    }
     context = {
-            'cotizaciones': cotizaciones,
-            'data_por_moneda': json.dumps(data_por_moneda),
-            "user": request.user
-        }
+        'cotizaciones': cotizaciones,
+        'data_por_moneda': json.dumps(data_por_moneda),
+        "user": request.user
+    }
     return render(request, 'home.html', context)
 
 
@@ -123,100 +128,101 @@ def signup(request):
     eslogan_lines = ["Empieza", "ahora."]
     eslogan_spans = ["!Comienza", "ya!"]
     subtitle = "Crea tu cuenta y empieza ahora."
-    
+
     print("Fuera del POST", flush=True)
-   
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print("Entra en POST", flush=True)
         if form.is_valid():
-          try:
-              print("entro en try", flush=True)
-              # Guardar usuario inactivo
-              user = form.save(commit=False)
-              user.is_active = False
+            try:
+                print("entro en try", flush=True)
+                # Guardar usuario inactivo
+                user = form.save(commit=False)
+                user.is_active = False
                 # Asignamos el rol 'usuario'
-              rol_usuario = Group.objects.get(name="Usuario")
-              user.save()
-              user.groups.add(rol_usuario)  
-              print(user, flush=True)
-              activateEmail(request, user, user.email)
-              return render(request, 'registrarse.html', {
-                      'form': form,
-                      'subtitle': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
-                      'eslogan_lines': eslogan_lines,
-                      'eslogan_spans': eslogan_spans,
-                      'submit_text': "Registrarse",
-                      'active_tab': "register"
-                  })
-          except Exception as e:
-              print("Error al guardar usuario:", e, flush=True)
-              return render(request, 'registrarse.html', {
-                        'form': form,
-                        'eslogan_lines': eslogan_lines,
-                        'eslogan_spans': eslogan_spans,
-                        'submit_text': "Registrarse",
-                        'active_tab': "register"
-                    })
-        else:    
+                rol_usuario = Group.objects.get(name="Usuario")
+                user.save()
+                user.groups.add(rol_usuario)
+                print(user, flush=True)
+                activateEmail(request, user, user.email)
+                return render(request, 'registrarse.html', {
+                    'form': form,
+                    'subtitle': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
+                    'eslogan_lines': eslogan_lines,
+                    'eslogan_spans': eslogan_spans,
+                    'submit_text': "Registrarse",
+                    'active_tab': "register"
+                })
+            except Exception as e:
+                print("Error al guardar usuario:", e, flush=True)
+                return render(request, 'registrarse.html', {
+                    'form': form,
+                    'eslogan_lines': eslogan_lines,
+                    'eslogan_spans': eslogan_spans,
+                    'submit_text': "Registrarse",
+                    'active_tab': "register"
+                })
+        else:
             return render(request, 'registrarse.html', {
-                        'form': form,
-                        'eslogan_lines': eslogan_lines,
-                        'eslogan_spans': eslogan_spans,
-                        'submit_text': "Registrarse",
-                        'subtitle': subtitle,
-                        'active_tab': "register"
-                    })
+                'form': form,
+                'eslogan_lines': eslogan_lines,
+                'eslogan_spans': eslogan_spans,
+                'submit_text': "Registrarse",
+                'subtitle': subtitle,
+                'active_tab': "register"
+            })
     else:
         storage = messages.get_messages(request)
-        storage.used = True  #limpia todos los mensajes previos
+        storage.used = True  # limpia todos los mensajes previos
         form = CustomUserCreationForm()
     return render(request, 'registrarse.html', {
-              'form': form,
-              'eslogan_lines': eslogan_lines,
-              'eslogan_spans': eslogan_spans,
-              'subtitle': subtitle,
-              'submit_text': "Registrarse",
-              'active_tab': "register"
-          })
+        'form': form,
+        'eslogan_lines': eslogan_lines,
+        'eslogan_spans': eslogan_spans,
+        'subtitle': subtitle,
+        'submit_text': "Registrarse",
+        'active_tab': "register"
+    })
+
 
 def activate(request, uidb64, token):
-  """
-    **activate(request, uidb64, token)**: Activa la cuenta de un usuario a través del enlace de activación enviado por email.
-
-    - **Parámetros**:
-        - request: objeto HttpRequest.
-        - uidb64: UID del usuario codificado en base64.
-        - token: token de activación generado para el usuario.
-
-    - **Funcionamiento**:
-        - Decodifica el UID y busca el usuario correspondiente.
-        - Verifica que el token sea válido.
-        - Si es válido, activa al usuario y redirige al login.
-        - Si no es válido, redirige a la página principal.
     """
-  print('Activando cuenta', flush=True)
-  try:
-      print("Intentando activar cuenta", flush=True)
-      # Decodificar el UID
-      uid = force_str(urlsafe_base64_decode(uidb64))
-      user = User.objects.get(pk=uid)
-  except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-      print("Error al activar cuenta", flush=True)
-      user = None
+      **activate(request, uidb64, token)**: Activa la cuenta de un usuario a través del enlace de activación enviado por email.
 
-  # Validar que el token sea correcto
-  print(user)
-  if user is not None and account_activation_token.check_token(user, token):
-      print("Token válido, activando cuenta", flush=True)
-      user.is_active = True
-      user.save()
-      print(request, 'Tu cuenta ha sido activada con éxito. Ahora puedes iniciar sesión.')
-      return redirect('login')
-  else:
-      print("Token inválido", flush=True)
-      print( 'El enlace de activación no es válido o ha expirado.')
-      return redirect('home')
+      - **Parámetros**:
+          - request: objeto HttpRequest.
+          - uidb64: UID del usuario codificado en base64.
+          - token: token de activación generado para el usuario.
+
+      - **Funcionamiento**:
+          - Decodifica el UID y busca el usuario correspondiente.
+          - Verifica que el token sea válido.
+          - Si es válido, activa al usuario y redirige al login.
+          - Si no es válido, redirige a la página principal.
+      """
+    print('Activando cuenta', flush=True)
+    try:
+        print("Intentando activar cuenta", flush=True)
+        # Decodificar el UID
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        print("Error al activar cuenta", flush=True)
+        user = None
+
+    # Validar que el token sea correcto
+    print(user)
+    if user is not None and account_activation_token.check_token(user, token):
+        print("Token válido, activando cuenta", flush=True)
+        user.is_active = True
+        user.save()
+        print(request, 'Tu cuenta ha sido activada con éxito. Ahora puedes iniciar sesión.')
+        return redirect('login')
+    else:
+        print("Token inválido", flush=True)
+        print('El enlace de activación no es válido o ha expirado.')
+        return redirect('home')
 
 
 def activateEmail(request, user, to_email):
@@ -246,17 +252,20 @@ def activateEmail(request, user, to_email):
     email = EmailMessage(mail_subject, message, to=[to_email])
     email.content_subtype = 'html'
     email.send()
-        
-#cierra sesion tanto usuarios como admins
-def signout(request):
-  """
-    **signout(request)**: Cierra la sesión del usuario y lo redirige a la página de aterrizaje.
 
-    - **Parámetros**:
-        - request: objeto HttpRequest.
+# cierra sesion tanto usuarios como admins
+
+
+def signout(request):
     """
-  logout(request)
-  return redirect('pagina_aterrizaje')
+      **signout(request)**: Cierra la sesión del usuario y lo redirige a la página de aterrizaje.
+
+      - **Parámetros**:
+          - request: objeto HttpRequest.
+      """
+    logout(request)
+    return redirect('pagina_aterrizaje')
+
 
 def signin(request):
     """
@@ -293,7 +302,8 @@ def signin(request):
             'active_tab': "login"
         })
     else:
-        user = authenticate(username=request.POST['username'], password=request.POST['password'])
+        user = authenticate(
+            username=request.POST['username'], password=request.POST['password'])
         if user is None:
             return render(request, 'login.html', {
                 'form': AuthenticationForm(),
@@ -309,28 +319,32 @@ def signin(request):
                 return redirect('admin_dashboard')
             else:
                 return redirect('home')
-      
+
+
 def pagina_aterrizaje(request):
-  """
-    **pagina_aterrizaje(request)**  
-    Renderiza la página principal de aterrizaje mostrando cotizaciones y datos de ejemplo por moneda.
-
-    - **Parámetros**:
-        - request: objeto HttpRequest.
-
-    - **Funcionamiento**:
-        - Define una lista de cotizaciones de monedas con compra, venta y logo.
-        - Define datos históricos de ejemplo por moneda en `data_por_moneda`.
-        - Convierte `data_por_moneda` a JSON y lo pasa al contexto.
-        - Renderiza el template `pagina_aterrizaje.html` con el contexto.
     """
-  cotizaciones = [
-        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
-        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
-        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
+      **pagina_aterrizaje(request)**  
+      Renderiza la página principal de aterrizaje mostrando cotizaciones y datos de ejemplo por moneda.
+
+      - **Parámetros**:
+          - request: objeto HttpRequest.
+
+      - **Funcionamiento**:
+          - Define una lista de cotizaciones de monedas con compra, venta y logo.
+          - Define datos históricos de ejemplo por moneda en `data_por_moneda`.
+          - Convierte `data_por_moneda` a JSON y lo pasa al contexto.
+          - Renderiza el template `pagina_aterrizaje.html` con el contexto.
+      """
+    cotizaciones = [
+        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645,
+            'logo': 'img/logoMoneda/ARS.png'},
+        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000,
+         'logo': 'img/logoMoneda/USD.svg'},
+        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000,
+         'logo': 'img/logoMoneda/EUR.svg'},
         # agrega más monedas aquí...
     ]
-  data_por_moneda = {
+    data_por_moneda = {
         "USD": [
             {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
             {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
@@ -344,11 +358,12 @@ def pagina_aterrizaje(request):
             {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
         ],
     }
-  context = {
+    context = {
         'cotizaciones': cotizaciones,
         'data_por_moneda': json.dumps(data_por_moneda),
     }
-  return render(request, 'pagina_aterrizaje.html',context)
+    return render(request, 'pagina_aterrizaje.html', context)
+
 
 def error_404_view(request, exception):
     """
@@ -358,11 +373,12 @@ def error_404_view(request, exception):
     - **Parámetros**:
         - request: objeto HttpRequest.
         - exception: objeto de excepción.
-    
+
     - **Funcionamiento**:
         Renderiza el template `404.html` con código de estado 404.
     """
     return render(request, '404.html', status=404)
+
 
 @user_required
 def editarPerfil(request):
@@ -385,7 +401,7 @@ def editarPerfil(request):
     """
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
-    
+
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
         action = request.POST.get('action')
@@ -394,10 +410,11 @@ def editarPerfil(request):
             if form.is_valid():
                 user = form.save()
                 print(user, flush=True)
-                update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
-                return render(request, 'editarperfil.html', {'form': form,  'success': True} )
+                # Mantiene sesión si cambia contraseña
+                update_session_auth_hash(request, user)
+                return render(request, 'editarperfil.html', {'form': form,  'success': True})
             else:
-                return render(request, 'editarperfil.html', {'form': form} )
+                return render(request, 'editarperfil.html', {'form': form})
         """
         # Eliminar cuenta
         elif action == 'eliminar':
@@ -415,6 +432,7 @@ def editarPerfil(request):
         form = CustomUserChangeForm(instance=request.user)
 
     return render(request, 'editarperfil.html', {'form': form})
+
 
 """
 def editarperfilDesing (request):
@@ -456,15 +474,149 @@ def crud_empleados(request):
         - Renderiza `empleados.html` pasando los empleados al template.
     """
     # Creamos un "Empleado" ficticio usando namedtuple
-    Empleado = namedtuple('Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
-    
+    Empleado = namedtuple(
+        'Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
+
     # Datos de ejemplo
     empleados = [
-        Empleado(id=1, nombre="Juan Pérez", cedula="12345678", email="juan.perez@email.com", cargo="Administrador"),
-        Empleado(id=2, nombre="María Gómez", cedula="87654321", email="maria.gomez@email.com", cargo="Supervisor"),
-        Empleado(id=3, nombre="Carlos López", cedula="11223344", email="carlos.lopez@email.com", cargo="Empleado"),
+        Empleado(id=1, nombre="Juan Pérez", cedula="12345678",
+                 email="juan.perez@email.com", cargo="Administrador"),
+        Empleado(id=2, nombre="María Gómez", cedula="87654321",
+                 email="maria.gomez@email.com", cargo="Supervisor"),
+        Empleado(id=3, nombre="Carlos López", cedula="11223344",
+                 email="carlos.lopez@email.com", cargo="Empleado"),
     ]
-    
+
     # Pasamos los datos al template
     return render(request, 'empleados.html', {'empleados': empleados})
 
+
+@superadmin_required
+def user_roles_lista(request):
+    """
+    Lista de usuarios con buscador básico.
+    (Sin paginación desde la vista, la lógica de paginador
+    o limitador queda en el template.)
+    """
+    q = request.GET.get("q", "")
+    campo = request.GET.get("campo", "")
+
+    usuarios = CustomUser.objects.all().order_by("-id")
+    form = UserRolePermissionForm()
+
+    if q and campo:
+        filtro = {f"{campo}__icontains": q}
+        usuarios = usuarios.filter(**filtro)
+
+    return render(request, "user_roles_lista.html", {
+        "usuarios": usuarios,
+        "q": q,
+        "campo": campo,
+        "form": form
+    })
+
+
+@superadmin_required
+@superadmin_required
+def user_roles_edit(request, pk):
+    """
+    Editar roles y permisos de un usuario via AJAX (para modal).
+    """
+    usuario = get_object_or_404(CustomUser, pk=pk)
+
+    if request.method == "POST":
+        # DEBUG: Imprimir todos los datos recibidos
+        print("=== DEBUG POST DATA ===", file=sys.stdout, flush=True)
+        print(f"request.POST: {request.POST}", file=sys.stdout, flush=True)
+        print(f"request.FILES: {request.FILES}", file=sys.stdout, flush=True)
+        print(f"Headers: {dict(request.headers)}", file=sys.stdout, flush=True)
+        
+        # Verificar si hay datos de grupos y permisos
+        groups_data = request.POST.getlist('groups')
+        perms_data = request.POST.getlist('user_permissions')
+        
+        print(f"Grupos recibidos directamente: {groups_data}", file=sys.stdout, flush=True)
+        print(f"Permisos recibidos directamente: {perms_data}", file=sys.stdout, flush=True)
+        
+        form = UserRolePermissionForm(request.POST, instance=usuario)
+        
+        print(f"Form is_valid: {form.is_valid()}", file=sys.stdout, flush=True)
+        print(f"Form errors: {form.errors}", file=sys.stdout, flush=True)
+        print(f"Form cleaned_data: {form.cleaned_data if form.is_valid() else 'No valid'}", file=sys.stdout, flush=True)
+        
+        if form.is_valid():
+            # Limpiar grupos y permisos actuales
+            usuario.groups.clear()
+            usuario.user_permissions.clear()
+            
+            # Asignar nuevos grupos
+            groups = form.cleaned_data.get('groups')
+            if groups:
+                usuario.groups.set(groups)
+                print(f"Grupos asignados: {list(groups)}", file=sys.stdout, flush=True)
+            else:
+                print("No se asignaron grupos.", file=sys.stdout, flush=True)
+
+            # Asignar nuevos permisos
+            permissions = form.cleaned_data.get('user_permissions')
+            if permissions:
+                usuario.user_permissions.set(permissions)
+                print(f"Permisos asignados: {list(permissions)}", file=sys.stdout, flush=True)
+            else:
+                print("No se asignaron permisos.", file=sys.stdout, flush=True)
+
+            usuario.save()
+            
+            # Si es AJAX, devolver JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Usuario {usuario.username} actualizado correctamente.'
+                })
+            else:
+                messages.success(request, f'Usuario {usuario.username} actualizado correctamente.')
+                return redirect("user_roles_lista")
+        else:
+            print("Errores del formulario:", form.errors, file=sys.stdout, flush=True)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                })
+            else:
+                messages.error(request, "Error al actualizar el usuario. Revisa los datos.")
+                return render(request, "user_roles_form.html", {
+                    "form": form,
+                    "usuario": usuario
+                })
+
+    # Si no es POST, mostrar el formulario de edición
+    form = UserRolePermissionForm(instance=usuario)
+    return render(request, "user_roles_form.html", {
+        "form": form,
+        "usuario": usuario
+    })
+
+@superadmin_required
+def user_roles_detalle(request, pk):
+    from django.contrib.auth.models import Group, Permission
+
+    User = get_user_model()
+    user = User.objects.get(pk=pk)
+
+    # Obtener todos los grupos disponibles
+    all_groups = Group.objects.all()
+
+    # Obtener todos los permisos disponibles
+    all_permissions = Permission.objects.all()
+
+    return JsonResponse({
+        "username": user.username,
+        "groups": list(user.groups.values_list('id', flat=True)),
+        "user_permissions": list(user.user_permissions.values_list('id', flat=True)),
+        "modal_title": f"Editar Usuario: {user.username}",
+
+        # Agregar todos los grupos y permisos disponibles
+        "all_groups": [{"id": g.id, "name": g.name} for g in all_groups],
+        "all_permissions": [{"id": p.id, "name": p.name} for p in all_permissions],
+    })

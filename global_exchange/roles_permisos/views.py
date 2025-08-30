@@ -4,7 +4,6 @@ from functools import wraps
 from django.contrib.auth.models import Group, Permission
 from .forms import RolForm
 
-
 # Solo superadmin
 def superadmin_required(view_func):
     """
