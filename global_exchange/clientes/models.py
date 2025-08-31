@@ -11,13 +11,18 @@ class Segmentacion(models.Model):
     Notas:
         - Este modelo permite clasificar a los clientes en grupos (segmentos) con descuentos específicos.
     """
-    nombre = models.CharField(max_length=50, unique=True)
+    nombre = models.CharField(max_length=50, unique=False)
     descripcion = models.TextField(blank=True, null=True)
     descuento = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=0.0,
         help_text="Descuento en porcentaje para este tipo de cliente"
+    )
+    estado = models.CharField(
+        max_length=10,
+        default='activo',
+        help_text="Estado de la segmentación (activo/inactivo)"
     )
 
     def __str__(self):
@@ -42,6 +47,7 @@ class Cliente(models.Model):
         - El campo ``segmentacion`` protege la integridad: no se puede eliminar un segmento si está asociado a un cliente.
     """
     nombre = models.CharField(max_length=150)
+    cedula = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(unique=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     segmentacion = models.ForeignKey(Segmentacion, on_delete=models.PROTECT)

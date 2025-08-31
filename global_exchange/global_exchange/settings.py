@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     'admin_dashboard',
     'asignar_clientes_usuarios',
     'configuracion',
+    'cliente_segmentacion',
     'cotizaciones',
     'monedas',
 ]
