@@ -33,6 +33,7 @@
   <div class="error-messages"></div>
 </div>
 
+{% if form.instance.estado == "activo" %}
 <div class="form-group">
   <label for="{{ form.segmentacion.id_for_label }}">Segmentación *</label>
   <div class="input-icon">
@@ -41,6 +42,7 @@
   </div>
   <div class="error-messages"></div>
 </div>
+{% endif %}
 
 <div class="form-group">
   <label for="{{ form.estado.id_for_label }}">Estado *</label>

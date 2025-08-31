@@ -78,7 +78,9 @@ def check_email(request):
         
         exists = query.exists()
         
-        return JsonResponse(not exists, safe=False)           
+        return JsonResponse(not exists, safe=False)         
+
+  
 @method_decorator(superadmin_required, name='dispatch')
 class ClienteUpdateView(UpdateView):
     model = Cliente

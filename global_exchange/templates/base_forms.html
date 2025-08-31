@@ -162,7 +162,8 @@
 
 <script>
   function openCreateModal(createUrl, model_title) {
-    console.log("Opening create modal with URL:", createUrl);
+    console.log("URL:", createUrl);
+    console.log("Titulo:", model_title);
     document.getElementById("form-accion").action = createUrl;
     document.getElementById("form-accion").reset();
 
@@ -253,4 +254,5 @@
         console.log("deleteurl:",deleteUrl)
     });
 });
+</script>
 

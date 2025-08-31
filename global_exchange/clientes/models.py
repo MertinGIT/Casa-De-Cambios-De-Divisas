@@ -11,7 +11,7 @@ class Segmentacion(models.Model):
     Notas:
         - Este modelo permite clasificar a los clientes en grupos (segmentos) con descuentos específicos.
     """
-    nombre = models.CharField(max_length=50, unique=True)
+    nombre = models.CharField(max_length=50, unique=False)
     descripcion = models.TextField(blank=True, null=True)
     descuento = models.DecimalField(
         max_digits=5,

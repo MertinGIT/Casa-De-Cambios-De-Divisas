@@ -470,11 +470,14 @@ body {
       </div>
     </div>
 
-    <button class="btn-add rounded border-0 my-2"
-            data-url="{% url 'segmentaciones-agregar' %}"
-            onclick="openCreateModal(this.dataset.url)">
-       Agregar tipo de cliente
-    </button>
+<button 
+    class="btn-add rounded border-0 my-2" 
+    data-url="{% url 'segmentaciones-agregar' %}" 
+    data-title="Agregar tipo de cliente"
+    onclick="openCreateModal(this.dataset.url, this.dataset.title)">
+    + Agregar tipo de cliente
+</button>
+
 
     <!-- Tabla -->
     <div class="table-container">
@@ -593,5 +596,5 @@ body {
     {% endif %}
   </div>
 </div>
-{% include "cliente_segmentacion/form.html" %}
+{% include "cliente_segmentacion/form.html" with modal_type=modal_type obj_id=obj_id %}
 {% endblock %}
