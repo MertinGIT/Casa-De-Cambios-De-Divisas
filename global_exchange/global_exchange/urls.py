@@ -47,6 +47,8 @@ urlpatterns = [
     path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
     path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
     path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),
+    path("admin/pagos/", include("metodos_pagos.urls")),
+
 ]
 
 

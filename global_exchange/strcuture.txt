@@ -1,0 +1,78 @@
+.
+├── admin_dashboard
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── static
+│   │   └── admin_dashboard
+│   │       ├── css
+│   │       │   └── dashboard.css
+│   │       └── js
+│   │           └── graficoGanancias.js
+│   ├── tests.py
+│   └── views.py
+├── asignar_clientes_usuarios
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py
+│   ├── templates
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── clientes
+│   ├── forms.py
+│   ├── models.py
+│   ├── tests
+│   │   ├── __init__.py
+│   │   ├── test_lista.py
+│   │   ├── test_model.py
+│   │   └── test_view.py
+│   ├── urls.py
+│   └── views.py
+├── cotizaciones
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── global_exchange
+│   ├── middleware.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── metodos_pagos
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── monedas
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── models.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+├── roles_permisos
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── tests.py
+│   ├── urls.py
+│   └── views.py
+└── usuarios
+    ├── admin.py
+    ├── apps.py
+    ├── create_superadmin.py
+    ├── forms.py
+    ├── models.py
+    ├── tests.py
+    ├── tokens.py
+    └── views.py
+
+70 directories, 260 files
