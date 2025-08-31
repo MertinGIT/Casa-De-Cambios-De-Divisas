@@ -12,9 +12,8 @@
   <canvas id="graficoMoneda"></canvas>
 </div>
 
-<script id="data-por-moneda" type="application/json">
-  {{ data_por_moneda|safe }}
-</script>
+{{ data_por_moneda|json_script:"data-por-moneda" }}
+
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'js/graficoMoneda.js' %}"></script>

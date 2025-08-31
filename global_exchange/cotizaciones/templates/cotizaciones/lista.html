@@ -127,9 +127,11 @@ body {
   border-radius: 8px;
   border: 1px solid #e1e5e9;
   margin-bottom: 24px;
+  max-width: 100%;
 }
 
 .custom-table {
+  min-width: 800px;
   width: 100%;
   border-collapse: collapse;
   background: white;
@@ -404,6 +406,7 @@ body {
 @media (max-width: 480px) {
   .main-wrapper {
     padding: 12px;
+    
   }
   
   .page-container {
@@ -412,6 +415,10 @@ body {
   
   .page-title {
     font-size: 20px;
+  }
+  .custom-table {
+    min-width: unset;
+    width: 100%;
   }
   
   .custom-table tbody td:before {
@@ -442,7 +449,7 @@ body {
   }
 }
 </style>
-
+{% include 'base_configuracion.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">

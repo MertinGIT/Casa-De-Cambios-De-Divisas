@@ -1,5 +1,6 @@
 {% extends 'baseDashboardUsuario.html' %}
 {% load static %}
+{% load humanize %}
 
 {% block content %}
 <main class="conversor-container">
@@ -11,45 +12,44 @@
     <!-- Operación -->
     <div class="campo fila form-group operacion-toggle">
       <label class="toggle-label">
-        <input type="radio" name="operacion" value="venta"
-               {% if operacion == "venta" %}checked{% endif %}>
+        <input type="radio" name="operacion" value="venta" {% if operacion == "venta" %}checked{% endif %}>
         Compra (entrego PYG)
       </label>
       <label class="toggle-label">
-        <input type="radio" name="operacion" value="compra"
-               {% if operacion == "compra" %}checked{% endif %}>
+        <input type="radio" name="operacion" value="compra" {% if operacion == "compra" %}checked{% endif %}>
         Venta (recibo PYG)
       </label>
     </div>
 
     <!-- Origen -->
     <div class="campo fila form-group">
-      <span class="icono">💵</span>
-      <select id="origen" name="origen" class="input-select" {% if not monedas %}disabled{% endif %}>
-        {% for moneda in monedas %}
-          <option value="{{ moneda.abreviacion }}"
-            {% if moneda.abreviacion == origen %}selected{% endif %}>
-            {{ moneda.nombre }} ({{ moneda.abreviacion }})
-          </option>
-        {% endfor %}
-      </select>
-      <input type="text" id="valor" name="valor" class="input-text"
-             placeholder="Monto" value="{{ valor_input|default:'' }}">
+      <div class="input-icon-wrapper">
+        <span class="icono">💵</span>
+        <select id="origen" name="origen" class="input-select" {% if not monedas %}disabled{% endif %}>
+          {% for moneda in monedas %}
+            <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == origen %}selected{% endif %}>
+              {{ moneda.nombre }} ({{ moneda.abreviacion }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <input type="text" id="valor" name="valor" class="input-text" placeholder="Monto" value="{{ valor_input|default:'' }}">
     </div>
 
     <!-- Destino -->
     <div class="campo fila form-group">
-      <span class="icono">💲</span>
-      <select id="destino" name="destino" class="input-select" {% if not monedas %}disabled{% endif %}>
-        {% for moneda in monedas %}
-          <option value="{{ moneda.abreviacion }}"
-            {% if moneda.abreviacion == destino %}selected{% endif %}>
-            {{ moneda.nombre }} ({{ moneda.abreviacion }})
-          </option>
-        {% endfor %}
-      </select>
-      <input type="text" id="resultado" name="resultado" class="input-text readonly"
-             placeholder="Resultado" value="{{ resultado }}" readonly>
+      <div class="input-icon-wrapper">
+        <span class="icono">💲</span>
+        <select id="destino" name="destino" class="input-select" {% if not monedas %}disabled{% endif %}>
+          {% for moneda in monedas %}
+            <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == destino %}selected{% endif %}>
+              {{ moneda.nombre }} ({{ moneda.abreviacion }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <input type="text" id="resultado" name="resultado" class="input-text readonly" placeholder="Resultado" value="{{ resultado|floatformat:2|intcomma }}
+" readonly>
     </div>
 
     <button type="submit" class="btn-convertir" {% if not monedas %}disabled{% endif %}>Convertir</button>
@@ -66,7 +66,6 @@ $(document).ready(function () {
   const $resultado = $("#resultado");
   const $ganancia = $("#ganancia_total");
 
-  // Reglas de bloqueo según operación
   function actualizarCamposPorOperacion() {
     const op = $("input[name='operacion']:checked").val();
     $origen.prop("disabled", false);
@@ -96,7 +95,6 @@ $(document).ready(function () {
   actualizarCamposPorOperacion();
   $(document).on("change", "input[name='operacion']", actualizarCamposPorOperacion);
 
-  // interceptar submit (sin recargar)
   $form.on("submit", function (e) {
     e.preventDefault();
     const data = $form.serialize();
@@ -107,7 +105,13 @@ $(document).ready(function () {
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       success: function (resp) {
         if (resp.resultado !== undefined) {
-          $resultado.val(resp.resultado);
+          // formatear con separador de miles
+          const numero = parseFloat(resp.resultado);
+          if (!isNaN(numero)) {
+            $resultado.val(numero.toLocaleString("es", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+          } else {
+            $resultado.val(resp.resultado);
+          }
           $ganancia.text(resp.ganancia_total || 0);
         }
       },
@@ -118,12 +122,138 @@ $(document).ready(function () {
     });
   });
 
-  // Solo permitir números
   $valor.on("input", function () {
     this.value = this.value.replace(/[^0-9.]/g, '');
   });
 });
 </script>
 
-<style> /* Tus estilos, los mantuve similares */ .conversor-container { max-width: 500px; margin: 2rem auto; padding: 1.5rem; background: #fff; border-radius: 16px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); text-align: center; } .title { color: #1e2d70; margin-bottom: 1.2rem; font-size: 1.4rem; font-weight: 600; } .icono { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; background: #f4f6fb; border-radius: 10px; flex-shrink: 0; } .conversor-form { display: flex; flex-direction: column; gap: 1rem; } .fila { display: flex; align-items: center; gap: 0.5rem; } .input-select, .input-text { padding: 0.6rem 0.8rem; border-radius: 10px; border: 1px solid #ddd; font-size: 0.95rem; transition: all 0.3s; flex: 1; } .input-text.readonly { background: #f4f6fb; color: #555; cursor: not-allowed; } .input-select:focus, .input-text:focus { outline: none; border-color: #5d5fef; box-shadow: 0 0 0 2px rgba(93,95,239,0.2); } .btn-convertir { background: #5d5fef; color: white; font-weight: 600; border: none; border-radius: 10px; padding: 0.8rem; cursor: pointer; transition: background 0.3s; } .btn-convertir:hover { background: #4a4cd9; } .error-message { color: #dc2626; font-size: 0.85rem; margin-top: 2px; } .operacion-toggle { justify-content: center; gap: 1rem; margin-bottom: 0.5rem; display:flex; } .toggle-label { cursor: pointer; font-weight: 500; } .toggle-label input { margin-right: 0.3rem; } .resultado-extra { margin-top: 1rem; font-size: 0.95rem; } </style>
+<style>
+.conversor-container { 
+  max-width: 500px; 
+  margin: 2rem auto; 
+  padding: 1.5rem; 
+  background: #fff; 
+  border-radius: 16px; 
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08); 
+  text-align: center; 
+}
+
+.title { 
+  color: #1e2d70; 
+  margin-bottom: 1.2rem; 
+  font-size: 1.4rem; 
+  font-weight: 600; 
+}
+
+.conversor-form { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 1rem; 
+}
+
+.fila { 
+  display: flex; 
+  align-items: center; 
+  gap: 0.5rem; 
+}
+
+.input-select, .input-text { 
+  padding: 0.6rem 0.8rem; 
+  border-radius: 10px; 
+  border: 1px solid #ddd; 
+  font-size: 0.95rem; 
+  transition: all 0.3s; 
+  flex: 1; 
+}
+
+.input-text.readonly { 
+  background: #f4f6fb; 
+  color: #555; 
+  cursor: not-allowed; 
+}
+
+.input-select:focus, .input-text:focus { 
+  outline: none; 
+  border-color: #5d5fef; 
+  box-shadow: 0 0 0 2px rgba(93,95,239,0.2); 
+}
+
+.btn-convertir { 
+  background: #5d5fef; 
+  color: white; 
+  font-weight: 600; 
+  border: none; 
+  border-radius: 10px; 
+  padding: 0.8rem; 
+  cursor: pointer; 
+  transition: background 0.3s; 
+}
+
+.btn-convertir:hover { 
+  background: #4a4cd9; 
+}
+
+.error-message { 
+  color: #dc2626; 
+  font-size: 0.85rem; 
+  margin-top: 2px; 
+}
+
+.operacion-toggle { 
+  justify-content: center; 
+  gap: 1rem; 
+  margin-bottom: 0.5rem; 
+  display:flex; 
+}
+
+.toggle-label { 
+  cursor: pointer; 
+  font-weight: 500; 
+}
+
+.toggle-label input { 
+  margin-right: 0.3rem; 
+}
+
+.resultado-extra { 
+  margin-top: 1rem; 
+  font-size: 0.95rem; 
+}
+
+.input-text.readonly.error { 
+  color: #dc2626;  
+  font-weight: 600; 
+}
+
+/* Nuevo diseño ícono dentro del input */
+.input-icon-wrapper {
+    position: relative;
+    flex: 1;
+}
+.input-icon-wrapper .icono {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
+}
+.input-icon-wrapper .input-select {
+    padding-left: 35px; /* espacio para el ícono */
+}
+
+/* Media queries para pantallas pequeñas */
+@media (max-width: 768px) {
+    .fila {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    .input-icon-wrapper .input-select {
+        width: 100%;
+    }
+    
+}
+</style>
 {% endblock %}

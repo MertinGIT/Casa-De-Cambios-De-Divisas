@@ -12,12 +12,14 @@
 
     <li>
       <a href="{% url 'home' %}"><span class="icon">&#x1F4C8;</span>
-        <span class="label">Dashboard</span></a>
+        <span class="label">Panel Principal</span></a>
     </li>
+    <!--
     <li>
       <a href="#"><span class="icon">&#x1F4CA;</span>
         <span class="label">Reports</span></a>
     </li>
+    -->
     <li>
       <a href="{% url 'editarperfil' %}">
         <span class="icon">&#x1F464;</span>
@@ -27,7 +29,7 @@
 
     <li>
       <a href="#"><span class="icon">&#9881;</span>
-        <span class="label">Settings</span></a>
+        <span class="label">Configuracion</span></a>
     </li>
   </ul>
 
@@ -35,7 +37,7 @@
 
   <ul class="nav-links secondary">
     <li>
-      <a href="#"><span class="icon">&#x2753;</span> <span class="label">Help</span></a>
+      <a href="#"><span class="icon">&#x2753;</span> <span class="label">Ayuda</span></a>
     </li>
     <li>
       <div class="logout-card">
@@ -76,24 +78,25 @@
   <div id="mobile-menu" class="mobile-menu">
     <ul>
       <li>
-        <a href="{% url 'home' %}"><span class="icon">&#x1F4C8;</span> Dashboard</a>
+        <a href="{% url 'home' %}"><span class="icon">&#x1F4C8;</span>Panel Principal</a>
       </li>
-      <li><a href="{% url 'clientes' %}"><span class="icon">&#x1F465;</span> Clientes</a></li>
+      <!--
       <li>
         <a href="#"><span class="icon">&#x1F4CA;</span> Reports</a>
       </li>
-      <li>
-        <a href="#"><span class="icon">&#9881;</span> Settings</a>
-      </li>
+      -->
       <li>
         <a href="{% url 'editarperfil' %}">
           <span class="icon">&#x1F464;</span>
           <span class="label">Mi Perfil</span>
         </a>
       </li>
+      <li>
+        <a href="#"><span class="icon">&#9881;</span> Configuracion</a>
+      </li>
       <hr />
       <li>
-        <a href="#"><span class="icon">&#x2753;</span> Help</a>
+        <a href="#"><span class="icon">&#x2753;</span>Ayuda</a>
       </li>
       <li>
         <a href="{% url 'signout' %}" class="logout-mobile"><span class="icon">&#x1F6AA;</span> Cerrar sesión</a>

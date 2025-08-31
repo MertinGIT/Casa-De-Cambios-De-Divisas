@@ -1,22 +1,74 @@
 {% load static %}
+
 <link rel="stylesheet" href="{% static 'usuarios/css/cotizaciones.css' %}" />
 
 <div class="cotizaciones-container">
   <h2 class="cotizaciones-title">Cotizaciones</h2>
   <div class="cotizaciones-content">
-    {% for moneda in cotizaciones %}
+
+    {% for abrev, registros in data_por_moneda.items|slice:":6" %}
+      {% with ultimo=registros|last %}
       <div class="cotizaciones-divisa">
-        <img src="{% static moneda.logo %}" alt="Logo {{ moneda.simbolo }}" />
-        <p class="simboloTitle">{{ moneda.simbolo }}</p>
+
+        <!-- Logo: PNG primero, si no SVG -->
+        <img src="{% static 'img/logoMoneda/'|add:abrev|add:'.png' %}" 
+             onerror="this.onerror=null;this.src='{% static 'img/logoMoneda/'|add:abrev|add:'.svg' %}';"
+             alt="Logo {{ abrev }}" />
+
+        <p class="simboloTitle">{{ abrev }}</p>
+
         <div class="precios">
           <p class="precioTitle">Compra</p>
-          <p class="simboloTitle">{{ moneda.compra }}</p>
+          <p class="simboloTitle">
+            {{ ultimo.compra }}
+            {% if registros|length > 1 %}
+              {% with registro_anterior=registros|slice:":-1"|last %}
+                {% if ultimo.compra > registro_anterior.compra %}
+                  <span class="flecha sube">▲</span>
+                {% elif ultimo.compra < registro_anterior.compra %}
+                  <span class="flecha baja">▼</span>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+          </p>
         </div>
+
         <div>
           <p class="precioTitle">Venta</p>
-          <p class="simboloTitle">{{ moneda.venta }}</p>
+          <p class="simboloTitle">
+            {{ ultimo.venta }}
+            {% if registros|length > 1 %}
+              {% with registro_anterior=registros|slice:":-1"|last %}
+                {% if ultimo.venta > registro_anterior.venta %}
+                  <span class="flecha sube">▲</span>
+                {% elif ultimo.venta < registro_anterior.venta %}
+                  <span class="flecha baja">▼</span>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+          </p>
         </div>
+
       </div>
+      {% endwith %}
     {% endfor %}
+
   </div>
 </div>
+
+<style>
+  .flecha {
+    font-size: 0.9rem;
+    margin-left: 5px;
+  }
+
+  /* Flecha verde para subida */
+  .flecha.sube {
+      color: green;
+  }
+
+  /* Flecha roja para bajada */
+  .flecha.baja {
+      color: red;
+  }
+</style>
