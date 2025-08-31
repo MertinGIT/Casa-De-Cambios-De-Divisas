@@ -1,7 +1,6 @@
 # usuarios/models.py
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
-from roles_permisos.models import Rol
 from django.contrib.auth.validators import UnicodeUsernameValidator
 
 class CustomUser(AbstractUser):
@@ -34,11 +33,6 @@ class CustomUser(AbstractUser):
     # Nuevo campo
     cedula = models.CharField(max_length=20,unique=True,error_messages={'unique': 'Ya existe un usuario con esta cédula.','blank': 'La cédula es obligatoria.', 'null': 'La cédula no puede ser nula.'}
     )
-
-    # Relación con Rol
-    rol = models.ForeignKey("roles_permisos.Rol", on_delete=models.SET_NULL, null=True, blank=True, related_name="usuarios")
-
-
     def __str__(self):
         """Retorna el nombre de usuario como string representativo."""
         return self.username

@@ -1,7 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from roles_permisos.models import Rol
+from django.contrib.auth.models import Group
 from usuarios.forms import CustomUserCreationForm
 
 User = get_user_model()
@@ -31,7 +31,7 @@ class UsuariosTestCase(TestCase):
     def setUp(self):
       """Configura el entorno de prueba."""
     # Crear un rol de ejemplo con id=1
-      self.rol_usuario = Rol.objects.create(id=1, nombre="Usuario")
+      self.rol_usuario = Group.objects.create(id=1, name="Usuario")
     
       # Crear un usuario de prueba
       self.user = User.objects.create_user(

@@ -3,7 +3,7 @@ from .models import Cliente, Segmentacion
 
 class ClienteForm(forms.ModelForm):
     segmentacion = forms.ModelChoiceField(
-        queryset=Segmentacion.objects.all(),
+        queryset=Segmentacion.objects.filter(estado='activo'),
         empty_label="Seleccione un segmento",
         required=True,  # Hacerlo obligatorio
         widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_segmentacion'})

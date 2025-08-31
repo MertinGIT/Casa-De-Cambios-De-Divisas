@@ -5,7 +5,7 @@ from django.contrib import messages
 from usuarios.models import CustomUser
 from .models import Usuario_Rol_Cliente
 from clientes.models import Cliente
-from roles_permisos.models import Rol  # Modelo de roles
+from django.contrib.auth.models import Group
 
 
 # Solo superadmin
@@ -43,7 +43,7 @@ def lista_usuarios_roles(request):
     usuarios_roles = Usuario_Rol_Cliente.objects.select_related('id_usuario', 'id_cliente')
     usuarios = CustomUser.objects.all()
     clientes = Cliente.objects.all()
-    roles = Rol.objects.all()  
+    roles = Group.objects.all()  
 
     context = {
         'usuarios_roles': usuarios_roles,
@@ -67,15 +67,6 @@ def crear_usuario_rol(request):
     if request.method == "POST":
         usuario = get_object_or_404(CustomUser, id=request.POST.get('usuario'))
         cliente = get_object_or_404(Cliente, id=request.POST.get('cliente'))
-        rol_id = request.POST.get('rol')
-
-        # Asignar rol o dejarlo en None si no se seleccionó
-        if rol_id:
-            rol = get_object_or_404(Rol, id=rol_id)
-            usuario.rol = rol
-        else:
-            usuario.rol = None
-        usuario.save()
 
         # Evitar duplicados
         if not Usuario_Rol_Cliente.objects.filter(id_usuario=usuario, id_cliente=cliente).exists():
@@ -98,18 +89,6 @@ def editar_usuario_rol(request, id):
     if request.method == "POST":
         usuario = get_object_or_404(CustomUser, id=request.POST.get('usuario'))
         cliente = get_object_or_404(Cliente, id=request.POST.get('cliente'))
-        rol_id = request.POST.get('rol')  # <-- Obtenemos el rol seleccionado
-
-        # Actualizamos rol del usuario si se seleccionó uno
-        if rol_id:
-            rol = get_object_or_404(Rol, id=rol_id)
-            usuario.rol = rol
-            usuario.save()
-        else:
-            # Si no seleccionó rol, lo dejamos en NULL
-            usuario.rol = None
-            usuario.save()
-
         # Actualizamos asignación
         asignacion.id_usuario = usuario
         asignacion.id_cliente = cliente
