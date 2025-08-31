@@ -111,6 +111,7 @@
     font-weight: bold;
     color: #6b7280;
     cursor: pointer;
+    z-index: 100;
   }
 
   .close-btn:hover {
@@ -140,7 +141,6 @@
     padding: 8px 16px;
     border-radius: 6px;
     cursor: pointer;
-    z-index:100;
   }
 
   .btn-cancelar:hover {
@@ -459,8 +459,6 @@
   });
 </script>
 
-  // Agregar este script al final de base_forms.html
-
   document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("form-accion");
 
@@ -469,92 +467,4 @@
         // Detectar si es un formulario de usuario (tiene los elementos específicos)
         const isUserForm = document.getElementById("user-available-groups") !== null;
 
-        if (isUserForm) {
-          e.preventDefault(); // Prevenir envío normal
-
-          console.log("=== ENVIANDO FORMULARIO DE USUARIO VIA AJAX ===");
-
-          const formData = new FormData();
-
-          // Agregar CSRF token
-          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-          if (csrfToken) {
-            formData.append('csrfmiddlewaretoken', csrfToken.value);
-          }
-
-          // Obtener todos los checkboxes marcados de grupos
-          const groupCheckboxes = document.querySelectorAll('input[name="groups"]:checked');
-          console.log("Grupos seleccionados:", groupCheckboxes.length);
-          groupCheckboxes.forEach(checkbox => {
-            formData.append('groups', checkbox.value);
-            console.log("Grupo agregado:", checkbox.value);
-          });
-
-          // Obtener todos los checkboxes marcados de permisos
-          const permCheckboxes = document.querySelectorAll('input[name="user_permissions"]:checked');
-          console.log("Permisos seleccionados:", permCheckboxes.length);
-          permCheckboxes.forEach(checkbox => {
-            formData.append('user_permissions', checkbox.value);
-            console.log("Permiso agregado:", checkbox.value);
-          });
-
-          // Agregar otros campos del formulario
-          const otherInputs = form.querySelectorAll('input:not([name="groups"]):not([name="user_permissions"]), select:not(#user-available-groups):not(#user-available-perms), textarea');
-          otherInputs.forEach(input => {
-            if (input.name && input.value) {
-              formData.append(input.name, input.value);
-            }
-          });
-
-          // Enviar via AJAX
-          fetch(form.action, {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest'
-            }
-          })
-            .then(response => {
-              if (response.redirected) {
-                // Si hay redirección, seguirla
-                window.location.href = response.url;
-              } else {
-                return response.json();
-              }
-            })
-            .then(data => {
-              if (data && data.success) {
-                closeModal();
-                location.reload(); // Recargar la página para ver los cambios
-              } else if (data && data.errors) {
-                console.error('Errores del formulario:', data.errors);
-                // Mostrar errores en el formulario
-                displayFormErrors(data.errors);
-              }
-            })
-            .catch(error => {
-              console.error('Error en el envío:', error);
-              alert('Error al guardar los cambios');
-            });
-        }
-        // Si no es formulario de usuario, permitir envío normal
-      });
-    }
-  });
-
-  function displayFormErrors(errors) {
-    // Limpiar errores anteriores
-    clearFormErrors();
-
-    // Mostrar nuevos errores
-    Object.entries(errors).forEach(([field, messages]) => {
-      const fieldElement = document.querySelector(`[name="${field}"]`);
-      if (fieldElement) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-messages text-red-600 text-sm mt-1';
-        errorDiv.textContent = messages.join(', ');
-        fieldElement.parentNode.appendChild(errorDiv);
-      }
-    });
-  }
 </script>

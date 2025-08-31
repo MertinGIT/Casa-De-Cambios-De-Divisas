@@ -1,10 +1,10 @@
 {% load static %}
+
 <link rel="stylesheet" href="{% static 'usuarios/css/graficoMoneda.css' %}" />
 
 <div class="grafico-moneda">
   <select id="monedaSelect">
-    <option value="USD">USD</option>
-    <option value="EUR">EUR</option>
+    <!-- Las opciones se generarán dinámicamente desde JS -->
   </select>
 </div>
 
@@ -12,8 +12,8 @@
   <canvas id="graficoMoneda"></canvas>
 </div>
 
-<script id="data-por-moneda" type="application/json">
-  {{ data_por_moneda|safe }}
-</script>
+{{ data_por_moneda|json_script:"data-por-moneda" }}
+
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'js/graficoMoneda.js' %}"></script>

@@ -4,6 +4,7 @@ from functools import wraps
 from django.urls import reverse
 from .models import TasaDeCambio, Moneda
 from .forms import TasaDeCambioForm
+from django.db.models import Q
 
 # Solo superadmin
 def superadmin_required(view_func):
@@ -30,12 +31,27 @@ def superadmin_required(view_func):
 def cotizacion_lista(request):
     tasas = TasaDeCambio.objects.all()
     form = TasaDeCambioForm()  # formulario vacío para crear nueva tasa
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+    
+    # 🔍 Filtro de búsqueda
+    if q:
+        if campo == "moneda_destino":
+            tasas = tasas.filter(moneda_destino__nombre__icontains=q)
+        else:
+            # Si no elige campo, buscar en ambos
+            tasas = tasas.filter(
+                Q(moneda_destino__nombre__icontains=q) |
+                Q(moneda_origen__nombre__icontains=q)
+            )
     
     return render(request, "cotizaciones/lista.html", {
         "tasas": tasas,
         "form": form,
         "modal_type": "create",  # 👈 siempre inicializado
         "obj_id": None,
+        "q": q,
+        "campo": campo 
     })
 
 
@@ -49,6 +65,7 @@ def cotizacion_nuevo(request):
         form = TasaDeCambioForm(request.POST)
         if form.is_valid():
             cotizacion = form.save(commit=False)
+            cotizacion.estado = True
             cotizacion.save()
             # Si es AJAX devolvemos éxito en JSON
             print(cotizacion, flush=True)
@@ -121,15 +138,14 @@ def cotizacion_editar(request, pk):
 
 
 @superadmin_required
-def cotizacion_eliminar(request, pk):
+@superadmin_required
+def cotizacion_desactivar(request, pk):
     """
     Vista que permite eliminar una cotización existente.
     """
     cotizacion = get_object_or_404(TasaDeCambio, pk=pk)
-    print(pk, flush=True)
-    if request.method == "POST":
-        cotizacion.delete()
-        return redirect("cotizacion")
+    cotizacion.estado = not cotizacion.estado  # Alternar True/False
+    cotizacion.save()
     return redirect("cotizacion")
 
 

@@ -1,43 +1,43 @@
-{% extends 'base_admin.html' %} 
-{% load static %} 
-{% block dashboard_content %}
-
+<div class="contenedor-principal">
 <main class="main-container">
 
   <div class="modules">
 
-    <a href="#" class="module-btn active">💰 Monedas</a>
+    <a href="{% url 'monedas' %}" class="module-btn {% if request.resolver_match.url_name == 'monedas' %}active-config{% endif %}">💰 Monedas</a>
 
-    <a href="#" class="module-btn">💱 Tasa de Cambio</a>
+    <a href="{% url 'cotizacion' %}" class="module-btn {% if request.resolver_match.url_name == 'cotizacion' %}active-config{% endif %}">💱 Tasa de Cambio</a>
 
-    <a href="#" class="module-btn">💳 Métodos de Pago</a>
+    <a href="javascript:void(0)" class="module-btn">💳 Métodos de Pago</a>
 
-    <a href="#" class="module-btn">👥 Segmentacion</a>
+    <a href="javascript:void(0)" class="module-btn">👥 Segmentacion</a>
 
-    <a href="#" class="module-btn">🔒 Seguridad</a>
+    <a href="javascript:void(0)" class="module-btn">🔒 Seguridad</a>
 
   </div>
-
 </main>
-
+</div>
 <style>
 body, html {
   height: 100%;
   margin: 0;
   display: flex;
   justify-content: center;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f4f6fb;
+  /*background-color: #f4f6fb;*/
 }
-
+.contenedor-principal{
+  padding: 24px;
+}
 .main-container {
   text-align: center;
   padding: 3rem 2rem;
-  margin: 2rem 0;
   border-radius: 24px;
   background-color: #ffffff;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
+  flex: 1;           /* ocupa todo el espacio disponible */
+  max-width: 1200px; /* pero no más que esto */
+  width: 100%;
+  table-layout: fixed;
 }
 
 .main-container:hover {
@@ -50,6 +50,7 @@ body, html {
   flex-wrap: wrap;
   gap: 1.2rem;
   justify-content: center;
+  
 }
 
 .module-btn {
@@ -62,7 +63,7 @@ body, html {
   cursor: pointer;
   font-weight: 600;
   font-size: 16px;
-  transition: all 0.3s ease;
+  /*transition: all 0.3s ease;*/
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -73,25 +74,35 @@ body, html {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
-.module-btn.active {
+.active-config {
   background-color: #5d5fef;
   box-shadow: 0 6px 20px rgba(93, 95, 239, 0.4);
 }
 
-.sidebar.active ~ .dashboard-content {
-  width: 100% !important;
+@media (max-width: 768px) {
+  .main-container {
+    padding: 2rem 1rem;
+  }
+  .modules {
+    gap: 0.8rem;
+  }
+  .module-btn {
+    font-size: 14px;
+    padding: 0.7rem 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modules {
+    flex-direction: column; /* Botones uno debajo de otro */
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .module-btn {
+    width: 100%; /* Ocupa todo el ancho disponible */
+    max-width: 250px; /* Limita el ancho máximo */
+    font-size: 14px;
+    padding: 0.7rem 1rem;
+  }
 }
 </style>
-
-<script>
-// Mantener solo un link activo
-const buttons = document.querySelectorAll('.module-btn');
-buttons.forEach(btn => {
-  btn.addEventListener('click', () => {
-    buttons.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  });
-});
-</script>
-
-{% endblock %}

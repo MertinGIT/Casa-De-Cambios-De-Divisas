@@ -11,12 +11,16 @@
 
   <ul class="nav-links">
     <li>
-      <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span>
-        <span class="label">Dashboard</span></a>
+      <a href="{% url 'admin_dashboard' %}"
+        ><span class="icon">&#x1F4C8;</span>
+        <span class="label">Panel Principal</span></a
+      >
     </li>
     <li>
-      <a href="#"><span class="icon">&#x1F4CA;</span>
-        <span class="label">Reports</span></a>
+      <a href="#"
+        ><span class="icon">&#x1F4CA;</span>
+        <span class="label">Reportes</span></a
+      >
     </li>
     <li>
       <a href="{% url 'roles' %}">
@@ -25,25 +29,26 @@
       </a>
     </li>
 
-
     <li>
       <a href="{% url 'clientes' %}">
         <span class="icon">&#x1F464;</span>
         <span class="label">Clientes</span>
       </a>
     </li>
-
     <li>
-      <a href="{% url 'configuracion' %}"><span class="icon">&#9881;</span>
-        <span class="label">Settings</span></a>
-    </li>
+      <a href="{% url 'usuarios_roles_lista' %}">
+        <span class="icon">&#x1F5C2;</span>
+        <span class="label">Asignar Clientes</span>
+      </a>
   </ul>
-
   <hr />
 
   <ul class="nav-links secondary">
     <li>
-      <a href="#"><span class="icon">&#x2753;</span> <span class="label">Help</span></a>
+      <a href="{% url 'configuracion' %}"
+        ><span class="icon">&#9881;</span>
+        <span class="label">Configuracion</span></a
+      >
     </li>
     <li>
       <div class="logout-card">
@@ -74,19 +79,17 @@
   <div id="mobile-menu" class="mobile-menu">
     <ul>
       <li>
-        <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span> Dashboard</a>
+        <a href="{% url 'admin_dashboard' %}"
+          ><span class="icon">&#x1F4C8;</span> Panel Principal</a
+        >
       </li>
       <li>
-        <a href="#"><span class="icon">&#x1F4CA;</span> Reports</a>
+        <a href="#"><span class="icon">&#x1F4CA;</span> Reportes</a>
       </li>
       <li>
         <a href="{% url 'roles' %}">
           <span class="icon">&#128101;</span> Roles de Clientes
         </a>
-      </li>
-
-      <li>
-        <a href="{% url 'configuracion' %}"><span class="icon">&#9881;</span> Settings</a>
       </li>
       <li>
         <a href="{% url 'clientes' %}">
@@ -96,10 +99,14 @@
       </li>
       <hr />
       <li>
-        <a href="#"><span class="icon">&#x2753;</span> Help</a>
+        <a href="{% url 'configuracion' %}"
+          ><span class="icon">&#9881;</span> Configuracion</a
+        >
       </li>
       <li>
-        <a href="{% url 'signout' %}" class="logout-mobile"><span class="icon">&#x1F6AA;</span> Cerrar sesión</a>
+        <a href="{% url 'signout' %}" class="logout-mobile"
+          ><span class="icon">&#x1F6AA;</span> Cerrar sesión</a
+        >
       </li>
     </ul>
   </div>
