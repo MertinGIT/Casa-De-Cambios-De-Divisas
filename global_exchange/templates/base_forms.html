@@ -458,13 +458,15 @@
     });
   });
 </script>
-
-  document.addEventListener("DOMContentLoaded", function () {
+<script>
+document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("form-accion");
 
     if (form) {
       form.addEventListener("submit", function (e) {
         // Detectar si es un formulario de usuario (tiene los elementos específicos)
         const isUserForm = document.getElementById("user-available-groups") !== null;
-
+      })
+      }
+})
 </script>

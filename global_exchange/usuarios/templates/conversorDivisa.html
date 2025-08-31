@@ -25,13 +25,25 @@
     <div class="campo fila form-group">
       <div class="input-icon-wrapper">
         <span class="icono">💵</span>
-        <select id="origen" name="origen" class="input-select" {% if not monedas %}disabled{% endif %}>
-          {% for moneda in monedas %}
-            <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == origen %}selected{% endif %}>
-              {{ moneda.nombre }} ({{ moneda.abreviacion }})
-            </option>
-          {% endfor %}
-        </select>
+        <!-- Select normal, solo si hay monedas -->
+{% if monedas %}
+  <select id="origen" name="origen" class="input-select">
+    {% for moneda in monedas %}
+      <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == origen %}selected{% endif %}>
+        {{ moneda.nombre }} ({{ moneda.abreviacion }})
+      </option>
+    {% endfor %}
+  </select>
+{% else %}
+  <!-- Select alternativo que muestra el mensaje -->
+  <select class="input-select" disabled>
+    <option selected>No hay monedas disponibles</option>
+  </select>
+{% endif %}
+
+
+
+
       </div>
       <input type="text" id="valor" name="valor" class="input-text" placeholder="Monto" value="{{ valor_input|default:'' }}">
     </div>
@@ -40,13 +52,22 @@
     <div class="campo fila form-group">
       <div class="input-icon-wrapper">
         <span class="icono">💲</span>
-        <select id="destino" name="destino" class="input-select" {% if not monedas %}disabled{% endif %}>
-          {% for moneda in monedas %}
-            <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == destino %}selected{% endif %}>
-              {{ moneda.nombre }} ({{ moneda.abreviacion }})
-            </option>
-          {% endfor %}
-        </select>
+        <!-- Select destino normal si hay monedas -->
+{% if monedas %}
+  <select id="destino" name="destino" class="input-select">
+    {% for moneda in monedas %}
+      <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == destino %}selected{% endif %}>
+        {{ moneda.nombre }} ({{ moneda.abreviacion }})
+      </option>
+    {% endfor %}
+  </select>
+{% else %}
+  <!-- Select alternativo que muestra el mensaje -->
+  <select class="input-select" disabled>
+    <option selected>No hay monedas disponibles</option>
+  </select>
+{% endif %}
+
       </div>
       <input type="text" id="resultado" name="resultado" class="input-text readonly" placeholder="Resultado" value="{{ resultado|floatformat:2|intcomma }}
 " readonly>
@@ -229,7 +250,7 @@ $(document).ready(function () {
 /* Nuevo diseño ícono dentro del input */
 .input-icon-wrapper {
     position: relative;
-    flex: 1;
+    /*flex: 1;*/
 }
 .input-icon-wrapper .icono {
     position: absolute;
@@ -244,6 +265,7 @@ $(document).ready(function () {
 }
 
 /* Media queries para pantallas pequeñas */
+
 @media (max-width: 768px) {
     .fila {
         flex-direction: column;
