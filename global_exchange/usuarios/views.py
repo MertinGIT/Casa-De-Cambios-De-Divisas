@@ -125,20 +125,9 @@ def home(request):
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     descuento = 0
     segmento_nombre = "Sin segmentación"
-    clientes_asociados = []
 
-    # Obtener todos los clientes asociados al usuario
-    usuarios_clientes = Usuario_Cliente.objects.select_related(
-        "id_cliente__segmentacion"
-    ).filter(id_usuario=request.user)
-
-    for uc in usuarios_clientes:
-        cliente = uc.id_cliente
-        if cliente:
-            clientes_asociados.append(cliente)
-
-    # Elegir con qué cliente operar (por defecto el primero)
-    cliente_operativo = clientes_asociados[0] if clientes_asociados else None
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
 
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         descuento = float(cliente_operativo.segmentacion.descuento)
@@ -561,6 +550,11 @@ def editarPerfil(request):
     """
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        segmento_nombre = cliente_operativo.segmentacion.nombre
 
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
@@ -572,9 +566,14 @@ def editarPerfil(request):
                 print(user, flush=True)
                 # Mantiene sesión si cambia contraseña
                 update_session_auth_hash(request, user)
-                return render(request, 'editarperfil.html', {'form': form,  'success': True})
+                return render(request, 'editarperfil.html', {'form': form,  'success': True,
+        "segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
             else:
-                return render(request, 'editarperfil.html', {'form': form})
+                return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
         """
         # Eliminar cuenta
         elif action == 'eliminar':
@@ -591,7 +590,9 @@ def editarPerfil(request):
     else:
         form = CustomUserChangeForm(instance=request.user)
 
-    return render(request, 'editarperfil.html', {'form': form})
+    return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
 
 
 """
@@ -780,3 +781,33 @@ def user_roles_detalle(request, pk):
         "all_groups": [{"id": g.id, "name": g.name} for g in all_groups],
         "all_permissions": [{"id": p.id, "name": p.name} for p in all_permissions],
     })
+
+def obtener_clientes_usuario(user,request):
+    """
+    Devuelve:
+        - clientes_asociados: lista de todos los clientes asociados al usuario
+        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    """
+
+    usuarios_clientes = Usuario_Cliente.objects.select_related("id_cliente__segmentacion").filter(id_usuario=user)
+    clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
+    cliente_operativo = None
+
+    # Tomar de la sesión si existe
+    if request and request.session.get('cliente_operativo_id'):
+        cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
+
+    # Si no hay sesión o ID no válido, tomar el primero
+    if not cliente_operativo and clientes_asociados:
+        cliente_operativo = clientes_asociados[0]
+
+    return clientes_asociados, cliente_operativo
+
+
+@login_required
+def set_cliente_operativo(request):
+    cliente_id = request.POST.get('cliente_id')
+    if cliente_id:
+        request.session['cliente_operativo_id'] = int(cliente_id)
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)

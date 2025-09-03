@@ -27,7 +27,7 @@
         <p class="dropdown-title">Seleccionar Cliente</p>
         <ul>
             {% for cliente in clientes_asociados %}
-                <li><a href="#">{{ cliente.nombre }}</a></li>
+                <li><a href="#" data-cliente-id="{{ cliente.id }}">{{ cliente.nombre }}</a></li>
             {% empty %}
                 <li><span>No tiene clientes asignados</span></li>
             {% endfor %}
@@ -40,13 +40,26 @@
 
 
 <script>
-    const dropdownItems = document.querySelectorAll('.user-dropdown ul li a');
+const dropdownItems = document.querySelectorAll('.user-dropdown ul li a');
+
 dropdownItems.forEach(item => {
     item.addEventListener('click', function(e){
         e.preventDefault();
         const nombreCliente = this.textContent;
+        const clienteId = this.dataset.clienteId;
+
+        // Cambiar visualmente
         document.querySelector('.user-name').innerHTML = "{{ user.username }} (" + nombreCliente + ")";
+
+        // Guardar en sesión
+        fetch("{% url 'set_cliente_operativo' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: "cliente_id=" + clienteId
+        });
     });
 });
-
 </script>
