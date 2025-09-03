@@ -9,9 +9,15 @@
              class="user-avatar" />
 
         <div class="user-details">
-            <span class="user-name">{{ user.username }}</span>
+            <span class="user-name">
+                {{ user.username }}
+                {% if cliente_operativo %}
+                    ({{ cliente_operativo.nombre }})
+                {% endif %}
+            </span>
             <span class="user-role">{{ user.profile.role }}</span>
         </div>
+
 
         <i class="arrow-down">&#9662;</i>
     </div>
@@ -20,7 +26,7 @@
     <div class="user-dropdown" id="userDropdown">
         <p class="dropdown-title">Seleccionar Cliente</p>
         <ul>
-            {% for cliente in user_fake.clientes_asociados %}
+            {% for cliente in clientes_asociados %}
                 <li><a href="#">{{ cliente.nombre }}</a></li>
             {% empty %}
                 <li><span>No tiene clientes asignados</span></li>
@@ -31,3 +37,16 @@
 
 <link rel="stylesheet" href="{% static 'usuarios/css/perfil_usuario.css' %}">
 <script src="{% static 'usuarios/js/perfil_usuario.js' %}"></script>
+
+
+<script>
+    const dropdownItems = document.querySelectorAll('.user-dropdown ul li a');
+dropdownItems.forEach(item => {
+    item.addEventListener('click', function(e){
+        e.preventDefault();
+        const nombreCliente = this.textContent;
+        document.querySelector('.user-name').innerHTML = "{{ user.username }} (" + nombreCliente + ")";
+    });
+});
+
+</script>

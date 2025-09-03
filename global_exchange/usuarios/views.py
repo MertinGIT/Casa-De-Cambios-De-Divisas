@@ -35,6 +35,8 @@ from datetime import datetime
 from .models import CustomUser
 from .forms import UserRolePermissionForm
 import sys
+from clientes.models import Cliente, Segmentacion
+from cliente_usuario.models import Usuario_Cliente
 
 User = get_user_model()
 # Create your views here.
@@ -119,22 +121,50 @@ def home(request):
     # Comisiones y segmentos
     COMISION_VTA = 100
     COMISION_COM = 50
-    segmentos = {"VIP": 10, "Corporativo": 5, "Minorista": 0}
+    
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    descuento = 0
+    segmento_nombre = "Sin segmentación"
+    clientes_asociados = []
 
+    # Obtener todos los clientes asociados al usuario
+    usuarios_clientes = Usuario_Cliente.objects.select_related(
+        "id_cliente__segmentacion"
+    ).filter(id_usuario=request.user)
+
+    for uc in usuarios_clientes:
+        cliente = uc.id_cliente
+        if cliente:
+            clientes_asociados.append(cliente)
+
+    # Elegir con qué cliente operar (por defecto el primero)
+    cliente_operativo = clientes_asociados[0] if clientes_asociados else None
+
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        descuento = float(cliente_operativo.segmentacion.descuento)
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+
+    print("Clientes asociados:", [c.nombre for c in clientes_asociados])
+    print("Cliente operativo:", cliente_operativo.nombre if cliente_operativo else "Ninguno")
+    print("Descuento:", descuento)
+    print("Segmento:", segmento_nombre)
+
+    
+    
     # Variables iniciales
     resultado = ""
     ganancia_total = 0
     valor_input = ""
     moneda_seleccionada = ""
     operacion = "venta"
-    segmento = "Minorista"
     origen = ""
     destino = ""
-
+    
+    
+    
     if request.method == "POST":
         valor_input = request.POST.get("valor", "").strip()
         operacion = request.POST.get("operacion")
-        segmento = request.POST.get("segmento", "Corporativo")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
 
@@ -149,8 +179,6 @@ def home(request):
             if valor <= 0:
                 resultado = "Monto inválido"
             else:
-                descuento = segmentos.get(segmento, 0)
-
                 # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
                 registros = data_por_moneda.get(moneda_seleccionada, [])
                 if not registros:
@@ -188,7 +216,12 @@ def home(request):
 
         # Respuesta AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({"resultado": resultado, "ganancia_total": ganancia_total})
+            return JsonResponse({
+                "resultado": resultado,
+                "ganancia_total": ganancia_total,
+                "segmento": segmento_nombre,
+                "descuento": descuento
+            })
 
     
     context = {
@@ -198,11 +231,14 @@ def home(request):
         'valor_input': valor_input,
         'moneda_seleccionada': moneda_seleccionada,
         'operacion': operacion,
-        'segmento': segmento,
         "user": request.user,
         "origen": origen,
         "destino": destino,
         'data_por_moneda': data_por_moneda,
+        "segmento": segmento_nombre,
+        "descuento": descuento,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,
     }
     return render(request, 'home.html', context)
 
