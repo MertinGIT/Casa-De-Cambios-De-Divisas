@@ -61,7 +61,7 @@ def configurar_inicial(sender, **kwargs):
         username=SUPERADMIN_USERNAME,
         defaults={
             "email": SUPERADMIN_EMAIL,
-            "is_superuser": True,
+            "is_superuser": False,
             "is_staff": True,
             "is_active": True,
             "cedula": SUPERADMIN_CEDULA

@@ -46,7 +46,8 @@ def user_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
-            if request.user.is_superuser:
+            if request.user.has_perm('session.view_panel_admin'):
+                print("Entra", flush=True)
                 # Si es superadmin, lo redirige al panel de admin
                 return redirect('admin_dashboard')
             else:
@@ -69,7 +70,7 @@ def superadmin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
-            if request.user.is_superuser:
+            if request.user.groups.filter(name='ADMIN').exists():
                 return view_func(request, *args, **kwargs)
             else:
                 # Usuario normal no tiene acceso
@@ -410,9 +411,11 @@ def signin(request):
             })
         else:
             login(request, user)
-            if user.is_superuser:
+            if request.user.groups.filter(name='ADMIN').exists():
+                print("Entra tiene permiso", flush=True)
                 return redirect('admin_dashboard')
             else:
+                print("No tiene permiso", flush=True)
                 return redirect('home')
       
 def pagina_aterrizaje(request):
