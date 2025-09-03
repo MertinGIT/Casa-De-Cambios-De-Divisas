@@ -235,8 +235,11 @@
         </div>
 
         {% if messages %}
-        <div class="alert alert-{{ messages.tags }} mt-2">{{ messages }}</div>
+          {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mt-2">{{ message }}</div>
+          {% endfor %}
         {% endif %}
+
 
         <form method="POST">
           {% csrf_token %}
