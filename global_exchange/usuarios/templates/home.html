@@ -8,9 +8,11 @@
       <div class="left-content">
         {% include 'cotizaciones.html' %} 
       </div>
+      {% if perms.monedas.view_moneda %}
       <div class="right-content">
         {% include 'conversorDivisa.html' %}
       </div>
+      {% endif %}
     </div>
     <div class="chart-content">{% include 'graficoMoneda.html' %}</div>
   </div>

@@ -84,11 +84,11 @@ INSTALLED_APPS = [
     'clientes',
     'roles_permisos',
     'admin_dashboard',
-    'asignar_clientes_usuarios',
     'configuracion',
     'cliente_segmentacion',
     'cotizaciones',
     'monedas',
+    'cliente_usuario'
 ]
 # ============================================================================
 # Middleware

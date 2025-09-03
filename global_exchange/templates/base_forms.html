@@ -215,27 +215,26 @@
     fetch(detalle)
       .then((res) => res.json())
       .then((data) => {
-        console.log("=== DATOS RECIBIDOS ===", data);
 
         // ================== DETECTAR TIPO DE MODAL ==================
         const isUserModal = document.getElementById("user-available-groups") !== null;
         const isRoleModal = document.getElementById("available-perms") !== null;
+        const isClientUserModal = document.getElementById("available-users") !== null;
 
         console.log("Tipo de modal detectado:", {
           isUserModal: isUserModal,
-          isRoleModal: isRoleModal
+          isRoleModal: isRoleModal,
+          isClientUserModal: isClientUserModal
         });
 
         if (isUserModal) {
           // ================== LÓGICA PARA USUARIOS ==================
-          console.log("=== EJECUTANDO LÓGICA DE USUARIOS ===");
 
           // GRUPOS
           const userAvailableGroups = document.getElementById("user-available-groups");
           const userSelectedGroups = document.getElementById("user-selected-groups");
 
           if (userAvailableGroups && userSelectedGroups) {
-            console.log("=== PROCESANDO GRUPOS DE USUARIO ===");
 
             // Limpiar ambos contenedores
             userAvailableGroups.innerHTML = "";
@@ -279,9 +278,6 @@
                 }
               });
             }
-
-            console.log("Grupos cargados - Disponibles:", userAvailableGroups.options.length);
-            console.log("Grupos cargados - Seleccionados:", userSelectedGroups.children.length);
           }
 
           // PERMISOS
@@ -289,7 +285,6 @@
           const userSelectedPerms = document.getElementById("user-selected-perms");
 
           if (userAvailablePerms && userSelectedPerms) {
-            console.log("=== PROCESANDO PERMISOS DE USUARIO ===");
 
             // Limpiar ambos contenedores
             userAvailablePerms.innerHTML = "";
@@ -333,9 +328,6 @@
                 }
               });
             }
-
-            console.log("Permisos cargados - Disponibles:", userAvailablePerms.options.length);
-            console.log("Permisos cargados - Seleccionados:", userSelectedPerms.children.length);
           }
 
           // Setear el username para usuarios
@@ -346,13 +338,11 @@
 
         } else if (isRoleModal) {
           // ================== LÓGICA PARA ROLES/PERMISOS EXISTENTE ==================
-          console.log("=== EJECUTANDO LÓGICA DE ROLES/PERMISOS ===");
 
           const available = document.getElementById("available-perms");
           const selected = document.getElementById("selected-perms");
 
           if (available && selected) {
-            console.log("=== DUALLISTBOX EXISTENTE ENCONTRADO ===");
             // Tu lógica existente del duallistbox
             const allOptions = [];
             Array.from(available.options).forEach(opt => allOptions.push(opt));
@@ -366,7 +356,33 @@
             allOptions.forEach(opt => {
               if (data.permisos && data.permisos.includes(opt.value) || data.permisos_asignados && data.permisos_asignados.includes(parseInt(opt.value))) {
                 selected.appendChild(opt);
-                opt.selected = true;
+              } else {
+                available.appendChild(opt);
+                opt.selected = false;
+              }
+            });
+          }
+        }
+        else if (isClientUserModal) {
+          // ================== LÓGICA PARA USUARIOS/CLIENTES EXISTENTE ==================
+
+          const available = document.getElementById("available-users");
+          const selected = document.getElementById("selected-users");
+
+          if (available && selected) {
+            // Tu lógica existente del duallistbox
+            const allOptions = [];
+            Array.from(available.options).forEach(opt => allOptions.push(opt));
+            Array.from(selected.options).forEach(opt => allOptions.push(opt));
+
+            // Vaciar ambos selects
+            available.innerHTML = "";
+            selected.innerHTML = "";
+
+            // Repartir según usuarios asignados
+            allOptions.forEach(opt => {
+              if (data.usuarios && data.usuarios.includes(opt.value) || data.usuarios_asignados && data.usuarios_asignados.includes(parseInt(opt.value))) {
+                selected.appendChild(opt);
               } else {
                 available.appendChild(opt);
                 opt.selected = false;
@@ -375,6 +391,7 @@
           }
         }
 
+        
         // ================== CAMPOS COMUNES ==================
         // Setear otros campos simples (excluyendo los específicos que ya manejamos)
         Object.entries(data).forEach(([key, value]) => {

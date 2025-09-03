@@ -54,3 +54,8 @@ class Cliente(models.Model):
     estado = models.CharField(max_length=10, default='activo')
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
+    usuarios = models.ManyToManyField(
+        'usuarios.CustomUser',
+        through='cliente_usuario.Usuario_Cliente',
+        related_name='clientes'
+    )
