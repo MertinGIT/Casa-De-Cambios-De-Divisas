@@ -35,6 +35,8 @@ from datetime import datetime
 from .models import CustomUser
 from .forms import UserRolePermissionForm
 import sys
+from clientes.models import Cliente, Segmentacion
+from cliente_usuario.models import Usuario_Cliente
 
 User = get_user_model()
 # Create your views here.
@@ -119,22 +121,39 @@ def home(request):
     # Comisiones y segmentos
     COMISION_VTA = 100
     COMISION_COM = 50
-    segmentos = {"VIP": 10, "Corporativo": 5, "Minorista": 0}
+    
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    descuento = 0
+    segmento_nombre = "Sin segmentación"
 
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        descuento = float(cliente_operativo.segmentacion.descuento)
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+
+    print("Clientes asociados:", [c.nombre for c in clientes_asociados])
+    print("Cliente operativo:", cliente_operativo.nombre if cliente_operativo else "Ninguno")
+    print("Descuento:", descuento)
+    print("Segmento:", segmento_nombre)
+
+    
+    
     # Variables iniciales
     resultado = ""
     ganancia_total = 0
     valor_input = ""
     moneda_seleccionada = ""
     operacion = "venta"
-    segmento = "Minorista"
     origen = ""
     destino = ""
-
+    
+    
+    
     if request.method == "POST":
         valor_input = request.POST.get("valor", "").strip()
         operacion = request.POST.get("operacion")
-        segmento = request.POST.get("segmento", "Corporativo")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
 
@@ -149,8 +168,6 @@ def home(request):
             if valor <= 0:
                 resultado = "Monto inválido"
             else:
-                descuento = segmentos.get(segmento, 0)
-
                 # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
                 registros = data_por_moneda.get(moneda_seleccionada, [])
                 if not registros:
@@ -188,7 +205,12 @@ def home(request):
 
         # Respuesta AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({"resultado": resultado, "ganancia_total": ganancia_total})
+            return JsonResponse({
+                "resultado": resultado,
+                "ganancia_total": ganancia_total,
+                "segmento": segmento_nombre,
+                "descuento": descuento
+            })
 
     
     context = {
@@ -198,11 +220,14 @@ def home(request):
         'valor_input': valor_input,
         'moneda_seleccionada': moneda_seleccionada,
         'operacion': operacion,
-        'segmento': segmento,
         "user": request.user,
         "origen": origen,
         "destino": destino,
         'data_por_moneda': data_por_moneda,
+        "segmento": segmento_nombre,
+        "descuento": descuento,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,
     }
     return render(request, 'home.html', context)
 
@@ -525,6 +550,11 @@ def editarPerfil(request):
     """
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        segmento_nombre = cliente_operativo.segmentacion.nombre
 
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
@@ -536,9 +566,14 @@ def editarPerfil(request):
                 print(user, flush=True)
                 # Mantiene sesión si cambia contraseña
                 update_session_auth_hash(request, user)
-                return render(request, 'editarperfil.html', {'form': form,  'success': True})
+                return render(request, 'editarperfil.html', {'form': form,  'success': True,
+        "segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
             else:
-                return render(request, 'editarperfil.html', {'form': form})
+                return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
         """
         # Eliminar cuenta
         elif action == 'eliminar':
@@ -555,7 +590,9 @@ def editarPerfil(request):
     else:
         form = CustomUserChangeForm(instance=request.user)
 
-    return render(request, 'editarperfil.html', {'form': form})
+    return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
 
 
 """
@@ -744,3 +781,33 @@ def user_roles_detalle(request, pk):
         "all_groups": [{"id": g.id, "name": g.name} for g in all_groups],
         "all_permissions": [{"id": p.id, "name": p.name} for p in all_permissions],
     })
+
+def obtener_clientes_usuario(user,request):
+    """
+    Devuelve:
+        - clientes_asociados: lista de todos los clientes asociados al usuario
+        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    """
+
+    usuarios_clientes = Usuario_Cliente.objects.select_related("id_cliente__segmentacion").filter(id_usuario=user)
+    clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
+    cliente_operativo = None
+
+    # Tomar de la sesión si existe
+    if request and request.session.get('cliente_operativo_id'):
+        cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
+
+    # Si no hay sesión o ID no válido, tomar el primero
+    if not cliente_operativo and clientes_asociados:
+        cliente_operativo = clientes_asociados[0]
+
+    return clientes_asociados, cliente_operativo
+
+
+@login_required
+def set_cliente_operativo(request):
+    cliente_id = request.POST.get('cliente_id')
+    if cliente_id:
+        request.session['cliente_operativo_id'] = int(cliente_id)
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)

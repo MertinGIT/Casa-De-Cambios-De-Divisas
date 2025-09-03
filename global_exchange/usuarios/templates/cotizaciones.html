@@ -11,9 +11,19 @@
       <div class="cotizaciones-divisa">
 
         <!-- Logo: PNG primero, si no SVG -->
-        <img src="{% static 'img/logoMoneda/'|add:abrev|add:'.png' %}" 
-             onerror="this.onerror=null;this.src='{% static 'img/logoMoneda/'|add:abrev|add:'.svg' %}';"
-             alt="Logo {{ abrev }}" />
+        <img src="{% static 'img/logoMoneda/'|add:abrev|add:'.png' %}"
+     onerror="
+         this.onerror=null;
+         this.src='{% static 'img/logoMoneda/'|add:abrev|add:'.svg' %}';
+         this.onerror=function(){
+             this.onerror=null;
+             this.src='{% static 'img/logoMoneda/default-logo.webp' %}';
+         }
+     "
+     alt="Logo {{ abrev }}" />
+
+
+
 
         <p class="simboloTitle">{{ abrev }}</p>
 
@@ -22,13 +32,17 @@
           <p class="simboloTitle">
             {{ ultimo.compra }}
             {% if registros|length > 1 %}
-              {% with registro_anterior=registros|slice:":-1"|last %}
+              {% with registro_anterior=registros|slice:"-2:-1"|first %}
                 {% if ultimo.compra > registro_anterior.compra %}
                   <span class="flecha sube">▲</span>
                 {% elif ultimo.compra < registro_anterior.compra %}
                   <span class="flecha baja">▼</span>
-                {% endif %}
+                {% else %}
+                <span class="flecha neutral">-</span>
+              {% endif %}
               {% endwith %}
+              {% else %}
+                <span class="flecha neutral">-</span>
             {% endif %}
           </p>
         </div>
@@ -38,13 +52,17 @@
           <p class="simboloTitle">
             {{ ultimo.venta }}
             {% if registros|length > 1 %}
-              {% with registro_anterior=registros|slice:":-1"|last %}
+              {% with registro_anterior=registros|slice:"-2:-1"|first %}
                 {% if ultimo.venta > registro_anterior.venta %}
                   <span class="flecha sube">▲</span>
                 {% elif ultimo.venta < registro_anterior.venta %}
                   <span class="flecha baja">▼</span>
-                {% endif %}
+                {% else %}
+                <span class="flecha neutral">-</span>
+              {% endif %}
               {% endwith %}
+              {% else %}
+                <span class="flecha neutral">-</span>
             {% endif %}
           </p>
         </div>
@@ -58,7 +76,7 @@
 
 <style>
   .flecha {
-    font-size: 0.9rem;
+    font-size: 1.2rem;
     margin-left: 5px;
   }
 
@@ -71,4 +89,8 @@
   .flecha.baja {
       color: red;
   }
+  .flecha.neutral {
+    color: goldenrod;  /* amarillo oscuro */
+  }
+
 </style>
