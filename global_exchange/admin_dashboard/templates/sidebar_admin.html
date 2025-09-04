@@ -1,4 +1,6 @@
 {% load static %}
+<!-- Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-papU9rjE+..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <link rel="stylesheet" href="{% static 'css/sidebar.css' %}" />
 
@@ -40,12 +42,15 @@
         <span class="icon">&#x1F5C2;</span>
         <span class="label">Asignar Clientes</span>
       </a>
-    </li>
-          <a href="{% url 'segmentaciones' %}">
-        <span class="icon">&#x1F5C2;</span>
-        <span class="label">Segmentación</span>
-      </a>
-    </li>
+<li>
+  <a href="{% url 'lista-segmentaciones' %}">
+    <span class="icon">
+      <i class="fa fa-address-book" style="color: violet;"></i>
+    </span>
+    <span class="label">Segmentación</span>
+  </a>
+</li>
+
   </ul>
   <hr />
 
