@@ -5,28 +5,10 @@ from .models import Moneda
 from .forms import MonedaForm
 from django.db.models import Q
 
-# Decorador de superadmin
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
-
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
 
 # LISTA
-@superadmin_required
+
 def moneda_lista(request):
     """
     Muestra la lista de monedas disponibles en el sistema, con opción de búsqueda y filtrado.
@@ -65,7 +47,7 @@ def moneda_lista(request):
 
 
 # CREAR
-@superadmin_required
+
 def moneda_nueva(request):
     """
     Crea una nueva moneda en el sistema.
@@ -102,7 +84,7 @@ def moneda_nueva(request):
 
 
 # EDITAR
-@superadmin_required
+
 def moneda_editar(request, pk):
     """
     Edita los datos de una moneda existente.
@@ -151,7 +133,7 @@ def moneda_editar(request, pk):
         })
 
 
-@superadmin_required
+
 def moneda_desactivar(request, pk):
     """
     Activa o desactiva una moneda del sistema.
@@ -172,7 +154,7 @@ def moneda_desactivar(request, pk):
     return redirect("monedas")
 
 
-@superadmin_required
+
 def moneda_detalle(request, pk):
     """
     Devuelve el detalle de una moneda en formato JSON.

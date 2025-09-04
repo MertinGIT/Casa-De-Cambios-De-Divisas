@@ -25,7 +25,7 @@ class RoleBasedMiddleware:
             
             # Usuarios comunes pueden acceder solo a ciertas rutas
             '/home/': ['Usuario', 'Usuario Asociado', 'Usuario'],
-            '/editarperfil/': ['ADMIN', 'Usuario Asociado'],
+            '/editarperfil/': ['ADMIN', 'Usuario Asociado', 'Usuario'],
             
         }
     

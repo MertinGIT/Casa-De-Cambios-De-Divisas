@@ -61,24 +61,6 @@ def user_required(view_func):
 # Solo superadmin
 
 
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
-
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.groups.filter(name='ADMIN').exists():
-                return view_func(request, *args, **kwargs)
-            else:
-                # Usuario normal no tiene acceso
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
 # views.py - home
 """
@@ -652,7 +634,6 @@ def crud_empleados(request):
     return render(request, 'empleados.html', {'empleados': empleados})
 
 
-@superadmin_required
 def user_roles_lista(request):
     """
     Lista de usuarios con buscador básico.
@@ -677,7 +658,6 @@ def user_roles_lista(request):
     })
 
 
-@superadmin_required
 def user_roles_edit(request, pk):
     """
     Editar roles y permisos de un usuario via AJAX (para modal).
@@ -757,7 +737,6 @@ def user_roles_edit(request, pk):
         "usuario": usuario
     })
 
-@superadmin_required
 def user_roles_detalle(request, pk):
     from django.contrib.auth.models import Group, Permission
 

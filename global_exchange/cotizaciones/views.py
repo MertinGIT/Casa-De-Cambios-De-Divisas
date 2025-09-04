@@ -6,27 +6,7 @@ from .models import TasaDeCambio, Moneda
 from .forms import TasaDeCambioForm
 from django.db.models import Q
 
-# Solo superadmin
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
 
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
-
-
-@superadmin_required
 def cotizacion_lista(request):
     """
     Vista que lista todas las tasas de cambio.
@@ -68,7 +48,6 @@ def cotizacion_lista(request):
     })
 
 
-@superadmin_required
 def cotizacion_nuevo(request):
     """
     Vista que permite crear una nueva cotización de monedas.
@@ -121,7 +100,6 @@ def cotizacion_nuevo(request):
     return redirect("cotizacion")
 
 
-@superadmin_required
 def cotizacion_editar(request, pk):
     """
     Vista que permite editar una cotización existente.
@@ -170,7 +148,6 @@ def cotizacion_editar(request, pk):
     })
 
 
-@superadmin_required
 def cotizacion_desactivar(request, pk):
     """
     Vista que alterna el estado (activo/inactivo) de una cotización existente.
@@ -185,7 +162,6 @@ def cotizacion_desactivar(request, pk):
     return redirect("cotizacion")
 
 
-@superadmin_required
 def cotizacion_detalle(request, pk):
     """
     Vista que obtiene los datos de una cotización en formato JSON.

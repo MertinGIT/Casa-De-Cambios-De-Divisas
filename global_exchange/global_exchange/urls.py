@@ -44,7 +44,7 @@ urlpatterns = [
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
     path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
-    path('admin/segmentaciones/', include('cliente_segmentacion.urls')),
+    path('admin/configuracion/segmentaciones/', include('cliente_segmentacion.urls')),
     path('admin/configuracion/', configuracion_views.configuracion_view, name='configuracion'),
     path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
     path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),

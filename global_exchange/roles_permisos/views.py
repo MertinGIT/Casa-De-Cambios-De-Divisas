@@ -4,27 +4,6 @@ from functools import wraps
 from django.contrib.auth.models import Group, Permission
 from .forms import RolForm
 
-# Solo superadmin
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
-
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
-
-
-@superadmin_required
 def rol_lista(request):
     roles = Group.objects.all().order_by('-id')
     permisos = Permission.objects.all().order_by('name')
@@ -49,7 +28,6 @@ def rol_lista(request):
     })
 
 
-@superadmin_required
 def rol_nuevo(request):
     """
     Vista que permite crear un nuevo rol.
@@ -79,7 +57,6 @@ def rol_nuevo(request):
     })
 
 
-@superadmin_required
 def rol_editar(request, pk):
     group = get_object_or_404(Group, pk=pk)
     """
@@ -115,7 +92,6 @@ def rol_editar(request, pk):
     })
 
 
-@superadmin_required
 def rol_eliminar(request, pk):
     group = get_object_or_404(Group, pk=pk)
     """
@@ -130,20 +106,18 @@ def rol_eliminar(request, pk):
     """
     if hasattr(group, 'profile'):
         if request.method == "POST":
-            group.profile.estado = "Inactivo"
+            group.profile.estado = "Activo"
             group.profile.save()
             print("GUARDA", flush=True)
             return redirect("roles")
     else:
         # Si no existe el perfil, lo creamos y lo marcamos como inactivo
         from roles_permisos.models import GroupProfile
-        GroupProfile.objects.create(group=group, estado="Inactivo")
-        print("GUARDA ACA", flush=True)
+        GroupProfile.objects.create(group=group, estado="Activo")
         return redirect("roles")
     return redirect("roles")
 
 
-@superadmin_required
 def rol_activar(request, pk):
     group = get_object_or_404(Group, pk=pk)
     if hasattr(group, 'profile'):
@@ -155,7 +129,6 @@ def rol_activar(request, pk):
     return redirect("roles")
 
 
-@superadmin_required
 def rol_desactivar(request, pk):
     group = get_object_or_404(Group, pk=pk)
     if hasattr(group, 'profile'):
@@ -168,7 +141,6 @@ def rol_desactivar(request, pk):
 
 
 # Vista para obtener datos de un rol via AJAX (para llenar el modal de edición)
-@superadmin_required
 def rol_detalle(request, pk):
     """
     Vista que obtiene los datos de un rol para edición mediante AJAX.
