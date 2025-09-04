@@ -552,7 +552,7 @@ def editarPerfil(request):
     storage.used = True  # Limpia todos los mensajes previos
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
-
+    segmento_nombre = "Sin segmentación"
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         segmento_nombre = cliente_operativo.segmentacion.nombre
 

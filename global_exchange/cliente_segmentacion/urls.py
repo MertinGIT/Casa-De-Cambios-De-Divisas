@@ -7,4 +7,6 @@ urlpatterns = [
     path('editar/<int:pk>/', views.editar_segmentacion, name='segmentaciones-editar'),
     path('changeState/<int:pk>/', views.cambiar_estado_segmentacion, name='segmentaciones-state'),
     path('detalle/<int:pk>/', views.segmentacion_detalle, name='segmentacion-detalle'),
+    path("check-nombre/", views.check_nombre_segmentacion, name="check-nombre-segmentacion"),
+
 ]

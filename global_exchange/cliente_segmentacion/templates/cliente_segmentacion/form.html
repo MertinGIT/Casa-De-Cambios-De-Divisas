@@ -163,13 +163,39 @@ function setupTipoClienteValidation() {
                 number: true,
                 min: 0,
                 max: 100
+            }, 
+            // Validación remota para nombre único
+            nombre: {
+                required: true,
+                minlength: 2,
+                maxlength: 100,
+                remote: {
+                    url: "/segmentaciones/check-nombre/",
+                    type: "post",
+                    data: {
+                        nombre: function() {
+                            return $("#form-accion input[name='nombre']").val();
+                        },
+                        obj_id: function() {
+                            let objId = $("#obj_id").val(); // campo oculto en el modal para edición
+                            return (objId && objId !== '') ? objId : null;
+                        },
+                        csrfmiddlewaretoken: function() {
+                            return $("input[name='csrfmiddlewaretoken']").val();
+                        }
+                    },
+                    beforeSend: function(xhr, settings) {
+                        console.log("Enviando validación remota de nombre:", settings.data);
+                    }
+                }
             }
         },
         messages: {
             nombre: {
                 required: "El nombre del tipo de cliente es obligatorio",
                 minlength: "El nombre debe tener al menos 2 caracteres",
-                maxlength: "El nombre no puede exceder 100 caracteres"
+                maxlength: "El nombre no puede exceder 100 caracteres",
+                remote: "Este nombre ya está en uso, elija otro."
             },
             descripcion: {
                 required: "La descripción es obligatoria",

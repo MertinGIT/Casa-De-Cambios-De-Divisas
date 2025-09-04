@@ -1,65 +1,78 @@
 from django.db import models
-class Segmentacion(models.Model):
+from cliente_segmentacion.models import Segmentacion
+
+class Cliente(models.Model):
     """
-    Modelo que representa la segmentación de clientes según criterios de negocio.
+    Representa a los clientes registrados en el sistema.
+
+    Este modelo almacena la información básica de los clientes y su relación
+    con las segmentaciones definidas. Además, permite vincular clientes con
+    usuarios del sistema a través de una relación Many-to-Many intermedia.
 
     Campos:
-        - ``nombre`` (CharField): Nombre único de la segmentación (máx. 50 caracteres).
-        - ``descripcion`` (TextField): Descripción opcional que detalla la segmentación.
-        - ``descuento`` (DecimalField): Porcentaje de descuento asociado a la segmentación.
+        nombre (CharField): Nombre completo del cliente (máx. 150 caracteres).
+        cedula (CharField, opcional): Número de cédula o identificación del cliente.
+        email (EmailField): Correo electrónico único del cliente.
+        telefono (CharField, opcional): Número de teléfono del cliente (máx. 20 caracteres).
+        segmentacion (ForeignKey): Segmentación asignada al cliente; protege integridad
+                                   al impedir eliminar un segmento asociado.
+        estado (CharField): Estado del cliente ('activo' por defecto).
+        creado_en (DateTimeField): Fecha y hora de creación (asignada automáticamente).
+        actualizado_en (DateTimeField): Fecha y hora de última actualización (automática).
+        usuarios (ManyToManyField): Relación con usuarios del sistema a través de
+                                    la tabla intermedia 'Usuario_Cliente'.
 
     Notas:
-        - Este modelo permite clasificar a los clientes en grupos (segmentos) con descuentos específicos.
+        - La relación con Segmentacion utiliza `on_delete=models.PROTECT` para proteger la integridad.
+        - La relación Many-to-Many con usuarios permite asociar múltiples usuarios a un cliente
+          y viceversa mediante la tabla intermedia 'Usuario_Cliente'.
     """
-    nombre = models.CharField(max_length=50, unique=False)
-    descripcion = models.TextField(blank=True, null=True)
-    descuento = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=0.0,
-        help_text="Descuento en porcentaje para este tipo de cliente"
+
+    nombre = models.CharField(
+        max_length=150,
+        help_text="Nombre completo del cliente"
+    )
+    cedula = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Número de cédula o identificación del cliente (opcional)"
+    )
+    email = models.EmailField(
+        unique=True,
+        help_text="Correo electrónico único del cliente"
+    )
+    telefono = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="Número de teléfono del cliente (opcional)"
+    )
+    segmentacion = models.ForeignKey(
+        Segmentacion,
+        on_delete=models.PROTECT,
+        help_text="Segmentación asignada al cliente; no se puede eliminar si está en uso"
     )
     estado = models.CharField(
         max_length=10,
         default='activo',
-        help_text="Estado de la segmentación (activo/inactivo)"
+        help_text="Estado del cliente (activo/inactivo)"
     )
-    @property
-    def descuento_aplicable(self):
-        """Devuelve 0 si está inactivo, sino el valor real"""
-        return 0 if self.estado == "inactivo" else self.descuento
-
-    def __str__(self):
-        return self.nombre
-    
-
-    
-class Cliente(models.Model):
-    """
-    Modelo que representa a los clientes registrados en el sistema.
-
-    Campos:
-        - ``nombre`` (CharField): Nombre completo del cliente (máx. 150 caracteres).
-        - ``email`` (EmailField): Correo electrónico único del cliente.
-        - ``telefono`` (CharField): Número de teléfono del cliente (opcional, máx. 20 caracteres).
-        - ``segmentacion`` (ForeignKey): Segmentación a la que pertenece el cliente.
-        - ``estado`` (CharField): Estado del cliente (activo por defecto).
-        - ``creado_en`` (DateTimeField): Fecha de creación (asignada automáticamente).
-        - ``actualizado_en`` (DateTimeField): Fecha de última actualización (automática).
-
-    Notas:
-        - El campo ``segmentacion`` protege la integridad: no se puede eliminar un segmento si está asociado a un cliente.
-    """
-    nombre = models.CharField(max_length=150)
-    cedula = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(unique=True)
-    telefono = models.CharField(max_length=20, blank=True, null=True)
-    segmentacion = models.ForeignKey(Segmentacion, on_delete=models.PROTECT)
-    estado = models.CharField(max_length=10, default='activo')
-    creado_en = models.DateTimeField(auto_now_add=True)
-    actualizado_en = models.DateTimeField(auto_now=True)
+    creado_en = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Fecha y hora de creación del registro"
+    )
+    actualizado_en = models.DateTimeField(
+        auto_now=True,
+        help_text="Fecha y hora de última actualización del registro"
+    )
     usuarios = models.ManyToManyField(
         'usuarios.CustomUser',
         through='cliente_usuario.Usuario_Cliente',
-        related_name='clientes'
+        related_name='clientes',
+        help_text="Usuarios asociados al cliente mediante tabla intermedia"
     )
+
+    def __str__(self):
+        """Representación legible del objeto"""
+        return self.nombre

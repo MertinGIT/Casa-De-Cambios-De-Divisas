@@ -140,7 +140,7 @@
     background-color: transparent;
     border: none;
     padding: 16px 20px 12px 20px;
-    text-align: left;
+    text-align: center;
     font-size: 14px;
     font-weight: 500;
     color: #5D5FEF;
@@ -370,7 +370,7 @@
       display: block;
       padding: 4px 0;
       border: none;
-      text-align: left;
+      text-align: center;
     }
 
     .custom-table tbody td:before {
@@ -472,11 +472,11 @@
       <table class="custom-table">
         <thead>
           <tr>
-            <th style="vertical-align: middle; min-width: 160px; text-align: left;">Nombre</th>
+            <th style="vertical-align: middle; min-width: 160px; text-align: center;">Nombre</th>
             <th style="vertical-align: middle; min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody style="text-align: center;">
           {% for c in clientes %}
           <tr>
             <td data-label="Nombre" style="vertical-align: middle; min-width: 160px;">{{ c.nombre }}</td>
