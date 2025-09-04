@@ -496,7 +496,7 @@ body {
             <tr>
               <td data-label="Segmentación">{{ s.nombre }}</td>
               <td data-label="Descripción">{{ s.descripcion }}</td>
-              <td data-label="Descuento">{{ s.descuento_aplicable|default:"0" }}%</td>
+              <td data-label="Descuento">{{ s.descuento|default:"0" }}%</td>
               <td data-label="Estado">
                 {% if s.estado == 'activo' %}
                   <span class="status-badge status-activo">Activo</span>

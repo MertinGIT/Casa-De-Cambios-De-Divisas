@@ -3,9 +3,14 @@ from clientes.models import Segmentacion
 from functools import wraps
 from .forms import SegmentacionForm
 from django.http import JsonResponse
-import json
 
 def superadmin_required(view_func):
+    """
+    Decorador que restringe el acceso a vistas únicamente a superusuarios.
+
+    Si el usuario no está autenticado, se redirige a 'login'.
+    Si el usuario está autenticado pero no es superusuario, se redirige a 'home'.
+    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -16,8 +21,40 @@ def superadmin_required(view_func):
         return redirect('login')
     return _wrapped_view
 
+def check_nombre_segmentacion(request):
+    """
+    Verifica si el nombre de una segmentación ya existe en la base de datos.
+
+    Parámetros POST esperados:
+        - nombre: str, nombre a validar.
+        - obj_id: int o str, ID del objeto a excluir (en caso de edición).
+
+    Retorna:
+        JsonResponse con True si el nombre NO existe (válido) o False si ya está en uso.
+    """
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        obj_id = request.POST.get('obj_id')
+
+        query = Segmentacion.objects.filter(nombre__iexact=nombre)
+
+        # Si hay obj_id (edición), excluir ese registro
+        if obj_id and obj_id != 'null' and obj_id != '':
+            query = query.exclude(pk=obj_id)
+
+        exists = query.exists()
+
+        return JsonResponse(not exists, safe=False)
+
 @superadmin_required
 def lista_segmentaciones(request):
+    """
+    Muestra la lista de todas las segmentaciones existentes.
+
+    Renderiza la plantilla 'cliente_segmentacion/lista.html' con:
+        - segmentaciones: queryset de todas las segmentaciones.
+        - form: formulario vacío para crear nueva segmentación.
+    """
     form = SegmentacionForm()
     segmentaciones = Segmentacion.objects.all()
     return render(request, "cliente_segmentacion/lista.html", {
@@ -27,17 +64,20 @@ def lista_segmentaciones(request):
 
 @superadmin_required
 def crear_segmentacion(request):
+    """
+    Crea una nueva segmentación.
+
+    Soporta peticiones normales y AJAX. 
+    - Si es AJAX, devuelve JsonResponse con éxito o errores.
+    - Si no es AJAX, redirige a la lista o renderiza el modal con errores.
+    """
     if request.method == "POST":
         form = SegmentacionForm(request.POST)
-        
-        # Verificar si es una petición AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
         if form.is_valid():
             segmentacion = form.save()
-            
             if is_ajax:
-                # Respuesta AJAX exitosa
                 return JsonResponse({
                     'success': True,
                     'message': 'Segmentación creada exitosamente',
@@ -49,47 +89,40 @@ def crear_segmentacion(request):
                         'estado': segmentacion.estado,
                     }
                 })
-            else:
-                # Redirección normal
-                return redirect("lista-segmentaciones")
+            return redirect("lista-segmentaciones")
         else:
             if is_ajax:
-                # Respuesta AJAX con errores
-                return JsonResponse({
-                    'success': False,
-                    'errors': form.errors
-                })
-            else:
-                # Renderizar template con errores
-                segmentaciones = Segmentacion.objects.all()
-                return render(request, "cliente_segmentacion/lista.html", {
-                    "segmentaciones": segmentaciones,
-                    "form": form,
-                    "show_modal": True,
-                    "modal_type": "create",
-                })
-    
+                return JsonResponse({'success': False, 'errors': form.errors})
+            segmentaciones = Segmentacion.objects.all()
+            return render(request, "cliente_segmentacion/lista.html", {
+                "segmentaciones": segmentaciones,
+                "form": form,
+                "show_modal": True,
+                "modal_type": "create",
+            })
     return redirect("lista-segmentaciones")
 
 @superadmin_required
 def editar_segmentacion(request, pk):
     """
-    Vista que permite editar una segmentación existente.
-    Maneja tanto peticiones AJAX como peticiones normales.
+    Edita una segmentación existente.
+
+    Maneja peticiones GET para mostrar el modal con el formulario precargado
+    y peticiones POST para actualizar la segmentación.
+
+    Soporta AJAX y peticiones normales:
+        - AJAX: devuelve JsonResponse con éxito o errores.
+        - Normal: redirige a la lista o renderiza modal con errores.
     """
     segmentacion = get_object_or_404(Segmentacion, pk=pk)
 
     if request.method == "POST":
         form = SegmentacionForm(request.POST, instance=segmentacion)
-        
-        # Verificar si es una petición AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         
         if form.is_valid():
             segmentacion_actualizada = form.save()
-            
             if is_ajax:
-                # Respuesta AJAX exitosa
                 return JsonResponse({
                     'success': True,
                     'message': 'Segmentación actualizada exitosamente',
@@ -101,30 +134,21 @@ def editar_segmentacion(request, pk):
                         'estado': segmentacion_actualizada.estado,
                     }
                 })
-            else:
-                # Redirección normal
-                return redirect("lista-segmentaciones")
+            return redirect("lista-segmentaciones")
         else:
             if is_ajax:
-                # Respuesta AJAX con errores
-                return JsonResponse({
-                    'success': False,
-                    'errors': form.errors
-                })
-            else:
-                # POST con errores: mostrar modal con errores
-                segmentaciones = Segmentacion.objects.all()
-                return render(request, "cliente_segmentacion/lista.html", {
-                    "segmentaciones": segmentaciones,
-                    "form": form,
-                    "modal_title": "Editar Tipo de Cliente",
-                    "form_action": request.path,
-                    "modal_type": "edit", 
-                    "obj_id": segmentacion.id,
-                    "show_modal": True,
-                })
+                return JsonResponse({'success': False, 'errors': form.errors})
+            segmentaciones = Segmentacion.objects.all()
+            return render(request, "cliente_segmentacion/lista.html", {
+                "segmentaciones": segmentaciones,
+                "form": form,
+                "modal_title": "Editar Tipo de Cliente",
+                "form_action": request.path,
+                "modal_type": "edit", 
+                "obj_id": segmentacion.id,
+                "show_modal": True,
+            })
     else:
-        # GET: abrir modal con form precargado
         form = SegmentacionForm(instance=segmentacion)
         segmentaciones = Segmentacion.objects.all()
         return render(request, "cliente_segmentacion/lista.html", {
@@ -139,11 +163,15 @@ def editar_segmentacion(request, pk):
 
 @superadmin_required
 def cambiar_estado_segmentacion(request, pk):
+    """
+    Cambia el estado de una segmentación entre 'activo' e 'inactivo'.
+
+    Si la petición es AJAX, devuelve JsonResponse con el nuevo estado.
+    """
     segmentacion = get_object_or_404(Segmentacion, pk=pk)
     segmentacion.estado = "inactivo" if segmentacion.estado == "activo" else "activo"
     segmentacion.save()
     
-    # Si es AJAX, devolver respuesta JSON
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
             'success': True,
@@ -155,7 +183,8 @@ def cambiar_estado_segmentacion(request, pk):
 
 def segmentacion_detalle(request, pk):
     """
-    Vista que devuelve los detalles de una segmentación en formato JSON.
+    Devuelve los detalles de una segmentación en formato JSON.
+
     Útil para cargar datos en modales de edición.
     """
     segmentacion = get_object_or_404(Segmentacion, pk=pk)

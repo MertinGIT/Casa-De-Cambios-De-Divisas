@@ -2,6 +2,19 @@ from django import forms
 from clientes.models import Segmentacion
 
 class SegmentacionForm(forms.ModelForm):
+    """
+    Formulario para crear y editar instancias del modelo Segmentacion.
+
+    Este formulario incluye validación personalizada para el campo 'descuento' 
+    y widgets personalizados para mejorar la presentación en la interfaz.
+
+    Campos:
+        - nombre: nombre del tipo de cliente.
+        - descripcion: descripción opcional del tipo de cliente.
+        - descuento: porcentaje de descuento (0 a 100).
+        - estado: estado de la segmentación (activo/inactivo), solo lectura por defecto.
+    """
+    
     estado = forms.CharField(
         max_length=10,
         initial='activo',
@@ -46,7 +59,17 @@ class SegmentacionForm(forms.ModelForm):
         }
     
     def clean_descuento(self):
-        """Validación personalizada para el campo descuento"""
+        """
+        Validación personalizada del campo 'descuento'.
+
+        Asegura que el descuento sea un valor entre 0 y 100.
+
+        Raises:
+            forms.ValidationError: Si el descuento es negativo o mayor a 100.
+
+        Returns:
+            Decimal: Valor válido del descuento.
+        """
         descuento = self.cleaned_data.get('descuento')
         if descuento is not None:
             if descuento < 0:
