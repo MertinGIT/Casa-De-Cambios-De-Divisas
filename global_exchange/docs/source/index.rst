@@ -21,4 +21,5 @@ documentation for details.
    clientes
    global_exchange
    roles_permisos
-   
+   monedas
+   cotizaciones

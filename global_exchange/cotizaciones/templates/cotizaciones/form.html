@@ -184,6 +184,9 @@ function setupTasaValidation() {
                   
                     $form.find(".error-messages").html(""); // limpia errores previos
                     if (data.success) {
+                      location.reload();
+                      // eliminar mensaje de "sin resultados" si existe
+                      $(".custom-table tbody .no-results").remove();
                       // limpiar estilos y mensajes después de guardar
                         $form.find(".error").removeClass("error");
                         $form.find(".valid").removeClass("valid");
@@ -235,7 +238,6 @@ function setupTasaValidation() {
 
     return tasaValidator;
 }
-
 // Inicializar al abrir modal
 $(document).ready(function() {
     setupTasaValidation();
@@ -250,6 +252,21 @@ $(document).ready(function() {
             if (this.showPicker) this.showPicker();
         });
     }
+});
+// Editar
+$(document).on("click", ".btn-edit", function() {
+    const id = $(this).data("id");
+    openEditModal(
+        id,
+        "{% url 'cotizacion_editar' 0 %}".replace("/0/", `/${id}/`),
+        "{% url 'cotizacion_detalle' 0 %}".replace("/0/", `/${id}/`)
+    );
+});
+
+// Desactivar
+$(document).on("click", ".btn-delete", function() {
+    const id = $(this).data("id");
+    window.location.href = "{% url 'cotizacion_desactivar' 0 %}".replace("/0/", `/${id}/`);
 });
 </script>
 
