@@ -67,4 +67,4 @@ class MetodoPagoForm(forms.ModelForm):
             descripcion = _normalize_text(descripcion)
             if len(descripcion) > 500:
                 raise ValidationError("La descripción no puede exceder 500 caracteres.")
-        return descripcion or None  # Retorna None para campos vacíos
+        return descripcion or "No hay descripción"

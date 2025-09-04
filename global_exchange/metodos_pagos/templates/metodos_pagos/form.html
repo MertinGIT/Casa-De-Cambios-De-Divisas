@@ -1,3 +1,24 @@
+<!--
+  FORMULARIO DE MÉTODOS DE PAGO
+  =============================
+  
+  Descripción: Template para crear y editar métodos de pago en el sistema de casa de cambios.
+  Extiende: base_forms.html
+  
+  Funcionalidades:
+  - Formulario responsivo con validación en tiempo real
+  - Campos: nombre (obligatorio) y descripción (opcional)
+  - Validación del lado cliente con jQuery Validate
+  - Validación remota para evitar nombres duplicados
+  - Estilos personalizados con iconos
+  - Manejo de errores del servidor y cliente
+  
+  Dependencias:
+  - jQuery 3.6.0
+  - jQuery Validate 1.19.5
+  - widget_tweaks (Django)
+-->
+
 {% extends "base_forms.html" %} 
 
 {% load widget_tweaks %} 
@@ -6,12 +27,16 @@
 
 {% block form_fields %}
 
+<!-- CAMPO: NOMBRE DEL MÉTODO DE PAGO -->
+<!-- Campo obligatorio con validación de longitud y unicidad -->
 <div class="form-group">
   <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
   <div class="input-icon">
+    <!-- Icono: Tarjeta de crédito para representar método de pago -->
     <span class="icon">💳</span>
     {{ form.nombre|add_class:"custom-input" }}
   </div>
+  <!-- Contenedor para mensajes de error del campo nombre -->
   <div class="error-messages">
     {% if form.nombre.errors %}
       {% for error in form.nombre.errors %}
@@ -21,12 +46,16 @@
   </div>
 </div>
 
+<!-- CAMPO: DESCRIPCIÓN DEL MÉTODO DE PAGO -->
+<!-- Campo opcional para detalles adicionales -->
 <div class="form-group">
   <label for="{{ form.descripcion.id_for_label }}">Descripcion</label>
   <div class="input-icon">
+    <!-- Icono: Nota para representar descripción -->
     <span class="icon">📝</span>
     {{ form.descripcion|add_class:"custom-input" }}
   </div>
+  <!-- Contenedor para mensajes de error del campo descripción -->
   <div class="error-messages">
     {% if form.descripcion.errors %}
       {% for error in form.descripcion.errors %}
@@ -36,60 +65,82 @@
   </div>
 </div>
 
+<!--
+  ESTILOS CSS PERSONALIZADOS
+  ==========================
+  
+  Diseño: Sistema de inputs con iconos y validación visual
+  Colores: Paleta morada (#5d5fef) para consistencia con el tema
+  Estados: Normal, Focus, Error, Válido
+-->
 <style>
+/* ESTILO BASE PARA INPUTS PERSONALIZADOS */
+/* Padding izquierdo aumentado para acomodar iconos */
 .custom-input {
   width: 100%;
   padding: 8px 12px 8px 36px; /* espacio para icono */
   border-radius: 6px;
   border: 1px solid #d1d5db;
-  background-color: #f0edff;
+  background-color: #f0edff; /* Fondo morado claro */
   font-size: 14px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
+/* PLACEHOLDER STYLING */
 .custom-input::placeholder {
   color: #6b7280;
 }
 
+/* ESTADO FOCUS - Resaltado morado */
 .custom-input:focus {
   border-color: #5d5fef;
   box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
 }
 
-/* Estilos para validación */
+/* ESTADOS DE VALIDACIÓN */
+/* Estado de error - Rojo */
 .custom-input.error {
   border-color: #ef4444 !important;
   background-color: #fef2f2;
 }
 
+/* Estado válido - Verde */
 .custom-input.valid {
   border-color: #10b981;
   background-color: #f0fdf4;
 }
 
+/* CONTENEDOR DE ICONOS */
+/* Posicionamiento relativo para iconos absolutos */
 .input-icon {
   position: relative;
   margin-bottom: 4px;
 }
 
+/* ICONOS DE CAMPOS */
+/* Posicionados absolutamente dentro del input */
 .input-icon .icon {
   position: absolute;
   left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  pointer-events: none;
+  pointer-events: none; /* No interfiere con clicks */
   font-size: 16px;
   color: #5d5fef;
   z-index: 1;
 }
 
+/* CONTENEDOR DE MENSAJES DE ERROR */
+/* Altura mínima para evitar saltos de layout */
 .error-messages {
   min-height: 18px;
   margin-bottom: 8px;
   display: block;
 }
 
+/* ESTILO DE MENSAJES DE ERROR */
+/* Sobrescribe estilos por defecto del framework */
 .error-messages .error-message {
   color: #ef4444 !important;
   font-size: 12px !important;
@@ -101,9 +152,10 @@
   border: none !important;
   text-align: left !important;
   line-height: 1.4 !important;
-  animation: slideDown 0.3s ease-out;
+  animation: slideDown 0.3s ease-out; /* Animación suave */
 }
 
+/* ANIMACIÓN DE APARICIÓN DE ERRORES */
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -115,7 +167,8 @@
   }
 }
 
-/* Marcar campos con errores del servidor */
+/* MARCADO DE CAMPOS CON ERRORES DEL SERVIDOR */
+/* Aplicado condicionalmente via Django template */
 {% if form.nombre.errors %}
 #id_nombre {
   border-color: #ef4444 !important;
@@ -131,14 +184,33 @@
 {% endif %}
 </style>
 
-<!-- jQuery Validate Script -->
+<!--
+  SISTEMA DE VALIDACIÓN JAVASCRIPT
+  ================================
+  
+  Librerías utilizadas:
+  - jQuery 3.6.0: Manipulación DOM y AJAX
+  - jQuery Validate 1.19.5: Validación de formularios
+  
+  Funcionalidades:
+  - Validación en tiempo real
+  - Validación remota para nombres únicos
+  - Mensajes personalizados en español
+  - Integración con sistema de modales
+  - Manejo de estados de creación y edición
+-->
+
+<!-- DEPENDENCIAS EXTERNAS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+
 <script>
-// Variable global para el validador
+// VARIABLE GLOBAL PARA EL VALIDADOR
+// Almacena la instancia del validador para poder destruirla cuando sea necesario
 let MetodoPagoValidator = null;
 
-// Configurar mensajes en español
+// CONFIGURACIÓN DE MENSAJES EN ESPAÑOL
+// Sobrescribe los mensajes por defecto de jQuery Validate
 jQuery.extend(jQuery.validator.messages, {
     required: "Este campo es obligatorio.",
     minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
@@ -146,16 +218,28 @@ jQuery.extend(jQuery.validator.messages, {
     remote: "Este nombre ya existe, por favor elige otro."
 });
 
-// Función para inicializar validación
+/**
+ * FUNCIÓN PRINCIPAL DE CONFIGURACIÓN DE VALIDACIÓN
+ * ===============================================
+ * 
+ * Inicializa y configura el sistema de validación para el formulario de métodos de pago.
+ * 
+ * Reglas de validación:
+ * - nombre: obligatorio, longitud 3-100 caracteres, único en base de datos
+ * - descripcion: opcional, máximo 500 caracteres
+ * 
+ * @returns {Object|null} Instancia del validador o null si no se encuentra el formulario
+ */
 function setupMetodoPagoValidation() {
     const $form = $("#form-accion");
     
+    // Verificar que el formulario existe
     if (!$form.length) {
         console.log("Formulario no encontrado");
         return null;
     }
 
-    // Destruir validador existente si existe
+    // Limpiar validador existente para evitar conflictos
     if (MetodoPagoValidator) {
         MetodoPagoValidator.destroy();
         MetodoPagoValidator = null;
@@ -163,15 +247,18 @@ function setupMetodoPagoValidation() {
 
     console.log("Configurando validación del formulario metodo de pago");
     
-    // Obtener ID actual para edición
+    // Obtener ID actual para distinguir entre crear/editar
     const currentId = $("#obj_id").val() || null;
     
+    // Configurar validador con reglas y mensajes personalizados
     MetodoPagoValidator = $form.validate({
+        // REGLAS DE VALIDACIÓN POR CAMPO
         rules: {
             nombre: {
                 required: true,
                 minlength: 3,
                 maxlength: 100,
+                // Validación remota para verificar unicidad del nombre
                 remote: {
                     url: "{% url 'metodos-pagos-validar-nombre' %}",
                     type: "POST",
@@ -186,6 +273,7 @@ function setupMetodoPagoValidation() {
                             return $('[name=csrfmiddlewaretoken]').val();
                         }
                     },
+                    // Procesar respuesta del servidor
                     dataFilter: function(data) {
                         var json = JSON.parse(data);
                         return json.valid ? "true" : "false";
@@ -197,6 +285,8 @@ function setupMetodoPagoValidation() {
                 maxlength: 500
             }
         },
+        
+        // MENSAJES PERSONALIZADOS
         messages: {
             nombre: {
                 required: "El nombre es obligatorio",
@@ -208,38 +298,71 @@ function setupMetodoPagoValidation() {
                 maxlength: "La descripción no puede exceder 500 caracteres"
             }
         },
+        
+        // CONFIGURACIÓN DE ELEMENTOS DE ERROR
         errorElement: 'div',
         errorClass: 'error-message',
         validClass: 'valid',
+        
+        /**
+         * POSICIONAMIENTO DE MENSAJES DE ERROR
+         * Coloca los mensajes en el contenedor .error-messages de cada campo
+         */
         errorPlacement: function(error, element) {
             console.log("Colocando error:", error.text(), "para elemento:", element.attr('name'));
             let formGroup = element.closest('.form-group');
             let errorContainer = formGroup.find('.error-messages');
             
+            // Crear contenedor si no existe
             if (!errorContainer.length) {
                 errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
             }
             
-            // Limpiar errores del servidor al mostrar errores de jQuery Validate
+            // Limpiar errores del servidor antes de mostrar errores de validación
             errorContainer.find('.error-message').remove();
             errorContainer.append(error);
         },
+        
+        /**
+         * MARCAR CAMPOS CON ERROR
+         * Aplica clases CSS para estado de error
+         */
         highlight: function(element, errorClass, validClass) {
             $(element).addClass('error').removeClass(validClass);
             console.log("Marcando campo con error:", $(element).attr('name'));
         },
+        
+        /**
+         * LIMPIAR MARCADO DE ERROR
+         * Aplica clases CSS para estado válido
+         */
         unhighlight: function(element, errorClass, validClass) {
             $(element).removeClass('error').addClass(validClass);
             console.log("Limpiando error de campo:", $(element).attr('name'));
         },
+        
+        /**
+         * CALLBACK DE VALIDACIÓN EXITOSA
+         * Limpia contenedores de error cuando el campo es válido
+         */
         success: function(label, element) {
             console.log("Campo válido:", $(element).attr('name'));
             $(element).closest('.form-group').find('.error-messages').empty();
         },
+        
+        /**
+         * MANEJO DE ENVÍO DE FORMULARIO
+         * Solo se ejecuta si todas las validaciones pasan
+         */
         submitHandler: function(form) {
             console.log("Formulario válido, enviando...");
             form.submit();
         },
+        
+        /**
+         * CALLBACK DE FORMULARIO INVÁLIDO
+         * Se ejecuta cuando hay errores de validación
+         */
         invalidHandler: function(event, validator) {
             console.log("Formulario inválido, errores:", validator.numberOfInvalids());
         }
@@ -248,14 +371,23 @@ function setupMetodoPagoValidation() {
     return MetodoPagoValidator;
 }
 
-// Sobrescribir funciones del modal para incluir validación
+/**
+ * INTEGRACIÓN CON SISTEMA DE MODALES
+ * =================================
+ * 
+ * Sobrescribe las funciones globales del modal para incluir
+ * inicialización y limpieza de la validación.
+ */
 $(document).ready(function() {
-    // Guardar funciones originales
+    // Guardar referencias a funciones originales
     const originalOpenCreateModal = window.openCreateModal;
     const originalOpenEditModal = window.openEditModal;
     const originalCloseModal = window.closeModal;
 
-    // Nueva función para crear modal
+    /**
+     * MODAL DE CREACIÓN
+     * Inicializa validación después de abrir el modal
+     */
     window.openCreateModal = function(createUrl) {
         console.log("Abriendo modal crear con validación");
         
@@ -263,13 +395,16 @@ $(document).ready(function() {
             originalOpenCreateModal(createUrl);
         }
         
-        // Configurar validación después de que el modal se abra
+        // Timeout para asegurar que el DOM esté listo
         setTimeout(function() {
             setupMetodoPagoValidation();
         }, 200);
     };
 
-    // Nueva función para editar modal
+    /**
+     * MODAL DE EDICIÓN
+     * Inicializa validación después de cargar datos del servidor
+     */
     window.openEditModal = function(id, editUrl, detalle) {
         console.log("Abriendo modal editar con validación, ID:", id);
         
@@ -277,9 +412,9 @@ $(document).ready(function() {
             originalOpenEditModal(id, editUrl, detalle);
         }
         
-        // Configurar validación después de cargar datos
+        // Timeout más largo para permitir que el fetch complete
         setTimeout(function() {
-            // Asegurar que el campo obj_id tenga el ID correcto
+            // Asegurar que el campo obj_id tenga el ID correcto para validación remota
             const objIdField = $("#obj_id");
             if (objIdField.length) {
                 objIdField.val(id);
@@ -287,20 +422,23 @@ $(document).ready(function() {
             }
             
             setupMetodoPagoValidation();
-        }, 1000); // Timeout más largo para que el fetch termine
+        }, 1000);
     };
 
-    // Nueva función para cerrar modal
+    /**
+     * CIERRE DE MODAL
+     * Limpia validación y resetea estado del formulario
+     */
     window.closeModal = function() {
         console.log("Cerrando modal y limpiando validación");
         
-        // Limpiar validación
+        // Destruir instancia del validador
         if (MetodoPagoValidator) {
             MetodoPagoValidator.destroy();
             MetodoPagoValidator = null;
         }
         
-        // Limpiar clases y mensajes manualmente
+        // Limpieza manual de clases y mensajes residuales
         $("#form-accion .error").removeClass('error');
         $("#form-accion .valid").removeClass('valid');
         $(".error-messages").empty();

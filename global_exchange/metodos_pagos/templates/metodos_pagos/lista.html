@@ -1,11 +1,63 @@
+<!--
+  LISTA DE MÉTODOS DE PAGO
+  ========================
+  
+  Descripción: Template principal para mostrar la lista de métodos de pago con funcionalidades
+  de búsqueda, filtrado, paginación y acciones CRUD.
+  
+  Funcionalidades:
+  - Lista paginada de métodos de pago
+  - Búsqueda por nombre y descripción
+  - Filtros dinámicos
+  - Acciones de editar, activar/desactivar
+  - Diseño responsivo (tabla -> cards en móvil)
+  - Integración con sistema de modales para CRUD
+  
+  Dependencias:
+  - jQuery 3.7.1
+  - jQuery Validate 1.19.5
+  - Google Fonts (Inter)
+  - base_admin.html template
+  - Sistema de modales global
+  
+  Estados de registros:
+  - Activo: Método de pago disponible para uso
+  - Inactivo: Método de pago deshabilitado
+-->
+
 {% extends 'base_admin.html' %}
 {% load humanize %}
 {% block dashboard_content %}
 
+<!-- DEPENDENCIAS EXTERNAS -->
+<!-- Fuente Inter para tipografía moderna -->
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- jQuery para manipulación DOM y AJAX -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<!-- jQuery Validate para validación de formularios -->
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+
+<!--
+  ESTILOS CSS PERSONALIZADOS
+  ==========================
+  
+  Arquitectura de estilos:
+  1. Estilos base y tipografía
+  2. Layout principal y contenedores
+  3. Componentes de búsqueda y filtros
+  4. Tabla y estados
+  5. Paginación
+  6. Diseño responsivo (Mobile First)
+  
+  Paleta de colores:
+  - Primario: #5D5FEF (morado)
+  - Éxito: #00AC4F (verde)
+  - Error: #DF0404 (rojo)
+  - Neutros: Escala de grises
+-->
 <style>
+/* ESTILOS BASE Y TIPOGRAFÍA */
+/* Configuración global con fuente Inter y fondo neutro */
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   background-color: #f8f9fa !important;
@@ -13,6 +65,8 @@ body {
   padding: 0 !important;
 }
 
+/* LAYOUT PRINCIPAL */
+/* Contenedor principal con máximo ancho y centrado */
 .main-wrapper {
   padding: 24px;
   min-height: 100vh;
@@ -20,6 +74,7 @@ body {
   margin: 0 auto;
 }
 
+/* Contenedor de página con fondo blanco y sombra sutil */
 .page-container {
   background: white;
   border-radius: 12px;
@@ -27,6 +82,8 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+/* HEADER DE PÁGINA */
+/* Layout flex para título y controles de búsqueda */
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -41,18 +98,22 @@ body {
   margin: 0;
 }
 
+/* CONTROLES DE BÚSQUEDA */
+/* Grupo de elementos alineados horizontalmente */
 .header-right {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+/* Icono de búsqueda SVG */
 .search-icon {
   width: 20px;
   height: 20px;
   color: #9ca3af;
 }
 
+/* Input principal de búsqueda */
 .search-input {
   border: 1px solid #e1e5e9;
   border-radius: 6px;
@@ -67,17 +128,20 @@ body {
   color: #9ca3af;
 }
 
+/* Estado focus con color primario */
 .search-input:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+/* Texto auxiliar para búsqueda */
 .buscar-por-text {
   font-size: 14px;
   color: #6b7280;
 }
 
+/* Selector de campo de búsqueda */
 .search-field-selector {
   padding: 8px 12px;
   border: 1px solid #e1e5e9;
@@ -96,6 +160,8 @@ body {
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
+/* SECCIÓN DE FILTROS */
+/* Contenedor para filtros adicionales */
 .filters-section {
   margin-bottom: 24px;
 }
@@ -107,6 +173,8 @@ body {
   flex-wrap: wrap;
 }
 
+/* BOTÓN DE AGREGAR */
+/* Botón principal con estilo corporativo */
 .btn-add {
   font-family: 'Poppins', sans-serif; 
   background-color: #152C70;
@@ -124,6 +192,8 @@ body {
   background-color: #1a2f7a;
 }
 
+/* TABLA Y CONTENEDOR */
+/* Contenedor con scroll horizontal y bordes redondeados */
 .table-container {
   overflow-x: auto;
   border-radius: 8px;
@@ -131,6 +201,7 @@ body {
   margin-bottom: 24px;
 }
 
+/* Tabla personalizada sin bordes por defecto */
 .custom-table {
   width: 100%;
   border-collapse: collapse;
@@ -138,6 +209,8 @@ body {
   margin: 0;
 }
 
+/* CABECERA DE TABLA */
+/* Estilo minimalista con color primario */
 .custom-table thead th {
   background-color: transparent;
   border: none;
@@ -151,6 +224,8 @@ body {
   border-bottom: 1px solid #f0f0f0;
 }
 
+/* CELDAS DE TABLA */
+/* Espaciado generoso y separadores sutiles */
 .custom-table tbody td {
   border: none;
   border-bottom: 1px solid #f0f0f0;
@@ -160,6 +235,7 @@ body {
   vertical-align: middle;
 }
 
+/* Efecto hover en filas */
 .custom-table tbody tr:hover {
   background-color: #f9fafb;
 }
@@ -168,6 +244,8 @@ body {
   border-bottom: none;
 }
 
+/* BADGES DE ESTADO */
+/* Indicadores visuales para estado activo/inactivo */
 .status-badge {
   padding: 6px 16px;
   border-radius: 4px;
@@ -178,16 +256,20 @@ body {
   min-width: 90px;
 }
 
+/* Estado activo - Verde */
 .status-activo {
   background-color: #9CDBA6;
   color: #00AC4F;
 }
 
+/* Estado inactivo - Rojo */
 .status-inactivo {
   background-color: #FFC5C5;
   color: #DF0404;
 }
 
+/* BOTONES DE ACCIÓN */
+/* Botones pequeños para acciones en tabla */
 .btn {
   padding: 6px 12px;
   border-radius: 4px;
@@ -201,6 +283,7 @@ body {
   transition: all 0.2s;
 }
 
+/* Botón primario - Editar */
 .btn-primary {
   background-color: #5D5FEF;
   color: white;
@@ -210,6 +293,7 @@ body {
   background-color: #4338ca;
 }
 
+/* Botón peligro - Desactivar */
 .btn-danger {
   background-color: #ef4444;
   color: white;
@@ -219,6 +303,8 @@ body {
   background-color: #dc2626;
 }
 
+/* SISTEMA DE PAGINACIÓN */
+/* Layout centrado con información y controles */
 .pagination-wrapper {
   display: flex;
   justify-content: center;
@@ -229,12 +315,14 @@ body {
   background: transparent;
 }
 
+/* Información de paginación */
 .pagination-info {
   font-size: 14px;
   color: #B5B7C0;
   margin: 0;
 }
 
+/* Lista de páginas */
 .custom-pagination {
   display: flex;
   gap: 8px;
@@ -247,6 +335,7 @@ body {
   margin: 0;
 }
 
+/* Enlaces de página */
 .custom-pagination .page-link {
   border: 1px solid #e1e5e9;
   padding: 8px 12px;
@@ -270,6 +359,7 @@ body {
   color: #5D5FEF;
 }
 
+/* Página activa */
 .custom-pagination .page-item.active .page-link {
   background-color: #5D5FEF;
   border-color: #5D5FEF;
@@ -277,6 +367,7 @@ body {
   font-weight: 500;
 }
 
+/* Página deshabilitada */
 .custom-pagination .page-item.disabled .page-link {
   color: #B5B7C0;
   background-color: #f9fafb;
@@ -284,6 +375,7 @@ body {
   cursor: not-allowed;
 }
 
+/* ESTADO SIN RESULTADOS */
 .no-results {
   text-align: center;
   padding: 48px 16px;
@@ -292,7 +384,17 @@ body {
   font-size: 14px;
 }
 
-/* Responsivo */
+/*
+  DISEÑO RESPONSIVO
+  ================
+  
+  Estrategia Mobile First:
+  1. Tablet (768px): Reorganización de header y filtros
+  2. Mobile (768px): Conversión tabla -> cards
+  3. Mobile pequeño (480px): Optimización adicional
+*/
+
+/* TABLET Y MÓVIL GRANDE */
 @media (max-width: 768px) {
   .main-wrapper {
     padding: 16px;
@@ -302,6 +404,7 @@ body {
     padding: 20px;
   }
   
+  /* Header responsivo - Stack vertical */
   .page-header {
     flex-direction: column;
     align-items: flex-start;
@@ -340,7 +443,13 @@ body {
     gap: 16px;
   }
   
-  /* Mobile Table Responsiveness - Convert to Cards */
+  /*
+    TABLA RESPONSIVA - CONVERSIÓN A CARDS
+    ====================================
+    
+    En móvil, la tabla se convierte en cards individuales
+    usando CSS para ocultar headers y reorganizar contenido
+  */
   .table-container {
     border: none;
     border-radius: 0;
@@ -350,10 +459,12 @@ body {
     font-size: 13px;
   }
   
+  /* Ocultar cabecera en móvil */
   .custom-table thead {
     display: none;
   }
   
+  /* Convertir filas en cards */
   .custom-table tbody tr {
     display: block;
     margin-bottom: 16px;
@@ -368,6 +479,7 @@ body {
     background-color: #f3f4f6;
   }
   
+  /* Reorganizar celdas como bloques */
   .custom-table tbody td {
     display: block;
     padding: 4px 0;
@@ -375,6 +487,7 @@ body {
     text-align: left;
   }
   
+  /* Agregar etiquetas usando data-label */
   .custom-table tbody td:before {
     content: attr(data-label) ": ";
     font-weight: 500;
@@ -384,6 +497,7 @@ body {
     margin-bottom: 2px;
   }
   
+  /* Separador para acciones */
   .custom-table tbody td:last-child {
     margin-top: 12px;
     padding-top: 12px;
@@ -394,6 +508,7 @@ body {
     content: "Acciones: ";
   }
   
+  /* Botones en móvil */
   .btn {
     display: inline-block;
     margin: 2px 4px 2px 0;
@@ -402,6 +517,7 @@ body {
   }
 }
 
+/* MÓVIL PEQUEÑO */
 @media (max-width: 480px) {
   .main-wrapper {
     padding: 12px;
@@ -415,6 +531,7 @@ body {
     font-size: 20px;
   }
   
+  /* Optimización de cards para pantallas pequeñas */
   .custom-table tbody td:before {
     min-width: 80px;
     font-size: 12px;
@@ -444,24 +561,31 @@ body {
 }
 </style>
 
+<!-- CONTENIDO PRINCIPAL -->
 <div class="main-wrapper">
   <div class="page-container">
+    
+    <!-- CABECERA DE PÁGINA -->
+    <!-- Título y controles de búsqueda -->
     <div class="page-header">
       <h1 class="page-title">Metodos de pago</h1>
       <div class="header-right">
+        <!-- FORMULARIO DE BÚSQUEDA -->
+        <!-- Búsqueda por texto y campo específico -->
         <form method="get" style="display: flex; align-items: center; gap: 12px;">
           <input name="seg" value="{{ seg_selected }}" type="hidden">
           
-          <!-- Ícono de búsqueda -->
+          <!-- Ícono de búsqueda SVG -->
           <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         
+          <!-- Campo de búsqueda principal -->
           <input name="q" value="{{ q }}" class="search-input" type="search" placeholder="Buscar...">
           
           <span class="buscar-por-text">Buscar por</span>
           
-          <!-- Selector de campo -->
+          <!-- Selector de campo de búsqueda -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
             <option value="nombre">Nombre</option>
@@ -471,24 +595,29 @@ body {
       </div>
     </div>
     
+    <!-- SECCIÓN DE FILTROS -->
+    <!-- Filtros adicionales (expandible) -->
     <div class="filters-section">
       <form method="get" class="filters-row">
         <input name="q" value="{{ q }}" type="hidden">
         <input name="mes" value="{{ mes_selected }}" type="hidden">
+        <!-- Aquí se pueden agregar más filtros -->
       </form>
     </div>
 
-  <button class="btn-add rounded border-0 my-2"
-        data-url="{% url 'metodos-pagos-agregar' %}"
-        onclick="openCreateModal(this.dataset.url)">
-        Agregar Metodo de Pago
-  </button>
+    <!-- BOTÓN DE AGREGAR -->
+    <!-- Acción principal para crear nuevo método de pago -->
+    <button class="btn-add rounded border-0 my-2"
+            data-url="{% url 'metodos-pagos-agregar' %}"
+            onclick="openCreateModal(this.dataset.url)">
+            Agregar Metodo de Pago
+    </button>
 
-
-    
-    <!-- Tabla -->
+    <!-- TABLA PRINCIPAL -->
+    <!-- Lista de métodos de pago con acciones -->
     <div class="table-container">
       <table class="custom-table">
+        <!-- CABECERA DE TABLA -->
         <thead>
           <tr>
             <th>Nombre</th>
@@ -497,11 +626,18 @@ body {
             <th>Acciones</th>
           </tr>
         </thead>
+        
+        <!-- CUERPO DE TABLA -->
         <tbody>
           {% for mp in metodos_pagos %}
             <tr>
+              <!-- Campo: Nombre del método de pago -->
               <td data-label="Nombre">{{ mp.nombre }}</td>
+              
+              <!-- Campo: Descripción (opcional) -->
               <td data-label="Descripcion">{{ mp.descripcion }}</td>
+              
+              <!-- Campo: Estado con badge visual -->
               <td data-label="Estado">
                 {% if mp.activo == True %}
                   <span class="status-badge status-activo">Activo</span>
@@ -509,31 +645,38 @@ body {
                   <span class="status-badge status-inactivo">Inactivo</span>
                 {% endif %}
               </td>
+              
+              <!-- ACCIONES POR REGISTRO -->
               <td data-label="Acciones">
-
-        <button class="btn-edit btn btn-sm btn-primary"
-        data-id="{{ mp.id }}"
-        data-edit="{% url 'metodos-pagos-editar' 0 %}"
-        data-detalle="{% url 'metodos-pagos-detalle' mp.id %}">
-  Editar
-</button>
-{% if mp.activo == True  %}
-  <button type="button"
-          class="btn-delete btn btn-sm btn-danger"
-          onclick="openDeleteModal({{ mp.id }}, '{% url 'metodos-pagos-desactivate' 0 %}', '¿Seguro que deseas desactivar este registro?')">
-    Desactivar
-  </button>
-{% else %}
-  <button type="button"
-          class="btn-delete btn btn-sm btn-success"
-          onclick="openDeleteModal({{ mp.id }}, '{% url 'metodos-pagos-activate' 0 %}', '¿Seguro que deseas activar este registro?')">
-    Activar
-  </button>
-{% endif %}
-
+                <!-- Botón Editar -->
+                <!-- Abre modal de edición con datos pre-cargados -->
+                <button class="btn-edit btn btn-sm btn-primary"
+                        data-id="{{ mp.id }}"
+                        data-edit="{% url 'metodos-pagos-editar' 0 %}"
+                        data-detalle="{% url 'metodos-pagos-detalle' mp.id %}">
+                  Editar
+                </button>
+                
+                <!-- Botón Activar/Desactivar -->
+                <!-- Acción condicional según estado actual -->
+                {% if mp.activo == True  %}
+                  <button type="button"
+                          class="btn-delete btn btn-sm btn-danger"
+                          onclick="openDeleteModal({{ mp.id }}, '{% url 'metodos-pagos-desactivate' 0 %}', '¿Seguro que deseas desactivar este registro?')">
+                    Desactivar
+                  </button>
+                {% else %}
+                  <button type="button"
+                          class="btn-delete btn btn-sm btn-success"
+                          onclick="openDeleteModal({{ mp.id }}, '{% url 'metodos-pagos-activate' 0 %}', '¿Seguro que deseas activar este registro?')">
+                    Activar
+                  </button>
+                {% endif %}
               </td>
             </tr>
           {% empty %}
+            <!-- ESTADO VACÍO -->
+            <!-- Mensaje cuando no hay resultados -->
             <tr>
               <td colspan="8" class="no-results">Sin resultados encontrados.</td>
             </tr>
@@ -542,15 +685,19 @@ body {
       </table>
     </div>
       
-    <!-- Paginación -->
+    <!-- SISTEMA DE PAGINACIÓN -->
+    <!-- Navegación entre páginas con información de contexto -->
     {% if page_obj %}
     <div class="pagination-wrapper">
+      <!-- Información de paginación -->
       <p class="pagination-info">
         Mostrando datos {{ page_obj.start_index|default:1 }} a {{ page_obj.end_index|default:1 }} de {{ page_obj.paginator.count|default:0 }} entradas
       </p>
       
+      <!-- Controles de navegación -->
       <nav>
         <ul class="custom-pagination">
+          <!-- Página anterior -->
           {% if page_obj.has_previous %}
             <li class="page-item">
               <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&lsaquo;</a>
@@ -561,22 +708,27 @@ body {
             </li>
           {% endif %}
 
+          <!-- Números de página con lógica de truncamiento -->
           {% for i in page_obj.paginator.page_range %}
             {% if i == page_obj.number %}
+              <!-- Página actual -->
               <li class="page-item active">
                 <span class="page-link">{{ i }}</span>
               </li>
             {% else %}
+              <!-- Lógica de truncamiento para muchas páginas -->
               {% with current_minus_2=page_obj.number|add:"-2" current_plus_2=page_obj.number|add:"2" %}
                 {% if i <= 2 or i > page_obj.paginator.num_pages|add:"-2" or i >= current_minus_2 and i <= current_plus_2 %}
                   <li class="page-item">
                     <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i }}</a>
                   </li>
                 {% elif i == 3 and page_obj.number > 5 %}
+                  <!-- Puntos suspensivos inicio -->
                   <li class="page-item disabled">
                     <span class="page-link">...</span>
                   </li>
                 {% elif i == page_obj.paginator.num_pages|add:"-2" and page_obj.number < page_obj.paginator.num_pages|add:"-4" %}
+                  <!-- Puntos suspensivos final -->
                   <li class="page-item disabled">
                     <span class="page-link">...</span>
                   </li>
@@ -585,6 +737,7 @@ body {
             {% endif %}
           {% endfor %}
 
+          <!-- Página siguiente -->
           {% if page_obj.has_next %}
             <li class="page-item">
               <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&rsaquo;</a>
@@ -600,5 +753,9 @@ body {
     {% endif %}
   </div>
 </div>
+
+<!-- INTEGRACIÓN CON FORMULARIO -->
+<!-- Incluye el template del formulario para modales -->
 {% include "metodos_pagos/form.html" %}
+
 {% endblock %}
