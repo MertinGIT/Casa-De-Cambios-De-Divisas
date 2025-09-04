@@ -437,13 +437,18 @@
   function openDeleteModal(
     id,
     deleteUrl,
-    message
-  ) {
+    message,
+    textboton
+  ){
 
     document.getElementById("delete_obj_id").value = id;
     document.getElementById("delete-form").action = deleteUrl.replace("0", id);
     document.getElementById("delete-message").innerText = message || "¿Seguro que deseas realizar esta operacion?";
     document.getElementById("modal-delete").style.display = "flex";
+    const confirmBtn = document.querySelector("#modal-delete .btn-confirmar");
+    if (confirmBtn){
+      confirmBtn.textContent = textboton || "Confirmar";
+    }
   }
 
 

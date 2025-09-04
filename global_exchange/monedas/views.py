@@ -7,6 +7,13 @@ from django.db.models import Q
 
 # Decorador de superadmin
 def superadmin_required(view_func):
+    """
+    Decorador que limita el acceso únicamente a usuarios superadministradores.
+
+    - Si el usuario no está autenticado, se lo redirige a ``login``.
+    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
+    - Si el usuario es superadmin, se ejecuta la vista original.
+    """
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -21,6 +28,17 @@ def superadmin_required(view_func):
 # LISTA
 @superadmin_required
 def moneda_lista(request):
+    """
+    Muestra la lista de monedas disponibles en el sistema, con opción de búsqueda y filtrado.
+
+    La búsqueda se puede realizar por ``nombre`` o ``abreviacion``. Si no se especifica un campo,
+    se buscará en ambos.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :return: Render de la plantilla con la lista de monedas.
+    :rtype: HttpResponse
+    """
     monedas = Moneda.objects.all().order_by('-id')
     form = MonedaForm()  # formulario vacío para modal
     q = request.GET.get("q", "").strip()
@@ -49,6 +67,18 @@ def moneda_lista(request):
 # CREAR
 @superadmin_required
 def moneda_nueva(request):
+    """
+    Crea una nueva moneda en el sistema.
+
+    - Si la petición es ``POST`` y el formulario es válido, guarda la moneda.
+    - Si la petición es AJAX, devuelve un ``JsonResponse``.
+    - Si hay errores en el formulario, se devuelven en la respuesta.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :return: Redirección a la lista de monedas o ``JsonResponse``.
+    :rtype: HttpResponse | JsonResponse
+    """
     if request.method == "POST":
         form = MonedaForm(request.POST)
         if form.is_valid():
@@ -74,6 +104,20 @@ def moneda_nueva(request):
 # EDITAR
 @superadmin_required
 def moneda_editar(request, pk):
+    """
+    Edita los datos de una moneda existente.
+
+    - Si la petición es ``POST`` y el formulario es válido, guarda los cambios.
+    - Si la petición es AJAX, devuelve un ``JsonResponse`` con el resultado.
+    - Si hay errores, se devuelven en el contexto de la plantilla o en JSON.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :param pk: ID de la moneda a editar.
+    :type pk: int
+    :return: Render de la plantilla, redirección o ``JsonResponse``.
+    :rtype: HttpResponse | JsonResponse
+    """
     moneda = get_object_or_404(Moneda, pk=pk)
     if request.method == "POST":
         form = MonedaForm(request.POST, instance=moneda)
@@ -107,9 +151,20 @@ def moneda_editar(request, pk):
         })
 
 
-# ELIMINAR
 @superadmin_required
 def moneda_desactivar(request, pk):
+    """
+    Activa o desactiva una moneda del sistema.
+
+    Cambia el estado de la moneda al opuesto de su valor actual.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :param pk: ID de la moneda a modificar.
+    :type pk: int
+    :return: Redirección a la lista de monedas.
+    :rtype: HttpResponse
+    """
     moneda = get_object_or_404(Moneda, pk=pk)
     # Cambiar el estado actual
     moneda.estado = not moneda.estado
@@ -119,6 +174,16 @@ def moneda_desactivar(request, pk):
 
 @superadmin_required
 def moneda_detalle(request, pk):
+    """
+    Devuelve el detalle de una moneda en formato JSON.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :param pk: ID de la moneda.
+    :type pk: int
+    :return: Información de la moneda en JSON.
+    :rtype: JsonResponse
+    """
     moneda = get_object_or_404(Moneda, pk=pk)
     return JsonResponse({
         "id": moneda.id,

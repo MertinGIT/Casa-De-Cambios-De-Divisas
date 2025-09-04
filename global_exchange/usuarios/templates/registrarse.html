@@ -1,8 +1,10 @@
 {% extends 'usuario_auth_base.html' %}
 {% block form_fields %}
-{% if messages %}
 {% load widget_tweaks %}
-<div class="alert alert-{{ messages.tags }} mt-2">{{ messages }}</div>
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} mt-2">{{ message }}</div>
+  {% endfor %}
 {% endif %}
 <style>
   .form-group {

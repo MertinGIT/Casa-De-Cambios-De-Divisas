@@ -8,3 +8,5 @@ pycodestyle==2.14.0
 six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.2
+sphinx==8.2.3
+sphinx-rtd-theme==3.0.2

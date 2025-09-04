@@ -142,7 +142,7 @@ body {
   background-color: transparent;
   border: none;
   padding: 16px 20px 12px 20px;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
   font-weight: 500;
   color: #5D5FEF;
@@ -372,7 +372,7 @@ body {
     display: block;
     padding: 4px 0;
     border: none;
-    text-align: left;
+    text-align: center;
   }
   
   .custom-table tbody td:before {
@@ -491,7 +491,7 @@ body {
             <th>Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody style="text-align: center;">
           {% for s in segmentaciones %}
             <tr>
               <td data-label="Segmentación">{{ s.nombre }}</td>
