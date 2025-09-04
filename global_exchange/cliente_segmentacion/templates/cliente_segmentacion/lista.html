@@ -473,9 +473,9 @@ body {
 <button 
     class="btn-add rounded border-0 my-2" 
     data-url="{% url 'segmentaciones-agregar' %}" 
-    data-title="Agregar tipo de cliente"
+    data-title="Agregar Segmentación"
     onclick="openCreateModal(this.dataset.url, this.dataset.title)">
-    + Agregar tipo de cliente
+    + Agregar Segmentación
 </button>
 
 
@@ -515,13 +515,13 @@ body {
                 {% if s.estado == 'activo' %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-danger"
-                          onclick="openDeleteModal({{ s.id }}, '{% url 'segmentaciones-state' 0 %}', '¿Seguro que deseas desactivar esta segmentación?')">
+                          onclick="openDeleteModal({{ s.id }}, '{% url 'segmentaciones-state' 0 %}', '¿Seguro que deseas desactivar esta segmentación?', 'Desactivar')">
                     Desactivar
                   </button>
                 {% else %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-success"
-                          onclick="openDeleteModal({{ s.id }}, '{% url 'segmentaciones-state' 0 %}', '¿Seguro que deseas activar esta segmentación?')">
+                          onclick="openDeleteModal({{ s.id }}, '{% url 'segmentaciones-state' 0 %}', '¿Seguro que deseas activar esta segmentación?', 'Activar')">
                     Activar
                   </button>
                 {% endif %}

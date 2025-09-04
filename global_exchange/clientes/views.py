@@ -39,11 +39,7 @@ def clientes(request):
 class ClienteListView(ListView):
     """
     Vista basada en clases para listar clientes con paginación.
-
-    Contexto adicional:
-        - segmentaciones: todos los segmentos disponibles.
-        - form: formulario para agregar un cliente.
-        - form_action: URL para la creación de clientes.
+    Filtra solo por nombre y segmento si se recibe q y campo.
     """
     model = Cliente
     template_name = 'clientes/lista.html'
@@ -51,14 +47,28 @@ class ClienteListView(ListView):
     paginate_by = 8
 
     def get_queryset(self):
-        return Cliente.objects.all().order_by('-id')
+        queryset = Cliente.objects.all().order_by('-id')
+        q = self.request.GET.get("q", "")
+        campo = self.request.GET.get("campo", "")
+        
+        if q:
+            if campo == "nombre":
+                queryset = queryset.filter(nombre__icontains=q)
+            elif campo == "segmento":
+                queryset = queryset.filter(segmentacion__nombre__icontains=q)
+        
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["segmentaciones"] = Segmentacion.objects.all()
         context["form"] = ClienteForm()
         context["form_action"] = reverse_lazy('clientes-agregar')
+        context["q"] = self.request.GET.get("q", "")
+        context["campo"] = self.request.GET.get("campo", "")
+        context["seg_selected"] = self.request.GET.get("seg", "")
         return context
+
 
 
 @method_decorator(superadmin_required, name='dispatch')

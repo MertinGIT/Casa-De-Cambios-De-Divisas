@@ -49,19 +49,25 @@ def check_nombre_segmentacion(request):
 @superadmin_required
 def lista_segmentaciones(request):
     """
-    Muestra la lista de todas las segmentaciones existentes.
-
-    Renderiza la plantilla 'cliente_segmentacion/lista.html' con:
-        - segmentaciones: queryset de todas las segmentaciones.
-        - form: formulario vacío para crear nueva segmentación.
+    Muestra la lista de segmentaciones con búsqueda opcional.
+    Permite filtrar por nombre o por segmentación.
     """
     form = SegmentacionForm()
+    q = request.GET.get("q", "")
+    campo = request.GET.get("campo", "")
+
     segmentaciones = Segmentacion.objects.all()
+
+    if q and campo:
+        if campo == "segmentacion":
+            segmentaciones = segmentaciones.filter(nombre__icontains=q)
+        # Por si hay necesidad de más filtros en el futuro
     return render(request, "cliente_segmentacion/lista.html", {
         "segmentaciones": segmentaciones, 
-        "form": form
+        "form": form,
+        "q": q,
+        "campo": campo,
     })
-
 @superadmin_required
 def crear_segmentacion(request):
     """

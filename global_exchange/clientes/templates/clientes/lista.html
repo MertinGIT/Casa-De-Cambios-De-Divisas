@@ -465,8 +465,6 @@ body {
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
             <option value="nombre">Nombre</option>
-            <option value="email">Email</option>
-            <option value="telefono">Teléfono</option>
             <option value="segmento">Segmento</option>
           </select>
         </form>
@@ -494,6 +492,7 @@ body {
         <thead>
           <tr>
             <th>Nombre</th>
+           <!-- <th>C.I.</th>-->
             <th>Email</th>
             <th>Teléfono</th>
             <th>Segmento</th>
@@ -506,6 +505,7 @@ body {
           {% for c in clientes %}
             <tr>
               <td data-label="Nombre">{{ c.nombre }}</td>
+             <!-- <td data-label="Cedula"> {{ c.cedula }}</td>-->
               <td data-label="Email">{{ c.email }}</td>
               <td data-label="Teléfono">{{ c.telefono|default:"—" }}</td>
               <td data-label="Segmento">{{ c.segmentacion.nombre|default:"Sin segmento" }}</td>
@@ -528,13 +528,13 @@ body {
 {% if c.estado == 'activo' %}
   <button type="button"
           class="btn-delete btn btn-sm btn-danger"
-          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-desactivate' 0 %}', '¿Seguro que deseas desactivar este registro?')">
+          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-desactivate' 0 %}', '¿Seguro que deseas desactivar este registro?', 'Desactivar')">
     Desactivar
   </button>
 {% else %}
   <button type="button"
           class="btn-delete btn btn-sm btn-success"
-          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-activate' 0 %}', '¿Seguro que deseas activar este registro?')">
+          onclick="openDeleteModal({{ c.id }}, '{% url 'clientes-activate' 0 %}', '¿Seguro que deseas activar este registro?', 'Activar')">
     Activar
   </button>
 {% endif %}
