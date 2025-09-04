@@ -61,24 +61,6 @@ def user_required(view_func):
 # Solo superadmin
 
 
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
-
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.groups.filter(name='ADMIN').exists():
-                return view_func(request, *args, **kwargs)
-            else:
-                # Usuario normal no tiene acceso
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
 # views.py - home
 """
@@ -242,7 +224,7 @@ def signup(request):
       y envía un correo de activación.
     """
     if request.user.is_authenticated:
-        if request.user.is_superuser:
+        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
             return redirect('admin')
         else:
             return redirect('home')
@@ -404,7 +386,8 @@ def signin(request):
     """
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
-        if request.user.is_superuser:
+        if request.user.groups.filter(name='ADMIN').exists():
+            print("PRIMER IF:", flush=True)
             return redirect('admin_dashboard')
         else:
             return redirect('home')
@@ -437,10 +420,8 @@ def signin(request):
         else:
             login(request, user)
             if request.user.groups.filter(name='ADMIN').exists():
-                print("Entra tiene permiso", flush=True)
                 return redirect('admin_dashboard')
             else:
-                print("No tiene permiso", flush=True)
                 return redirect('home')
       
 def pagina_aterrizaje(request):
@@ -548,6 +529,7 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
+    segmento_nombre = "Sin Segmentación"
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
     # === SEGMENTACIÓN SEGÚN USUARIO ===
@@ -652,7 +634,6 @@ def crud_empleados(request):
     return render(request, 'empleados.html', {'empleados': empleados})
 
 
-@superadmin_required
 def user_roles_lista(request):
     """
     Lista de usuarios con buscador básico.
@@ -677,8 +658,6 @@ def user_roles_lista(request):
     })
 
 
-@superadmin_required
-@superadmin_required
 def user_roles_edit(request, pk):
     """
     Editar roles y permisos de un usuario via AJAX (para modal).
@@ -758,7 +737,6 @@ def user_roles_edit(request, pk):
         "usuario": usuario
     })
 
-@superadmin_required
 def user_roles_detalle(request, pk):
     from django.contrib.auth.models import Group, Permission
 

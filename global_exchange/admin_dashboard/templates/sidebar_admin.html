@@ -25,13 +25,6 @@
       >
     </li>
     <li>
-      <a href="{% url 'roles' %}">
-        <span class="icon">&#128101;</span>
-        <span class="label">Roles de Usuarios</span>
-      </a>
-    </li>
-
-    <li>
       <a href="{% url 'clientes' %}">
         <span class="icon">&#x1F464;</span>
         <span class="label">Clientes</span>
@@ -40,17 +33,8 @@
     <li>
       <a href="{% url 'cliente_usuario' %}">
         <span class="icon">&#x1F5C2;</span>
-        <span class="label">Asignar Clientes</span>
+        <span class="label">Usuarios-Clientes</span>
       </a>
-<li>
-  <a href="{% url 'lista-segmentaciones' %}">
-    <span class="icon">
-      <i class="fa fa-address-book" style="color: violet;"></i>
-    </span>
-    <span class="label">Segmentación</span>
-  </a>
-</li>
-
   </ul>
   <hr />
 
@@ -98,14 +82,15 @@
         <a href="#"><span class="icon">&#x1F4CA;</span> Reportes</a>
       </li>
       <li>
-        <a href="{% url 'roles' %}">
-          <span class="icon">&#128101;</span> Roles de Clientes
-        </a>
-      </li>
-      <li>
         <a href="{% url 'clientes' %}">
           <span class="icon">&#x1F464;</span>
           <span class="label">Clientes</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'cliente_usuario' %}">
+          <span class="icon">&#x1F464;</span>
+          <span class="label">Usuarios-Clientes</span>
         </a>
       </li>
       <hr />

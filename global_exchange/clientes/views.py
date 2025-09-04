@@ -11,23 +11,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def superadmin_required(view_func):
-    """
-    Decorador que restringe el acceso a usuarios superadministradores.
 
-    Si el usuario no está autenticado, redirige a 'login'.
-    Si está autenticado pero no es superusuario, redirige a 'home'.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            return redirect('home')
-        return redirect('login')
-    return _wrapped_view
-
-@superadmin_required
 def clientes(request):
     """
     Renderiza la vista principal de clientes.
@@ -35,7 +19,6 @@ def clientes(request):
     return render(request, 'clientes/lista.html')
 
 
-@method_decorator(superadmin_required, name='dispatch')
 class ClienteListView(ListView):
     """
     Vista basada en clases para listar clientes con paginación.
@@ -71,7 +54,6 @@ class ClienteListView(ListView):
 
 
 
-@method_decorator(superadmin_required, name='dispatch')
 class ClienteCreateView(CreateView):
     """
     Vista para crear un cliente desde un modal en la lista de clientes.
@@ -90,7 +72,7 @@ class ClienteCreateView(CreateView):
         return context
 
 
-@superadmin_required
+
 def check_email(request):
     """
     Valida de manera AJAX si un correo ya está registrado.
@@ -114,7 +96,6 @@ def check_email(request):
         return JsonResponse(not exists, safe=False)
 
 
-@method_decorator(superadmin_required, name='dispatch')
 class ClienteUpdateView(UpdateView):
     """
     Vista para editar un cliente desde un modal en la lista de clientes.
@@ -132,7 +113,6 @@ class ClienteUpdateView(UpdateView):
         return context
 
 
-@method_decorator(superadmin_required, name='dispatch')
 class ClienteDeleteView(DeleteView):
     """
     Vista para eliminar un cliente.
@@ -146,7 +126,6 @@ class ClienteDeleteView(DeleteView):
         return super().delete(request, *args, **kwargs)
 
 
-@method_decorator(superadmin_required, name='dispatch')
 class ClienteDesactivateView(UpdateView):
     """
     Vista para desactivar un cliente (cambia estado a 'inactivo').
@@ -164,7 +143,6 @@ class ClienteDesactivateView(UpdateView):
         return redirect(self.success_url)
 
 
-@method_decorator(superadmin_required, name='dispatch')
 class ClienteActivateView(UpdateView):
     """
     Vista para activar un cliente (cambia estado a 'activo').
@@ -182,7 +160,7 @@ class ClienteActivateView(UpdateView):
         return redirect(self.success_url)
 
 
-@superadmin_required
+
 def cliente_detalle(request, pk):
     """
     Devuelve los detalles de un cliente en formato JSON.

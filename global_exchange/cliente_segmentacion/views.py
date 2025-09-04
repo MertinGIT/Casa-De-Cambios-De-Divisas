@@ -4,22 +4,6 @@ from functools import wraps
 from .forms import SegmentacionForm
 from django.http import JsonResponse
 
-def superadmin_required(view_func):
-    """
-    Decorador que restringe el acceso a vistas únicamente a superusuarios.
-
-    Si el usuario no está autenticado, se redirige a 'login'.
-    Si el usuario está autenticado pero no es superusuario, se redirige a 'home'.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
 def check_nombre_segmentacion(request):
     """
@@ -46,7 +30,6 @@ def check_nombre_segmentacion(request):
 
         return JsonResponse(not exists, safe=False)
 
-@superadmin_required
 def lista_segmentaciones(request):
     """
     Muestra la lista de segmentaciones con búsqueda opcional.
@@ -68,7 +51,7 @@ def lista_segmentaciones(request):
         "q": q,
         "campo": campo,
     })
-@superadmin_required
+
 def crear_segmentacion(request):
     """
     Crea una nueva segmentación.
@@ -108,7 +91,6 @@ def crear_segmentacion(request):
             })
     return redirect("lista-segmentaciones")
 
-@superadmin_required
 def editar_segmentacion(request, pk):
     """
     Edita una segmentación existente.
@@ -167,7 +149,6 @@ def editar_segmentacion(request, pk):
             "modal_type": "edit",
         })
 
-@superadmin_required
 def cambiar_estado_segmentacion(request, pk):
     """
     Cambia el estado de una segmentación entre 'activo' e 'inactivo'.

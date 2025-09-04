@@ -25,8 +25,15 @@
 
             <!-- Logo: PNG primero, si no SVG -->
             <img src="{% static 'img/logoMoneda/'|add:abrev|add:'.png' %}"
-                 onerror="this.onerror=null;this.src='{% static 'img/logoMoneda/'|add:abrev|add:'.svg' %}';"
-                 alt="Logo {{ abrev }}" />
+            onerror="
+                this.onerror=null;
+                this.src='{% static 'img/logoMoneda/'|add:abrev|add:'.svg' %}';
+                this.onerror=function(){
+                    this.onerror=null;
+                    this.src='{% static 'img/logoMoneda/default-logo.webp' %}';
+                }
+            "
+            alt="Logo {{ abrev }}" />
 
             <p class="simboloTitle">{{ abrev }}</p>
 

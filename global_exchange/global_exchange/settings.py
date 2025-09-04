@@ -102,6 +102,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'global_exchange.middleware.Custom404Middleware',
+    'roles_permisos.middleware.RoleBasedMiddleware',
 ]
 
 # ============================================================================

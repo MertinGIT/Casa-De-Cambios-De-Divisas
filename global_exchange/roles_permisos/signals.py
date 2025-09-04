@@ -2,6 +2,7 @@ from django.db.models.signals import post_migrate
 from django.contrib.auth.models import Permission, Group
 from django.contrib.auth import get_user_model
 from django.dispatch import receiver
+from roles_permisos.models import GroupProfile
 
 User = get_user_model()
 
@@ -25,7 +26,8 @@ TRADUCCIONES_NOMBRES = {
 SUPERADMIN_USERNAME = "superadmin"
 SUPERADMIN_EMAIL = "admin@empresa.com"
 SUPERADMIN_PASSWORD = "ContraseñaSegura123"
-SUPERADMIN_CEDULA = "00000000" 
+SUPERADMIN_CEDULA = "00000000"
+
 
 @receiver(post_migrate)
 def configurar_inicial(sender, **kwargs):
@@ -56,12 +58,61 @@ def configurar_inicial(sender, **kwargs):
         grupo_admin.permissions.set(Permission.objects.all())
         grupo_admin.save()
 
+    # Crear grupo USUARIO si no existe y asignar permisos con codename "view_*"
+    grupo_usuario, creado_usuario = Group.objects.get_or_create(name="Usuario")
+    if creado_usuario:
+        permisos_view = Permission.objects.filter(codename__startswith="view_")
+        grupo_usuario.permissions.set(permisos_view)
+        grupo_usuario.save()
+    else:
+        # Verificar si necesita actualizar permisos
+        permisos_view = Permission.objects.filter(codename__startswith="view_")
+        if grupo_usuario.permissions.count() != permisos_view.count():
+            grupo_usuario.permissions.set(permisos_view)
+            grupo_usuario.save()
+
+    # Crear grupo USUARIO ASOCIADO si no existe
+    grupo_usuario_asociado, creado_asociado = Group.objects.get_or_create(name="Usuario Asociado")
+    
+    # Obtener permisos para Usuario Asociado:
+    permisos_view = Permission.objects.filter(codename__startswith="view_")
+    permisos_usuario_especificos = Permission.objects.filter(
+        codename__in=["add_usuario", "view_usuario", "change_usuario"]
+    )
+    
+    permisos_usuario_asociado = permisos_view.union(permisos_usuario_especificos)
+    
+    if creado_asociado:
+        grupo_usuario_asociado.permissions.set(permisos_usuario_asociado)
+        grupo_usuario_asociado.save()
+    else:
+        permisos_actuales = set(grupo_usuario_asociado.permissions.values_list('id', flat=True))
+        permisos_esperados = set(permisos_usuario_asociado.values_list('id', flat=True))
+        
+        if permisos_actuales != permisos_esperados:
+            grupo_usuario_asociado.permissions.set(permisos_usuario_asociado)
+            grupo_usuario_asociado.save()
+    
+    # Crear GroupProfiles si no existen
+    GroupProfile.objects.get_or_create(
+        group=grupo_admin,
+        defaults={'estado': 'Activo'}
+    )
+    GroupProfile.objects.get_or_create(
+        group=grupo_usuario,
+        defaults={'estado': 'Activo'}
+    )
+    GroupProfile.objects.get_or_create(
+        group=grupo_usuario_asociado,
+        defaults={'estado': 'Activo'}
+    )
+
     # Crear superadmin si no existe
     user, creado_user = User.objects.get_or_create(
         username=SUPERADMIN_USERNAME,
         defaults={
             "email": SUPERADMIN_EMAIL,
-            "is_superuser": False,
+            "is_superuser": True,
             "is_staff": True,
             "is_active": True,
             "cedula": SUPERADMIN_CEDULA
@@ -70,11 +121,9 @@ def configurar_inicial(sender, **kwargs):
     if creado_user:
         user.set_password(SUPERADMIN_PASSWORD)
         user.save()
-        print("Superadmin creado correctamente.")
 
-    # 6️⃣ Agregar superadmin al grupo ADMIN solo si no está
+    # Agregar superadmin al grupo ADMIN solo si no está
     if not user.groups.filter(name="ADMIN").exists():
         user.groups.add(grupo_admin)
-        print("Superadmin agregado al grupo ADMIN.")
 
-    print("Configuración completada.")
+print("Configuración completada.")
