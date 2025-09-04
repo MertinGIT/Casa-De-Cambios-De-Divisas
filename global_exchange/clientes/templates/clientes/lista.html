@@ -509,7 +509,7 @@ body {
               <td data-label="Email">{{ c.email }}</td>
               <td data-label="Teléfono">{{ c.telefono|default:"—" }}</td>
               <td data-label="Segmento">{{ c.segmentacion.nombre|default:"Sin segmento" }}</td>
-              <td data-label="Descuento">{{ c.segmentacion.descuento|default:"0" }}%</td>
+              <td data-label="Descuento">{{ c.segmentacion.descuento_aplicable|default:"0" }}%</td>
               <td data-label="Estado">
                 {% if c.estado == 'activo' %}
                   <span class="status-badge status-activo">Activo</span>

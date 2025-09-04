@@ -24,6 +24,10 @@ class Segmentacion(models.Model):
         default='activo',
         help_text="Estado de la segmentación (activo/inactivo)"
     )
+    @property
+    def descuento_aplicable(self):
+        """Devuelve 0 si está inactivo, sino el valor real"""
+        return 0 if self.estado == "inactivo" else self.descuento
 
     def __str__(self):
         return self.nombre

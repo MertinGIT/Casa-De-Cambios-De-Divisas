@@ -29,7 +29,6 @@ def lista_segmentaciones(request):
 def crear_segmentacion(request):
     if request.method == "POST":
         form = SegmentacionForm(request.POST)
-        print("Formulario crear:", form)
         
         # Verificar si es una petición AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -82,7 +81,6 @@ def editar_segmentacion(request, pk):
 
     if request.method == "POST":
         form = SegmentacionForm(request.POST, instance=segmentacion)
-        print("Formulario editar:", form)
         
         # Verificar si es una petición AJAX
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
