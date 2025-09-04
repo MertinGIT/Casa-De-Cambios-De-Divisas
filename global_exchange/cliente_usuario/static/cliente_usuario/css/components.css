@@ -1,0 +1,18 @@
+/*Estilos check permisos*/
+.custom-btn {
+  color: #007bff;
+  font-weight: bold;
+  background-color: white;
+  border: 1px solid #007bff;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.custom-btn:hover {
+  color: #0056b3;
+  border-color: #0056b3;
+}
+
+.btn-check:checked+.custom-btn {
+  background-color: #007bff;
+  color: white;
+}

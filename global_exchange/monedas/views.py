@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from functools import wraps
 from .models import Moneda
 from .forms import MonedaForm
+from django.db.models import Q
 
 # Decorador de superadmin
 def superadmin_required(view_func):
@@ -22,10 +23,26 @@ def superadmin_required(view_func):
 def moneda_lista(request):
     monedas = Moneda.objects.all().order_by('-id')
     form = MonedaForm()  # formulario vacío para modal
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+    
+    # 🔍 Filtro de búsqueda
+    if q:
+        if campo == "nombre":
+            monedas = monedas.filter(nombre__icontains=q)
+        elif campo == "abreviacion":
+            monedas = monedas.filter(abreviacion__icontains=q)
+        else:
+            # Si no elige campo, buscar en ambos
+            monedas = monedas.filter(
+                Q(nombre__icontains=q) | Q(abreviacion__icontains=q)
+            )
 
     return render(request, "monedas/lista.html", {
         "monedas": monedas,
         "form": form,
+        "q": q,
+        "campo": campo 
     })
 
 
@@ -92,11 +109,11 @@ def moneda_editar(request, pk):
 
 # ELIMINAR
 @superadmin_required
-def moneda_eliminar(request, pk):
+def moneda_desactivar(request, pk):
     moneda = get_object_or_404(Moneda, pk=pk)
-    if request.method == "POST":
-        moneda.delete()
-        return redirect("monedas")
+    # Cambiar el estado actual
+    moneda.estado = not moneda.estado
+    moneda.save()
     return redirect("monedas")
 
 

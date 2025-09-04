@@ -50,7 +50,7 @@ SECRET_KEY = 'django-insecure-a59ch^c$8!qa+s&5@-zq-=q_cyz!e5!x@hsqg8dsa7_sr-t^s&
 
 
 #: Lista de hosts permitidos para el despliegue.
-ALLOWED_HOSTS = ['192.168.0.11', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['192.168.0.12', '127.0.0.1', 'localhost']
 
 # ============================================================================
 # Configuracion de Email
@@ -84,10 +84,11 @@ INSTALLED_APPS = [
     'clientes',
     'roles_permisos',
     'admin_dashboard',
-    'asignar_clientes_usuarios',
+    'configuracion',
     'cliente_segmentacion',
     'cotizaciones',
     'monedas',
+    'cliente_usuario'
 ]
 # ============================================================================
 # Middleware

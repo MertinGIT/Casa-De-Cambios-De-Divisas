@@ -1,5 +1,6 @@
 from django import forms
-from .models import Rol, Permiso
+from django.contrib.auth.models import Group, Permission
+from usuarios.models import CustomUser
 
 class RolForm(forms.ModelForm):
     """
@@ -24,51 +25,31 @@ class RolForm(forms.ModelForm):
     """
 
     permisos = forms.ModelMultipleChoiceField(
-        queryset=Permiso.objects.all(),
-        widget=forms.CheckboxSelectMultiple(),
+        queryset=Permission.objects.all(),
+        widget=forms.SelectMultiple(attrs={'size': 15}),  # tamaño select
         required=False,
         label="Permisos"
     )
 
     class Meta:
-        model = Rol
-        fields = ['nombre', 'descripcion', 'permisos']
-        labels = {
-            'nombre': 'Nombre',
-            'descripcion': 'Descripción',
-        }
+        model = Group
+        fields = ['name', 'permisos']
         widgets = {
-            'nombre': forms.TextInput(attrs={
-                'class': 'form-control',
-                'id': 'id_nombre',
-                'placeholder': 'Ingrese el nombre del rol'
-            }),
-            'descripcion': forms.Textarea(attrs={
-                'class': 'form-control', 
-                'id': 'id_descripcion',
-                'rows': 3,
-                'placeholder': 'Ingrese la descripción del rol'
-            }),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese el nombre del rol'}),
         }
 
     def __init__(self, *args, **kwargs):
-        """
-        Inicializa el formulario aplicando clases CSS personalizadas 
-        a los widgets de cada campo.
-        
-        - Para el campo ``permisos``: aplica la clase ``permisos-checkbox``.  
-        - Para el resto: asegura que tengan la clase ``form-control``.
-        """
         super().__init__(*args, **kwargs)
-        
-        # Agregar clases CSS y configuraciones adicionales
-        for field_name, field in self.fields.items():
-            if field_name == 'permisos':
-                # Para los checkboxes de permisos, mantener el widget especial
-                field.widget.attrs.update({
-                    'class': 'permisos-checkbox'
-                })
-            else:
-                # Para otros campos, asegurar que tengan la clase form-control
-                if 'class' not in field.widget.attrs:
-                    field.widget.attrs.update({'class': 'form-control'})
+        if self.instance and self.instance.pk:
+            self.fields['permisos'].initial = self.instance.permissions.values_list(
+                'id', flat=True)
+
+    def save(self, commit=True):
+        group = super().save(commit=False)
+        if commit:
+            group.save()
+            # Asignar los permisos seleccionados correctamente
+            if self.cleaned_data.get('permisos') is not None:
+                group.permissions.set(self.cleaned_data['permisos'])
+            self.save_m2m()
+        return group

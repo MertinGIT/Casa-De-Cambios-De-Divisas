@@ -442,7 +442,7 @@ body {
   }
 }
 </style>
-
+{% include 'base_configuracion.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -464,8 +464,8 @@ body {
           <!-- Selector de campo -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
-            <option value="divisa_origen">Moneda Origen</option>
-            <option value="divisa_destino">Moneda Destino</option>
+            <option value="nombre" {% if campo == "nombre" %}selected{% endif %}>Nombre</option>
+  <option value="abreviacion" {% if campo == "abreviacion" %}selected{% endif %}>Abreviación</option>
           </select>
         </form>
       </div>
@@ -487,8 +487,8 @@ body {
         <tbody>
           {% for m in monedas %}
             <tr>
-              <td>{{ m.nombre }}</td>
-              <td>{{ m.abreviacion }}</td>
+              <td data-label= "Nombre" style="vertical-align: middle; min-width: 160px;">{{ m.nombre }}</td>
+              <td data-label= "Abreviación" style="vertical-align: middle; min-width: 160px;">{{ m.abreviacion }}</td>
               <td style="text-align: center;">
                 <button class="btn-edit btn btn-sm btn-primary"
                         data-id="{{ m.id }}"
@@ -496,11 +496,15 @@ body {
                         data-detalle="{% url 'moneda_detalle' m.id %}">
                   Editar
                 </button>
-                <button class="btn-delete btn btn-sm btn-danger"
-                        data-id="{{ m.id }}"
-                        data-delete="{% url 'moneda_eliminar' 0 %}">
-                  Eliminar
-                </button>
+                {% if m.estado %}
+                  <a href="{% url 'moneda_desactivar' m.id %}" class="btn btn-sm btn-danger">
+                    Desactivar
+                  </a>
+                {% else %}
+                  <a href="{% url 'moneda_desactivar' m.id %}" class="btn btn-sm btn-success">
+                    Activar
+                  </a>
+                {% endif %}
               </td>
             </tr>
           {% empty %}
