@@ -1,18 +1,11 @@
-<div class="contenedor-principal">
-<main class="main-container">
+{% include 'base_configuracion.html' %}
 
-  <div class="modules">
+<div class="contenedor-principal-seguridad">
+<main class="main-container-seguridad">
 
-    <a href="{% url 'monedas' %}" class="module-btn {% if request.resolver_match.url_name == 'monedas' %}active-config{% endif %}">💰 Monedas</a>
-
-    <a href="{% url 'cotizacion' %}" class="module-btn {% if request.resolver_match.url_name == 'cotizacion' %}active-config{% endif %}">💱 Tasa de Cambio</a>
-
-    <a href="javascript:void(0)" class="module-btn">💳 Métodos de Pago</a>
-
-    <a href="{% url 'lista-segmentaciones' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-segmentaciones' %}active-config{% endif %}">👥 Segmentacion</a>
-
-    <a href="{% url 'user_roles_lista' %}" class="module-btn {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">🔒 Seguridad</a>
-
+  <div class="modules-seguridad">
+        <a href="{% url 'user_roles_lista' %}" class="module-btn-seguridad {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">🔒 Usuarios</a>
+        <a href="{% url 'roles' %}" class="module-btn-seguridad {% if request.resolver_match.url_name == 'roles' %}active-config{% endif %}">🔒 Roles</a>
   </div>
 </main>
 </div>
@@ -24,15 +17,13 @@ body, html {
   justify-content: center;
   /*background-color: #f4f6fb;*/
 }
-.contenedor-principal{
-  padding: 24px;
+.contenedor-principal-seguridad{
+  padding: 10px;
 }
-.main-container {
+.main-container-seguridad {
   text-align: center;
-  padding: 3rem 2rem;
   border-radius: 24px;
-  background-color: #ffffff;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  background-color: transparent;
   /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
   flex: 1;           /* ocupa todo el espacio disponible */
   max-width: 1200px; /* pero no más que esto */
@@ -40,12 +31,7 @@ body, html {
   table-layout: fixed;
 }
 
-.main-container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-}
-
-.modules {
+.modules-seguridad {
   display: flex;
   flex-wrap: wrap;
   gap: 1.2rem;
@@ -53,7 +39,7 @@ body, html {
   
 }
 
-.module-btn {
+.module-btn-seguridad {
   display: inline-block; /* Importante para que los <a> se vean como botones */
   padding: 0.9rem 1.8rem;
   border-radius: 14px;
@@ -67,7 +53,7 @@ body, html {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
-.module-btn:hover {
+.module-btn-seguridad:hover {
   background-color: #5d5fef;
   color: #fff;
   transform: translateY(-2px);
@@ -80,25 +66,22 @@ body, html {
 }
 
 @media (max-width: 768px) {
-  .main-container {
-    padding: 2rem 1rem;
-  }
-  .modules {
+  .modules-seguridad {
     gap: 0.8rem;
   }
-  .module-btn {
+  .module-btn-seguridad {
     font-size: 14px;
     padding: 0.7rem 1.2rem;
   }
 }
 
 @media (max-width: 480px) {
-  .modules {
+  .modules-seguridad {
     flex-direction: column; /* Botones uno debajo de otro */
     gap: 0.6rem;
     align-items: center;
   }
-  .module-btn {
+  .module-btn-seguridad {
     width: 100%; /* Ocupa todo el ancho disponible */
     max-width: 250px; /* Limita el ancho máximo */
     font-size: 14px;

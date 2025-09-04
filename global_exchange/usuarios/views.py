@@ -242,7 +242,7 @@ def signup(request):
       y envía un correo de activación.
     """
     if request.user.is_authenticated:
-        if request.user.is_superuser:
+        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
             return redirect('admin')
         else:
             return redirect('home')
@@ -404,7 +404,8 @@ def signin(request):
     """
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
-        if request.user.is_superuser:
+        if request.user.groups.filter(name='ADMIN').exists():
+            print("PRIMER IF:", flush=True)
             return redirect('admin_dashboard')
         else:
             return redirect('home')
@@ -437,10 +438,8 @@ def signin(request):
         else:
             login(request, user)
             if request.user.groups.filter(name='ADMIN').exists():
-                print("Entra tiene permiso", flush=True)
                 return redirect('admin_dashboard')
             else:
-                print("No tiene permiso", flush=True)
                 return redirect('home')
       
 def pagina_aterrizaje(request):
@@ -548,6 +547,7 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
+    segmento_nombre = "Sin Segmentación"
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
     # === SEGMENTACIÓN SEGÚN USUARIO ===
@@ -677,7 +677,6 @@ def user_roles_lista(request):
     })
 
 
-@superadmin_required
 @superadmin_required
 def user_roles_edit(request, pk):
     """

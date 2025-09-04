@@ -10,7 +10,7 @@ def superadmin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
-            if request.user.is_superuser:
+            if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
                 return view_func(request, *args, **kwargs)
             else:
                 return redirect('home')

@@ -441,7 +441,7 @@
     }
   }
 </style>
-
+{% include 'base_seguridad.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -479,6 +479,7 @@
         <thead>
           <tr>
             <th style="vertical-align: middle; min-width: 160px; text-align: left;">Nombre</th>
+            <th style="vertical-align: middle; min-width: 120px; text-align: center;">Estado</th>
             <th style="vertical-align: middle; min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
@@ -486,16 +487,28 @@
           {% for r in roles %}
           <tr>
             <td data-label="Nombre" style="vertical-align: middle; min-width: 160px;">{{ r.name }}</td>
+            <td data-label="Estado" style="vertical-align: middle; min-width: 120px; text-align: center;">
+              {% if r.profile.estado == "Activo" %}
+                <span class="status-badge status-activo">Activo</span>
+              {% else %}
+                <span class="status-badge status-inactivo">Inactivo</span>
+              {% endif %}
+            </td>
             <td data-label="Acciones" style="vertical-align: middle; min-width: 160px; text-align: center;">
               <button class="btn-edit btn btn-sm btn-primary"
                 onclick="openEditModal('{{ r.id }}', '{% url 'rol_editar' 0 %}', '{% url 'rol_detalle' r.id %}')"
                 type="button">
                 Editar
               </button>
-              {% if perms.auth.delete_group %}
+              {% if r.profile.estado == "Activo" %}
               <button class="btn-delete btn btn-sm btn-danger" type="button"
-                onclick="openDeleteModal('{{ r.id }}', '{% url 'rol_eliminar' 0 %}')">
+                onclick="openDeleteModal('{{ r.id }}', '{% url 'rol_desactivar' r.id %}')">
                 Desactivar
+              </button>
+              {% else %}
+              <button class="btn-delete btn btn-sm btn-success" type="button"
+                onclick="openDeleteModal('{{ r.id }}', '{% url 'rol_activar' r.id %}')">
+                Activar
               </button>
               {% endif %}
             </td>

@@ -16,7 +16,7 @@ def superadmin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
-            if request.user.is_superuser:
+            if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
                 return view_func(request, *args, **kwargs)
             else:
                 return redirect('home')
@@ -128,9 +128,42 @@ def rol_eliminar(request, pk):
         - Si la petición es ``POST``, elimina el rol y redirige a ``roles``.
         - Si no es ``POST``, redirige directamente a ``roles``.
     """
-    if request.method == "POST":
-        group.delete()
+    if hasattr(group, 'profile'):
+        if request.method == "POST":
+            group.profile.estado = "Inactivo"
+            group.profile.save()
+            print("GUARDA", flush=True)
+            return redirect("roles")
+    else:
+        # Si no existe el perfil, lo creamos y lo marcamos como inactivo
+        from roles_permisos.models import GroupProfile
+        GroupProfile.objects.create(group=group, estado="Inactivo")
+        print("GUARDA ACA", flush=True)
         return redirect("roles")
+    return redirect("roles")
+
+
+@superadmin_required
+def rol_activar(request, pk):
+    group = get_object_or_404(Group, pk=pk)
+    if hasattr(group, 'profile'):
+        group.profile.estado = "Activo"
+        group.profile.save()
+    else:
+        from roles_permisos.models import GroupProfile
+        GroupProfile.objects.create(group=group, estado="Activo")
+    return redirect("roles")
+
+
+@superadmin_required
+def rol_desactivar(request, pk):
+    group = get_object_or_404(Group, pk=pk)
+    if hasattr(group, 'profile'):
+        group.profile.estado = "Inactivo"
+        group.profile.save()
+    else:
+        from roles_permisos.models import GroupProfile
+        GroupProfile.objects.create(group=group, estado="Inactivo")
     return redirect("roles")
 
 

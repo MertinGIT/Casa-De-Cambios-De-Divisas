@@ -5,18 +5,7 @@ from .forms import SegmentacionForm
 from django.http import JsonResponse
 import json
 
-def superadmin_required(view_func):
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
-@superadmin_required
 def lista_segmentaciones(request):
     form = SegmentacionForm()
     segmentaciones = Segmentacion.objects.all()
@@ -25,7 +14,6 @@ def lista_segmentaciones(request):
         "form": form
     })
 
-@superadmin_required
 def crear_segmentacion(request):
     if request.method == "POST":
         form = SegmentacionForm(request.POST)
@@ -71,7 +59,6 @@ def crear_segmentacion(request):
     
     return redirect("lista-segmentaciones")
 
-@superadmin_required
 def editar_segmentacion(request, pk):
     """
     Vista que permite editar una segmentación existente.
@@ -137,7 +124,6 @@ def editar_segmentacion(request, pk):
             "modal_type": "edit",
         })
 
-@superadmin_required
 def cambiar_estado_segmentacion(request, pk):
     segmentacion = get_object_or_404(Segmentacion, pk=pk)
     segmentacion.estado = "inactivo" if segmentacion.estado == "activo" else "activo"
