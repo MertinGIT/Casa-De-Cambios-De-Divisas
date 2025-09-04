@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="layout-container">
+    <!-- Sidebar -->
+    {% include 'sidebar_admin.html' %}
+
+    {% include 'perfil_admin.html' %}
+    <!-- Contenido principal -->
+    <div class="dashboard-content">
+        {% block dashboard_content %}
+        <!-- Aquí va tu contenido principal, formularios, tablas, etc. -->
+        {% endblock %}
+    </div>
+    
+</div>
+
+<style>
+/* Contenedor principal: flex para sidebar + contenido */
+.layout-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* Contenido principal ajustable */
+.dashboard-content {
+    margin-left: 65px; /* mismo ancho que el sidebar cerrado */
+    width: calc(100% - 65px);
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+/* Cuando el sidebar está activo, ajustar margen y ancho */
+.sidebar.active ~ .dashboard-content {
+    margin-left: 220px;
+    width: calc(100% - 220px);
+}
+@media (max-width: 768px) {
+    .dashboard-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 10px;
+        transition: none;
+    }
+}
+</style>
+
+{% endblock %}

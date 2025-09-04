@@ -1,8 +1,7 @@
 .landing-container {
   display: grid;
   grid-template-columns: 1fr;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100vh; /* no min-height */
 }
 
 p {
@@ -29,84 +28,6 @@ p {
   width: 150px;
   height: 150px;
   object-fit: contain;
-}
-.cotizaciones-container {
-  margin-top: 0.2rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  min-width: 400px;
-}
-.cotizaciones-title {
-  display: flex;
-  text-align: left;
-  justify-content: left;
-  align-items: left;
-}
-.cotizaciones-content {
-  display: grid;
-  grid-template-columns: 1fr; /* Por defecto, 1 columna */
-  gap: 1rem; /* Para separar las celdas */
-}
-
-.cotizaciones-divisa > * {
-  margin: 0.5rem;
-}
-.cotizaciones-divisa {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-}
-
-.cotizaciones-divisa img {
-  width: 50px;
-  height: 50px;
-  object-fit: contain;
-}
-
-.simboloTitle{
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.grafico-moneda {
-  margin-top: 1rem;
-  width: 100%;
-}
-
-.grafico-moneda select {
-  appearance: none; /* Quitar estilo por defecto */
-  -webkit-appearance: none; /* Safari y Chrome */
-  -moz-appearance: none; /* Firefox */
-  background-color: #fff;
-  border: 2px solid #4f46e5; /* color púrpura */
-  border-radius: 8px;
-  padding: 0.5rem 1.5rem 0.5rem 1rem; /* espacio para el texto y la flecha */
-  font-size: 1rem;
-  font-weight: 600;
-  color: #4f46e5;
-  cursor: pointer;
-  position: relative;
-  width: 150px;
-  box-shadow: 0 2px 8px rgb(79 70 229 / 0.2);
-  transition: border-color 0.3s ease;
-}
-
-/* Flecha personalizada con SVG vía background */
-.grafico-moneda select {
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%234F46E5' stroke-width='2'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 10px center;
-  background-size: 12px 8px;
-}
-
-/* Cambiar borde al hacer hover o focus */
-.grafico-moneda select:hover,
-.grafico-moneda select:focus {
-  border-color: #7c3aed;
-  outline: none;
-  box-shadow: 0 0 8px #7c3aedaa;
 }
 
 .grid-right {
@@ -211,10 +132,32 @@ p {
 
 /* Para pantallas tipo laptop o más grandes */
 @media (min-width: 1024px) {
-  .cotizaciones-content {
-    grid-template-columns: 1fr 1fr; /* 2 columnas iguales */
-  }
   .landing-container {
     grid-template-columns: 1fr 1fr;
+    overflow: hidden; /* oculta X y Y */
+  }
+}
+
+/* Para pantallas laptop o menos */
+@media (max-width: 1400px) {
+  .grid-left h1 {
+    font-size: 1.9rem;
+  }
+}
+
+/* Para Celulares */
+@media (max-width: 500px) {
+  .personaje2 {
+    width: 240px;
+    margin-right: -160px;
+  }
+  .home-info {
+    padding: 5px 0;
+    gap: 10px;
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .grid-left {
+    margin: 1rem 0rem;
   }
 }

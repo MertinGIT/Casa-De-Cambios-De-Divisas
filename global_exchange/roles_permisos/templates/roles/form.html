@@ -1,0 +1,76 @@
+{% extends "base_forms.html" %}
+{% load widget_tweaks %}
+{% block form_title %}Agregar Rol{% endblock %}
+{% block form_fields %}
+<div class="form-group">
+  <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    {{ form.nombre|add_class:"custom-input" }}
+  </div>
+  {% if form.nombre.errors %}
+  <div class="error-messages">
+    {% for error in form.nombre.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+  <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+  <div class="input-icon">
+    <span class="icon">📝</span>
+    {{ form.descripcion|add_class:"custom-input" }}
+  </div>
+  {% if form.descripcion.errors %}
+  <div class="error-messages">
+    {% for error in form.descripcion.errors %}
+      <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
+    <label>Permisos</label>
+    <div class="d-flex flex-wrap gap-2">
+        {% for permiso in permisos %}
+            <input type="checkbox" id="permiso{{ permiso.id }}" name="permisos" value="{{ permiso.id }}"
+                {% if permiso.id in form.initial.permisos|default:list %}checked{% endif %}>
+            <label for="permiso{{ permiso.id }}">{{ permiso.nombre }}</label>
+        {% endfor %}
+    </div>
+</div>
+
+
+<style>
+.custom-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px; /* espacio para icono */
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #F0EDFF;
+  font-size: 14px;
+  outline: none;
+}
+
+.custom-input::placeholder {
+  color: #6b7280;
+}
+
+.input-icon {
+  position: relative;
+}
+
+.input-icon .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  color: #5D5FEF;
+}
+</style>
+{% endblock %}

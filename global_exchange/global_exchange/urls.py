@@ -13,24 +13,51 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.contrib import admin
-from django.urls import path
-from usuarios import views
+
+# from django.contrib import admin
+from django.urls import path, include
+from usuarios import views as usuarios_views
+from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
 from django.shortcuts import render
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import TemplateView
+
 
 urlpatterns = [
-    path('', views.pagina_aterrizaje,name='pagina_aterrizaje'),
-    path('home/', views.home,name='home'),
-    path('signup/', views.signup,name='signup'),
-    path('logout/', views.signout,name='signout'),
-    path('login/', views.signin,name='login'),
-    path('admin/', admin.site.urls),
+
+    path('clientes/', include('clientes.urls')), 
+    # Clientes
+    # path('admin/', admin.site.urls),
+    path('', usuarios_views.pagina_aterrizaje, name='pagina_aterrizaje'),
+    path('home/', usuarios_views.home, name='home'),
+    path('signup/', usuarios_views.signup, name='signup'),
+    path('logout/', usuarios_views.signout, name='signout'),
+    path('login/', usuarios_views.signin, name='login'),
+    path('editarperfil/', usuarios_views.editarPerfil, name='editarperfil'),
+    path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
+    path('clientes/', include('clientes.urls'), name = 'clientes'), 
+
+    # Rutas solo para administradores
+    path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
+    path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
+    path('admin/roles/', include('roles_permisos.urls'), name='roles'),
+    path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
+    path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
+    path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
+    path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),
+    path("admin/pagos/", include("metodos_pagos.urls")),
+
 ]
 
 
-# Función personalizada para manejar 404
-def custom_404(request, exception):
-    return render(request, "404.html", {"request_path": request.path}, status=404)
+def custom_404_view(request, exception):
+    return render(request, "404.html", status=404)
 
-handler404 = custom_404
+
+handler404 = custom_404_view
+
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL,
+                          document_root=settings.STATICFILES_DIRS[0])

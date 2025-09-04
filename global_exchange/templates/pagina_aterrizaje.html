@@ -1,41 +1,15 @@
 {% extends "base.html" %} {% load static %} {% block content %}
 <link rel="stylesheet" href="{% static 'css/landing.css' %}" />
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="landing-container">
   <div class="grid-left">
     <div class="logo-title">
       <img src="{% static 'img/tiendalogo.png' %}" alt="Logo" />
     </div>
     <h1>GLOBAL EXCHANGE</h1>
+    
+    {% include 'cotizaciones.html' %}
 
-    <div class="cotizaciones-container">
-      <h2 class="cotizaciones-title">Cotizaciones</h2>
-      <div class="cotizaciones-content">
-        {% for moneda in cotizaciones %}
-        <div class="cotizaciones-divisa">
-          <img src="{% static moneda.logo %}" alt="Logo {{ moneda.simbolo }}" />
-          <p class="simboloTitle">{{ moneda.simbolo }}</p>
-          <div class="precios">
-            <p class="precioTitle">Compra</p>
-            <p class="simboloTitle">{{ moneda.compra }}</p>
-          </div>
-          <div>
-            <p class="precioTitle">Venta</p>
-            <p class="simboloTitle">{{ moneda.venta }}</p>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="grafico-moneda">
-      <select id="monedaSelect">
-        <option value="USD">USD</option>
-        <option value="EUR">EUR</option>
-      </select>
-    </div>
-
-    <canvas id="graficoMoneda" width="600" height="300"></canvas>
+    {% include 'graficoMoneda.html' %}
   </div>
 
   <div class="grid-right">
@@ -56,9 +30,7 @@
         <li>Transacciones</li>
         <li>Simulacion de Conversión</li>
         <li class="button-contain">
-          <span class="btn">
-            <a href="{% url 'login' %}">Ir a mi cuenta</a>
-          </span>
+          <a href="{% url 'login' %}" class="btn">Ir a mi cuenta</a>
         </li>
       </ul>
 

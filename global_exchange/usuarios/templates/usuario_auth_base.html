@@ -1,0 +1,95 @@
+{% extends 'usuario_base.html' %} {% load static %} {% block content %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}" />
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+  rel="stylesheet"
+/>
+
+<div class="login-container">
+  <div class="grid-left">
+    <div class="content-left">
+      <div class="banner-title">
+        <div class="logo-title">
+          <img src="{% static 'img/tiendalogo.png' %}" alt="Logo" />
+        </div>
+        <h1>GLOBAL EXCHANGE</h1>
+      </div>
+
+      <p>{{error}}</p>
+      {% if error %}
+      <p class="text-error">{{form.username.errors}}</p>
+      {% endif %}
+      <p class="text-inicio">{{ subtitle|safe }}</p>
+
+
+      <div class="button-contain-login">
+        <a
+          href="/login"
+          class="btn-iniciar {% if active_tab == 'login' %}active{% endif %}"
+          >Iniciar Sesión</a
+        >
+        <a
+          href="/signup"
+          class="btn-registrarse {% if active_tab == 'register' %}active{% endif %}"
+          >Registrarse</a
+        >
+      </div>
+
+      <div class="form">
+        <form method="POST" class="contain-form">
+          {% csrf_token %} {% block form_fields %}{% endblock %}
+          <div class="button-login">
+            <button type="submit" class="btn-submit">{{ submit_text }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-right">
+    <div class="side-panel">
+      <!-- Fondo base -->
+      <img
+        src="{% static 'img/login/RectanglePurple.svg' %}"
+        class="bg-purple"
+        alt="Fondo morado"
+      />
+
+      <!-- Rectángulo transparente centrado -->
+      <div class="rect-transparent">
+        <div class="transparent-content">
+          <img
+            src="{% static 'img/login/RectangleTrnasparent.svg' %}"
+            class="rect-transparent-img"
+            alt="Transparente"
+          />
+          <div class="eslogan-containt">
+            <div class="eslogan-text">
+              {% for line in eslogan_lines %}
+              <p>{{ line }}</p>
+              {% endfor %} {% for span_text in eslogan_spans %}
+              <span>{{ span_text }}</span>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Mujer con tablet centrada dentro del rectángulo -->
+          <img
+            src="{% static 'img/login/women with tab 2.svg' %}"
+            class="women-tab"
+            alt="Mujer con tablet"
+          />
+          <!-- Icono rayo alineado al borde izquierdo del rectángulo -->
+          <img
+            src="{% static 'img/login/iconRayo.svg' %}"
+            class="icon-rayo"
+            alt="Rayo"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'js/MostrarOcultarPassword.js' %}"></script>
+{% endblock %}

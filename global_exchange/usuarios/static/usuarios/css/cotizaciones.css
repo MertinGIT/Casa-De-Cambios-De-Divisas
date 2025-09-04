@@ -1,0 +1,59 @@
+.cotizaciones-container {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 400px;
+}
+.cotizaciones-title {
+  display: flex;
+  text-align: left;
+  justify-content: left;
+  align-items: left;
+}
+.cotizaciones-content {
+  display: grid;
+  grid-template-columns: 1fr; /* Por defecto, 1 columna */
+  gap: 1rem; /* Para separar las celdas */
+}
+
+.cotizaciones-divisa > * {
+  margin: 0.5rem;
+}
+.cotizaciones-divisa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.cotizaciones-divisa img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.simboloTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+@media (min-width: 1024px) {
+  .cotizaciones-content {
+    grid-template-columns: 1fr 1fr; /* 2 columnas iguales */
+  }
+}
+
+/* Para pantallas laptop o menos */
+@media (max-width: 1400px) {
+  .cotizaciones-title {
+    font-size: 1.6rem;
+  }
+  .cotizaciones-divisa img {
+    width: 36px;
+    height: 36px;
+  }
+  .simboloTitle {
+    font-size: 1rem;
+  }
+}

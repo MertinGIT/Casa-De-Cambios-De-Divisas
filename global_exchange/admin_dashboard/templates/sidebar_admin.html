@@ -1,0 +1,121 @@
+{% load static %}
+
+<link rel="stylesheet" href="{% static 'css/sidebar.css' %}" />
+
+<!-- ================== SIDEBAR (ESCRITORIO) ================== -->
+<div id="sidebar" class="sidebar">
+  <div class="logo-container">
+    <img src="{% static 'img/tiendalogo.png' %}" alt="Logo" />
+    <h2>Global Exchange</h2>
+  </div>
+
+  <ul class="nav-links">
+    <li>
+      <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span>
+        <span class="label">Dashboard</span></a>
+    </li>
+    <li>
+      <a href="#"><span class="icon">&#x1F4CA;</span>
+        <span class="label">Reports</span></a>
+    </li>
+    <li>
+      <a href="{% url 'roles' %}">
+        <span class="icon">&#128101;</span>
+        <span class="label">Roles de Usuarios</span>
+      </a>
+    </li>
+
+
+    <li>
+      <a href="{% url 'clientes' %}">
+        <span class="icon">&#x1F464;</span>
+        <span class="label">Clientes</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'usuarios_roles_lista' %}">
+        <span class="icon">&#x1F5C2;</span>
+        <span class="label">Asignar Clientes</span>
+      </a>
+    </li>
+
+    <li>
+      <a href="#"><span class="icon">&#9881;</span>
+        <span class="label">Settings</span></a>
+    </li>
+  </ul>
+
+  <hr />
+
+  <ul class="nav-links secondary">
+    <li>
+      <a href="#"><span class="icon">&#x2753;</span> <span class="label">Help</span></a>
+    </li>
+    <li>
+      <div class="logout-card">
+        <a href="{% url 'signout' %}" class="logout-icon">&#x1F6AA;</a>
+        <div class="card-content">
+          <div class="circle1"></div>
+          <div class="circle2"></div>
+          <h3>Cerrar sesión</h3>
+          <form method="POST" action="{% url 'signout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="logout-btn-card">Salir</button>
+          </form>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>
+
+<span id="sidebar-toggle">&#x25B6;</span>
+<!-- ================== FIN SIDEBAR ================== -->
+
+<!-- ================== MENÚ HAMBURGUESA (MÓVIL) ================== -->
+<nav class="mobile-navbar">
+  <div class="hamburger-container">
+    <span id="hamburger">&#9776;</span>
+    <!-- Cambia a X -->
+  </div>
+  <div id="mobile-menu" class="mobile-menu">
+    <ul>
+      <li>
+        <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span> Dashboard</a>
+      </li>
+      <li>
+        <a href="#"><span class="icon">&#x1F4CA;</span> Reports</a>
+      </li>
+      <li>
+        <a href="{% url 'roles' %}">
+          <span class="icon">&#128101;</span> Roles de Clientes
+        </a>
+      </li>
+
+      <li>
+        <a href="#"><span class="icon">&#9881;</span> Settings</a>
+      </li>
+      <li>
+        <a href="{% url 'clientes' %}">
+          <span class="icon">&#x1F464;</span>
+          <span class="label">Clientes</span>
+        </a>
+      </li>
+      <li>
+        <a href="{% url 'usuarios_roles_lista' %}">
+          <span class="icon">&#x1F5C2;</span>
+          <span class="label">Asignar Clientes</span>
+        </a>
+      </li>
+      <hr />
+      <li>
+        <a href="#"><span class="icon">&#x2753;</span> Help</a>
+      </li>
+      <li>
+        <a href="{% url 'signout' %}" class="logout-mobile"><span class="icon">&#x1F6AA;</span> Cerrar sesión</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+<!-- ================== FIN MENÚ HAMBURGUESA ================== -->
+
+<script src="{% static 'js/sidebar.js' %}"></script>

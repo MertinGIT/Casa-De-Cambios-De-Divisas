@@ -1,6 +1,102 @@
 {% extends "base.html" %}
+{% load static %}
+
 {% block content %}
-<h1>Página no encontrada</h1>
-<p>La URL que intentaste visitar no existe.</p>
-<a href="{% url 'home' %}">Volver al inicio</a>
+<div class="error-page-container">
+    <div class="error-card">
+        <h1 class="error-code">404</h1>
+        <h2 class="error-title">Página no encontrada</h2>
+        <p class="error-message">
+            Lo sentimos, la página que buscas no existe o fue movida.
+        </p>
+        <a href="{% url 'home' %}" class="btn-home">Volver al Inicio</a>
+        <img src="{% static 'img/404illustration.svg' %}" alt="404" class="error-image">
+    </div>
+</div>
+
+<style>
+/* Contenedor principal */
+.error-page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+    background-color: #f5f7fa;
+    font-family: 'Arial', sans-serif;
+}
+
+/* Card de error */
+.error-card {
+    text-align: center;
+    background: #fff;
+    padding: 40px 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    max-width: 500px;
+    width: 100%;
+    position: relative;
+}
+
+/* Código de error */
+.error-code {
+    font-size: 96px;
+    font-weight: bold;
+    color: #4f46e5; /* color principal del proyecto */
+    margin: 0;
+}
+
+/* Título del error */
+.error-title {
+    font-size: 28px;
+    font-weight: 600;
+    margin: 10px 0;
+    color: #333;
+}
+
+/* Mensaje de error */
+.error-message {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 25px;
+}
+
+/* Botón volver al inicio */
+.btn-home {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #4f46e5;
+    color: #fff;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: background 0.3s;
+}
+
+.btn-home:hover {
+    background-color: #4f46e5;
+}
+
+/* Imagen decorativa */
+.error-image {
+    width: 200px;
+    margin-top: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .error-card {
+        padding: 30px 20px;
+    }
+    .error-code {
+        font-size: 72px;
+    }
+    .error-title {
+        font-size: 22px;
+    }
+    .error-image {
+        width: 150px;
+    }
+}
+</style>
 {% endblock %}

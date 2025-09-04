@@ -1,0 +1,39 @@
+{% load static %}
+
+<!-- Menú hamburguesa para móviles -->
+<link rel="stylesheet" href="{% static 'css/hamburguesa.css' %}" />
+
+<nav class="mobile-navbar">
+  <div class="hamburger-container">
+    <span id="hamburger">&#9776;</span>
+  </div>
+  <div id="mobile-menu" class="mobile-menu">
+    <ul>
+      <li><a href="#"><span class="icon">&#x1F4C8;</span> Dashboard</a></li>
+      <li><a href="#"><span class="icon">&#x1F4CA;</span> Reports</a></li>
+      <li><a href="#"><span class="icon">&#9881;</span> Settings</a></li>
+      <hr>
+      <li><a href="#"><span class="icon">&#x2753;</span> Help</a></li>
+      <li>
+        <a href="#" class="logout-mobile">
+          <span class="icon">&#x1F6AA;</span> Cerrar sesión
+        </a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+<script>
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  hamburger.addEventListener('click', () => {
+    mobileMenu.classList.toggle('active');
+  });
+</script>
+
+
+{% block forms %}
+<h3></h3>
+addEventListener
+       {% endblock %}

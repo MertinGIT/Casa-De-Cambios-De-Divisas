@@ -1,0 +1,579 @@
+{% extends 'base_admin.html' %}
+{% load humanize %}
+{% block dashboard_content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  background-color: #f8f9fa !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.main-wrapper {
+  padding: 24px;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-container {
+  background: white;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-icon {
+  width: 20px;
+  height: 20px;
+  color: #9ca3af;
+}
+
+.search-input {
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  width: 270px;
+  font-family: 'Inter', sans-serif;
+  background: white;
+}
+
+.search-input::placeholder {
+  color: #9ca3af;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.buscar-por-text {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.search-field-selector {
+  padding: 8px 12px;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  color: #374151;
+  min-width: 140px;
+}
+
+.search-field-selector:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.filters-section {
+  margin-bottom: 24px;
+}
+
+.filters-row {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.btn-add {
+  font-family: 'Poppins', sans-serif; 
+  background-color: #152C70;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+  background-color: #1a2f7a;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e1e5e9;
+  margin-bottom: 24px;
+}
+
+.custom-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  margin: 0;
+}
+
+.custom-table thead th {
+  background-color: transparent;
+  border: none;
+  padding: 16px 20px 12px 20px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5D5FEF;
+  text-transform: none;
+  letter-spacing: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.custom-table tbody td {
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  padding: 20px;
+  font-size: 14px;
+  color: #000000;
+  vertical-align: middle;
+}
+
+.custom-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.custom-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  display: inline-block;
+  min-width: 90px;
+}
+
+.status-activo {
+  background-color: #9CDBA6;
+  color: #00AC4F;
+}
+
+.status-inactivo {
+  background-color: #FFC5C5;
+  color: #DF0404;
+}
+
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  margin-right: 4px;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #5D5FEF;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 0;
+  background: transparent;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #B5B7C0;
+  margin: 0;
+}
+
+.custom-pagination {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.custom-pagination .page-item {
+  margin: 0;
+}
+
+.custom-pagination .page-link {
+  border: 1px solid #e1e5e9;
+  padding: 8px 12px;
+  color: #B5B7C0;
+  background: white;
+  font-size: 14px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+  min-width: 40px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-pagination .page-link:hover {
+  background-color: #f8f9fa;
+  border-color: #5D5FEF;
+  color: #5D5FEF;
+}
+
+.custom-pagination .page-item.active .page-link {
+  background-color: #5D5FEF;
+  border-color: #5D5FEF;
+  color: white;
+  font-weight: 500;
+}
+
+.custom-pagination .page-item.disabled .page-link {
+  color: #B5B7C0;
+  background-color: #f9fafb;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+
+.no-results {
+  text-align: center;
+  padding: 48px 16px;
+  color: #B5B7C0;
+  font-style: italic;
+  font-size: 14px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .main-wrapper {
+    padding: 16px;
+  }
+  
+  .page-container {
+    padding: 20px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  
+  .header-right {
+    width: 100%;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .header-right form {
+    width: 100% !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  
+  .search-input {
+    width: 100% !important;
+    max-width: none;
+  }
+  
+  .filters-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .search-field-selector {
+    width: 100%;
+  }
+  
+  .pagination-wrapper {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  /* Mobile Table Responsiveness - Convert to Cards */
+  .table-container {
+    border: none;
+    border-radius: 0;
+  }
+  
+  .custom-table {
+    font-size: 13px;
+  }
+  
+  .custom-table thead {
+    display: none;
+  }
+  
+  .custom-table tbody tr {
+    display: block;
+    margin-bottom: 16px;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .custom-table tbody tr:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .custom-table tbody td {
+    display: block;
+    padding: 4px 0;
+    border: none;
+    text-align: left;
+  }
+  
+  .custom-table tbody td:before {
+    content: attr(data-label) ": ";
+    font-weight: 500;
+    color: #5D5FEF;
+    display: inline-block;
+    min-width: 100px;
+    margin-bottom: 2px;
+  }
+  
+  .custom-table tbody td:last-child {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .custom-table tbody td:last-child:before {
+    content: "Acciones: ";
+  }
+  
+  .btn {
+    display: inline-block;
+    margin: 2px 4px 2px 0;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .main-wrapper {
+    padding: 12px;
+  }
+  
+  .page-container {
+    padding: 16px;
+  }
+  
+  .page-title {
+    font-size: 20px;
+  }
+  
+  .custom-table tbody td:before {
+    min-width: 80px;
+    font-size: 12px;
+  }
+  
+  .custom-table tbody td {
+    font-size: 12px;
+  }
+  
+  .status-badge {
+    font-size: 12px;
+    padding: 4px 12px;
+    min-width: 70px;
+  }
+  
+  .btn {
+    padding: 6px 8px;
+    font-size: 11px;
+    margin: 2px 2px 2px 0;
+  }
+  
+  .custom-pagination .page-link {
+    padding: 6px 8px;
+    font-size: 12px;
+    min-width: 32px;
+  }
+}
+</style>
+
+<div class="main-wrapper">
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="page-title">Usuarios</h1>
+      <div class="header-right">
+        <form method="get" style="display: flex; align-items: center; gap: 12px;">
+          <input name="seg" value="{{ seg_selected }}" type="hidden">
+          
+          <!-- Ícono de búsqueda -->
+          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        
+          <input name="q" value="{{ q }}" class="search-input" type="search" placeholder="Buscar...">
+          
+          <span class="buscar-por-text">Buscar por</span>
+          
+          <!-- Selector de campo -->
+          <select name="campo" class="search-field-selector">
+            <option value="">Buscar por</option>
+            <option value="nombre">Nombre</option>
+            <option value="email">Email</option>
+            <option value="telefono">Teléfono</option>
+            <option value="segmento">Segmento</option>
+          </select>
+        </form>
+      </div>
+    </div>
+    
+    <div class="filters-section">
+      <form method="get" class="filters-row">
+        <input name="q" value="{{ q }}" type="hidden">
+        <input name="mes" value="{{ mes_selected }}" type="hidden">
+      </form>
+    </div>
+
+    <button onclick="openCreateModal()" 
+      class="btn-add rounded border-0 my-2">+ Asignar</button>
+    
+    <!-- Tabla -->
+<div class="table-container">
+<table class="custom-table">
+  <thead>
+    <tr>
+      <th>Usuario</th>
+      <th>Cliente</th>
+      <th>Rol</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for urc in usuarios_roles %}
+      <tr>
+        <td data-label="Usuario">{{ urc.id_usuario.username }}</td>
+        <td data-label="Cliente">{{ urc.id_cliente.nombre }}</td>
+        <td data-label="Rol">{{ urc.id_usuario.rol.nombre|default:"No posee rol" }}</td>
+        <td data-label="Acciones">
+            <button onclick="openEditModal('{{ urc.id }}', '{{ urc.id_usuario.id }}', '{{ urc.id_cliente.id }}', '{{ urc.id_usuario.rol.id }}')" 
+                class="btn btn-sm btn-primary">Editar</button>
+            <button onclick="openDeleteModal('{{ urc.id }}', '{{ urc.id_usuario.username }}')" 
+                class="btn btn-sm btn-danger">Eliminar</button>
+</td>
+
+      </tr>
+    {% empty %}
+      <tr>
+        <td colspan="4" class="no-results">No hay asignaciones.</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+      
+    <!-- Paginación -->
+    {% if page_obj %}
+    <div class="pagination-wrapper">
+      <p class="pagination-info">
+        Mostrando datos {{ page_obj.start_index|default:1 }} a {{ page_obj.end_index|default:1 }} de {{ page_obj.paginator.count|default:0 }} entradas
+      </p>
+      
+      <nav>
+        <ul class="custom-pagination">
+          {% if page_obj.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&lsaquo;</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&lsaquo;</span>
+            </li>
+          {% endif %}
+
+          {% for i in page_obj.paginator.page_range %}
+            {% if i == page_obj.number %}
+              <li class="page-item active">
+                <span class="page-link">{{ i }}</span>
+              </li>
+            {% else %}
+              {% with current_minus_2=page_obj.number|add:"-2" current_plus_2=page_obj.number|add:"2" %}
+                {% if i <= 2 or i > page_obj.paginator.num_pages|add:"-2" or i >= current_minus_2 and i <= current_plus_2 %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i }}</a>
+                  </li>
+                {% elif i == 3 and page_obj.number > 5 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% elif i == page_obj.paginator.num_pages|add:"-2" and page_obj.number < page_obj.paginator.num_pages|add:"-4" %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&rsaquo;</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&rsaquo;</span>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% include "modal_usuario.html" %}
+{% endblock %}

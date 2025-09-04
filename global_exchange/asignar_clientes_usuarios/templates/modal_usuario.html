@@ -1,0 +1,186 @@
+<!-- Modal Asignar Cliente/Rol a Usuario -->
+<div id="modal-usuario-rol" class="custom-modal">
+  <div class="custom-modal-content">
+    <form method="POST" id="form-usuario-rol">
+      {% csrf_token %}
+      <input type="hidden" name="usuario_rol_id" id="usuario_rol_id">
+
+      <div class="modal-header">
+        <h2 id="modal-usuario-rol-title">Asignar Cliente a Usuario</h2>
+        <button type="button" class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <label>Usuario</label>
+        <select name="usuario" class="search-input" required>
+          {% for u in usuarios %}
+          <option value="{{ u.id }}">{{ u.username }} ({{ u.rol.nombre }})</option>
+          {% endfor %}
+        </select>
+
+        <label>Cliente</label>
+        <select name="cliente" class="search-input" required>
+          {% for c in clientes %}
+          <option value="{{ c.id }}">{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+        <label for="rol">Rol del Usuario</label>
+        <select name="rol" id="rol" class="search-input">
+          <option value="">No posee rol</option>
+          {% for rol in roles %}
+          {% if urc.id_usuario.rol_id %}
+          {% if urc.id_usuario.rol_id|stringformat:"s" == rol.id|stringformat:"s" %}
+          <option value="{{ rol.id }}" selected>{{ rol.nombre }}</option>
+          {% else %}
+          <option value="{{ rol.id }}">{{ rol.nombre }}</option>
+          {% endif %}
+          {% else %}
+          <option value="{{ rol.id }}">{{ rol.nombre }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+        <button type="submit" class="btn-confirmar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+
+
+<style>
+  /* ==== Modal estilo acorde a la página ==== */
+  .custom-modal {
+    display: none;
+    /* hidden por defecto */
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
+  }
+
+  .custom-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    font-weight: bold;
+    color: #6b7280;
+    cursor: pointer;
+  }
+
+  .modal-body {
+    font-size: 14px;
+    color: #374151;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+
+  .btn-cancelar {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-cancelar:hover {
+    background-color: #e5e7eb;
+  }
+
+  .btn-confirmar {
+    background-color: #5D5FEF;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-confirmar:hover {
+    background-color: #4f46e5;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+</style>
+
+<script>
+  function openCreateModal() {
+    document.getElementById('modal-usuario-rol-title').innerText = "Asignar Cliente a Usuario";
+    document.getElementById('form-usuario-rol').reset();
+    document.getElementById('form-usuario-rol').action = "{% url 'usuario_rol_crear' %}";
+    document.getElementById('modal-usuario-rol').style.display = "flex";
+  }
+
+  function openEditModal(id, usuarioId, clienteId, rolId) {
+    document.getElementById('modal-usuario-rol-title').innerText = "Editar Asignación";
+    document.getElementById('usuario_rol_id').value = id;
+    document.querySelector('[name=usuario]').value = usuarioId;
+    document.querySelector('[name=cliente]').value = clienteId;
+    document.querySelector('[name=rol]').value = rolId;
+
+    // Genera la URL correcta usando el nombre de la URL de Django
+    document.getElementById('form-usuario-rol').action = "{% url 'usuario_rol_editar' 0 %}".replace('/0/', '/' + id + '/');
+    document.getElementById('modal-usuario-rol').style.display = "flex";
+  }
+
+  function openDeleteModal(id, usuarioNombre) {
+    if (confirm(`¿Deseas eliminar la asignación del usuario ${usuarioNombre}?`)) {
+      window.location.href = "{% url 'usuario_rol_eliminar' 0 %}".replace('/0/', '/' + id + '/');
+    }
+  }
+
+  function closeModal() {
+    document.getElementById('modal-usuario-rol').style.display = "none";
+  }
+</script>

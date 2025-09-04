@@ -1,0 +1,528 @@
+.login-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.grid-left {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.content-left {
+  width: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.logo-title {
+  border-radius: 50%;
+  width: 80px;
+  height: 70px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.logo-title img {
+  width: 150px;
+  height: 150px;
+  object-fit: contain;
+}
+
+.text-inicio {
+  font-size: 1.4rem;              /* más grande */
+  font-weight: 600;               /* negrita */
+  text-align: center;
+  color: #6c63ff;                 /* color principal */
+  background: linear-gradient(90deg, #6c63ff, #a17cff); /* degradado bonito */
+  -webkit-background-clip: text;  /* para aplicar degradado al texto */
+  -webkit-text-fill-color: transparent;
+  line-height: 1.5;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+}
+.text-inicio span {
+  color: #ff6363; /* resalta una palabra diferente */
+  font-weight: 700;
+}
+
+.text-error {
+  font-size: 1.1rem;                   /* tamaño legible */
+  font-weight: 600;                     /* un poco más de énfasis */
+  text-align: center;
+  color: #6c63ff;                       /* color principal */
+  background: linear-gradient(90deg, #6c63ff, #a17cff); /* degradado bonito */
+  -webkit-background-clip: text;       /* aplica degradado al texto */
+  -webkit-text-fill-color: transparent;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1); /* sombra ligera */
+  margin-top: 0.3rem;                  /* espacio respecto al input */
+  line-height: 1.4;
+}
+/* Opcional: resaltar palabra específica dentro del error */
+.text-error span {
+  color: #ff6363;
+  font-weight: 700;
+}
+
+.button-contain-login {
+  display: flex;
+  justify-content: center;
+}
+
+.btn-iniciar {
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.btn-registrarse {
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+}
+
+.btn-iniciar,
+.btn-registrarse {
+  display: inline-flex; /* igual que button */
+  justify-content: center;
+  align-items: center;
+  text-decoration: none; /* quitar subrayado */
+  padding: 1rem 2rem;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #525252;
+}
+
+.button-contain-login {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem; /* espacio entre botones */
+  background-color: #f0edff; /* color de fondo suave */
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.btn-iniciar,
+.btn-registrarse {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem 2.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 50px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+/* Activo */
+.btn-iniciar.active {
+  background: linear-gradient(135deg, #6c63ff 0%, #9181f4 100%);
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
+}
+
+.btn-registrarse.active {
+  background: linear-gradient(135deg, #6c63ff 0%, #9181f4 100%);
+  color: #fff;
+  box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
+}
+
+/* Hover botones no activos */
+.btn-iniciar:not(.active):hover,
+.btn-registrarse:not(.active):hover {
+  background: linear-gradient(135deg, #9181f4 0%, #b3adff 100%);
+  color: #fff;
+  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.form {
+  width: 100%;
+}
+
+.contain-form {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.form-group {
+  position: relative;
+  margin-bottom: 1.5rem;
+  background-color: #f0edff;
+  border-radius: 10px;
+  border: 2px solid #f0edff;
+  width: 100%;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px 35px 10px 35px;
+  /*espacioparaiconoizqybtnder*/
+  font-size: 16px;
+  border: none;
+  outline: none;
+  background: transparent;
+}
+
+.form-group label {
+  position: absolute;
+  left: 35px; /* espacio por icono */
+  top: 10px;
+  color: #999;
+  font-size: 16px;
+  pointer-events: none;
+  transition: 0.2s ease all;
+}
+
+.form-group input::placeholder {
+  color: transparent;
+}
+
+/* Animación flotante */
+.form-group input:focus ~ label,
+.form-group input:not(:placeholder-shown) ~ label {
+  top: -12px;
+  font-size: 16px;
+  color: #6c63ff;
+  font-weight: bold;
+}
+
+.form-group label {
+  position: absolute;
+  pointer-events: none;
+  transition: 0.2s;
+}
+
+.form-group input:focus {
+  border-color: #6c63ff;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  background-color: white;
+  transform: scale(1.01);
+}
+
+.form-group input:focus {
+  border-bottom: 2px solid #6c63ff;
+}
+
+/* Iconos izquierda */
+.input-icon-left {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  font-size: 18px;
+  z-index: 10;
+}
+
+/* Botón mostrar/ocultar contraseña */
+.toggle-password {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: #999;
+  font-size: 18px;
+  cursor: pointer;
+}
+.toggle-password:focus {
+  outline: none;
+}
+
+.btn-submit {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1rem 2.5rem;
+  margin: 1rem auto;
+  border-radius: 50px;
+  color: #fff;
+  background: linear-gradient(135deg, #9181f4 0%, #6c63ff 100%);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(108, 99, 255, 0.4);
+
+  /* Sombreado de texto */
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.btn-submit:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(108, 99, 255, 0.6);
+}
+
+.btn-submit::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.2);
+  transform: skewX(-25deg);
+  transition: all 0.5s ease;
+}
+
+.btn-submit:hover::before {
+  left: 125%;
+}
+
+.btn-submit:active {
+  transform: scale(0.97);
+  box-shadow: 0 4px 10px rgba(108, 99, 255, 0.4);
+}
+
+.grid-right {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  height: 100vh; /* ocupa toda la altura del grid */
+  overflow: hidden;
+}
+
+.side-panel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Fondo morado */
+.bg-purple {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* Rectángulo transparente centrado */
+.rect-transparent {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%; /* ajusta según tamaño que quieras */
+  min-height: 100vh;
+  max-width: 700px;
+  aspect-ratio: 1.2 / 1; /* opcional, depende de la imagen */
+  z-index: 2;
+  margin: auto;
+}
+
+/* Imagen del rectángulo transparente */
+.rect-transparent-img {
+  width: 100%;
+  height: auto;
+}
+
+/* Mujer con tablet centrada absoluta dentro del rectángulo */
+.women-tab {
+  position: absolute;
+  bottom: 0%;
+  right: -30%;
+  z-index: 3;
+}
+
+/* Icono rayo pegado al borde izquierdo del rectángulo */
+.icon-rayo {
+  position: absolute;
+  left: 0;
+  bottom: 10%;
+  transform: translate(-50%, -50%);
+  width: 25%;
+  z-index: 4;
+}
+
+.transparent-content {
+  position: relative;
+}
+.eslogan-containt {
+  color: #fff;
+  font-family: "Poppins", sans-serif;
+  font-size: 2.3rem;
+  font-weight: 700;
+  line-height: 1.2;
+  top: 7%;
+  left: 5%;
+  position: absolute;
+  max-width: 400px;
+  z-index: 2;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.4); /* sombra para resaltar sobre fondo */
+  transition: all 0.3s ease;
+}
+
+.eslogan-text p {
+  line-height: 0.8;
+}
+
+.eslogan-text span {
+  display: block;
+  font-size: 2.7rem;
+  color: #ffe921; /* dorado o color llamativo */
+  font-weight: 800;
+  margin-top: 0.2rem;
+  text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Hover opcional sobre eslogan (si quieres efecto dinámico) */
+.eslogan-containt:hover {
+  transform: translateY(-3px);
+  transition: all 0.3s ease;
+}
+
+/* Para pantallas tipo laptop o más grandes */
+@media (min-width: 1024px) {
+  .login-container {
+    grid-template-columns: 1fr 1fr;
+  }
+  .form__field:focus ~ .form__label {
+    font-size: 1.2rem;
+  }
+}
+
+/* Media query para pantallas muy grandes */
+@media (min-width: 1400px) {
+  /* Contenedor principal */
+  .login-container {
+  }
+
+  /* Lado izquierdo */
+  .content-left {
+    width: 60%;
+  }
+
+  /* Logo */
+  .logo-title {
+    width: 150px;
+    height: 150px;
+  }
+
+  .logo-title img {
+    width: 300px;
+    height: 300px;
+  }
+
+  .banner-title {
+    margin-top: 0;
+  }
+  /* Títulos */
+  .banner-title h1 {
+    font-size: 3rem;
+    text-align: center;
+  }
+
+  .text-inicio {
+    font-size: 1.5rem;
+  }
+
+  /* Formulario */
+  .form-group input {
+    padding: 20px 50px 20px 45px;
+    font-size: 1.3rem;
+  }
+
+  .form-group label {
+    font-size: 1.3rem;
+    top: 18px;
+  }
+
+  /* Botón login */
+  .btn-submit {
+    font-size: 1.6rem;
+    padding: 1.8rem 5rem;
+  }
+
+  /* Botones de cambio login/registro */
+  .btn-iniciar,
+  .btn-registrarse {
+    padding: 1.5rem 2rem;
+    font-size: 1.2rem;
+  }
+
+  /* Panel derecho */
+  .grid-right {
+    display: flex;
+  }
+
+  .side-panel {
+    font-size: 2.5rem;
+  }
+
+  .side-panel span {
+    font-size: 2.7rem;
+  }
+
+  .women-tab {
+    width: 180%;
+    right: -25%;
+  }
+  .rect-transparent {
+    width: 60%;
+  }
+
+  .form-group input:focus ~ label,
+  .form-group input:not(:placeholder-shown) ~ label {
+    top: -20px;
+    font-size: 26px;
+  }
+  .transparent-content {
+    width: 100%;
+  }
+  .eslogan-containt {
+    font-size: 2.7rem;
+  }
+
+  .eslogan-text span {
+    font-size: 3rem;
+    color: #ffe921;
+  }
+}
+
+@media (max-width: 500px) {
+  .btn-iniciar,
+  .btn-registrarse {
+    padding: 0.7rem 1.2rem;
+  }
+  .transparent-content {
+    width: 80%;
+  }
+  .women-tab {
+    width: 180%;
+  }
+  .icon-rayo {
+    width: 25%;
+    bottom: 5%;
+  }
+}

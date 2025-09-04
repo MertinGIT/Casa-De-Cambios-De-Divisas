@@ -1,0 +1,167 @@
+/* Contenedor fijo arriba a la derecha */
+.user-profile {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    z-index: 2000;
+}
+
+/* Caja principal */
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    background: #ffffff;
+    padding: 10px 14px;
+    border-radius: 50px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transition: all 0.2s ease-in-out;
+}
+
+.user-info:hover {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+/* Avatar circular */
+.user-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #ddd;
+}
+
+/* Datos del usuario */
+.user-details {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+
+.user-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #222;
+}
+
+.user-role {
+    font-size: 13px;
+    color: #777;
+}
+
+/* Flecha */
+.arrow-down {
+    font-size: 14px;
+    color: #444;
+    margin-left: 5px;
+}
+
+/* Dropdown */
+.user-dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    margin-top: 8px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+    width: 220px;
+    padding: 12px;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(-5px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+.user-dropdown .dropdown-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.user-dropdown ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.user-dropdown ul li {
+    margin: 6px 0;
+}
+
+.user-dropdown ul li a {
+    text-decoration: none;
+    color: #444;
+    font-size: 14px;
+    display: block;
+    padding: 8px 10px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.user-dropdown ul li a:hover {
+    background: #f5f7fa;
+}
+
+/* Activo */
+.user-dropdown.active {
+    display: block;
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+@media (max-width: 768px) {
+    .user-profile {
+        top: 10px;
+        right: 10px;
+    }
+
+    .user-info {
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 12px;
+    }
+
+    .user-name {
+        font-size: 13px;
+    }
+
+    .user-role {
+        font-size: 12px;
+    }
+
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .user-dropdown {
+        width: 180px;
+    }
+}
+
+@media (max-width: 480px) {
+    .user-details {
+        display: none; /* en pantallas muy pequeñas solo mostrar el avatar */
+    }
+
+    .user-info {
+        border-radius: 50%;
+        padding: 6px;
+    }
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+    }
+
+    .arrow-down {
+        display: none;
+    }
+}

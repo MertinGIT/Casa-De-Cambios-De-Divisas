@@ -1,0 +1,257 @@
+
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <meta charset="UTF-8">
+</head>
+
+</html>
+
+
+{% load static %}
+
+<!-- Modal Crear/Editar -->
+<div id="modal-accion" class="custom-modal">
+  <div class="custom-modal-content">
+    <form method="POST" id="form-accion" action="{{ form_action }}">
+      {% csrf_token %}
+      <input
+        type="hidden"
+        name="obj_id"
+        id="obj_id"
+        value="{{ obj_id|default:'' }}"
+      />
+
+      <!-- Header -->
+      <div class="modal-header">
+        <h2 id="modal-title">{% block form_title %}{% endblock %}</h2>
+        <button type="button" class="close-btn" onclick="closeModal()">
+          &times;
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body" id="form-fields-container">
+        {% block form_fields %}{% endblock %}
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn-cancelar" onclick="closeModal()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn-confirmar">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Eliminar -->
+<div id="modal-delete" class="custom-modal">
+  <div class="custom-modal-content">
+    <form method="POST" id="delete-form">
+      {% csrf_token %}
+      <input type="hidden" name="obj_id" id="delete_obj_id" />
+      <p id="delete-message">¿Seguro que deseas desactivar este registro?</p>
+      <div class="modal-footer">
+        <button type="submit" class="btn-confirmar">Desactivar</button>
+        <button type="button" class="btn-cancelar" onclick="closeModal()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .custom-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.4);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  .custom-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 500px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  .close-btn {
+    position: absolute;
+    right: 16px;
+    top: 0;
+    background: none;
+    border: none;
+    font-size: 26px;
+    font-weight: bold;
+    color: #6b7280;
+    cursor: pointer;
+  }
+  .close-btn:hover {
+    color: #ef4444;
+    transform: scale(1.2);
+  }
+  .modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 14px;
+    color: #374151;
+  }
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .btn-cancelar {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-cancelar:hover {
+    background-color: #e5e7eb;
+  }
+  .btn-confirmar {
+    background-color: #5d5fef;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-confirmar:hover {
+    background-color: #4f46e5;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+</style>
+
+<script>
+  function openCreateModal(createUrl, model_title) {
+    console.log("Opening create modal with URL:", createUrl);
+    document.getElementById("form-accion").action = createUrl;
+    document.getElementById("form-accion").reset();
+
+    clearFormErrors();
+    document.getElementById("modal-accion").style.display = "flex";
+    
+    const modalTitle = document.getElementById("modal-title");
+    modalTitle.textContent = model_title;
+  }
+
+  function openEditModal(id, editUrl, detalle, title) {
+    const form = document.getElementById("form-accion");
+    form.action = editUrl.replace("0", id);
+    form.reset();
+    clearFormErrors();
+
+    fetch(detalle)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+
+        Object.entries(data).forEach(([key, value]) => {
+          const fields = form.querySelectorAll(`[name="${key}"]`);
+          if (!fields.length) return; // si no existe en el form, saltar
+
+          fields.forEach((field) => {
+            if (field.type === "checkbox") {
+              // ✅ Soporta múltiples checkboxes (arrays)
+              if (Array.isArray(value)) {
+                field.checked = value.includes(parseInt(field.value));
+              } else {
+                field.checked = !!value;
+              }
+            } else if (field.tagName === "SELECT" && field.multiple) {
+              Array.from(field.options).forEach((opt) => {
+                opt.selected = value.includes(parseInt(opt.value));
+              });
+            } else {
+              field.value = value;
+            }
+          });
+        });
+      });
+
+    document.getElementById("modal-accion").style.display = "flex";
+    const modalTitle = document.getElementById("modal-title");
+    modalTitle.textContent = title;
+  }
+
+  function openDeleteModal(
+    id,
+    deleteUrl,
+    message
+  ) {
+    console.log("id:",id)
+    console.log("prueba:",deleteUrl.replace("0", id))
+    document.getElementById("delete_obj_id").value = id;
+    document.getElementById("delete-form").action = deleteUrl.replace("0", id);
+    document.getElementById("delete-message").innerText = message || "¿Seguro que deseas realizar esta operacion?";
+    document.getElementById("modal-delete").style.display = "flex";
+  }
+  
+
+  function closeModal() {
+    document.getElementById("modal-accion").style.display = "none";
+    document.getElementById("modal-delete").style.display = "none";
+  }
+
+  function clearFormErrors() {
+    const errorMessages = document.querySelectorAll(".error-messages");
+    errorMessages.forEach((error) => error.remove());
+  }
+
+  document.querySelectorAll(".btn-edit").forEach((btn) => {
+
+    btn.addEventListener("click", () => {
+      openEditModal(btn.dataset.id, btn.dataset.edit, btn.dataset.detalle, btn.dataset.title);
+    });
+    
+
+  });
+  
+  document.querySelectorAll(".btn-delete").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const id = btn.dataset.id;
+        const deleteUrl = btn.dataset.delete;
+        openDeleteModal(id, deleteUrl);
+        console.log("deleteurl:",deleteUrl)
+    });
+});
+
+</script>
