@@ -473,7 +473,7 @@ body {
       </div>
     </div>
 
-    <button onclick="openCreateModal('{% url 'moneda_nueva' %}', 'Agregar Tasa')" 
+    <button onclick="openCreateModal('{% url 'moneda_nueva' %}', 'Agregar Moneda')" 
       class="btn-add rounded border-0 my-2">+ Agregar Moneda</button>
     
     <!-- Tabla -->
@@ -501,8 +501,9 @@ body {
               <td style="text-align: center;">
                 <button class="btn-edit btn btn-sm btn-primary"
                         data-id="{{ m.id }}"
-                        data-edit="{% url 'moneda_editar' m.id %}"
-                        data-detalle="{% url 'moneda_detalle' m.id %}">
+                        data-edit="{% url 'moneda_editar' 0 %}"
+                        data-detalle="{% url 'moneda_detalle' m.id %}"
+                        data-title='Editar Moneda'>
                   Editar
                 </button>
                 {% if m.estado %}
@@ -587,5 +588,4 @@ body {
 
 {% include "monedas/form.html" with modal_type=modal_type obj_id=obj_id %}
 {% endblock %}
-
 
