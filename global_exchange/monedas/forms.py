@@ -18,9 +18,6 @@ class MonedaForm(forms.ModelForm):
             Evita que la abreviación contenga números.
             Si se encuentra un dígito, se lanza una ValidationError.
     """
-    class Meta:
-        model = Moneda
-        fields = ['nombre', 'abreviacion']
 
     # Validación para 'nombre'
     def clean_nombre(self):
@@ -45,3 +42,15 @@ class MonedaForm(forms.ModelForm):
         if any(char.isdigit() for char in abreviacion):
             raise forms.ValidationError("La abreviación no puede contener números.")
         return abreviacion  
+    
+    class Meta:
+        model = Moneda
+        fields = ['nombre', 'abreviacion']
+
+    def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            guarani, created = Moneda.objects.get_or_create(
+                abreviacion='PYG',
+                defaults={'nombre': 'Guaraní'}
+            )
+           
