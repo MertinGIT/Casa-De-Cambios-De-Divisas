@@ -88,6 +88,7 @@ INSTALLED_APPS = [
     'cliente_segmentacion',
     'cotizaciones',
     'monedas',
+    'metodos_pagos'
     'cliente_usuario'
 ]
 # ============================================================================
