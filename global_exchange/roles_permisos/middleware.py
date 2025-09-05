@@ -9,13 +9,14 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.contrib import messages
+import re
 
 
 class RoleBasedMiddleware:
     """
     Middleware que verifica acceso a ciertas rutas según roles de usuario.
     """
-    
+
     def __init__(self, get_response):
         self.get_response = get_response
         # Reglas de acceso por ruta
@@ -26,27 +27,28 @@ class RoleBasedMiddleware:
             # Usuarios comunes pueden acceder solo a ciertas rutas
             '/home/': ['Usuario', 'Usuario Asociado', 'Usuario'],
             '/editarperfil/': ['ADMIN', 'Usuario Asociado', 'Usuario'],
-            
+
         }
-    
+
     def __call__(self, request):
         path = request.path
-        
+
         # Si no es una ruta protegida, continuar
         if not self._is_protected_route(path):
+            print("ENTRA ACA", flush=True)
             response = self.get_response(request)
             return response
-        
+
         # Si el usuario no está autenticado
         if not request.user.is_authenticated:
             return redirect('login')
-        
+
         # Verificar si el usuario pertenece a un grupo permitido
         if request.user.groups.filter(name='ADMIN').exists():
             # Los superusuarios siempre tienen acceso
             response = self.get_response(request)
             return response
-        
+
         # Verificar acceso según grupos
         if self._user_has_access(request.user, path):
             response = self.get_response(request)
@@ -54,29 +56,22 @@ class RoleBasedMiddleware:
         else:
             # Usuario no tiene permisos
             return render(request, "403.html", status=403)
-    
+
+
     def _is_protected_route(self, path):
-        """Verifica si la ruta está protegida"""
+        """Verifica si la ruta está protegida usando regex"""
         for route in self.access_rules:
-            if path.startswith(route):
+            if re.match(route, path):
                 return True
         return False
-    
+
+
     def _user_has_access(self, user, path):
         """Verifica si el usuario tiene acceso a cierta ruta según roles"""
-        # Buscar la regla que aplique para esta ruta
-        allowed_roles = None
         for route, roles in self.access_rules.items():
-            if path.startswith(route):
-                allowed_roles = roles
-                break
-        
-        if not allowed_roles:
-            return True  # Si no hay regla específica, permitir acceso
-        
-        # Verificar si el usuario pertenece a algún grupo permitido
-        user_groups = user.groups.filter(name__in=allowed_roles).exists()
-        return user_groups
+            if re.match(route, path):  # <-- regex match
+                return user.groups.filter(name__in=roles).exists()
+        return True  # Si no hay regla, permiti
 
 
 # Decorador alternativo para vistas específicas
@@ -90,7 +85,7 @@ def require_role(allowed_roles):
         def wrapped_view(request, *args, **kwargs):
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
-            
+
             # Verificar si el usuario tiene alguno de los roles requeridos
             if request.user.groups.filter(name__in=allowed_roles).exists():
                 return view_func(request, *args, **kwargs)
@@ -111,10 +106,10 @@ def require_permission(permission_codename):
         def wrapped_view(request, *args, **kwargs):
             if request.user.is_superuser:
                 return view_func(request, *args, **kwargs)
-            
+
             if request.user.has_perm(permission_codename):
                 return view_func(request, *args, **kwargs)
             else:
-                return render(request, "403.html", status=403)        
+                return render(request, "403.html", status=403)
         return wrapped_view
     return decorator
