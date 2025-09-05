@@ -9,9 +9,9 @@
 
     <a href="javascript:void(0)" class="module-btn">💳 Métodos de Pago</a>
 
-    <a href="javascript:void(0)" class="module-btn">👥 Segmentacion</a>
+    <a href="{% url 'lista-segmentaciones' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-segmentaciones' %}active-config{% endif %}">👥 Segmentacion</a>
 
-    <a href="javascript:void(0)" class="module-btn">🔒 Seguridad</a>
+    <a href="{% url 'user_roles_lista' %}" class="module-btn {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">🔒 Seguridad</a>
 
   </div>
 </main>

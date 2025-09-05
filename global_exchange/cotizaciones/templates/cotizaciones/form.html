@@ -174,16 +174,16 @@ function setupTasaValidation() {
         submitHandler: function(form) {
             console.log("Formulario válido, enviando AJAX...");
             const $form = $(form);
-
             $.ajax({
                 url: $form.attr("action"),
                 type: "POST",
                 data: $form.serialize(),
                 headers: { "X-Requested-With": "XMLHttpRequest" },
                 success: function(data) {
-                  
+                    console.log("esto llega:", data)
                     $form.find(".error-messages").html(""); // limpia errores previos
                     if (data.success) {
+                      console.log("entro acaaaaaaaaaaaaaaa")
                       location.reload();
                       // eliminar mensaje de "sin resultados" si existe
                       $(".custom-table tbody .no-results").remove();
@@ -194,19 +194,6 @@ function setupTasaValidation() {
                         $("#modal-accion").hide(); // cierra modal
                         $form[0].reset();          // limpia inputs
                         const t = data.tasa;
-                        const newRow = `
-                            <tr>
-                                <td>${t.origen}</td>
-                                <td>${t.destino}</td>
-                                <td style="text-align:center;">${parseFloat(t.compra).toFixed(2)}</td>
-                                <td style="text-align:center;">${parseFloat(t.venta).toFixed(2)}</td>
-                                <td style="text-align:center;">${t.vigencia}</td>
-                                <td style="text-align:center;">
-                                    <button class="btn-edit btn btn-sm btn-primary" data-id="${t.id}">Editar</button>
-                                    <button class="btn-delete btn btn-sm btn-danger" data-id="${t.id}">Desactivar</button>
-                                </td>
-                            </tr>`;
-                        $(".custom-table tbody").append(newRow);
                     } else {
                         $.each(data.errors, function(field, messages) {
                             const input = $form.find(`#id_${field}`);
@@ -253,21 +240,8 @@ $(document).ready(function() {
         });
     }
 });
-// Editar
-$(document).on("click", ".btn-edit", function() {
-    const id = $(this).data("id");
-    openEditModal(
-        id,
-        "{% url 'cotizacion_editar' 0 %}".replace("/0/", `/${id}/`),
-        "{% url 'cotizacion_detalle' 0 %}".replace("/0/", `/${id}/`)
-    );
-});
 
-// Desactivar
-$(document).on("click", ".btn-delete", function() {
-    const id = $(this).data("id");
-    window.location.href = "{% url 'cotizacion_desactivar' 0 %}".replace("/0/", `/${id}/`);
-});
+
 </script>
 
 
@@ -387,4 +361,3 @@ $(document).on("click", ".btn-delete", function() {
 
 </style>
 {% endblock %}
-

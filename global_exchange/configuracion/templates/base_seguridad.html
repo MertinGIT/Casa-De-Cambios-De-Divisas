@@ -1,0 +1,106 @@
+{% include 'base_configuracion.html' %}
+
+<div class="contenedor-principal-seguridad">
+  <main class="main-container-seguridad">
+
+    <div class="modules-seguridad">
+      <a href="{% url 'user_roles_lista' %}"
+        class="module-btn-seguridad {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">
+        👥 Usuarios</a>
+      <a href="{% url 'roles' %}"
+        class="module-btn-seguridad {% if request.resolver_match.url_name == 'roles' %}active-config{% endif %}">🔒
+        Roles</a>
+    </div>
+  </main>
+</div>
+<style>
+  body,
+  html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    /*background-color: #f4f6fb;*/
+  }
+
+  .contenedor-principal-seguridad {
+    padding: 10px;
+  }
+
+  .main-container-seguridad {
+    text-align: center;
+    border-radius: 24px;
+    background-color: transparent;
+    /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
+    flex: 1;
+    /* ocupa todo el espacio disponible */
+    max-width: 1200px;
+    /* pero no más que esto */
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .modules-seguridad {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    justify-content: center;
+
+  }
+
+  .module-btn-seguridad {
+    display: inline-block;
+    /* Importante para que los <a> se vean como botones */
+    padding: 0.9rem 1.8rem;
+    border-radius: 14px;
+    text-decoration: none;
+    background-color: #737791;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    /*transition: all 0.3s ease;*/
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .module-btn-seguridad:hover {
+    background-color: #5d5fef;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .active-config {
+    background-color: #5d5fef;
+    box-shadow: 0 6px 20px rgba(93, 95, 239, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .modules-seguridad {
+      gap: 0.8rem;
+    }
+
+    .module-btn-seguridad {
+      font-size: 14px;
+      padding: 0.7rem 1.2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .modules-seguridad {
+      flex-direction: column;
+      /* Botones uno debajo de otro */
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .module-btn-seguridad {
+      width: 100%;
+      /* Ocupa todo el ancho disponible */
+      max-width: 250px;
+      /* Limita el ancho máximo */
+      font-size: 14px;
+      padding: 0.7rem 1rem;
+    }
+  }
+</style>

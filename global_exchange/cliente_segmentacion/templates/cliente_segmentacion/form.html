@@ -170,7 +170,7 @@ function setupTipoClienteValidation() {
                 minlength: 2,
                 maxlength: 100,
                 remote: {
-                    url: "/segmentaciones/check-nombre/",
+                    url: "{% url 'check-nombre-segmentacion'%}",
                     type: "post",
                     data: {
                         nombre: function() {
