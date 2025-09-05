@@ -60,7 +60,7 @@ class TasaDeCambioForm(forms.ModelForm):
 
     class Meta:
         model = TasaDeCambio
-        fields = "__all__"
+        fields = ['moneda_origen', 'moneda_destino', 'monto_compra', 'monto_venta', 'vigencia', 'estado']
         labels = {
             "moneda_origen": "Moneda Origen",
             "moneda_destino": "Moneda Destino",
@@ -84,3 +84,4 @@ class TasaDeCambioForm(forms.ModelForm):
         self.fields['moneda_origen'].disabled = True  
         # Quitar del select de destino la moneda base
         self.fields['moneda_destino'].queryset = Moneda.objects.exclude(pk=guarani.pk)
+

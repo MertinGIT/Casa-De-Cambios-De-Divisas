@@ -19,7 +19,10 @@ def cotizacion_lista(request):
         - q: cadena de búsqueda.
         - campo: campo seleccionado para filtrar.
     """
-    tasas = TasaDeCambio.objects.all().order_by('-vigencia')
+    tasas = TasaDeCambio.objects.filter(
+        moneda_origen__estado=True,
+        moneda_destino__estado=True
+    ).order_by('-vigencia')
     form = TasaDeCambioForm()  # formulario vacío para crear nueva tasa
     q = request.GET.get("q", "").strip()
     campo = request.GET.get("campo", "").strip()
@@ -46,6 +49,7 @@ def cotizacion_lista(request):
         "q": q,
         "campo": campo 
     })
+
 
 
 def cotizacion_nuevo(request):
@@ -99,31 +103,32 @@ def cotizacion_nuevo(request):
             })
     return redirect("cotizacion")
 
-
 def cotizacion_editar(request, pk):
-    """
-    Vista que permite editar una cotización existente.
-
-    - GET:
-        - Carga los datos de la cotización seleccionada en el formulario.
-        - Renderiza la lista con el modal abierto en modo edición.
-    - POST:
-        - Valida y guarda los cambios en la tasa de cambio.
-        - Si es válido → redirige a ``cotizacion``.
-        - Si no es válido:
-            - Para AJAX → devuelve JSON con errores de validación.
-            - Para no-AJAX → vuelve a renderizar la lista con el modal y los errores.
-    """
-    print("Entró en cotizacion_editar con pk =", pk)
     cotizacion = get_object_or_404(TasaDeCambio, pk=pk)
 
     if request.method == "POST":
         form = TasaDeCambioForm(request.POST, instance=cotizacion)
         if form.is_valid():
-            form.save()
-            return redirect("cotizacion")
+            cotizacion = form.save(commit=False)
+            cotizacion.estado = TasaDeCambio.objects.get(pk=cotizacion.pk).estado
+            cotizacion.save()
+            
+            if request.headers.get("x-requested-with") == "XMLHttpRequest":
+                return JsonResponse({
+                    "success": True,
+                    "tasa": {
+                        "id": cotizacion.id,
+                        "moneda_origen": cotizacion.moneda_origen.nombre,
+                        "moneda_destino": cotizacion.moneda_destino.nombre,
+                        "compra": str(cotizacion.monto_compra),
+                        "venta": str(cotizacion.monto_venta),
+                        "estado": cotizacion.estado,
+                    }
+                })
+            else:
+                return redirect("cotizacion")
         else:
-            # Si hay errores → reabrir modal con datos y errores
+            # reabrir modal con errores
             errors = {field: [str(e) for e in errs] for field, errs in form.errors.items()}
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JsonResponse({"success": False, "errors": errors})
@@ -136,7 +141,7 @@ def cotizacion_editar(request, pk):
                 "modal_type": "edit",
             })
 
-    # Si entra por GET → mostrar lista y modal de edición abierto
+    # GET → mostrar modal
     form = TasaDeCambioForm(instance=cotizacion)
     cotizaciones = TasaDeCambio.objects.all().order_by('-id')
     return render(request, "cotizaciones/lista.html", {
@@ -146,7 +151,6 @@ def cotizacion_editar(request, pk):
         "modal_type": "edit",
         "obj_id": cotizacion.id,
     })
-
 
 def cotizacion_desactivar(request, pk):
     """
