@@ -502,7 +502,8 @@ body {
                 <button class="btn-edit btn btn-sm btn-primary"
                         data-id="{{ m.id }}"
                         data-edit="{% url 'moneda_editar' m.id %}"
-                        data-detalle="{% url 'moneda_detalle' m.id %}">
+                        data-detalle="{% url 'moneda_detalle' m.id %}"
+                        data-title="Editar Moneda">
                   Editar
                 </button>
                 {% if m.estado %}
