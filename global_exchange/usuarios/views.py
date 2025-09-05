@@ -1,10 +1,11 @@
-from django.shortcuts import render,redirect
-from django.contrib.auth.forms import UserCreationForm,AuthenticationForm
+from functools import wraps
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth import get_user_model
-from django.contrib.auth import login,logout,authenticate
+from django.contrib.auth import login, logout, authenticate
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
-from roles_permisos.models import Rol
+from django.contrib.auth.models import Group
 from .forms import CustomUserCreationForm
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
@@ -24,17 +25,31 @@ from django.contrib import messages
 from .tokens import account_activation_token
 import json
 from collections import namedtuple
+from django.urls import reverse
+from django.utils.http import urlencode
+from django.http import JsonResponse
+from django.utils.timezone import now
+from monedas.models import Moneda
+from cotizaciones.models import TasaDeCambio
+from datetime import datetime
+from .models import CustomUser
+from .forms import UserRolePermissionForm
+import sys
+from clientes.models import Cliente, Segmentacion
+from cliente_usuario.models import Usuario_Cliente
 
 User = get_user_model()
 # Create your views here.
-from functools import wraps
 
 # Solo usuarios normales (no superadmin)
+
+
 def user_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if request.user.is_authenticated:
-            if request.user.is_superuser:
+            if request.user.has_perm('session.view_panel_admin'):
+                print("Entra", flush=True)
                 # Si es superadmin, lo redirige al panel de admin
                 return redirect('admin_dashboard')
             else:
@@ -44,59 +59,161 @@ def user_required(view_func):
     return _wrapped_view
 
 # Solo superadmin
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
 
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            else:
-                # Usuario normal no tiene acceso
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
-@user_required #con esto protejemos las rutas
+
+# views.py - home
+"""
+Vista principal para usuarios normales.
+
+Muestra las cotizaciones de distintas monedas y los datos del usuario
+autenticado en el contexto del template `home.html`.
+"""
+@user_required  # con esto protejemos las rutas
 def home(request):
-    """
-    Vista principal para usuarios normales.
+    
+    # === DATOS DESDE LA BD ===
+    monedas = list(Moneda.objects.filter(estado=True).values("abreviacion", "nombre"))
 
-    Muestra las cotizaciones de distintas monedas y los datos del usuario
-    autenticado en el contexto del template `home.html`.
-    """
-    cotizaciones = [
-        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
-        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
-        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
-        # agrega más monedas aquí...
-    ]
-    data_por_moneda = {
-            "USD": [
-                {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
-                {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
-                {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
-                {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
-            ],
-            "EUR": [
-                {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
-                {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
-                {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
-                {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
-            ],
-        }
+    # Tasas de cambio vigentes (por simplicidad: tomo la más reciente por cada moneda_destino)
+    tasas = (
+        TasaDeCambio.objects
+        .filter(estado=True)
+        .select_related("moneda_origen", "moneda_destino")
+        .order_by("moneda_destino", "-vigencia")
+    )
+    print("tasas:", tasas, flush=True)
+
+
+    # Reorganizar datos en un dict similar a tu data_por_moneda
+    data_por_moneda = {}
+    for tasa in tasas:
+        abrev = tasa.moneda_destino.abreviacion
+        if abrev not in data_por_moneda:
+            data_por_moneda[abrev] = []
+        # Insertar al inicio para que el primero sea el más reciente
+        data_por_moneda[abrev].insert(0, {
+            "fecha": tasa.vigencia.strftime("%d %b"),
+            "compra": float(tasa.monto_compra),
+            "venta": float(tasa.monto_venta)
+        })
+
+    print("data_por_moneda:", data_por_moneda, flush=True)
+
+    # Comisiones y segmentos
+    COMISION_VTA = 100
+    COMISION_COM = 50
+    
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    descuento = 0
+    segmento_nombre = "Sin segmentación"
+
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        descuento = float(cliente_operativo.segmentacion.descuento)
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+
+    print("Clientes asociados:", [c.nombre for c in clientes_asociados])
+    print("Cliente operativo:", cliente_operativo.nombre if cliente_operativo else "Ninguno")
+    print("Descuento:", descuento)
+    print("Segmento:", segmento_nombre)
+
+    
+    
+    # Variables iniciales
+    resultado = ""
+    ganancia_total = 0
+    valor_input = ""
+    moneda_seleccionada = ""
+    operacion = "venta"
+    origen = ""
+    destino = ""
+    
+    
+    
+    if request.method == "POST":
+        valor_input = request.POST.get("valor", "").strip()
+        operacion = request.POST.get("operacion")
+        origen = request.POST.get("origen", "")
+        destino = request.POST.get("destino", "")
+
+        # Determinar moneda relevante según operación
+        if operacion == "venta":
+            moneda_seleccionada = destino
+        else:
+            moneda_seleccionada = origen
+
+        try:
+            valor = float(valor_input)
+            if valor <= 0:
+                resultado = "Monto inválido"
+            else:
+                # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
+                registros = data_por_moneda.get(moneda_seleccionada, [])
+                if not registros:
+                    resultado = "No hay cotización disponible" # no hay cotización, no mostrar nada
+                    ganancia_total = 0
+                else:
+                    if registros:
+                        print("entro",registros, flush=True)
+                        registros_ordenados = sorted(
+                            registros,
+                            key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
+                            reverse=True
+                        )
+                        ultimo = registros_ordenados[0]
+                        PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
+                    else:
+                        PB_MONEDA = 0
+
+                    # === CÁLCULOS ===
+                    if operacion == "venta":  # Vender PYG → otra moneda
+                        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                        resultado = round(valor / TC_VTA, 2)
+                        ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                    else:  # Compra: otra moneda → PYG
+                        TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+                        print("TC_COMP:", TC_COMP, flush=True)
+                        print("PB_MONEDA:", PB_MONEDA, flush=True)
+                        print("COMISION_COM:", COMISION_COM, flush=True)
+                        print("descuento:", descuento, flush=True)
+                        resultado = round(valor * TC_COMP, 2)
+                        ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
+
+        except ValueError:
+            resultado = "Monto inválido"
+
+        # Respuesta AJAX
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                "resultado": resultado,
+                "ganancia_total": ganancia_total,
+                "segmento": segmento_nombre,
+                "descuento": descuento
+            })
+
+    
     context = {
-            'cotizaciones': cotizaciones,
-            'data_por_moneda': json.dumps(data_por_moneda),
-            "user": request.user
-        }
-    return render(request,'home.html',context)
+        'monedas': monedas,
+        'resultado': resultado,
+        'ganancia_total': ganancia_total,
+        'valor_input': valor_input,
+        'moneda_seleccionada': moneda_seleccionada,
+        'operacion': operacion,
+        "user": request.user,
+        "origen": origen,
+        "destino": destino,
+        'data_por_moneda': data_por_moneda,
+        "segmento": segmento_nombre,
+        "descuento": descuento,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,
+    }
+    return render(request, 'home.html', context)
+
+
 
 def signup(request):
     """
@@ -107,107 +224,108 @@ def signup(request):
       y envía un correo de activación.
     """
     if request.user.is_authenticated:
-        if request.user.is_superuser:
+        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
             return redirect('admin')
         else:
             return redirect('home')
     eslogan_lines = ["Empieza", "ahora."]
     eslogan_spans = ["!Comienza", "ya!"]
     subtitle = "Crea tu cuenta y empieza ahora."
-    
+
     print("Fuera del POST", flush=True)
-   
+
     if request.method == 'POST':
         form = CustomUserCreationForm(request.POST)
         print("Entra en POST", flush=True)
         if form.is_valid():
-          try:
-              print("entro en try", flush=True)
-              # Guardar usuario inactivo
-              user = form.save(commit=False)
-              user.is_active = False
-              # Asignamos el rol 'usuario'
-              rol_usuario = Rol.objects.get(id=1)
-              user.rol = rol_usuario
-              user.save()
-              print(user, flush=True)
-              activateEmail(request, user, user.email)
-              return render(request, 'registrarse.html', {
-                      'form': form,
-                      'subtitle': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
-                      'eslogan_lines': eslogan_lines,
-                      'eslogan_spans': eslogan_spans,
-                      'submit_text': "Registrarse",
-                      'active_tab': "register"
-                  })
-          except Exception as e:
-              print("Error al guardar usuario:", e, flush=True)
-              return render(request, 'registrarse.html', {
-                        'form': form,
-                        'eslogan_lines': eslogan_lines,
-                        'eslogan_spans': eslogan_spans,
-                        'submit_text': "Registrarse",
-                        'active_tab': "register"
-                    })
-        else:    
+            try:
+                print("entro en try", flush=True)
+                # Guardar usuario inactivo
+                user = form.save(commit=False)
+                user.is_active = False
+                # Asignamos el rol 'usuario'
+                rol_usuario = Group.objects.get(name="Usuario")
+                user.save()
+                user.groups.add(rol_usuario)
+                print(user, flush=True)
+                activateEmail(request, user, user.email)
+                return render(request, 'registrarse.html', {
+                    'form': form,
+                    'subtitle': f"Hola {user.username} tu cuenta ha sido creada correctamente. Por favor, revisa tu correo.",
+                    'eslogan_lines': eslogan_lines,
+                    'eslogan_spans': eslogan_spans,
+                    'submit_text': "Registrarse",
+                    'active_tab': "register"
+                })
+            except Exception as e:
+                print("Error al guardar usuario:", e, flush=True)
+                return render(request, 'registrarse.html', {
+                    'form': form,
+                    'eslogan_lines': eslogan_lines,
+                    'eslogan_spans': eslogan_spans,
+                    'submit_text': "Registrarse",
+                    'active_tab': "register"
+                })
+        else:
             return render(request, 'registrarse.html', {
-                        'form': form,
-                        'eslogan_lines': eslogan_lines,
-                        'eslogan_spans': eslogan_spans,
-                        'submit_text': "Registrarse",
-                        'subtitle': subtitle,
-                        'active_tab': "register"
-                    })
+                'form': form,
+                'eslogan_lines': eslogan_lines,
+                'eslogan_spans': eslogan_spans,
+                'submit_text': "Registrarse",
+                'subtitle': subtitle,
+                'active_tab': "register"
+            })
     else:
         storage = messages.get_messages(request)
-        storage.used = True  #limpia todos los mensajes previos
+        storage.used = True  # limpia todos los mensajes previos
         form = CustomUserCreationForm()
     return render(request, 'registrarse.html', {
-              'form': form,
-              'eslogan_lines': eslogan_lines,
-              'eslogan_spans': eslogan_spans,
-              'subtitle': subtitle,
-              'submit_text': "Registrarse",
-              'active_tab': "register"
-          })
+        'form': form,
+        'eslogan_lines': eslogan_lines,
+        'eslogan_spans': eslogan_spans,
+        'subtitle': subtitle,
+        'submit_text': "Registrarse",
+        'active_tab': "register"
+    })
+
 
 def activate(request, uidb64, token):
-  """
-    **activate(request, uidb64, token)**: Activa la cuenta de un usuario a través del enlace de activación enviado por email.
-
-    - **Parámetros**:
-        - request: objeto HttpRequest.
-        - uidb64: UID del usuario codificado en base64.
-        - token: token de activación generado para el usuario.
-
-    - **Funcionamiento**:
-        - Decodifica el UID y busca el usuario correspondiente.
-        - Verifica que el token sea válido.
-        - Si es válido, activa al usuario y redirige al login.
-        - Si no es válido, redirige a la página principal.
     """
-  print('Activando cuenta', flush=True)
-  try:
-      print("Intentando activar cuenta", flush=True)
-      # Decodificar el UID
-      uid = force_str(urlsafe_base64_decode(uidb64))
-      user = User.objects.get(pk=uid)
-  except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-      print("Error al activar cuenta", flush=True)
-      user = None
+      **activate(request, uidb64, token)**: Activa la cuenta de un usuario a través del enlace de activación enviado por email.
 
-  # Validar que el token sea correcto
-  print(user)
-  if user is not None and account_activation_token.check_token(user, token):
-      print("Token válido, activando cuenta", flush=True)
-      user.is_active = True
-      user.save()
-      print(request, 'Tu cuenta ha sido activada con éxito. Ahora puedes iniciar sesión.')
-      return redirect('login')
-  else:
-      print("Token inválido", flush=True)
-      print( 'El enlace de activación no es válido o ha expirado.')
-      return redirect('home')
+      - **Parámetros**:
+          - request: objeto HttpRequest.
+          - uidb64: UID del usuario codificado en base64.
+          - token: token de activación generado para el usuario.
+
+      - **Funcionamiento**:
+          - Decodifica el UID y busca el usuario correspondiente.
+          - Verifica que el token sea válido.
+          - Si es válido, activa al usuario y redirige al login.
+          - Si no es válido, redirige a la página principal.
+      """
+    print('Activando cuenta', flush=True)
+    try:
+        print("Intentando activar cuenta", flush=True)
+        # Decodificar el UID
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        print("Error al activar cuenta", flush=True)
+        user = None
+
+    # Validar que el token sea correcto
+    print(user)
+    if user is not None and account_activation_token.check_token(user, token):
+        print("Token válido, activando cuenta", flush=True)
+        user.is_active = True
+        user.save()
+        print(request, 'Tu cuenta ha sido activada con éxito. Ahora puedes iniciar sesión.')
+        return redirect('login')
+    else:
+        print("Token inválido", flush=True)
+        print('El enlace de activación no es válido o ha expirado.')
+        return redirect('home')
 
 
 def activateEmail(request, user, to_email):
@@ -237,17 +355,20 @@ def activateEmail(request, user, to_email):
     email = EmailMessage(mail_subject, message, to=[to_email])
     email.content_subtype = 'html'
     email.send()
-        
-#cierra sesion tanto usuarios como admins
-def signout(request):
-  """
-    **signout(request)**: Cierra la sesión del usuario y lo redirige a la página de aterrizaje.
 
-    - **Parámetros**:
-        - request: objeto HttpRequest.
+# cierra sesion tanto usuarios como admins
+
+
+def signout(request):
     """
-  logout(request)
-  return redirect('pagina_aterrizaje')
+      **signout(request)**: Cierra la sesión del usuario y lo redirige a la página de aterrizaje.
+
+      - **Parámetros**:
+          - request: objeto HttpRequest.
+      """
+    logout(request)
+    return redirect('pagina_aterrizaje')
+
 
 def signin(request):
     """
@@ -265,7 +386,8 @@ def signin(request):
     """
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
-        if request.user.is_superuser:
+        if request.user.groups.filter(name='ADMIN').exists():
+            print("PRIMER IF:", flush=True)
             return redirect('admin_dashboard')
         else:
             return redirect('home')
@@ -284,7 +406,8 @@ def signin(request):
             'active_tab': "login"
         })
     else:
-        user = authenticate(username=request.POST['username'], password=request.POST['password'])
+        user = authenticate(
+            username=request.POST['username'], password=request.POST['password'])
         if user is None:
             return render(request, 'login.html', {
                 'form': AuthenticationForm(),
@@ -296,50 +419,81 @@ def signin(request):
             })
         else:
             login(request, user)
-            if user.is_superuser:
+            if request.user.groups.filter(name='ADMIN').exists():
                 return redirect('admin_dashboard')
             else:
                 return redirect('home')
       
 def pagina_aterrizaje(request):
-  """
-    **pagina_aterrizaje(request)**  
-    Renderiza la página principal de aterrizaje mostrando cotizaciones y datos de ejemplo por moneda.
-
-    - **Parámetros**:
-        - request: objeto HttpRequest.
-
-    - **Funcionamiento**:
-        - Define una lista de cotizaciones de monedas con compra, venta y logo.
-        - Define datos históricos de ejemplo por moneda en `data_por_moneda`.
-        - Convierte `data_por_moneda` a JSON y lo pasa al contexto.
-        - Renderiza el template `pagina_aterrizaje.html` con el contexto.
     """
-  cotizaciones = [
-        {'simbolo': 'ARS', 'compra': 54564, 'venta': 45645, 'logo': 'img/logoMoneda/ARS.png'},
-        {'simbolo': 'USD', 'compra': 68000, 'venta': 70000, 'logo': 'img/logoMoneda/USD.svg'},
-        {'simbolo': 'EUR', 'compra': 75000, 'venta': 77000, 'logo': 'img/logoMoneda/EUR.svg'},
-        # agrega más monedas aquí...
-    ]
-  data_por_moneda = {
-        "USD": [
-            {"fecha": "10 Jul", "compra": 7700, "venta": 7900},
-            {"fecha": "11 Jul", "compra": 7720, "venta": 7920},
-            {"fecha": "12 Jul", "compra": 7750, "venta": 7950},
-            {"fecha": "13 Jul", "compra": 7790, "venta": 8000},
-        ],
-        "EUR": [
-            {"fecha": "10 Jul", "compra": 8500, "venta": 8700},
-            {"fecha": "11 Jul", "compra": 8520, "venta": 8720},
-            {"fecha": "12 Jul", "compra": 8550, "venta": 8750},
-            {"fecha": "13 Jul", "compra": 8590, "venta": 8800},
-        ],
-    }
-  context = {
+    Renderiza la página de aterrizaje mostrando cotizaciones reales
+    con tasas más recientes, hasta 6 monedas y datos para gráfico.
+    """
+    """
+      **pagina_aterrizaje(request)**  
+      Renderiza la página principal de aterrizaje mostrando cotizaciones reales
+      con tasas más recientes, hasta 6 monedas y datos para gráfico.
+
+      - **Parámetros**:
+          - request: objeto HttpRequest.
+
+      - **Funcionamiento**:
+          - Define una lista de cotizaciones de monedas con compra, venta y logo.
+          - Define datos históricos de ejemplo por moneda en `data_por_moneda`.
+          - Convierte `data_por_moneda` a JSON y lo pasa al contexto.
+          - Renderiza el template `pagina_aterrizaje.html` con el contexto.
+      """
+
+    # === Obtener monedas activas ===
+    monedas = Moneda.objects.filter(estado=True)
+
+    # === Obtener tasas de cambio ordenadas por moneda_destino y vigencia desc ===
+    tasas = (
+        TasaDeCambio.objects
+        .filter(estado=True)
+        .select_related("moneda_origen", "moneda_destino")
+        .order_by("moneda_destino__abreviacion", "-vigencia")
+    )
+
+    # === Reorganizar datos en dict por moneda_destino ===
+    data_por_moneda = {}
+    for tasa in tasas:
+        abrev = tasa.moneda_destino.abreviacion
+        if abrev not in data_por_moneda:
+            data_por_moneda[abrev] = []
+        # Insertar al inicio para que el primero sea el más reciente
+        data_por_moneda[abrev].insert(0, {
+            "fecha": tasa.vigencia.strftime("%d %b"),
+            "compra": float(tasa.monto_compra),
+            "venta": float(tasa.monto_venta),
+        })
+    print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)
+
+    # === Preparar cotizaciones para mostrar en landing (solo más reciente por moneda) ===
+    cotizaciones = []
+    for abrev, registros in data_por_moneda.items():
+        ultimo = registros[-1]  # el más reciente
+        # Intentar buscar logo PNG primero, si no, SVG
+        if f'static/img/logoMoneda/{abrev}.png':
+            logo = f'img/logoMoneda/{abrev}.png'
+        else:
+            logo = f'img/logoMoneda/{abrev}.svg'
+        cotizaciones.append({
+            'simbolo': abrev,
+            'compra': ultimo['compra'],
+            'venta': ultimo['venta'],
+            'logo': logo
+        })
+
+    # Limitar a máximo 6 monedas
+    cotizaciones = cotizaciones[:6]
+    print("cotizaciones aterrizaje:", cotizaciones, flush=True)
+
+    context = {
         'cotizaciones': cotizaciones,
-        'data_por_moneda': json.dumps(data_por_moneda),
+        'data_por_moneda': data_por_moneda,  # para gráfico JS
     }
-  return render(request, 'pagina_aterrizaje.html',context)
+    return render(request, 'pagina_aterrizaje.html', context)
 
 def error_404_view(request, exception):
     """
@@ -349,11 +503,12 @@ def error_404_view(request, exception):
     - **Parámetros**:
         - request: objeto HttpRequest.
         - exception: objeto de excepción.
-    
+
     - **Funcionamiento**:
         Renderiza el template `404.html` con código de estado 404.
     """
     return render(request, '404.html', status=404)
+
 
 @user_required
 def editarPerfil(request):
@@ -374,9 +529,15 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
+    segmento_nombre = "Sin Segmentación"
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
-    
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+    segmento_nombre = "Sin segmentación"
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
         action = request.POST.get('action')
@@ -385,10 +546,16 @@ def editarPerfil(request):
             if form.is_valid():
                 user = form.save()
                 print(user, flush=True)
-                update_session_auth_hash(request, user)  # Mantiene sesión si cambia contraseña
-                return render(request, 'editarperfil.html', {'form': form,  'success': True} )
+                # Mantiene sesión si cambia contraseña
+                update_session_auth_hash(request, user)
+                return render(request, 'editarperfil.html', {'form': form,  'success': True,
+        "segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
             else:
-                return render(request, 'editarperfil.html', {'form': form} )
+                return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
         """
         # Eliminar cuenta
         elif action == 'eliminar':
@@ -405,7 +572,10 @@ def editarPerfil(request):
     else:
         form = CustomUserChangeForm(instance=request.user)
 
-    return render(request, 'editarperfil.html', {'form': form})
+    return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,})
+
 
 """
 def editarperfilDesing (request):
@@ -447,15 +617,175 @@ def crud_empleados(request):
         - Renderiza `empleados.html` pasando los empleados al template.
     """
     # Creamos un "Empleado" ficticio usando namedtuple
-    Empleado = namedtuple('Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
-    
+    Empleado = namedtuple(
+        'Empleado', ['id', 'nombre', 'cedula', 'email', 'cargo'])
+
     # Datos de ejemplo
     empleados = [
-        Empleado(id=1, nombre="Juan Pérez", cedula="12345678", email="juan.perez@email.com", cargo="Administrador"),
-        Empleado(id=2, nombre="María Gómez", cedula="87654321", email="maria.gomez@email.com", cargo="Supervisor"),
-        Empleado(id=3, nombre="Carlos López", cedula="11223344", email="carlos.lopez@email.com", cargo="Empleado"),
+        Empleado(id=1, nombre="Juan Pérez", cedula="12345678",
+                 email="juan.perez@email.com", cargo="Administrador"),
+        Empleado(id=2, nombre="María Gómez", cedula="87654321",
+                 email="maria.gomez@email.com", cargo="Supervisor"),
+        Empleado(id=3, nombre="Carlos López", cedula="11223344",
+                 email="carlos.lopez@email.com", cargo="Empleado"),
     ]
-    
+
     # Pasamos los datos al template
     return render(request, 'empleados.html', {'empleados': empleados})
 
+
+def user_roles_lista(request):
+    """
+    Lista de usuarios con buscador básico.
+    (Sin paginación desde la vista, la lógica de paginador
+    o limitador queda en el template.)
+    """
+    q = request.GET.get("q", "")
+    campo = request.GET.get("campo", "")
+
+    usuarios = CustomUser.objects.all().order_by("-id")
+    form = UserRolePermissionForm()
+
+    if q and campo:
+        filtro = {f"{campo}__icontains": q}
+        usuarios = usuarios.filter(**filtro)
+
+    return render(request, "user_roles_lista.html", {
+        "usuarios": usuarios,
+        "q": q,
+        "campo": campo,
+        "form": form
+    })
+
+
+def user_roles_edit(request, pk):
+    """
+    Editar roles y permisos de un usuario via AJAX (para modal).
+    """
+    usuario = get_object_or_404(CustomUser, pk=pk)
+
+    if request.method == "POST":
+        # DEBUG: Imprimir todos los datos recibidos
+        print("=== DEBUG POST DATA ===", file=sys.stdout, flush=True)
+        print(f"request.POST: {request.POST}", file=sys.stdout, flush=True)
+        print(f"request.FILES: {request.FILES}", file=sys.stdout, flush=True)
+        print(f"Headers: {dict(request.headers)}", file=sys.stdout, flush=True)
+        
+        # Verificar si hay datos de grupos y permisos
+        groups_data = request.POST.getlist('groups')
+        perms_data = request.POST.getlist('user_permissions')
+        
+        print(f"Grupos recibidos directamente: {groups_data}", file=sys.stdout, flush=True)
+        print(f"Permisos recibidos directamente: {perms_data}", file=sys.stdout, flush=True)
+        
+        form = UserRolePermissionForm(request.POST, instance=usuario)
+        
+        print(f"Form is_valid: {form.is_valid()}", file=sys.stdout, flush=True)
+        print(f"Form errors: {form.errors}", file=sys.stdout, flush=True)
+        print(f"Form cleaned_data: {form.cleaned_data if form.is_valid() else 'No valid'}", file=sys.stdout, flush=True)
+        
+        if form.is_valid():
+            # Limpiar grupos y permisos actuales
+            usuario.groups.clear()
+            usuario.user_permissions.clear()
+            
+            # Asignar nuevos grupos
+            groups = form.cleaned_data.get('groups')
+            if groups:
+                usuario.groups.set(groups)
+                print(f"Grupos asignados: {list(groups)}", file=sys.stdout, flush=True)
+            else:
+                print("No se asignaron grupos.", file=sys.stdout, flush=True)
+
+            # Asignar nuevos permisos
+            permissions = form.cleaned_data.get('user_permissions')
+            if permissions:
+                usuario.user_permissions.set(permissions)
+                print(f"Permisos asignados: {list(permissions)}", file=sys.stdout, flush=True)
+            else:
+                print("No se asignaron permisos.", file=sys.stdout, flush=True)
+
+            usuario.save()
+            
+            # Si es AJAX, devolver JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Usuario {usuario.username} actualizado correctamente.'
+                })
+            else:
+                messages.success(request, f'Usuario {usuario.username} actualizado correctamente.')
+                return redirect("user_roles_lista")
+        else:
+            print("Errores del formulario:", form.errors, file=sys.stdout, flush=True)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'errors': form.errors
+                })
+            else:
+                messages.error(request, "Error al actualizar el usuario. Revisa los datos.")
+                return render(request, "user_roles_form.html", {
+                    "form": form,
+                    "usuario": usuario
+                })
+
+    # Si no es POST, mostrar el formulario de edición
+    form = UserRolePermissionForm(instance=usuario)
+    return render(request, "user_roles_form.html", {
+        "form": form,
+        "usuario": usuario
+    })
+
+def user_roles_detalle(request, pk):
+    from django.contrib.auth.models import Group, Permission
+
+    User = get_user_model()
+    user = User.objects.get(pk=pk)
+
+    # Obtener todos los grupos disponibles
+    all_groups = Group.objects.all()
+
+    # Obtener todos los permisos disponibles
+    all_permissions = Permission.objects.all()
+
+    return JsonResponse({
+        "username": user.username,
+        "groups": list(user.groups.values_list('id', flat=True)),
+        "user_permissions": list(user.user_permissions.values_list('id', flat=True)),
+        "modal_title": f"Editar Usuario: {user.username}",
+
+        # Agregar todos los grupos y permisos disponibles
+        "all_groups": [{"id": g.id, "name": g.name} for g in all_groups],
+        "all_permissions": [{"id": p.id, "name": p.name} for p in all_permissions],
+    })
+
+def obtener_clientes_usuario(user,request):
+    """
+    Devuelve:
+        - clientes_asociados: lista de todos los clientes asociados al usuario
+        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    """
+
+    usuarios_clientes = Usuario_Cliente.objects.select_related("id_cliente__segmentacion").filter(id_usuario=user)
+    clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
+    cliente_operativo = None
+
+    # Tomar de la sesión si existe
+    if request and request.session.get('cliente_operativo_id'):
+        cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
+
+    # Si no hay sesión o ID no válido, tomar el primero
+    if not cliente_operativo and clientes_asociados:
+        cliente_operativo = clientes_asociados[0]
+
+    return clientes_asociados, cliente_operativo
+
+
+@login_required
+def set_cliente_operativo(request):
+    cliente_id = request.POST.get('cliente_id')
+    if cliente_id:
+        request.session['cliente_operativo_id'] = int(cliente_id)
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False}, status=400)

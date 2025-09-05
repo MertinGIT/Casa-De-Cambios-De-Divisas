@@ -9,6 +9,8 @@ from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import Group, Permission
+from .models import CustomUser
 User = get_user_model()
 
 class CustomUserCreationForm(UserCreationForm):
@@ -239,7 +241,33 @@ class CustomUserChangeForm(UserChangeForm):
         if commit:
             user.save()
         return user
+
+
+class UserRolePermissionForm(forms.ModelForm):
+    # CAMBIAR: roles → groups
+    groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={"class": "form-control"})
+    )
+    # CAMBIAR: user_permisos → user_permissions
+    user_permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={"class": "form-control"})
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ["username", "groups", "user_permissions"]  # También cambiar aquí
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si estamos editando un usuario existente, pre-cargar los datos
+        if self.instance and self.instance.pk:
+            self.fields['groups'].initial = self.instance.groups.all()
+            self.fields['user_permissions'].initial = self.instance.user_permissions.all()
+
 
 """
 class CustomUserChangeForm(forms.Form):

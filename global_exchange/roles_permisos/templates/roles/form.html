@@ -1,76 +1,347 @@
 {% extends "base_forms.html" %}
 {% load widget_tweaks %}
-{% block form_title %}Agregar Rol{% endblock %}
+{% block form_title %}
+Agregar Rol
+{% endblock %}
 {% block form_fields %}
+{% load static %}
+<!-- Nombre del rol -->
 <div class="form-group">
-  <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+  <label for="{{ form.name.id_for_label }}">Nombre</label>
   <div class="input-icon">
     <span class="icon">👤</span>
-    {{ form.nombre|add_class:"custom-input" }}
+    {{ form.name|add_class:"custom-input" }}
   </div>
-  {% if form.nombre.errors %}
+  {% if form.name.errors %}
   <div class="error-messages">
-    {% for error in form.nombre.errors %}
-      <span class="error-text">{{ error }}</span>
+    {% for error in form.name.errors %}
+    <span class="error-text">{{ error }}</span>
     {% endfor %}
   </div>
   {% endif %}
 </div>
 
+<!-- Dual listbox de permisos -->
 <div class="form-group">
-  <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
-  <div class="input-icon">
-    <span class="icon">📝</span>
-    {{ form.descripcion|add_class:"custom-input" }}
-  </div>
-  {% if form.descripcion.errors %}
-  <div class="error-messages">
-    {% for error in form.descripcion.errors %}
-      <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
-</div>
+  <div class="dual-listbox">
+    <div class="dual-listbox-content">
+      <div class="perm-box">
+        <h5>Permisos disponibles</h5>
+        <input type="text" id="search-available" placeholder="Buscar permisos..." class="search-input">
+        <select id="available-perms" multiple size="15">
+          {% for permiso in permisos %}
+          <option value="{{ permiso.id }}">{{ permiso.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
 
-<div class="form-group">
-    <label>Permisos</label>
-    <div class="d-flex flex-wrap gap-2">
-        {% for permiso in permisos %}
-            <input type="checkbox" id="permiso{{ permiso.id }}" name="permisos" value="{{ permiso.id }}"
-                {% if permiso.id in form.initial.permisos|default:list %}checked{% endif %}>
-            <label for="permiso{{ permiso.id }}">{{ permiso.nombre }}</label>
-        {% endfor %}
+      <div class="dual-buttons desktop-buttons">
+        <button type="button" id="add-perm" class="btn btn-primary">
+          <img src="{% static 'roles_permisos/img/right.png' %}" width="16" height="16">
+        </button>
+        <button type="button" id="remove-perm" class="btn btn-secondary">
+          <img src="{% static 'roles_permisos/img/left.png' %}" width="16" height="16">
+        </button>
+        <button type="button" id="add-all" class="btn btn-primary">
+          <img src="{% static 'roles_permisos/img/doble-right.png' %}" width="16" height="16">
+        </button>
+        <button type="button" id="remove-all" class="btn btn-secondary">
+          <img src="{% static 'roles_permisos/img/doble-left.png' %}" width="16" height="16">
+        </button>
+      </div>
+
+      <div class="dual-buttons mobile-buttons">
+        <button type="button" id="move-up" class="btn btn-primary">
+          <img src="{% static 'roles_permisos/img/up.png' %}" width="16" height="16">
+        </button>
+        <button type="button" id="move-down" class="btn btn-secondary">
+          <img src="{% static 'roles_permisos/img/down.png' %}" width="16" height="16">
+        </button>
+        <button type="button" id="move-all-up" class="btn btn-primary">
+          <img src="{% static 'roles_permisos/img/doble-up.png' %}" width="16" height="16">
+        </button>
+        <button type="button" id="move-all-down" class="btn btn-secondary">
+          <img src="{% static 'roles_permisos/img/doble-down.png' %}" width="16" height="16">
+        </button>
+      </div>
+
+
+      <div class="perm-box">
+        <h5>Permisos asignados</h5>
+        <input type="text" id="search-selected" placeholder="Buscar permisos..." class="search-input">
+        <select id="selected-perms" name="permisos" multiple size="15">
+          {% for permiso in permisos %}
+          {% if permiso.id in permisos_asignados %}
+          <option value="{{ permiso.id }}">{{ permiso.name }}</option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
     </div>
+  </div>
 </div>
-
-
 <style>
-.custom-input {
-  width: 100%;
-  padding: 8px 12px 8px 36px; /* espacio para icono */
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background-color: #F0EDFF;
-  font-size: 14px;
-  outline: none;
-}
+  .custom-modal-content {
+    max-width: 900px !important;
+  }
 
-.custom-input::placeholder {
-  color: #6b7280;
-}
+  .custom-input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background-color: #F0EDFF;
+    font-size: 14px;
+    outline: none;
+  }
 
-.input-icon {
-  position: relative;
-}
+  .custom-input::placeholder {
+    color: #6b7280;
+  }
 
-.input-icon .icon {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-  font-size: 16px;
-  color: #5D5FEF;
-}
+  .input-icon {
+    position: relative;
+  }
+
+  .input-icon .icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 16px;
+    color: #5D5FEF;
+  }
+
+  /* Dual listbox */
+  .dual-listbox {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .dual-listbox select {
+    width: 300px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    padding: 5px;
+    font-size: 14px;
+  }
+
+  .dual-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dual-buttons button {
+    width: 50px;
+  }
+
+  .dual-listbox-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 6px 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    border: 1px solid #d1d5db;
+    font-size: 14px;
+  }
+
+  .perm-box {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-buttons {
+    display: none;
+  }
+
+  select option:checked {
+    background-color: #5D5FEF;
+    color: white;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .dual-listbox {
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .dual-listbox select {
+      width: 100%;
+    }
+
+    .dual-buttons {
+      flex-direction: row;
+      justify-content: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .dual-buttons button {
+      width: 40px;
+      height: 40px;
+    }
+
+    .dual-listbox-content {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .perm-box h5 {
+      text-align: center;
+    }
+
+    .search-input {
+      margin-bottom: 10px;
+    }
+
+    .desktop-buttons {
+      display: none;
+    }
+
+    .mobile-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .custom-modal-content {
+      max-width: 900px;
+      width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      max-height: 90vh;
+    }
+
+    select option:checked {
+      background-color: #5D5FEF;
+      color: white;
+    }
+
+
+  }
 </style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const addBtn = document.getElementById("add-perm");
+    const removeBtn = document.getElementById("remove-perm");
+    const addAllBtn = document.getElementById("add-all");
+    const removeAllBtn = document.getElementById("remove-all");
+    const available = document.getElementById("available-perms");
+    const selected = document.getElementById("selected-perms");
+
+    // Función para mover opciones seleccionadas
+    function moveOptions(from, to) {
+      Array.from(from.selectedOptions).forEach(opt => {
+        opt.selected = false;
+        to.add(opt);
+      });
+    }
+
+    // Función para mover todas las opciones
+    function moveAllOptions(from, to) {
+      Array.from(from.options).forEach(opt => {
+        if (opt.style.display !== "none") {
+          opt.selected = false;
+          to.add(opt);
+        }
+      });
+    }
+
+
+    addBtn.addEventListener("click", () => moveOptions(available, selected));
+    removeBtn.addEventListener("click", () => moveOptions(selected, available));
+    addAllBtn.addEventListener("click", () => moveAllOptions(available, selected));
+    removeAllBtn.addEventListener("click", () => moveAllOptions(selected, available));
+
+    // Enviar todos los seleccionados al hacer submit
+    selected.closest("form").addEventListener("submit", () => {
+      Array.from(selected.options).forEach(opt => opt.selected = true);
+    });
+
+    // Buscador para ambos listboxes
+    function filterOptions(inputId, selectElement) {
+      const searchInput = document.getElementById(inputId);
+      searchInput.addEventListener("input", () => {
+        const filter = searchInput.value.toLowerCase();
+        Array.from(selectElement.options).forEach(opt => {
+          opt.style.display = opt.text.toLowerCase().includes(filter) ? "" : "none";
+        });
+      });
+    }
+    filterOptions("search-available", available);
+    filterOptions("search-selected", selected);
+
+    // Selección/Deselección al hacer click
+    function toggleSelection(selectElement) {
+      selectElement.addEventListener("mousedown", (e) => {
+        const option = e.target;
+        if (option.tagName === "OPTION") {
+          e.preventDefault();
+          const scrollTop = selectElement.scrollTop;
+          option.selected = !option.selected;
+          selectElement.scrollTop = scrollTop;
+        }
+      });
+    }
+
+    toggleSelection(available);
+    toggleSelection(selected);
+
+    // Mover opción seleccionada de available a selected (up)
+    function moveDownMobile() {
+      const selectedOptions = Array.from(available.selectedOptions);
+      selectedOptions.forEach(opt => {
+        opt.selected = false;
+        selected.add(opt);
+      });
+    }
+
+    // Mover opción seleccionada de selected a available (down)
+    function moveUpMobile() {
+      const selectedOptions = Array.from(selected.selectedOptions);
+      selectedOptions.forEach(opt => {
+        opt.selected = false;
+        available.add(opt);
+      });
+    }
+
+    // Mover todos de available a selected (doble-up)
+    function moveAllDownMobile() {
+      Array.from(available.options).forEach(opt => {
+        if (opt.style.display !== "none") {
+          selected.add(opt);
+        }
+      });
+    }
+
+    function moveAllUpMobile() {
+      Array.from(selected.options).forEach(opt => {
+        if (opt.style.display !== "none") {
+          available.add(opt);
+        }
+      });
+    }
+
+    // Eventos mobile
+    document.getElementById("move-up").addEventListener("click", moveUpMobile);
+    document.getElementById("move-down").addEventListener("click", moveDownMobile);
+    document.getElementById("move-all-up").addEventListener("click", moveAllUpMobile);
+    document.getElementById("move-all-down").addEventListener("click", moveAllDownMobile);
+
+
+  });
+</script>
 {% endblock %}

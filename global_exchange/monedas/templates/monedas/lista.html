@@ -140,7 +140,7 @@ body {
   background-color: transparent;
   border: none;
   padding: 16px 20px 12px 20px;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
   font-weight: 500;
   color: #5D5FEF;
@@ -200,14 +200,16 @@ body {
 }
 
 .btn-primary {
-  background-color: #5D5FEF !important;
-  border: #5D5FEF !important;
+  background-color: #0d6efd !important; 
+  border-color: #0d6efd !important; 
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #4338ca!important;
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
 }
+
 
 .btn-danger {
   background-color: #ef4444;
@@ -371,7 +373,7 @@ body {
     display: block;
     padding: 4px 0;
     border: none;
-    text-align: left;
+    text-align: center;
   }
   
   .custom-table tbody td:before {
@@ -442,7 +444,7 @@ body {
   }
 }
 </style>
-
+{% include 'base_configuracion.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -464,8 +466,8 @@ body {
           <!-- Selector de campo -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
-            <option value="divisa_origen">Moneda Origen</option>
-            <option value="divisa_destino">Moneda Destino</option>
+            <option value="nombre" {% if campo == "nombre" %}selected{% endif %}>Nombre</option>
+  <option value="abreviacion" {% if campo == "abreviacion" %}selected{% endif %}>Abreviación</option>
           </select>
         </form>
       </div>
@@ -479,16 +481,23 @@ body {
       <table class="custom-table">
         <thead>
           <tr>
-            <th style="min-width: 160px; text-align: left;">Nombre</th>
-            <th style="min-width: 160px; text-align: left;">Abreviación</th>
+            <th style="min-width: 160px; text-align: center;">Nombre</th>
+            <th style="min-width: 160px; text-align: center;">Abreviación</th>
+            <th style="min-width: 120px; text-align: center;">Estado</th>
             <th style="min-width: 120px; text-align: center;">Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody style="text-align: center;">
           {% for m in monedas %}
             <tr>
-              <td>{{ m.nombre }}</td>
-              <td>{{ m.abreviacion }}</td>
+              <td data-label= "Nombre" style="vertical-align: middle; min-width: 160px;">{{ m.nombre }}</td>
+              <td data-label= "Abreviación" style="vertical-align: middle; min-width: 160px;">{{ m.abreviacion }}</td>
+              <td data-label="Estado" style="text-align: middle; min-width: 160px;">{% if m.estado %}
+                  <span class="status-badge status-activo">Activo</span>
+                {% else %}
+                  <span class="status-badge status-inactivo">Inactivo</span>
+                {% endif %}
+              </td>
               <td style="text-align: center;">
                 <button class="btn-edit btn btn-sm btn-primary"
                         data-id="{{ m.id }}"
@@ -496,11 +505,15 @@ body {
                         data-detalle="{% url 'moneda_detalle' m.id %}">
                   Editar
                 </button>
-                <button class="btn-delete btn btn-sm btn-danger"
-                        data-id="{{ m.id }}"
-                        data-delete="{% url 'moneda_eliminar' 0 %}">
-                  Eliminar
-                </button>
+                {% if m.estado %}
+                  <a href="{% url 'moneda_desactivar' m.id %}" class="btn btn-sm btn-danger">
+                    Desactivar
+                  </a>
+                {% else %}
+                  <a href="{% url 'moneda_desactivar' m.id %}" class="btn btn-sm btn-success">
+                    Activar
+                  </a>
+                {% endif %}
               </td>
             </tr>
           {% empty %}

@@ -127,6 +127,7 @@ body {
   border-radius: 8px;
   border: 1px solid #e1e5e9;
   margin-bottom: 24px;
+  max-width: 100%;
 }
 
 .custom-table {
@@ -140,7 +141,7 @@ body {
   background-color: transparent;
   border: none;
   padding: 16px 20px 12px 20px;
-  text-align: left;
+  text-align: center;
   font-size: 14px;
   font-weight: 500;
   color: #5D5FEF;
@@ -200,13 +201,14 @@ body {
 }
 
 .btn-primary {
-  background-color: #5D5FEF !important; 
-  border-color: #5D5FEF !important; 
+  background-color: #0d6efd !important; 
+  border-color: #0d6efd !important; 
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #4338ca !important;
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
 }
 
 .btn-danger {
@@ -368,10 +370,14 @@ body {
   }
   
   .custom-table tbody td {
-    display: block;
+    display: flex;
     padding: 4px 0;
     border: none;
-    text-align: left;
+    text-align: center;
+  }
+  .filas-responsive>*{
+    display:flex;
+    justify-content:space-between;
   }
   
   .custom-table tbody td:before {
@@ -404,6 +410,7 @@ body {
 @media (max-width: 480px) {
   .main-wrapper {
     padding: 12px;
+    
   }
   
   .page-container {
@@ -412,6 +419,10 @@ body {
   
   .page-title {
     font-size: 20px;
+  }
+  .custom-table {
+    min-width: unset;
+    width: 100%;
   }
   
   .custom-table tbody td:before {
@@ -442,7 +453,7 @@ body {
   }
 }
 </style>
-
+{% include 'base_configuracion.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -464,8 +475,7 @@ body {
           <!-- Selector de campo -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
-            <option value="moneda_origen">Moneda Origen</option>
-            <option value="moneda_destino">Moneda Destino</option>
+            <option value="moneda_destino" {% if campo == "moneda_destino" %}selected{% endif %}>Moneda Destino</option>
           </select>
         </form>
       </div>
@@ -479,23 +489,30 @@ body {
       <table class="custom-table">
         <thead>
           <tr>
-            <th style="min-width: 160px; text-align: left;">Moneda Base</th>
-            <th style="min-width: 160px; text-align: left;">Moneda Destino</th>
+            <th style="min-width: 160px; text-align: center;">Moneda Base</th>
+            <th style="min-width: 160px; text-align: center;">Moneda Destino</th>
             <th style="min-width: 120px; text-align: center;">Compra</th>
             <th style="min-width: 120px; text-align: center;">Venta</th>
             <th style="min-width: 120px; text-align: center;">Vigencia</th>
+            <th style="min-width: 160px; text-align: center;">Estado</th>
             <th style="min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody style="text-align: center;">
           {% for t in tasas %}
-            <tr>
-              <td>{{ t.moneda_origen }}</td>
-              <td>{{ t.moneda_destino }}</td>
-              <td style="text-align: center;">{{ t.monto_compra|floatformat:2 }}</td>
-              <td style="text-align: center;">{{ t.monto_venta|floatformat:2 }}</td>
-              <td style="text-align: center;">{{ t.vigencia|date:"d/m/Y H:i" }}</td>
-              <td style="text-align: center;">
+            <tr class="filas-responsive">
+              <td data-label="Moneda Base">{{ t.moneda_origen }}</td>
+              <td data-label="Moneda Destino">{{ t.moneda_destino }}</td>
+              <td data-label="Compra" style="text-align: middle; min-width: 160px;">{{ t.monto_compra|floatformat:2 }}</td>
+              <td data-label="Venta" style="text-align: middle; min-width: 160px;">{{ t.monto_venta|floatformat:2 }}</td>
+              <td data-label="Vigencia" style="text-align: middle; min-width: 160px;">{{ t.vigencia|date:"d/m/Y H:i" }}</td>
+              <td data-label="Estado" style="text-align: middle; min-width: 160px;">{% if t.estado %}
+                  <span class="status-badge status-activo">Activo</span>
+                {% else %}
+                  <span class="status-badge status-inactivo">Inactivo</span>
+                {% endif %}
+              </td>
+              <td data-label="Acciones" style="text-align: middle; min-width: 160px;">
                 <button class="btn-edit btn btn-sm btn-primary" 
                         data-id="{{ t.id }}" 
                         data-edit="{% url 'cotizacion_editar' 0 %}" 
@@ -503,11 +520,19 @@ body {
                         data-title="Editar Tasa">
                   Editar
                 </button>
-                <button class="btn-delete btn btn-sm btn-danger"
-                        data-id="{{ t.id }}"
-                        data-delete="{% url 'cotizacion_eliminar' 0 %}">
-                  Eliminar
+                {% if t.estado %}
+                <button type="button"
+                        class="btn btn-sm btn-danger"
+                        onclick="openDeleteModal({{ t.id }}, '{% url 'cotizacion_desactivar' 0 %}', '¿Seguro que deseas desactivar esta tasa?', 'Desactivar')">
+                  Desactivar
                 </button>
+              {% else %}
+                <button type="button"
+                        class="btn btn-sm btn-success"
+                        onclick="openDeleteModal({{ t.id }}, '{% url 'cotizacion_desactivar' 0 %}', '¿Seguro que deseas activar esta tasa?', 'Activar')">
+                  Activar
+                </button>
+              {% endif %}
               </td>
             </tr>
           {% empty %}

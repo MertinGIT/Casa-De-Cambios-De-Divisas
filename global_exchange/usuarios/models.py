@@ -1,15 +1,15 @@
 # usuarios/models.py
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
 from django.db import models
-from roles_permisos.models import Rol
 from django.contrib.auth.validators import UnicodeUsernameValidator
+
 
 class CustomUser(AbstractUser):
     """
     Modelo de usuario personalizado para el sistema Global Exchange.
 
     Hereda de `AbstractUser` y agrega campos específicos del proyecto.
-    
+
     **Atributos:**
         - **username** (str): Nombre de usuario único (heredado de AbstractUser).
         - **email** (str): Correo electrónico del usuario (heredado).
@@ -27,17 +27,13 @@ class CustomUser(AbstractUser):
         },
         help_text='Requerido. Hasta 150 caracteres. Letras, números y @/./+/-/_ solamente.',
         verbose_name='Nombre de usuario'
-    )    
+    )
     # Eliminamos first_name y last_name si no los vamos a usar
     first_name = None
     last_name = None
     # Nuevo campo
-    cedula = models.CharField(max_length=20,unique=True,error_messages={'unique': 'Ya existe un usuario con esta cédula.','blank': 'La cédula es obligatoria.', 'null': 'La cédula no puede ser nula.'}
-    )
-
-    # Relación con Rol
-    rol = models.ForeignKey("roles_permisos.Rol", on_delete=models.SET_NULL, null=True, blank=True, related_name="usuarios")
-
+    cedula = models.CharField(max_length=20, unique=True, error_messages={'unique': 'Ya existe un usuario con esta cédula.', 'blank': 'La cédula es obligatoria.', 'null': 'La cédula no puede ser nula.'}
+                              )
 
     def __str__(self):
         """Retorna el nombre de usuario como string representativo."""
