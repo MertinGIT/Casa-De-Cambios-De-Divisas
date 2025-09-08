@@ -17,11 +17,11 @@ documentation for details.
    
    usuarios
    admin_dashboard
-   asignar_clientes_usuarios
    clientes
    cliente_segmentacion
    global_exchange
    roles_permisos
    monedas
    cotizaciones
+   cliente_usuario
    metodos_pagos

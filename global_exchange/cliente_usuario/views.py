@@ -39,7 +39,6 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Listar asignaciones
 def cliente_usuarios_lista(request):
     """
     Vista principal que muestra la lista de asignaciones entre usuarios y clientes.
@@ -120,7 +119,6 @@ def cliente_usuarios_lista(request):
     })
 
 
-# Editar asignación
 def editar_cliente_usuario(request, id):
     """
     Vista para editar una asignación existente entre un usuario y un cliente.
@@ -229,7 +227,6 @@ def editar_cliente_usuario(request, id):
     })
 
 
-# Vista para obtener datos de un rol via AJAX (para llenar el modal de edición)
 def cliente_usuario_detalle(request, pk):
     """
     Vista AJAX para obtener detalles de asignaciones de un cliente específico.
