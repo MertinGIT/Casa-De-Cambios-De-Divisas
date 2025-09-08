@@ -52,7 +52,7 @@ urlpatterns = [
     path('admin/configuracion/seguridad/roles/', include('roles_permisos.urls'), name='roles'),
     path('admin/cliente_usuario/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
-    path("admin/pagos/", include("metodos_pagos.urls")),
+    path("admin/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
 
 ]
 

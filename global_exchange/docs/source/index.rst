@@ -24,3 +24,4 @@ documentation for details.
    roles_permisos
    monedas
    cotizaciones
+   metodos_pagos
