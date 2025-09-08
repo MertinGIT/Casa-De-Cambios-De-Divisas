@@ -24,3 +24,4 @@ documentation for details.
    monedas
    cotizaciones
    cliente_usuario
+   metodos_pagos
