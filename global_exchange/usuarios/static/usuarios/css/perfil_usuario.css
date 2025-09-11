@@ -115,6 +115,12 @@
 .user-dropdown.active {
     display: block;
 }
+.user-dropdown ul li a.selected {
+    background: #4f46e5;
+    color: #fff;
+    font-weight: 600;
+}
+
 
 /* ---------------- RESPONSIVE ---------------- */
 @media (max-width: 768px) {

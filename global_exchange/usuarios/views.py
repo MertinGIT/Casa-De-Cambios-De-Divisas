@@ -163,16 +163,21 @@ def home(request):
                             key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
                             reverse=True
                         )
-                        ultimo = registros_ordenados[0]
+                        ultimo = registros_ordenados[-1]
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     else:
                         PB_MONEDA = 0
+                        
+                    print("PB_MONEDA:", PB_MONEDA,flush=True)
 
                     # === CÁLCULOS ===
+                    print("operacion:", operacion,flush=True)
                     if operacion == "venta":  # Vender PYG → otra moneda
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                        print("COMISION_VTA:", COMISION_VTA, flush=True)
+                        print("descuento:", descuento, flush=True)
                     else:  # Compra: otra moneda → PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
                         print("TC_COMP:", TC_COMP, flush=True)
@@ -767,7 +772,13 @@ def obtener_clientes_usuario(user,request):
         - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
     """
 
-    usuarios_clientes = Usuario_Cliente.objects.select_related("id_cliente__segmentacion").filter(id_usuario=user)
+     # Solo clientes activos
+    usuarios_clientes = (
+        Usuario_Cliente.objects
+        .select_related("id_cliente__segmentacion")
+        .filter(id_usuario=user, id_cliente__estado="activo")
+    )
+    
     clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
     cliente_operativo = None
 
