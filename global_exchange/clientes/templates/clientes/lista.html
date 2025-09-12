@@ -480,7 +480,8 @@ body {
 
   <button class="btn-add rounded border-0 my-2"
         data-url="{% url 'clientes-agregar' %}"
-        onclick="openCreateModal(this.dataset.url)">
+        data-title="Agregar Nuevo Cliente"
+        onclick="openCreateModal(this.dataset.url, this.dataset.title)">
         + Agregar Cliente
   </button>
 
@@ -522,6 +523,7 @@ body {
         <button class="btn-edit btn btn-sm btn-primary"
         data-id="{{ c.id }}"
         data-edit="{% url 'clientes-editar' 0 %}"
+        data-title="Editar Cliente"
         data-detalle="{% url 'clientes-detalle' c.id %}">
   Editar
 </button>
