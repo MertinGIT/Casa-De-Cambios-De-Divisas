@@ -642,21 +642,34 @@ def crud_empleados(request):
 def user_roles_lista(request):
     """
     Lista de usuarios con buscador básico.
-    (Sin paginación desde la vista, la lógica de paginador
-    o limitador queda en el template.)
+    Optimizada para mostrar grupos sin problema N+1.
     """
     q = request.GET.get("q", "")
     campo = request.GET.get("campo", "")
 
-    usuarios = CustomUser.objects.all().order_by("-id")
+    # Usar prefetch_related para optimizar la carga de grupos
+    usuarios = CustomUser.objects.prefetch_related('groups').all().order_by("-id")
     form = UserRolePermissionForm()
 
     if q and campo:
-        filtro = {f"{campo}__icontains": q}
-        usuarios = usuarios.filter(**filtro)
+        if campo == "groups__name":
+            # Búsqueda por nombre de grupo
+            usuarios = usuarios.filter(groups__name__icontains=q).distinct()
+        else:
+            # Búsqueda por otros campos
+            filtro = {f"{campo}__icontains": q}
+            usuarios = usuarios.filter(**filtro)
+
+    # Implementar paginación si es necesario
+    from django.core.paginator import Paginator
+    
+    paginator = Paginator(usuarios, 10)  # 10 usuarios por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     return render(request, "user_roles_lista.html", {
-        "usuarios": usuarios,
+        "usuarios": page_obj,
+        "page_obj": page_obj,
         "q": q,
         "campo": campo,
         "form": form
@@ -743,10 +756,13 @@ def user_roles_edit(request, pk):
     })
 
 def user_roles_detalle(request, pk):
+    """
+    Obtener detalles de un usuario para el modal de edición.
+    """
     from django.contrib.auth.models import Group, Permission
 
     User = get_user_model()
-    user = User.objects.get(pk=pk)
+    user = User.objects.prefetch_related('groups', 'user_permissions').get(pk=pk)
 
     # Obtener todos los grupos disponibles
     all_groups = Group.objects.all()
@@ -754,11 +770,21 @@ def user_roles_detalle(request, pk):
     # Obtener todos los permisos disponibles
     all_permissions = Permission.objects.all()
 
+    # Crear una lista de grupos del usuario con información adicional
+    user_groups = []
+    for group in user.groups.all():
+        user_groups.append({
+            "id": group.id,
+            "name": group.name
+        })
+
     return JsonResponse({
         "username": user.username,
+        "cedula": getattr(user, 'cedula', ''),
         "groups": list(user.groups.values_list('id', flat=True)),
         "user_permissions": list(user.user_permissions.values_list('id', flat=True)),
         "modal_title": f"Editar Usuario: {user.username}",
+        "user_groups_info": user_groups,
 
         # Agregar todos los grupos y permisos disponibles
         "all_groups": [{"id": g.id, "name": g.name} for g in all_groups],

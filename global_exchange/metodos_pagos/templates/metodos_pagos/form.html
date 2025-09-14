@@ -30,7 +30,7 @@
 <!-- CAMPO: NOMBRE DEL MÉTODO DE PAGO -->
 <!-- Campo obligatorio con validación de longitud y unicidad -->
 <div class="form-group">
-  <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
+  <label for="{{ form.nombre.id_for_label }}">Nombre</label>
   <div class="input-icon">
     <!-- Icono: Tarjeta de crédito para representar método de pago -->
     <span class="icon">💳</span>
@@ -388,11 +388,11 @@ $(document).ready(function() {
      * MODAL DE CREACIÓN
      * Inicializa validación después de abrir el modal
      */
-    window.openCreateModal = function(createUrl) {
+    window.openCreateModal = function(createUrl, modal_title) {
         console.log("Abriendo modal crear con validación");
         
         if (originalOpenCreateModal) {
-            originalOpenCreateModal(createUrl);
+            originalOpenCreateModal(createUrl, modal_title);
         }
         
         // Timeout para asegurar que el DOM esté listo
@@ -405,11 +405,11 @@ $(document).ready(function() {
      * MODAL DE EDICIÓN
      * Inicializa validación después de cargar datos del servidor
      */
-    window.openEditModal = function(id, editUrl, detalle) {
+    window.openEditModal = function(id, editUrl, detalle, title) {
         console.log("Abriendo modal editar con validación, ID:", id);
         
         if (originalOpenEditModal) {
-            originalOpenEditModal(id, editUrl, detalle);
+            originalOpenEditModal(id, editUrl, detalle, title);
         }
         
         // Timeout más largo para permitir que el fetch complete
