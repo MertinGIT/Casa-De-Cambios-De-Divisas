@@ -83,5 +83,7 @@ class TasaDeCambioForm(forms.ModelForm):
         self.fields['moneda_origen'].initial = guarani
         self.fields['moneda_origen'].disabled = True  
         # Quitar del select de destino la moneda base
-        self.fields['moneda_destino'].queryset = Moneda.objects.exclude(pk=guarani.pk)
+        self.fields['moneda_destino'].queryset = Moneda.objects.filter(
+        estado=True
+        ).exclude(pk=guarani.pk)
 

@@ -31,8 +31,7 @@ class Moneda(models.Model):
 
     nombre = models.CharField(max_length=100, unique=True)
     abreviacion = models.CharField(max_length=10, unique=True)
-    estado = models.BooleanField(default=True)
-
+    estado = models.BooleanField(default=True)  
     """
         Retorna el nombre de la moneda como representación de texto.
     """

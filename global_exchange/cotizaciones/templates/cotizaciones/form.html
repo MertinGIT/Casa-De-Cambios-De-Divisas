@@ -11,7 +11,7 @@
 <div class="form-group">
   <label for="{{ form.moneda_origen.id_for_label }}">Moneda base</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    <span class="icon">💵</span>
     {{ form.moneda_origen|add_class:"custom-input"|attr:"disabled:true"}}
     <!-- Campo hidden para enviar el valor por POST -->
     <input type="hidden" name="moneda_origen" value="{{ form.moneda_origen.value }}">
@@ -28,7 +28,7 @@
 <div class="form-group">
   <label for="{{ form.moneda_destino.id_for_label }}">Moneda destino</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    <span class="icon">💵</span>
     {{ form.moneda_destino|add_class:"custom-input" }}
   </div>
   {% if form.moneda_destino.errors %}
@@ -44,7 +44,7 @@
 <div class="form-group">
   <label for="{{ form.monto_compra.id_for_label }}">Compra</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-arrow-right-short" style="color: black;"></i> </span>
+    <span class="icon">➡️</span>
     {{ form.monto_compra|add_class:"custom-input" }}
   </div>
   {% if form.monto_compra.errors %}
@@ -59,7 +59,7 @@
 <div class="form-group">
   <label for="{{ form.monto_venta.id_for_label }}">Venta</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-arrow-right-short" style="color: black;"></i> </span>
+    <span class="icon">➡️</span>
     {{ form.monto_venta|add_class:"custom-input" }}
   </div>
   {% if form.monto_venta.errors %}
@@ -220,8 +220,13 @@ function setupTasaValidation() {
 
     // Forzar que monto_compra y monto_venta solo acepten números
     $("#form-accion input[name='monto_compra'], #form-accion input[name='monto_venta']").on("input", function() {
-        this.value = this.value.replace(/[^0-9.]/g,'');
-    });
+    // Permite números y un solo punto
+    let val = this.value;
+    if (!/^\d*\.?\d*$/.test(val)) {
+        this.value = val.replace(/[^0-9.]/g, '')
+                        .replace(/(\..*)\./g, '$1'); // evita más de un punto
+    }
+});
 
     return tasaValidator;
 }
