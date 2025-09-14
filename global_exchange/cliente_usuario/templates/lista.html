@@ -186,6 +186,34 @@
     color: #DF0404;
   }
 
+  /* Estilo para usuarios asignados */
+  .usuarios-lista {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+    max-width: 300px;
+    margin: 0 auto;
+  }
+
+  .usuario-badge {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid #c7d2fe;
+  }
+
+  .sin-usuarios {
+    color: #B5B7C0;
+    font-style: italic;
+    font-size: 12px;
+  }
+
   .btn {
     padding: 6px 12px;
     border-radius: 4px;
@@ -368,9 +396,9 @@
 
     .custom-table tbody td {
       display: block;
-      padding: 4px 0;
+      padding: 8px 0;
       border: none;
-      text-align: center;
+      text-align: left;
     }
 
     .custom-table tbody td:before {
@@ -378,18 +406,28 @@
       font-weight: 500;
       color: #5D5FEF;
       display: inline-block;
-      min-width: 100px;
-      margin-bottom: 2px;
+      min-width: 120px;
+      margin-bottom: 4px;
     }
 
     .custom-table tbody td:last-child {
       margin-top: 12px;
       padding-top: 12px;
       border-top: 1px solid #e5e7eb;
+      text-align: center;
     }
 
     .custom-table tbody td:last-child:before {
       content: "Acciones: ";
+      display: block;
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .usuarios-lista {
+      justify-content: flex-start;
+      max-width: none;
+      margin: 0;
     }
 
     .btn {
@@ -414,7 +452,7 @@
     }
 
     .custom-table tbody td:before {
-      min-width: 80px;
+      min-width: 100px;
       font-size: 12px;
     }
 
@@ -426,6 +464,11 @@
       font-size: 12px;
       padding: 4px 12px;
       min-width: 70px;
+    }
+
+    .usuario-badge {
+      font-size: 11px;
+      padding: 3px 6px;
     }
 
     .btn {
@@ -441,6 +484,7 @@
     }
   }
 </style>
+
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -462,25 +506,40 @@
           <!-- Selector de campo -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
-            <option value="nombre">Nombre</option>
+            <option value="nombre" {% if campo_selected == 'nombre' %}selected{% endif %}>Nombre</option>
           </select>
         </form>
       </div>
     </div>
+    
     <!-- Tabla -->
     <div class="table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th style="vertical-align: middle; min-width: 160px; text-align: center;">Nombre</th>
+            <th style="vertical-align: middle; min-width: 200px; text-align: center;">Nombre del Cliente</th>
+            <th style="vertical-align: middle; min-width: 300px; text-align: center;">Usuarios Asignados</th>
             <th style="vertical-align: middle; min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody style="text-align: center;">
           {% for c in clientes %}
           <tr>
-            <td data-label="Nombre" style="vertical-align: middle; min-width: 160px;">{{ c.nombre }}</td>
-            <td data-label="Acciones" style="vertical-align: middle; min-width: 160px; text-align: center;">
+            <td data-label="Nombre del Cliente" style="vertical-align: middle; text-align: center;">
+              <strong>{{ c.nombre }}</strong>
+            </td>
+            <td data-label="Usuarios Asignados" style="vertical-align: middle; text-align: center;">
+              {% if c.usuarios.exists %}
+                <div class="usuarios-lista">
+                  {% for usuario in c.usuarios.all %}
+                    <span class="usuario-badge">{{ usuario.username }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <span class="sin-usuarios">Sin usuarios asignados</span>
+              {% endif %}
+            </td>
+            <td data-label="Acciones" style="vertical-align: middle; text-align: center;">
               <button class="btn-edit btn btn-sm btn-primary"
                 onclick="openEditModal('{{ c.id }}', '{% url 'editar_cliente_usuario' 0 %}', '{% url 'cliente_usuario_detalle' c.id %}', 'Asignar Usuarios')"
                 type="button">
@@ -490,7 +549,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="8" class="no-results">Sin resultados encontrados.</td>
+            <td colspan="3" class="no-results">Sin resultados encontrados.</td>
           </tr>
           {% endfor %}
         </tbody>
