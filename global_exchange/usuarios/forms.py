@@ -182,6 +182,26 @@ class CustomUserChangeForm(UserChangeForm):
         super().__init__(*args, **kwargs)
         self.fields['email'].disabled = True
 
+    def _validate_password_rules(self, password, field_name):
+        """
+        Valida la contraseña nueva contra las reglas de Django y
+        traduce los mensajes al español.
+        """
+        try:
+            validate_password(password, self.instance)
+        except ValidationError as e:
+            mensajes_traducidos = []
+            for msg in e.messages:
+                if "This password is too short" in msg:
+                    mensajes_traducidos.append("Debe contener al menos 8 caracteres.")
+                elif "This password is too common" in msg:
+                    mensajes_traducidos.append("La contraseña es demasiado común.")
+                elif "This password is entirely numeric" in msg:
+                    mensajes_traducidos.append("La contraseña no puede ser solo numérica.")
+                else:
+                    mensajes_traducidos.append(msg)
+            self.add_error(field_name, mensajes_traducidos)
+
     def clean(self):
         """
         Realiza las validaciones personalizadas del formulario.
@@ -206,22 +226,20 @@ class CustomUserChangeForm(UserChangeForm):
             elif not self.instance.check_password(password_actual):
                 self.add_error('password_actual', "La contraseña actual es incorrecta.")
 
-            try:
-                validate_password(password_nuevo, self.instance)
-            except ValidationError as e:
-                mensajes_filtrados = [
-                    msg for msg in e.messages
-                    if "al menos 8 caracteres" in msg or "totalmente numérico" in msg
-                ]
-                if mensajes_filtrados:
-                    self.add_error('password_nuevo', mensajes_filtrados)
+            # validar reglas de seguridad con mensajes traducidos
+            if password_nuevo:
+                # 🚨 verificar si es igual a la actual
+                if self.instance.check_password(password_nuevo):
+                    self.add_error('password_nuevo', "La nueva contraseña no puede ser igual a la contraseña actual.")
+                else:
+                    self._validate_password_rules(password_nuevo, 'password_nuevo')
 
             if password_nuevo != password_confirmacion:
                 self.add_error('password_confirmacion', "Las contraseñas no coinciden.")
         else:
+            # Si no se quiere cambiar contraseña, igual debe ingresar la actual
             if not self.instance.check_password(password_actual):
                 self.add_error('password_actual', "Para realizar cambios debe ingresar la contraseña actual.")
-    
 
         return cleaned_data
 
