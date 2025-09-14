@@ -220,8 +220,13 @@ function setupTasaValidation() {
 
     // Forzar que monto_compra y monto_venta solo acepten números
     $("#form-accion input[name='monto_compra'], #form-accion input[name='monto_venta']").on("input", function() {
-        this.value = this.value.replace(/[^0-9.]/g,'');
-    });
+    // Permite números y un solo punto
+    let val = this.value;
+    if (!/^\d*\.?\d*$/.test(val)) {
+        this.value = val.replace(/[^0-9.]/g, '')
+                        .replace(/(\..*)\./g, '$1'); // evita más de un punto
+    }
+});
 
     return tasaValidator;
 }

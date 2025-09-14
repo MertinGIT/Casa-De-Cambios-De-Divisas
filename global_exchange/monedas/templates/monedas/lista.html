@@ -507,13 +507,17 @@ body {
                   Editar
                 </button>
                 {% if m.estado %}
-                  <a href="{% url 'moneda_desactivar' m.id %}" class="btn btn-sm btn-danger">
+                  <button type="button"
+                          class="btn btn-sm btn-danger"
+                          onclick="openDeleteModal({{ m.id }}, '{% url 'moneda_desactivar' 0 %}', '¿Seguro que deseas desactivar esta moneda?', 'Desactivar')">
                     Desactivar
-                  </a>
+                  </button>
                 {% else %}
-                  <a href="{% url 'moneda_desactivar' m.id %}" class="btn btn-sm btn-success">
+                  <button type="button"
+                          class="btn btn-sm btn-success"
+                          onclick="openDeleteModal({{ m.id }}, '{% url 'moneda_desactivar' 0 %}', '¿Seguro que deseas activar esta moneda?', 'Activar')">
                     Activar
-                  </a>
+                  </button>
                 {% endif %}
               </td>
             </tr>
