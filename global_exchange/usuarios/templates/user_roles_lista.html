@@ -217,6 +217,31 @@
     background-color: #dc2626;
   }
 
+  /* Estilos para los grupos */
+  .groups-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .group-badge {
+    background-color: #e0e7ff;
+    color: #3730a3;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    border: 1px solid #c7d2fe;
+  }
+
+  .no-groups {
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 13px;
+  }
+
   .pagination-wrapper {
     display: flex;
     justify-content: center;
@@ -398,6 +423,17 @@
       padding: 8px 12px;
       font-size: 12px;
     }
+
+    .groups-container {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .group-badge {
+      font-size: 11px;
+      padding: 3px 6px;
+    }
   }
 
   @media (max-width: 480px) {
@@ -441,7 +477,9 @@
     }
   }
 </style>
+
 {% include 'base_seguridad.html' %}
+
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -463,12 +501,12 @@
           <!-- Selector de campo -->
           <select name="campo" class="search-field-selector">
             <option value="">Buscar por</option>
-            <option value="nombre">Nombre</option>
+            <option value="username" {% if campo == 'username' %}selected{% endif %}>Nombre</option>
+            <option value="groups__name" {% if campo == 'groups__name' %}selected{% endif %}>Grupo</option>
           </select>
         </form>
       </div>
     </div>
-
 
     <!-- Tabla -->
     <div class="table-container">
@@ -476,13 +514,28 @@
         <thead>
           <tr>
             <th style="vertical-align: middle; min-width: 160px; text-align: left;">Usuario</th>
+            <th style="vertical-align: middle; min-width: 200px; text-align: left;">Grupos</th>
             <th style="vertical-align: middle; min-width: 160px; text-align: center;">Acciones</th>
           </tr>
         </thead>
         <tbody>
           {% for u in usuarios %}
           <tr>
-            <td data-label="Usuario" style="vertical-align: middle; min-width: 160px;">{{ u.username }}</td>
+            <td data-label="Usuario" style="vertical-align: middle; min-width: 160px;">
+              <strong>{{ u.username }}</strong>
+              {% if u.cedula %}
+                <br><small style="color: #6b7280;">{{ u.cedula }}</small>
+              {% endif %}
+            </td>
+            <td data-label="Grupos" style="vertical-align: middle; min-width: 200px;">
+              <div class="groups-container">
+                {% for grupo in u.groups.all %}
+                  <span class="group-badge">{{ grupo.name }}</span>
+                {% empty %}
+                  <span class="no-groups">Sin grupos asignados</span>
+                {% endfor %}
+              </div>
+            </td>
             <td data-label="Acciones" style="vertical-align: middle; min-width: 160px; text-align: center;">
               <button class="btn-edit btn btn-sm btn-primary" data-id="{{ u.id }}"
                 data-edit="{% url 'user_roles_edit' 0 %}" data-detalle="{% url 'user_roles_detalle' u.id %}"
@@ -493,7 +546,7 @@
           </tr>
           {% empty %}
           <tr>
-            <td colspan="8" class="no-results">Sin resultados encontrados.</td>
+            <td colspan="3" class="no-results">Sin resultados encontrados.</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -504,58 +557,54 @@
     {% if page_obj %}
     <div class="pagination-wrapper">
       <p class="pagination-info">
-        Mostrando datos {{ page_obj.start_index|default:1 }} a {{ page_obj.end_index|default:1 }} de {{
-        page_obj.paginator.count|default:0 }} entradas
+        Mostrando datos {{ page_obj.start_index|default:1 }} a {{ page_obj.end_index|default:1 }} de {{ page_obj.paginator.count|default:0 }} entradas
       </p>
-
+      
       <nav>
         <ul class="custom-pagination">
           {% if page_obj.has_previous %}
-          <li class="page-item">
-            <a class="page-link"
-              href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&lsaquo;</a>
-          </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&lsaquo;</a>
+            </li>
           {% else %}
-          <li class="page-item disabled">
-            <span class="page-link">&lsaquo;</span>
-          </li>
+            <li class="page-item disabled">
+              <span class="page-link">&lsaquo;</span>
+            </li>
           {% endif %}
 
           {% for i in page_obj.paginator.page_range %}
-          {% if i == page_obj.number %}
-          <li class="page-item active">
-            <span class="page-link">{{ i }}</span>
-          </li>
-          {% else %}
-          {% with current_minus_2=page_obj.number|add:"-2" current_plus_2=page_obj.number|add:"2" %}
-          {% if i <= 2 or i > page_obj.paginator.num_pages|add:"-2" or i >= current_minus_2 and i <= current_plus_2 %}
-              <li class="page-item">
-              <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i
-                }}</a>
+            {% if i == page_obj.number %}
+              <li class="page-item active">
+                <span class="page-link">{{ i }}</span>
               </li>
-              {% elif i == 3 and page_obj.number > 5 %}
-              <li class="page-item disabled">
-                <span class="page-link">...</span>
-              </li>
-              {% elif i == page_obj.paginator.num_pages|add:"-2" and page_obj.number <
-                page_obj.paginator.num_pages|add:"-4" %} <li class="page-item disabled">
-                <span class="page-link">...</span>
-                </li>
+            {% else %}
+              {% with current_minus_2=page_obj.number|add:"-2" current_plus_2=page_obj.number|add:"2" %}
+                {% if i <= 2 or i > page_obj.paginator.num_pages|add:"-2" or i >= current_minus_2 and i <= current_plus_2 %}
+                  <li class="page-item">
+                    <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i }}</a>
+                  </li>
+                {% elif i == 3 and page_obj.number > 5 %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
+                {% elif i == page_obj.paginator.num_pages|add:"-2" and page_obj.number < page_obj.paginator.num_pages|add:"-4" %}
+                  <li class="page-item disabled">
+                    <span class="page-link">...</span>
+                  </li>
                 {% endif %}
-                {% endwith %}
-                {% endif %}
-                {% endfor %}
+              {% endwith %}
+            {% endif %}
+          {% endfor %}
 
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                  <a class="page-link"
-                    href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&rsaquo;</a>
-                </li>
-                {% else %}
-                <li class="page-item disabled">
-                  <span class="page-link">&rsaquo;</span>
-                </li>
-                {% endif %}
+          {% if page_obj.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&rsaquo;</a>
+            </li>
+          {% else %}
+            <li class="page-item disabled">
+              <span class="page-link">&rsaquo;</span>
+            </li>
+          {% endif %}
         </ul>
       </nav>
     </div>

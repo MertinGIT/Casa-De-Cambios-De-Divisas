@@ -1,6 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.contrib.auth.models import Group, Permission
+from django.core.paginator import Paginator
 from .forms import RolForm
 
 
@@ -29,12 +30,29 @@ def rol_lista(request):
     - ``roles/lista.html``
     """
     roles = Group.objects.all().order_by("-id")
+
+    # --- Filtro de búsqueda ---
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+
+    if q:
+        if campo == "nombre":
+            roles = roles.filter(name__icontains=q)
+
+    # --- Paginación ---
+    paginator = Paginator(roles, 10)  # 10 registros por página
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     permisos = Permission.objects.all().order_by("name")
     form = RolForm()
     return render(request, "roles/lista.html", {
-        "roles": roles,
+        "roles": page_obj.object_list,
         "permisos": permisos,
         "form": form,
+        "page_obj": page_obj,
+        "q": q,
+        "campo": campo,
     })
 
 
@@ -61,7 +79,7 @@ def rol_nuevo(request):
 
     Template
     --------
-    - ``roles/lista.html`` (cuando hay errores o modal activo).
+    - ``roles/lista.html``
     """
     if request.method == "POST":
         form = RolForm(request.POST)
@@ -71,12 +89,30 @@ def rol_nuevo(request):
     else:
         form = RolForm()
     permisos_all = Permission.objects.all().order_by("name")
+
+    # --- Aseguramos paginación en modal ---
+    roles = Group.objects.all().order_by("-id")
+
+    # Mantener filtro de búsqueda si viene en la querystring
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+    if q and campo == "nombre":
+        roles = roles.filter(name__icontains=q)
+
+    paginator = Paginator(roles, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     return render(request, "roles/lista.html", {
         "form": form,
         "permisos": permisos_all,
         "permisos_asignados": [],
         "show_modal": True,
         "modal_type": "create",
+        "roles": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "campo": campo,
     })
 
 
@@ -111,6 +147,20 @@ def rol_editar(request, pk):
         form = RolForm(instance=group)
     permisos_all = Permission.objects.all().order_by("name")
     permisos_asignados = list(group.permissions.values_list("id", flat=True))
+
+    # --- Aseguramos paginación en modal ---
+    roles = Group.objects.all().order_by("-id")
+
+    # Mantener filtro de búsqueda si viene en la querystring
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+    if q and campo == "nombre":
+        roles = roles.filter(name__icontains=q)
+
+    paginator = Paginator(roles, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
     return render(request, "roles/lista.html", {
         "form": form,
         "permisos": permisos_all,
@@ -118,6 +168,10 @@ def rol_editar(request, pk):
         "show_modal": True,
         "modal_type": "edit",
         "obj_id": group.id,
+        "roles": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "campo": campo,
     })
 
 

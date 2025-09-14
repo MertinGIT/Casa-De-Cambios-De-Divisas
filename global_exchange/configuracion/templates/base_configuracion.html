@@ -7,7 +7,7 @@
 
     <a href="{% url 'cotizacion' %}" class="module-btn {% if request.resolver_match.url_name == 'cotizacion' %}active-config{% endif %}">💱 Tasa de Cambio</a>
 
-    <a href="javascript:void(0)" class="module-btn">💳 Métodos de Pago</a>
+    <a href="{% url 'metodos_pagos' %}" class="module-btn {% if request.resolver_match.url_name == 'metodos_pagos' %}active-config{% endif %}">💳 Métodos de Pago</a>
 
     <a href="{% url 'lista-segmentaciones' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-segmentaciones' %}active-config{% endif %}">👥 Segmentacion</a>
 
