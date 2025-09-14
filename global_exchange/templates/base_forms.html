@@ -411,7 +411,7 @@
               }
             } else if (field.tagName === "SELECT" && field.multiple) {
               Array.from(field.options).forEach((opt) => {
-                opt.selected = (value || []).includes(parseInt(opt.value)) || (value || []).includes(opt.value);
+                opt.selected = false;
               });
             } else {
               field.value = value;
