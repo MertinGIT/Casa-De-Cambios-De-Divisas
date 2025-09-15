@@ -27,7 +27,13 @@
         <p class="dropdown-title">Seleccionar Cliente</p>
         <ul>
             {% for cliente in clientes_asociados %}
-                <li><a href="#" data-cliente-id="{{ cliente.id }}">{{ cliente.nombre }}</a></li>
+                <li>
+                    <a href="#" 
+                        data-cliente-id="{{ cliente.id }}"
+                        class="{% if cliente_operativo and cliente.id == cliente_operativo.id %}selected{% endif %}">
+                        {{ cliente.nombre }}
+                    </a>
+                </li>
             {% empty %}
                 <li><span>No tiene clientes asignados</span></li>
             {% endfor %}
@@ -50,6 +56,12 @@ dropdownItems.forEach(item => {
 
         // Cambiar visualmente
         document.querySelector('.user-name').innerHTML = "{{ user.username }} (" + nombreCliente + ")";
+
+        // Quitar seleccionado anterior
+        dropdownItems.forEach(el => el.classList.remove("selected"));
+
+        // Marcar este como seleccionado
+        this.classList.add("selected");
 
         // Guardar en sesión
         fetch("{% url 'set_cliente_operativo' %}", {
