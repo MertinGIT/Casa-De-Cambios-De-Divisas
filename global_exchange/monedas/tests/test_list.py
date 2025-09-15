@@ -6,9 +6,12 @@ from monedas.models import Moneda
 class MonedaListViewTest(TestCase):
     def setUp(self):
         # Crear superusuario
-        self.superadmin = CustomUser.objects.create_superuser(
-            username='admin', email='admin@test.com', password='1234'
-        )
+        if not CustomUser.objects.filter(username='superadmin').exists():
+            self.superadmin = CustomUser.objects.create_superuser(
+                username='superadmin', email='admin@test.com', password='ContraseñaSegura123'
+            )
+        else:
+            self.superadmin = CustomUser.objects.get(username='superadmin')
         self.client = Client()
         
         # Crear algunas monedas
@@ -17,7 +20,7 @@ class MonedaListViewTest(TestCase):
 
     def test_lista_monedas_superadmin(self):
         # Login
-        self.client.login(username='admin', password='1234')
+        self.client.login(username='superadmin', password='ContraseñaSegura123')
 
         # Acceder a la vista de lista
         response = self.client.get(reverse('monedas'))
@@ -32,7 +35,7 @@ class MonedaListViewTest(TestCase):
         self.assertContains(response, 'Activar')     # moneda2
 
     def test_busqueda_por_nombre(self):
-        self.client.login(username='admin', password='1234')
+        self.client.login(username='superadmin', password='ContraseñaSegura123')
         response = self.client.get(reverse('monedas'), {'q': 'Dólar', 'campo': 'nombre'})
         self.assertContains(response, 'Dólar')
         self.assertNotContains(response, 'Euro')

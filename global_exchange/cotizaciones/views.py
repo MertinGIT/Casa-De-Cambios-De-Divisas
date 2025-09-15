@@ -104,6 +104,17 @@ def cotizacion_nuevo(request):
     return redirect("cotizacion")
 
 def cotizacion_editar(request, pk):
+    """
+    Edita una cotización existente de TasaDeCambio.
+
+    Esta vista maneja tanto solicitudes GET como POST. En el caso de POST,
+    valida y guarda los cambios del formulario, manteniendo el estado original
+    de la cotización. Responde con JSON si la solicitud es AJAX o redirige
+    a la lista de cotizaciones en solicitudes normales. En caso de errores,
+    vuelve a mostrar el modal con los mensajes de validación.
+
+    """
+    
     cotizacion = get_object_or_404(TasaDeCambio, pk=pk)
 
     if request.method == "POST":

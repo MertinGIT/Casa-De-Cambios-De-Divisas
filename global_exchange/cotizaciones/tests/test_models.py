@@ -5,7 +5,6 @@ from decimal import Decimal
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 
-
 class CotizacionViewsTest(TestCase):
     @classmethod
     def setUpTestData(cls):
@@ -25,6 +24,7 @@ class CotizacionViewsTest(TestCase):
 
     def setUp(self):
         self.client = Client()
+        self.client.login(username='superadmin', password='ContraseñaSegura123')
 
     # ------------------------
     # cotizacion_lista

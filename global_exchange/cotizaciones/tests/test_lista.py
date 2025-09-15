@@ -21,6 +21,9 @@ class TasaDeCambioListViewTest(TestCase):
                 vigencia=timezone.now(),
                 estado=(i % 2 == 0)
             )
+    def setUp(self):
+        # Loguear antes de cada test
+        self.client.login(username='superadmin', password='ContraseñaSegura123')
 
     def test_template_used_and_context(self):
         url = reverse('cotizacion')  # nombre de URL real
