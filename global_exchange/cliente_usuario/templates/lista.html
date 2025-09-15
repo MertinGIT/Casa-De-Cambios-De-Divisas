@@ -528,7 +528,7 @@
             <td data-label="Nombre del Cliente" style="vertical-align: middle; text-align: center;">
               {{ c.nombre }}
             </td>
-            <td data-label="Usuarios Asignados" style="display: flex; align-items: center; gap: 20px;">
+            <td data-label="Usuarios Asignados" style="display: flex; align-items: center; justify-content: center; gap: 20px;">
               {% if c.usuarios.exists %}
                 <div class="usuarios-lista">
                   {% for usuario in c.usuarios.all %}

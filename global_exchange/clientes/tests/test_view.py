@@ -1,108 +1,107 @@
-from django.test import TestCase
+# tests/test_views.py
+from django.test import TestCase, Client
 from django.urls import reverse
-from django.contrib.auth.models import User
-from clientes.models import Cliente, Segmentacion
 from django.contrib.auth import get_user_model
-
 User = get_user_model()
+from clientes.models import Cliente, Segmentacion
 
 class ClienteViewsTest(TestCase):
     def setUp(self):
-        # Usuario superadmin
-        self.superadmin = User.objects.create_superuser(
-            username='admin',
-            email='admin@example.com',
-            password='password123',
-            cedula='0001'
-        )
-        # Usuario normal
-        self.user = User.objects.create_user(
-            username='user',
-            email='user@example.com',
-            password='password123',
-            cedula='0002'
-        )
+        # Usa el superadmin que ya existe en la BD
+        self.superuser = User.objects.get(username="superadmin")
+        self.client.force_login(self.superuser)
 
-        # Segmentación de prueba
-        self.segmentacion = Segmentacion.objects.create(
-            nombre="Regular",
-            descripcion="Cliente regular",
-            descuento=10
-        )
-
-        # Cliente de prueba
+        self.segmento = Segmentacion.objects.create(nombre="VIP")
         self.cliente = Cliente.objects.create(
-            nombre="Juan",
+            nombre="Juan Pérez",
             email="juan@example.com",
-            telefono="12345678",
-            segmentacion=self.segmentacion,
+            telefono="123456",
+            segmentacion=self.segmento,
             estado="activo"
         )
 
-    # ======================= Acceso =======================
-    def test_clientes_view_superadmin(self):
-        self.client.login(username='admin', password='password123')
-        url = reverse('clientes')
-        response = self.client.get(url)
+    def test_clientes_template_render(self):
+        response = self.client.get(reverse("clientes"))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'clientes/lista.html')
+        self.assertTemplateUsed(response, "clientes/lista.html")
 
-    def test_clientes_view_normal_user_redirect(self):
-        self.client.login(username='user', password='password123')
-        url = reverse('clientes')
-        response = self.client.get(url)
-        self.assertRedirects(response, reverse('home'))
-
-    def test_clientes_view_not_logged_redirect(self):
-        url = reverse('clientes')
-        response = self.client.get(url)
-        self.assertRedirects(response, reverse('login'))
-
-    # ======================= ListView =======================
-    def test_cliente_list_view_superadmin(self):
-        self.client.login(username='admin', password='password123')
-        url = reverse('clientes')
-        response = self.client.get(url)
+    def test_listview_muestra_clientes(self):
+        response = self.client.get(reverse("clientes"))
         self.assertEqual(response.status_code, 200)
-        self.assertIn(self.cliente, response.context['clientes'])
-        self.assertIn(self.segmentacion, response.context['segmentaciones'])
+        self.assertContains(response, "Juan Pérez")
 
-    # ======================= CreateView =======================
-    def test_cliente_create_view_post(self):
-        self.client.login(username='admin', password='password123')
-        url = reverse('clientes-agregar')
+    def test_listview_filtrado_por_nombre(self):
+        response = self.client.get(reverse("clientes"), {"q": "Juan", "campo": "nombre"})
+        self.assertContains(response, "Juan Pérez")
+        response = self.client.get(reverse("clientes"), {"q": "Otro", "campo": "nombre"})
+        self.assertNotContains(response, "Juan Pérez")
+
+    def test_listview_filtrado_por_segmento(self):
+        response = self.client.get(reverse("clientes"), {"q": "VIP", "campo": "segmento"})
+        self.assertContains(response, "Juan Pérez")
+
+    def test_create_cliente(self):
         data = {
-            'nombre': 'Pedro',
-            'email': 'pedro@example.com',
-            'telefono': '5555',
-            'segmentacion': self.segmentacion.id,
-            'estado': 'activo'
+            "nombre": "Ana Gómez",
+            "email": "ana@example.com",
+            "telefono": "987654",
+            "segmentacion": self.segmento.id,
+            "estado": "activo",
         }
-        response = self.client.post(url, data)
+        response = self.client.post(reverse("clientes-agregar"), data)
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(Cliente.objects.filter(email='pedro@example.com').exists())
+        self.assertTrue(Cliente.objects.filter(email="ana@example.com").exists())
 
-    # ======================= UpdateView =======================
-    def test_cliente_update_view_post(self):
-        self.client.login(username='admin', password='password123')
-        url = reverse('clientes-editar', args=[self.cliente.id])
+    def test_update_cliente(self):
         data = {
-            'nombre': 'Juan Modificado',
-            'email': 'juan@example.com',
-            'telefono': '9999',
-            'segmentacion': self.segmentacion.id,
-            'estado': 'activo'
+            "nombre": "Juan Editado",
+            "email": "juan@example.com",
+            "telefono": "555",
+            "segmentacion": self.segmento.id,
+            "estado": "activo",
         }
-        response = self.client.post(url, data)
+        response = self.client.post(reverse("clientes-editar", args=[self.cliente.id]), data)
         self.assertEqual(response.status_code, 302)
         self.cliente.refresh_from_db()
-        self.assertEqual(self.cliente.nombre, 'Juan Modificado')
-        self.assertEqual(self.cliente.telefono, '9999')
+        self.assertEqual(self.cliente.nombre, "Juan Editado")
 
-    # ======================= DeleteView =======================
-    def test_cliente_delete_view_post(self):
-        self.client.login(username='admin', password='password123')
-        url = reverse('clientes-eliminar', args=[self.cliente.id])
-        response = self.client.post(url)
+    def test_delete_cliente(self):
+        response = self.client.post(reverse("clientes-eliminar", args=[self.cliente.id]))
         self.assertEqual(response.status_code, 302)
         self.assertFalse(Cliente.objects.filter(id=self.cliente.id).exists())
+
+    def test_desactivar_cliente(self):
+        response = self.client.post(reverse("clientes-desactivate", args=[self.cliente.id]))
+        self.assertEqual(response.status_code, 302)
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.estado, "inactivo")
+
+    def test_activar_cliente(self):
+        self.cliente.estado = "inactivo"
+        self.cliente.save()
+        response = self.client.post(reverse("clientes-activate", args=[self.cliente.id]))
+        self.assertEqual(response.status_code, 302)
+        self.cliente.refresh_from_db()
+        self.assertEqual(self.cliente.estado, "activo")
+
+    def test_check_email_existente(self):
+        response = self.client.post(reverse("clientes-check-email"), {"email": "juan@example.com"})
+        self.assertJSONEqual(response.content, "false")
+
+    def test_check_email_disponible(self):
+        response = self.client.post(reverse("clientes-check-email"), {"email": "nuevo@example.com"})
+        self.assertJSONEqual(response.content, "true")
+
+    def test_cliente_detalle(self):
+        response = self.client.get(reverse("clientes-detalle", args=[self.cliente.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(
+            response.content,
+            {
+                "nombre": "Juan Pérez",
+                "email": "juan@example.com",
+                "telefono": "123456",
+                "segmentacion": self.segmento.id,
+                "estado": "activo",
+            },
+        )

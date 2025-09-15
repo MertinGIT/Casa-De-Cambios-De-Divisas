@@ -35,7 +35,6 @@ class RoleBasedMiddleware:
 
         # Si no es una ruta protegida, continuar
         if not self._is_protected_route(path):
-            print("ENTRA ACA", flush=True)
             response = self.get_response(request)
             return response
 
