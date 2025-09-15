@@ -11,7 +11,6 @@ Modelos
 
 Vistas basadas en función
 ------------------------
-.. autofunction:: clientes.views.superadmin_required
 .. autofunction:: clientes.views.clientes
 
 

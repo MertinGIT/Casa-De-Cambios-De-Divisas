@@ -7,6 +7,26 @@ from decimal import Decimal, ROUND_HALF_UP
 class TasaDeCambioForm(forms.ModelForm):
     """
     Formulario para la creación y edición de tasas de cambio.
+
+    Valida los montos de compra y venta asegurando:
+        - Máximo 15 dígitos antes de la coma.
+        - Máximo 8 decimales.
+        - Redondeo a 2 decimales usando ROUND_HALF_UP.
+    
+    También valida que la moneda de origen y destino no sean iguales.
+
+    Campos:
+        - moneda_origen (Moneda): Moneda base, fijada por defecto a Guaraní (PYG).
+        - moneda_destino (Moneda): Moneda destino, excluyendo la moneda base.
+        - monto_compra (Decimal): Valor de compra, validado y redondeado.
+        - monto_venta (Decimal): Valor de venta, validado y redondeado.
+        - vigencia (DateTime): Fecha y hora de vigencia de la tasa.
+        - estado (Boolean): Estado activo/inactivo de la tasa.
+
+    Métodos de limpieza:
+        - clean_monto_compra(): valida y redondea monto_compra.
+        - clean_monto_venta(): valida y redondea monto_venta.
+        - clean(): valida que moneda_origen y moneda_destino sean distintas.
     """
 
     monto_compra = forms.DecimalField(
@@ -22,6 +42,14 @@ class TasaDeCambioForm(forms.ModelForm):
         widget=forms.NumberInput(attrs={"step":  "any"})  # <-- importante
     )
     def clean_monto_compra(self):
+        """
+        Valida y redondea el monto de compra.
+
+        - Verifica que la parte entera tenga máximo 15 dígitos.
+        - Verifica que la parte decimal tenga máximo 8 dígitos significativos.
+        - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
+
+        """
         monto = self.cleaned_data["monto_compra"]
         if monto is not None:
             # Validar dígitos antes y después de la coma
@@ -36,6 +64,14 @@ class TasaDeCambioForm(forms.ModelForm):
         return monto
 
     def clean_monto_venta(self):
+        """
+        Valida y redondea el monto de venta.
+
+        - Verifica que la parte entera tenga máximo 15 dígitos.
+        - Verifica que la parte decimal tenga máximo 8 dígitos significativos.
+        - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
+
+        """
         monto = self.cleaned_data["monto_venta"]
         if monto is not None:
             str_monto = f"{monto:.2f}"
@@ -48,6 +84,13 @@ class TasaDeCambioForm(forms.ModelForm):
         return monto
 
     def clean(self):
+        """
+        Valida que la moneda de origen y destino no sean iguales.
+
+        :return: Diccionario con los datos limpios.
+        :rtype: dict
+        :raises ValidationError: Si moneda_origen y moneda_destino son iguales.
+        """
         cleaned_data = super().clean()
         origen = cleaned_data.get("moneda_origen")
         destino = cleaned_data.get("moneda_destino")
@@ -60,7 +103,7 @@ class TasaDeCambioForm(forms.ModelForm):
 
     class Meta:
         model = TasaDeCambio
-        fields = "__all__"
+        fields = ['moneda_origen', 'moneda_destino', 'monto_compra', 'monto_venta', 'vigencia', 'estado']
         labels = {
             "moneda_origen": "Moneda Origen",
             "moneda_destino": "Moneda Destino",
@@ -75,6 +118,12 @@ class TasaDeCambioForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """
+        Inicializa el formulario.
+
+        - Fija moneda_origen por defecto a Guaraní (PYG) y la deshabilita.
+        - Configura moneda_destino excluyendo la moneda base.
+        """
         super().__init__(*args, **kwargs)
         guarani, created = Moneda.objects.get_or_create(
             abreviacion='PYG',
@@ -83,4 +132,7 @@ class TasaDeCambioForm(forms.ModelForm):
         self.fields['moneda_origen'].initial = guarani
         self.fields['moneda_origen'].disabled = True  
         # Quitar del select de destino la moneda base
-        self.fields['moneda_destino'].queryset = Moneda.objects.exclude(pk=guarani.pk)
+        self.fields['moneda_destino'].queryset = Moneda.objects.filter(
+        estado=True
+        ).exclude(pk=guarani.pk)
+

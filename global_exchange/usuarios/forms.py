@@ -9,6 +9,8 @@ from django.contrib.auth.forms import UserChangeForm
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import Group, Permission
+from .models import CustomUser
 User = get_user_model()
 
 class CustomUserCreationForm(UserCreationForm):
@@ -180,6 +182,26 @@ class CustomUserChangeForm(UserChangeForm):
         super().__init__(*args, **kwargs)
         self.fields['email'].disabled = True
 
+    def _validate_password_rules(self, password, field_name):
+        """
+        Valida la contraseña nueva contra las reglas de Django y
+        traduce los mensajes al español.
+        """
+        try:
+            validate_password(password, self.instance)
+        except ValidationError as e:
+            mensajes_traducidos = []
+            for msg in e.messages:
+                if "This password is too short" in msg:
+                    mensajes_traducidos.append("Debe contener al menos 8 caracteres.")
+                elif "This password is too common" in msg:
+                    mensajes_traducidos.append("La contraseña es demasiado común.")
+                elif "This password is entirely numeric" in msg:
+                    mensajes_traducidos.append("La contraseña no puede ser solo numérica.")
+                else:
+                    mensajes_traducidos.append(msg)
+            self.add_error(field_name, mensajes_traducidos)
+
     def clean(self):
         """
         Realiza las validaciones personalizadas del formulario.
@@ -204,22 +226,20 @@ class CustomUserChangeForm(UserChangeForm):
             elif not self.instance.check_password(password_actual):
                 self.add_error('password_actual', "La contraseña actual es incorrecta.")
 
-            try:
-                validate_password(password_nuevo, self.instance)
-            except ValidationError as e:
-                mensajes_filtrados = [
-                    msg for msg in e.messages
-                    if "al menos 8 caracteres" in msg or "totalmente numérico" in msg
-                ]
-                if mensajes_filtrados:
-                    self.add_error('password_nuevo', mensajes_filtrados)
+            # validar reglas de seguridad con mensajes traducidos
+            if password_nuevo:
+                # 🚨 verificar si es igual a la actual
+                if self.instance.check_password(password_nuevo):
+                    self.add_error('password_nuevo', "La nueva contraseña no puede ser igual a la contraseña actual.")
+                else:
+                    self._validate_password_rules(password_nuevo, 'password_nuevo')
 
             if password_nuevo != password_confirmacion:
                 self.add_error('password_confirmacion', "Las contraseñas no coinciden.")
         else:
+            # Si no se quiere cambiar contraseña, igual debe ingresar la actual
             if not self.instance.check_password(password_actual):
                 self.add_error('password_actual', "Para realizar cambios debe ingresar la contraseña actual.")
-    
 
         return cleaned_data
 
@@ -239,7 +259,33 @@ class CustomUserChangeForm(UserChangeForm):
         if commit:
             user.save()
         return user
+
+
+class UserRolePermissionForm(forms.ModelForm):
+    # CAMBIAR: roles → groups
+    groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={"class": "form-control"})
+    )
+    # CAMBIAR: user_permisos → user_permissions
+    user_permissions = forms.ModelMultipleChoiceField(
+        queryset=Permission.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={"class": "form-control"})
+    )
+
+    class Meta:
+        model = CustomUser
+        fields = ["username", "groups", "user_permissions"]  # También cambiar aquí
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Si estamos editando un usuario existente, pre-cargar los datos
+        if self.instance and self.instance.pk:
+            self.fields['groups'].initial = self.instance.groups.all()
+            self.fields['user_permissions'].initial = self.instance.user_permissions.all()
+
 
 """
 class CustomUserChangeForm(forms.Form):

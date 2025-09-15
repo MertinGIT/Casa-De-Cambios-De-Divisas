@@ -1,0 +1,407 @@
+{% extends "base_forms.html" %} 
+
+{% load widget_tweaks %} 
+
+{% block form_title %}Agregar Tipo de Cliente{% endblock %} 
+
+{% block form_fields %}
+
+<div class="form-group">
+  <label for="{{ form.nombre.id_for_label }}">Tipo de cliente *</label>
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    {{ form.nombre|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.descripcion.id_for_label }}">Descripcion *</label>
+  <div class="input-icon">
+    <span class="icon">🏷️</span>
+    {{ form.descripcion|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.descuento.id_for_label }}">Descuento *</label>
+  <div class="input-icon">
+    <span class="icon">🏷️</span>
+    {{ form.descuento|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<style>
+.custom-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px; /* espacio para icono */
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #f0edff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.custom-input::placeholder {
+  color: #6b7280;
+}
+
+.custom-input:focus {
+  border-color: #5d5fef;
+  box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+}
+
+/* Estilos para validación */
+.custom-input.error {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+
+.custom-input.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.input-icon {
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.input-icon .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 16px;
+  color: #5d5fef;
+  z-index: 1;
+}
+
+.error-messages {
+  min-height: 18px;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.error-messages .error-message {
+  color: #ef4444 !important;
+  font-size: 12px !important;
+  font-weight: normal !important;
+  margin: 2px 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  background: none !important;
+  border: none !important;
+  text-align: left !important;
+  line-height: 1.4 !important;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style>
+
+<!-- jQuery Validate Script -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+<script>
+// Variable global para el validador
+let tipoClienteValidator = null;
+
+// Configurar mensajes en español
+jQuery.extend(jQuery.validator.messages, {
+    required: "Este campo es obligatorio.",
+    number: "Ingrese un número válido.",
+    min: jQuery.validator.format("El valor no puede ser menor a {0}."),
+    minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+    maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres.")
+});
+
+// Función para inicializar validación
+function setupTipoClienteValidation() {
+    const $form = $("#form-accion");
+    
+    if (!$form.length) {
+        console.log("Formulario no encontrado");
+        return null;
+    }
+
+    // Destruir validador existente si existe
+    if (tipoClienteValidator) {
+        tipoClienteValidator.destroy();
+        tipoClienteValidator = null;
+    }
+
+    console.log("Configurando validación del formulario tipo de cliente");
+    
+    tipoClienteValidator = $form.validate({
+        rules: {
+            nombre: {
+                required: true,
+                minlength: 2,
+                maxlength: 100
+            },
+            descripcion: {
+                required: true,
+                minlength: 5,
+                maxlength: 255
+            },
+            descuento: {
+                required: true,
+                number: true,
+                min: 0,
+                max: 100
+            }, 
+            // Validación remota para nombre único
+            nombre: {
+                required: true,
+                minlength: 2,
+                maxlength: 100,
+                remote: {
+                    url: "{% url 'check-nombre-segmentacion'%}",
+                    type: "post",
+                    data: {
+                        nombre: function() {
+                            return $("#form-accion input[name='nombre']").val();
+                        },
+                        obj_id: function() {
+                            let objId = $("#obj_id").val(); // campo oculto en el modal para edición
+                            return (objId && objId !== '') ? objId : null;
+                        },
+                        csrfmiddlewaretoken: function() {
+                            return $("input[name='csrfmiddlewaretoken']").val();
+                        }
+                    },
+                    beforeSend: function(xhr, settings) {
+                        console.log("Enviando validación remota de nombre:", settings.data);
+                    }
+                }
+            }
+        },
+        messages: {
+            nombre: {
+                required: "El nombre del tipo de cliente es obligatorio",
+                minlength: "El nombre debe tener al menos 2 caracteres",
+                maxlength: "El nombre no puede exceder 100 caracteres",
+                remote: "Este nombre ya está en uso, elija otro."
+            },
+            descripcion: {
+                required: "La descripción es obligatoria",
+                minlength: "La descripción debe tener al menos 5 caracteres",
+                maxlength: "La descripción no puede exceder 255 caracteres"
+            },
+            descuento: {
+                required: "El descuento es obligatorio",
+                number: "Ingrese un número válido para el descuento",
+                min: "El descuento no puede ser negativo",
+                max: "El descuento no puede ser mayor a 100%"
+            }
+        },
+        errorElement: 'div',
+        errorClass: 'error-message',
+        validClass: 'valid',
+        errorPlacement: function(error, element) {
+            console.log("Colocando error:", error.text(), "para elemento:", element.attr('name'));
+            let formGroup = element.closest('.form-group');
+            let errorContainer = formGroup.find('.error-messages');
+            
+            if (!errorContainer.length) {
+                errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
+            }
+            errorContainer.html(error);
+        },
+        highlight: function(element, errorClass, validClass) {
+            $(element).addClass('error').removeClass(validClass);
+            console.log("Marcando campo con error:", $(element).attr('name'));
+        },
+        unhighlight: function(element, errorClass, validClass) {
+            $(element).removeClass('error').addClass(validClass);
+            console.log("Limpiando error de campo:", $(element).attr('name'));
+        },
+        success: function(label, element) {
+            console.log("Campo válido:", $(element).attr('name'));
+            $(element).closest('.form-group').find('.error-messages').empty();
+        },
+        submitHandler: function(form) {
+            console.log("Formulario válido, enviando...");
+            
+            // Si hay AJAX configurado, usar AJAX, si no, envío normal
+            const $form = $(form);
+            const isAjax = $form.data('ajax') === true;
+            
+            if (isAjax) {
+                console.log("Enviando por AJAX...");
+                $.ajax({
+                    url: $form.attr("action"),
+                    type: "POST",
+                    data: $form.serialize(),
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                    success: function(data) {
+                        console.log("Respuesta AJAX recibida:", data);
+                        $form.find(".error-messages").html(""); // limpia errores previos
+                        
+                        // Verificar que data existe y tiene la estructura correcta
+                        if (!data) {
+                            console.error("Respuesta vacía del servidor");
+                            alert("Error: respuesta vacía del servidor");
+                            return;
+                        }
+                        
+                        if (data.success) {
+                            console.log("Guardado exitoso:", data);
+                            // limpiar estilos y mensajes después de guardar
+                            $form.find(".error").removeClass("error");
+                            $form.find(".valid").removeClass("valid");
+                            $form.find(".error-messages").empty();
+                            
+                            // Cerrar modal y limpiar formulario
+                            if (typeof closeModal === 'function') {
+                                closeModal();
+                            } else {
+                                $("#modal-accion").hide();
+                            }
+                            $form[0].reset();
+                            
+                            // Mostrar mensaje de éxito si existe
+                            if (data.message) {
+                                console.log("Mensaje:", data.message);
+                            }
+                            
+                            // Recargar la página para mostrar los cambios
+                            location.reload();
+                        } else {
+                            console.log("Errores del servidor:", data.errors);
+                            // Mostrar errores del servidor
+                            if (data.errors) {
+                                $.each(data.errors, function(field, messages) {
+                                    console.log("Procesando error para campo:", field, messages);
+                                    const input = $form.find(`#id_${field}, [name="${field}"]`);
+                                    if (!input.length) {
+                                        console.log("Campo no encontrado:", field);
+                                        return;
+                                    }
+                                    
+                                    let formGroup = input.closest('.form-group');
+                                    let errorDiv = formGroup.find(".error-messages");
+                                    if (!errorDiv.length) {
+                                        errorDiv = $('<div class="error-messages"></div>').appendTo(formGroup);
+                                    }
+                                    
+                                    const errorMessages = Array.isArray(messages) ? messages : [messages];
+                                    errorDiv.html(errorMessages.map(m => `<span class="error-message">${m}</span>`).join(""));
+                                    input.addClass("error");
+                                });
+                            } else {
+                                console.error("No se encontraron errores en la respuesta");
+                            }
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error("Error AJAX:", error);
+                        alert("Ocurrió un error en el servidor.");
+                    }
+                });
+                return false; // Prevenir envío normal del formulario
+            } else {
+                console.log("Enviando formulario de forma normal...");
+                form.submit(); // Envío normal del formulario
+            }
+        },
+        invalidHandler: function(event, validator) {
+            console.log("Formulario inválido, errores:", validator.numberOfInvalids());
+        }
+    });
+
+    // Forzar que el campo descuento solo acepte números y punto decimal
+    $("#form-accion input[name='descuento']").on("input", function(e) {
+        const input = this;
+        const cursorStart = input.selectionStart;
+        const cursorEnd = input.selectionEnd;
+        const originalValue = input.value;
+        
+        // Permitir números, punto y coma (como separador decimal)
+        let newValue = input.value.replace(/[^0-9.,]/g, '');
+        
+        // Reemplazar coma por punto para consistencia
+        newValue = newValue.replace(',', '.');
+        
+        // Evitar múltiples puntos decimales
+        const parts = newValue.split('.');
+        if (parts.length > 2) {
+            newValue = parts[0] + '.' + parts.slice(1).join('');
+        }
+        
+        // Solo actualizar si el valor cambió
+        if (newValue !== originalValue) {
+            input.value = newValue;
+            
+            // Calcular la nueva posición del cursor
+            const lengthDiff = originalValue.length - newValue.length;
+            const newCursorPos = Math.max(0, cursorStart - lengthDiff);
+            
+            // Restaurar la posición del cursor
+            setTimeout(() => {
+                input.setSelectionRange(newCursorPos, newCursorPos);
+            }, 0);
+        }
+    });
+
+    // Redondear al salir del campo (blur)
+    $("#form-accion input[name='descuento']").on("blur", function() {
+        if (this.value !== '') {
+            const num = parseFloat(this.value);
+            if (!isNaN(num)) {
+                this.value = num.toFixed(2);
+            }
+        }
+    });
+
+    return tipoClienteValidator;
+}
+
+// Inicializar validación
+$(document).ready(function() {
+    console.log("Iniciando sistema de validación...");
+    
+    // Configurar validación inicial
+    setupTipoClienteValidation();
+    
+    // Re-configurar validación cuando se abra un modal
+    $(document).on('shown.bs.modal', '#modal-accion', function() {
+        console.log("Modal abierto, configurando validación...");
+        setTimeout(function() {
+            setupTipoClienteValidation();
+        }, 100);
+    });
+    
+    // Limpiar validación al cerrar modal
+    $(document).on('hidden.bs.modal', '#modal-accion', function() {
+        console.log("Modal cerrado, limpiando validación...");
+        if (tipoClienteValidator) {
+            tipoClienteValidator.destroy();
+            tipoClienteValidator = null;
+        }
+        
+        // Limpiar clases y mensajes
+        $("#form-accion .error").removeClass('error');
+        $("#form-accion .valid").removeClass('valid');
+        $("#form-accion .error-messages").empty();
+    });
+    
+    console.log("Sistema de validación de tipo de cliente inicializado");
+});
+</script>
+
+{% endblock %}

@@ -1,59 +1,120 @@
-{% extends "base.html" %} {% load static %} {% block content %}
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
 <link rel="stylesheet" href="{% static 'css/landing.css' %}" />
+<link rel="stylesheet" href="{% static 'usuarios/css/cotizaciones.css' %}" />
+
 <div class="landing-container">
+
   <div class="grid-left">
+
     <div class="logo-title">
       <img src="{% static 'img/tiendalogo.png' %}" alt="Logo" />
     </div>
+
     <h1>GLOBAL EXCHANGE</h1>
-    
-    {% include 'cotizaciones.html' %}
+
+    <!-- Cotizaciones: mostramos solo hasta 6 monedas y la más reciente -->
+    <div class="cotizaciones-container">
+      <h2 class="cotizaciones-title">Cotizaciones</h2>
+      <div class="cotizaciones-content">
+        {% for abrev, registros in data_por_moneda.items|slice:":6" %}
+          {% with ultimo=registros|last %}
+          <div class="cotizaciones-divisa">
+
+            <!-- Logo: PNG primero, si no SVG -->
+            <img src="{% static 'img/logoMoneda/'|add:abrev|add:'.png' %}"
+            onerror="
+                this.onerror=null;
+                this.src='{% static 'img/logoMoneda/'|add:abrev|add:'.svg' %}';
+                this.onerror=function(){
+                    this.onerror=null;
+                    this.src='{% static 'img/logoMoneda/default-logo.webp' %}';
+                }
+            "
+            alt="Logo {{ abrev }}" />
+
+            <p class="simboloTitle">{{ abrev }}</p>
+
+            <div class="precios">
+              <p class="precioTitle">Compra</p>
+              <p class="simboloTitle">
+                {{ ultimo.compra }}
+                {% if registros|length > 1 %}
+                  {% with registro_anterior=registros|slice:":-1"|last %}
+                    {% if ultimo.compra > registro_anterior.compra %}
+                      <span class="flecha sube">▲</span>
+                    {% elif ultimo.compra < registro_anterior.compra %}
+                      <span class="flecha baja">▼</span>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              </p>
+            </div>
+
+            <div>
+              <p class="precioTitle">Venta</p>
+              <p class="simboloTitle">
+                {{ ultimo.venta }}
+                {% if registros|length > 1 %}
+                  {% with registro_anterior=registros|slice:":-1"|last %}
+                    {% if ultimo.venta > registro_anterior.venta %}
+                      <span class="flecha sube">▲</span>
+                    {% elif ultimo.venta < registro_anterior.venta %}
+                      <span class="flecha baja">▼</span>
+                    {% endif %}
+                  {% endwith %}
+                {% endif %}
+              </p>
+            </div>
+
+          </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
 
     {% include 'graficoMoneda.html' %}
+
   </div>
 
   <div class="grid-right">
-    <img
-      src="{% static 'img/VectorFondo1.svg' %}"
-      alt="Fondo 1"
-      class="fondo1"
-    />
-    <img
-      src="{% static 'img/VectorFondo2.svg' %}"
-      alt="Fondo 2"
-      class="fondo2"
-    />
+    <img src="{% static 'img/VectorFondo1.svg' %}" alt="Fondo 1" class="fondo1" />
+    <img src="{% static 'img/VectorFondo2.svg' %}" alt="Fondo 2" class="fondo2" />
 
     <div class="content-right">
       <ul class="home-info">
         <li>Cambio de Divisas</li>
         <li>Transacciones</li>
-        <li>Simulacion de Conversión</li>
+        <li>Simulación de Conversión</li>
         <li class="button-contain">
           <a href="{% url 'login' %}" class="btn">Ir a mi cuenta</a>
         </li>
       </ul>
 
       <div class="personajes-container">
-        <img
-          src="{% static 'img/personaje1.svg' %}"
-          alt="Personaje 1"
-          class="personaje1"
-        />
-        <img
-          src="{% static 'img/personaje2.svg' %}"
-          alt="Personaje 2"
-          class="personaje2"
-        />
+        <img src="{% static 'img/personaje1.svg' %}" alt="Personaje 1" class="personaje1" />
+        <img src="{% static 'img/personaje2.svg' %}" alt="Personaje 2" class="personaje2" />
       </div>
     </div>
   </div>
+
 </div>
 
 <!-- Pasar datos al JS usando un tag script oculto -->
 <script id="data-por-moneda" type="application/json">
-  {{ data_por_moneda|safe }}
+  {{ data_por_moneda|json_script:"data-por-moneda" }}
 </script>
+
+
 <!-- Cargar el archivo JS que contiene la lógica del gráfico -->
 <script src="{% static 'js/graficoMoneda.js' %}"></script>
+
+<style>
+  .flecha { font-size: 0.9rem; margin-left: 5px; }
+  .flecha.sube { color: green; }
+  .flecha.baja { color: red; }
+</style>
+
 {% endblock %}

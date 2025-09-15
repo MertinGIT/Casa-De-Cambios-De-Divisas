@@ -11,7 +11,7 @@
 <div class="form-group">
   <label for="{{ form.moneda_origen.id_for_label }}">Moneda base</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    <span class="icon">💵</span>
     {{ form.moneda_origen|add_class:"custom-input"|attr:"disabled:true"}}
     <!-- Campo hidden para enviar el valor por POST -->
     <input type="hidden" name="moneda_origen" value="{{ form.moneda_origen.value }}">
@@ -28,7 +28,7 @@
 <div class="form-group">
   <label for="{{ form.moneda_destino.id_for_label }}">Moneda destino</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-coin" style="color: black;"></i> </span>
+    <span class="icon">💵</span>
     {{ form.moneda_destino|add_class:"custom-input" }}
   </div>
   {% if form.moneda_destino.errors %}
@@ -44,7 +44,7 @@
 <div class="form-group">
   <label for="{{ form.monto_compra.id_for_label }}">Compra</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-arrow-right-short" style="color: black;"></i> </span>
+    <span class="icon">➡️</span>
     {{ form.monto_compra|add_class:"custom-input" }}
   </div>
   {% if form.monto_compra.errors %}
@@ -59,7 +59,7 @@
 <div class="form-group">
   <label for="{{ form.monto_venta.id_for_label }}">Venta</label>
   <div class="input-icon">
-    <span class="icon"><i class="bi bi-arrow-right-short" style="color: black;"></i> </span>
+    <span class="icon">➡️</span>
     {{ form.monto_venta|add_class:"custom-input" }}
   </div>
   {% if form.monto_venta.errors %}
@@ -174,16 +174,19 @@ function setupTasaValidation() {
         submitHandler: function(form) {
             console.log("Formulario válido, enviando AJAX...");
             const $form = $(form);
-
             $.ajax({
                 url: $form.attr("action"),
                 type: "POST",
                 data: $form.serialize(),
                 headers: { "X-Requested-With": "XMLHttpRequest" },
                 success: function(data) {
-                  
+                    console.log("esto llega:", data)
                     $form.find(".error-messages").html(""); // limpia errores previos
                     if (data.success) {
+                      console.log("entro acaaaaaaaaaaaaaaa")
+                      location.reload();
+                      // eliminar mensaje de "sin resultados" si existe
+                      $(".custom-table tbody .no-results").remove();
                       // limpiar estilos y mensajes después de guardar
                         $form.find(".error").removeClass("error");
                         $form.find(".valid").removeClass("valid");
@@ -191,19 +194,6 @@ function setupTasaValidation() {
                         $("#modal-accion").hide(); // cierra modal
                         $form[0].reset();          // limpia inputs
                         const t = data.tasa;
-                        const newRow = `
-                            <tr>
-                                <td>${t.origen}</td>
-                                <td>${t.destino}</td>
-                                <td style="text-align:center;">${parseFloat(t.compra).toFixed(2)}</td>
-                                <td style="text-align:center;">${parseFloat(t.venta).toFixed(2)}</td>
-                                <td style="text-align:center;">${t.vigencia}</td>
-                                <td style="text-align:center;">
-                                    <button class="btn-edit btn btn-sm btn-primary" data-id="${t.id}">Editar</button>
-                                    <button class="btn-delete btn btn-sm btn-danger" data-id="${t.id}">Eliminar</button>
-                                </td>
-                            </tr>`;
-                        $(".custom-table tbody").append(newRow);
                     } else {
                         $.each(data.errors, function(field, messages) {
                             const input = $form.find(`#id_${field}`);
@@ -230,12 +220,16 @@ function setupTasaValidation() {
 
     // Forzar que monto_compra y monto_venta solo acepten números
     $("#form-accion input[name='monto_compra'], #form-accion input[name='monto_venta']").on("input", function() {
-        this.value = this.value.replace(/[^0-9.]/g,'');
-    });
+    // Permite números y un solo punto
+    let val = this.value;
+    if (!/^\d*\.?\d*$/.test(val)) {
+        this.value = val.replace(/[^0-9.]/g, '')
+                        .replace(/(\..*)\./g, '$1'); // evita más de un punto
+    }
+});
 
     return tasaValidator;
 }
-
 // Inicializar al abrir modal
 $(document).ready(function() {
     setupTasaValidation();
@@ -251,6 +245,8 @@ $(document).ready(function() {
         });
     }
 });
+
+
 </script>
 
 
@@ -370,4 +366,3 @@ $(document).ready(function() {
 
 </style>
 {% endblock %}
-

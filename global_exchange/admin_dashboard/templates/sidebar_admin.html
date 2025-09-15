@@ -1,4 +1,7 @@
 {% load static %}
+<!-- Font Awesome CDN -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+  integrity="sha512-papU9rjE+..." crossorigin="anonymous" referrerpolicy="no-referrer" />
 
 <link rel="stylesheet" href="{% static 'css/sidebar.css' %}" />
 
@@ -12,20 +15,12 @@
   <ul class="nav-links">
     <li>
       <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span>
-        <span class="label">Dashboard</span></a>
+        <span class="label">Panel Principal</span></a>
     </li>
     <li>
       <a href="#"><span class="icon">&#x1F4CA;</span>
-        <span class="label">Reports</span></a>
+        <span class="label">Reportes</span></a>
     </li>
-    <li>
-      <a href="{% url 'roles' %}">
-        <span class="icon">&#128101;</span>
-        <span class="label">Roles de Usuarios</span>
-      </a>
-    </li>
-
-
     <li>
       <a href="{% url 'clientes' %}">
         <span class="icon">&#x1F464;</span>
@@ -33,23 +28,20 @@
       </a>
     </li>
     <li>
-      <a href="{% url 'usuarios_roles_lista' %}">
-        <span class="icon">&#x1F5C2;</span>
-        <span class="label">Asignar Clientes</span>
+      <a href="{% url 'cliente_usuario' %}">
+      <img class="icon" src="/static/admin_dashboard/img/anadir-grupo.png" style="
+          width: 35px;
+          height: 35px;
+          object-fit: contain;">
+        <span class="label">Usuarios-Clientes</span>
       </a>
-    </li>
-
-    <li>
-      <a href="#"><span class="icon">&#9881;</span>
-        <span class="label">Settings</span></a>
-    </li>
   </ul>
-
   <hr />
 
   <ul class="nav-links secondary">
     <li>
-      <a href="#"><span class="icon">&#x2753;</span> <span class="label">Help</span></a>
+      <a href="{% url 'configuracion' %}"><span class="icon">&#9881;</span>
+        <span class="label">Configuracion</span></a>
     </li>
     <li>
       <div class="logout-card">
@@ -80,19 +72,10 @@
   <div id="mobile-menu" class="mobile-menu">
     <ul>
       <li>
-        <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span> Dashboard</a>
+        <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span> Panel Principal</a>
       </li>
       <li>
-        <a href="#"><span class="icon">&#x1F4CA;</span> Reports</a>
-      </li>
-      <li>
-        <a href="{% url 'roles' %}">
-          <span class="icon">&#128101;</span> Roles de Clientes
-        </a>
-      </li>
-
-      <li>
-        <a href="#"><span class="icon">&#9881;</span> Settings</a>
+        <a href="#"><span class="icon">&#x1F4CA;</span> Reportes</a>
       </li>
       <li>
         <a href="{% url 'clientes' %}">
@@ -101,14 +84,17 @@
         </a>
       </li>
       <li>
-        <a href="{% url 'usuarios_roles_lista' %}">
-          <span class="icon">&#x1F5C2;</span>
-          <span class="label">Asignar Clientes</span>
+        <a href="{% url 'cliente_usuario' %}">
+          <img class="icon" src="/static/admin_dashboard/img/anadir-grupo.png" style="
+          width: 35px;
+          height: 35px;
+          object-fit: contain;">
+          <span class="label">Usuarios-Clientes</span>
         </a>
       </li>
       <hr />
       <li>
-        <a href="#"><span class="icon">&#x2753;</span> Help</a>
+        <a href="{% url 'configuracion' %}"><span class="icon">&#9881;</span> Configuracion</a>
       </li>
       <li>
         <a href="{% url 'signout' %}" class="logout-mobile"><span class="icon">&#x1F6AA;</span> Cerrar sesión</a>

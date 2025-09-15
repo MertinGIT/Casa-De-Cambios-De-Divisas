@@ -16,13 +16,15 @@ Including another URLconf
 
 # from django.contrib import admin
 from django.urls import path, include
-from usuarios import views as usuarios_views
+from usuarios import views as usuarios_views, urls as usuarios_urls
+from cliente_usuario import urls as cliente_usuario_urls
 from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
 from django.shortcuts import render
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
+from configuracion import views as configuracion_views
 
 
 urlpatterns = [
@@ -37,17 +39,20 @@ urlpatterns = [
     path('login/', usuarios_views.signin, name='login'),
     path('editarperfil/', usuarios_views.editarPerfil, name='editarperfil'),
     path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
-    path('clientes/', include('clientes.urls'), name = 'clientes'), 
-
+    
     # Rutas solo para administradores
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
-    path('admin/roles/', include('roles_permisos.urls'), name='roles'),
-    path('admin/usuarios/', include('asignar_clientes_usuarios.urls'), name='asignar_clientes'),
     path('admin/forms/', TemplateView.as_view(template_name="forms.html"), name='forms'),
+    path('admin/configuracion/segmentaciones/', include('cliente_segmentacion.urls')),
+    path('admin/configuracion/', configuracion_views.configuracion_view, name='configuracion'),
     path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
     path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),
-    path("admin/pagos/", include("metodos_pagos.urls")),
+    path('admin/configuracion/seguridad/usuarios/', include(usuarios_urls)),
+    path('admin/configuracion/seguridad/roles/', include('roles_permisos.urls'), name='roles'),
+    path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
+    path('admin/cliente_usuario/', include(cliente_usuario_urls), name='cliente_usuario'),
+    path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
 
 ]
 

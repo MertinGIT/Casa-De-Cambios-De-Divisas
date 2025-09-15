@@ -560,7 +560,7 @@ body {
   }
 }
 </style>
-
+{% include 'base_configuracion.html' %}
 <!-- CONTENIDO PRINCIPAL -->
 <div class="main-wrapper">
   <div class="page-container">
@@ -609,8 +609,8 @@ body {
     <!-- Acción principal para crear nuevo método de pago -->
     <button class="btn-add rounded border-0 my-2"
             data-url="{% url 'metodos-pagos-agregar' %}"
-            onclick="openCreateModal(this.dataset.url)">
-            Agregar Metodo de Pago
+            onclick="openCreateModal(this.dataset.url, 'Agregar Método de Pago')">
+            + Agregar Método de Pago
     </button>
 
     <!-- TABLA PRINCIPAL -->
@@ -653,7 +653,8 @@ body {
                 <button class="btn-edit btn btn-sm btn-primary"
                         data-id="{{ mp.id }}"
                         data-edit="{% url 'metodos-pagos-editar' 0 %}"
-                        data-detalle="{% url 'metodos-pagos-detalle' mp.id %}">
+                        data-detalle="{% url 'metodos-pagos-detalle' mp.id %}"
+                        data-title="Editar Método de Pago">
                   Editar
                 </button>
                 

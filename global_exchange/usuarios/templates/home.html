@@ -1,11 +1,20 @@
 {% extends 'baseDashboardUsuario.html' %} 
-{% load static %}
+{% load static %} 
 {% block dashboard_content %}
 <link rel="stylesheet" href="{% static 'usuarios/css/home.css' %}" />
 <div class="home-content">
-  <h1>Home</h1>
   <div class="home-main">
-    {% include 'cotizaciones.html' %} {% include 'graficoMoneda.html' %}
+    <div class="flex-content">
+      <div class="left-content">
+        {% include 'cotizaciones.html' %} 
+      </div>
+      {% if perms.monedas.view_moneda %}
+      <div class="right-content">
+        {% include 'conversorDivisa.html' %}
+      </div>
+      {% endif %}
+    </div>
+    <div class="chart-content">{% include 'graficoMoneda.html' %}</div>
   </div>
 </div>
 {% endblock %}

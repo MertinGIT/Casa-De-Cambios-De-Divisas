@@ -1,183 +1,293 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
-from functools import wraps
-from .models import Rol, Permiso
+from django.contrib.auth.models import Group, Permission
+from django.core.paginator import Paginator
 from .forms import RolForm
 
-# Solo superadmin
-def superadmin_required(view_func):
-    """
-    Decorador que limita el acceso únicamente a usuarios superadministradores.
 
-    - Si el usuario no está autenticado, se lo redirige a ``login``.
-    - Si el usuario está autenticado pero no es superadmin, se lo redirige a ``home``.
-    - Si el usuario es superadmin, se ejecuta la vista original.
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
-
-@superadmin_required
 def rol_lista(request):
     """
     Vista que lista todos los roles y permisos disponibles.
 
-    Contexto:
-        - ``roles``: lista de roles ordenados por ID descendente.
-        - ``permisos``: lista de permisos ordenados alfabéticamente.
-        - ``form``: instancia vacía de ``RolForm`` para crear un nuevo rol.
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
 
-    Plantilla:
-        - ``roles/lista.html``
+    Returns
+    -------
+    HttpResponse
+        Renderizado de la plantilla ``roles/lista.html``.
+
+    Contexto
+    --------
+    - ``roles``: lista de roles ordenados por ID descendente.
+    - ``permisos``: lista de permisos ordenados alfabéticamente.
+    - ``form``: instancia vacía de :class:`.forms.RolForm` para crear un nuevo rol.
+
+    Template
+    --------
+    - ``roles/lista.html``
     """
-    roles = Rol.objects.all().order_by('-id')
-    permisos = Permiso.objects.all().order_by('nombre')
-    form = RolForm()  # Formulario vacío para crear
-    
+    roles = Group.objects.all().order_by("-id")
+
+    # --- Filtro de búsqueda ---
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+
+    if q:
+        if campo == "nombre":
+            roles = roles.filter(name__icontains=q)
+
+    # --- Paginación ---
+    paginator = Paginator(roles, 10)  # 10 registros por página
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    permisos = Permission.objects.all().order_by("name")
+    form = RolForm()
     return render(request, "roles/lista.html", {
-        "roles": roles, 
+        "roles": page_obj.object_list,
         "permisos": permisos,
-        "form": form
+        "form": form,
+        "page_obj": page_obj,
+        "q": q,
+        "campo": campo,
     })
 
-@superadmin_required
+
 def rol_nuevo(request):
     """
     Vista que permite crear un nuevo rol.
 
-    Flujo:
-        - Si la petición es ``POST`` y el formulario es válido, guarda el rol y redirige a ``roles``.
-        - Si hay errores de validación, recarga la lista de roles con el modal abierto mostrando los errores.
-        - Si la petición no es ``POST``, redirige al listado de roles.
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
 
-    Plantilla:
-        - ``roles/lista.html`` (cuando hay errores)
+    Returns
+    -------
+    HttpResponse
+        Redirige al listado de roles o renderiza la plantilla
+        ``roles/lista.html`` si hay errores.
+
+    Flujo
+    -----
+    - Si la petición es ``POST`` y el formulario es válido, guarda el rol y redirige a ``roles``.
+    - Si hay errores de validación, recarga la lista de roles con el modal abierto mostrando los errores.
+    - Si la petición no es ``POST``, muestra el formulario vacío.
+
+    Template
+    --------
+    - ``roles/lista.html``
     """
     if request.method == "POST":
         form = RolForm(request.POST)
         if form.is_valid():
-            rol = form.save(commit=False)
-            rol.save()
-            # Guardar permisos
-            permisos = request.POST.getlist('permisos')
-            rol.permisos.set(permisos)
+            form.save()
             return redirect("roles")
-        else:
-            roles = Rol.objects.all().order_by('-id')
-            permisos_all = Permiso.objects.all().order_by('nombre')
-            return render(request, "roles/lista.html", {
-                "roles": roles, 
-                "permisos": permisos_all,
-                "form": form,
-                "show_modal": True,
-                "modal_type": "create",
-            })
-    return redirect("roles")
+    else:
+        form = RolForm()
+    permisos_all = Permission.objects.all().order_by("name")
+
+    # --- Aseguramos paginación en modal ---
+    roles = Group.objects.all().order_by("-id")
+
+    # Mantener filtro de búsqueda si viene en la querystring
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+    if q and campo == "nombre":
+        roles = roles.filter(name__icontains=q)
+
+    paginator = Paginator(roles, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "roles/lista.html", {
+        "form": form,
+        "permisos": permisos_all,
+        "permisos_asignados": [],
+        "show_modal": True,
+        "modal_type": "create",
+        "roles": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "campo": campo,
+    })
 
 
-@superadmin_required
 def rol_editar(request, pk):
     """
     Vista que permite editar un rol existente.
 
-    Parámetros:
-        - ``pk``: ID del rol a editar.
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
+    pk : int
+        ID del rol a editar.
 
-    Flujo:
-        - Si la petición es ``POST`` y el formulario es válido, guarda los cambios y redirige a ``roles``.
-        - Si hay errores de validación, recarga la lista de roles con el modal abierto mostrando los errores.
-        - Si la petición no es ``POST``, redirige al listado de roles.
+    Returns
+    -------
+    HttpResponse
+        Redirige al listado de roles o renderiza la plantilla
+        ``roles/lista.html`` con errores.
 
-    Plantilla:
-        - ``roles/lista.html`` (cuando hay errores)
+    Template
+    --------
+    - ``roles/lista.html`` (cuando hay errores o modal activo).
     """
-    rol = get_object_or_404(Rol, pk=pk)
-
+    group = get_object_or_404(Group, pk=pk)
     if request.method == "POST":
-        form = RolForm(request.POST, instance=rol)
+        form = RolForm(request.POST, instance=group)
         if form.is_valid():
-            rol = form.save()
-            permisos_ids = request.POST.getlist('permisos')
-            rol.permisos.set(permisos_ids)
+            form.save()
             return redirect("roles")
-        else:
-            # POST con errores: mostrar modal con errores
-            roles = Rol.objects.filter(pk=pk)
-            print(roles)
-            permisos_all = Permiso.objects.all().order_by('nombre')
-            return render(request, "roles/form.html", {
-                "roles": roles,
-                "form": form,
-                "permisos": permisos_all,
-                "modal_title": "Editar Rol",
-                "form_action": request.path,
-                "obj_id": rol.id,
-            })
     else:
-        # GET: abrir modal con form precargado
-        form = RolForm(instance=rol)
-        print(form)
-        permisos_all = Permiso.objects.all().order_by('nombre')
-        return render(request, "roles/lista.html", {
-            "form": form,
-            "permisos": permisos_all,
-            "modal_title": "Editar Rol",
-            "form_action": request.path,
-            "obj_id": rol.id,
-        })
+        form = RolForm(instance=group)
+    permisos_all = Permission.objects.all().order_by("name")
+    permisos_asignados = list(group.permissions.values_list("id", flat=True))
+
+    # --- Aseguramos paginación en modal ---
+    roles = Group.objects.all().order_by("-id")
+
+    # Mantener filtro de búsqueda si viene en la querystring
+    q = request.GET.get("q", "").strip()
+    campo = request.GET.get("campo", "").strip()
+    if q and campo == "nombre":
+        roles = roles.filter(name__icontains=q)
+
+    paginator = Paginator(roles, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "roles/lista.html", {
+        "form": form,
+        "permisos": permisos_all,
+        "permisos_asignados": permisos_asignados,
+        "show_modal": True,
+        "modal_type": "edit",
+        "obj_id": group.id,
+        "roles": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "campo": campo,
+    })
 
 
-@superadmin_required
 def rol_eliminar(request, pk):
     """
-    Vista que permite eliminar un rol existente.
+    Vista que permite eliminar (desactivar) un rol existente.
 
-    Parámetros:
-        - ``pk``: ID del rol a eliminar.
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
+    pk : int
+        ID del rol a eliminar.
 
-    Flujo:
-        - Si la petición es ``POST``, elimina el rol y redirige a ``roles``.
-        - Si no es ``POST``, redirige directamente a ``roles``.
+    Returns
+    -------
+    HttpResponse
+        Redirige al listado de roles.
+
+    Flujo
+    -----
+    - Si la petición es ``POST`` y el rol tiene perfil, cambia su estado a ``Activo``.
+    - Si el rol no tiene perfil, crea uno y lo marca como ``Activo``.
     """
-    rol = get_object_or_404(Rol, pk=pk)
-    if request.method == "POST":
-        rol.delete()
+    group = get_object_or_404(Group, pk=pk)
+    if hasattr(group, "profile"):
+        if request.method == "POST":
+            group.profile.estado = "Activo"
+            group.profile.save()
+            return redirect("roles")
+    else:
+        from roles_permisos.models import GroupProfile
+        GroupProfile.objects.create(group=group, estado="Activo")
         return redirect("roles")
     return redirect("roles")
 
-# Vista para obtener datos de un rol via AJAX (para llenar el modal de edición)
-@superadmin_required
+
+def rol_activar(request, pk):
+    """
+    Vista que activa un rol existente.
+
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
+    pk : int
+        ID del rol a activar.
+
+    Returns
+    -------
+    HttpResponse
+        Redirige al listado de roles.
+    """
+    group = get_object_or_404(Group, pk=pk)
+    if hasattr(group, "profile"):
+        group.profile.estado = "Activo"
+        group.profile.save()
+    else:
+        from roles_permisos.models import GroupProfile
+        GroupProfile.objects.create(group=group, estado="Activo")
+    return redirect("roles")
+
+
+def rol_desactivar(request, pk):
+    """
+    Vista que desactiva un rol existente.
+
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
+    pk : int
+        ID del rol a desactivar.
+
+    Returns
+    -------
+    HttpResponse
+        Redirige al listado de roles.
+    """
+    group = get_object_or_404(Group, pk=pk)
+    if hasattr(group, "profile"):
+        group.profile.estado = "Inactivo"
+        group.profile.save()
+    else:
+        from roles_permisos.models import GroupProfile
+        GroupProfile.objects.create(group=group, estado="Inactivo")
+    return redirect("roles")
+
+
 def rol_detalle(request, pk):
     """
     Vista que obtiene los datos de un rol para edición mediante AJAX.
 
-    Parámetros:
-        - ``pk``: ID del rol a consultar.
+    Parameters
+    ----------
+    request : HttpRequest
+        Objeto de la petición HTTP.
+    pk : int
+        ID del rol a consultar.
 
-    Retorna:
-        - JSON con:
-            - ``id``: ID del rol.
-            - ``nombre``: nombre del rol.
-            - ``descripcion``: descripción del rol.
-            - ``permisos``: lista de IDs de permisos asociados.
-            - ``form_html``: HTML renderizado de los campos del formulario.
+    Returns
+    -------
+    JsonResponse
+        Un JSON con los datos del rol:
+        - ``name``: nombre del rol.
+        - ``permisos``: lista de IDs de permisos asociados.
+        - ``modal_title``: título del modal de edición.
 
-    Plantilla parcial:
-        - ``roles/form_fields.html``
+    Template parcial
+    ----------------
+    - ``roles/form_fields.html``
     """
-    rol = get_object_or_404(Rol, pk=pk)
-    print("rol detalle:", rol)
-    permisos_ids = list(rol.permisos.values_list('id', flat=True))
+    rol = get_object_or_404(Group, pk=pk)
+    permisos_ids = list(map(str, rol.permissions.values_list("id", flat=True)))
     return JsonResponse({
-        "nombre": rol.nombre,
-        "descripcion": rol.descripcion,
-        "permisos": permisos_ids
+        "name": rol.name,
+        "permisos": permisos_ids,
+        "modal_title": "Editar Rol",
     })
-
-
