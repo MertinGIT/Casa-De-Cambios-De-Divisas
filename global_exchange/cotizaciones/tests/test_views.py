@@ -2,16 +2,28 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 from cotizaciones.models import TasaDeCambio, Moneda
-
+from usuarios.models import CustomUser
 
 class CotizacionViewsTest(TestCase):
     def setUp(self):
+        # Crear superusuario de prueba
+        if not CustomUser.objects.filter(username='superadmin').exists():
+            self.superadmin = CustomUser.objects.create_superuser(
+                username='superadmin',
+                email='admin@test.com',
+                password='ContraseñaSegura123'
+            )
+        else:
+            self.superadmin = CustomUser.objects.get(username='superadmin')
+
         self.client = Client()
-        # Creamos monedas de prueba
+        self.client.login(username='superadmin', password='ContraseñaSegura123')
+
+        # Crear monedas
         self.origen = Moneda.objects.create(nombre="Guaraní", abreviacion="PYG", estado=True)
         self.destino = Moneda.objects.create(nombre="Dólar", abreviacion="USD", estado=True)
 
-        # Creamos una tasa de cambio inicial
+        # Crear tasa inicial
         self.tasa = TasaDeCambio.objects.create(
             moneda_origen=self.origen,
             moneda_destino=self.destino,
