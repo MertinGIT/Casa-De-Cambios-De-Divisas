@@ -542,6 +542,7 @@ def editarPerfil(request):
     segmento_nombre = "Sin segmentación"
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         segmento_nombre = cliente_operativo.segmentacion.nombre
+        descuento = float(cliente_operativo.segmentacion.descuento)
 
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
@@ -556,11 +557,11 @@ def editarPerfil(request):
                 return render(request, 'editarperfil.html', {'form': form,  'success': True,
         "segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,})
             else:
                 return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,})
         """
         # Eliminar cuenta
         elif action == 'eliminar':
@@ -579,7 +580,7 @@ def editarPerfil(request):
 
     return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,})
 
 
 """
@@ -821,8 +822,37 @@ def obtener_clientes_usuario(user,request):
 
 @login_required
 def set_cliente_operativo(request):
+    """
+    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
+    con segmento y descuento para actualizar el front sin recargar.
+    """
     cliente_id = request.POST.get('cliente_id')
+
     if cliente_id:
-        request.session['cliente_operativo_id'] = int(cliente_id)
-        return JsonResponse({'success': True})
-    return JsonResponse({'success': False}, status=400)
+        try:
+            cliente = Cliente.objects.select_related("segmentacion").get(
+                pk=cliente_id, estado="activo"
+            )
+            # Guardar en sesión
+            request.session['cliente_operativo_id'] = cliente.id
+
+            # Datos a devolver
+            segmento_nombre = None
+            descuento = 0
+            if cliente.segmentacion and cliente.segmentacion.estado == "activo":
+                segmento_nombre = cliente.segmentacion.nombre
+                descuento = float(cliente.segmentacion.descuento or 0)
+
+            return JsonResponse({
+                "success": True,
+                "segmento": segmento_nombre,
+                "descuento": descuento,
+                "cliente_nombre": cliente.nombre
+            })
+
+        except Cliente.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "Cliente no encontrado"}, status=404
+            )
+
+    return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)

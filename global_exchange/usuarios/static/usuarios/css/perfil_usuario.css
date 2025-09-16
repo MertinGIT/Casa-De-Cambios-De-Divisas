@@ -17,13 +17,15 @@
     padding: 10px 14px;
     border-radius: 50px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transition: all 0.2s ease-in-out;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), 
+                box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .user-info:hover {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
 }
+
 
 /* Avatar circular */
 .user-avatar {
@@ -104,11 +106,13 @@
     display: block;
     padding: 8px 10px;
     border-radius: 6px;
-    transition: background 0.2s;
+    transition: background 0.25s ease, transform 0.2s ease, color 0.25s ease;
 }
 
 .user-dropdown ul li a:hover {
-    background: #f5f7fa;
+    background: #e4e9f1; /* un azul muy suave en lugar del gris */
+    color: #222;           /* oscurece el texto */
+    transform: translateX(3px); /* pequeño movimiento a la derecha */
 }
 
 /* Activo */
@@ -118,6 +122,17 @@
 .user-dropdown ul li a.selected {
     background: #4f46e5;
     color: #fff;
+    font-weight: 600;
+}
+.user-segment {
+    font-size: 13px;
+    color: #555;
+    font-weight: 500;
+}
+
+.user-discount {
+    font-size: 13px;
+    color: #0b6b00; /* verde suave para descuentos */
     font-weight: 600;
 }
 
