@@ -26,10 +26,10 @@ class ClienteUsuariosFormTest(TestCase):
 
         # Crear usuarios
         self.usuario1 = CustomUser.objects.create_user(
-            username="user1", password="testpass"
+            username="user1", password="testpass", cedula="123456789"
         )
         self.usuario2 = CustomUser.objects.create_user(
-            username="user2", password="testpass"
+            username="user2", password="testpass", cedula="987654321"
         )
 
     def test_init_precarga_usuarios(self):
