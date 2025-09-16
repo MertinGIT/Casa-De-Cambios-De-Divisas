@@ -136,6 +136,9 @@
     font-weight: 600;
 }
 
+.mobile-client-info {
+    display: none; /* oculto por defecto, se muestra en móvil */
+}
 
 /* ---------------- RESPONSIVE ---------------- */
 @media (max-width: 768px) {
@@ -144,10 +147,56 @@
         right: 10px;
     }
 
+     /* Contenedor relativo para el avatar */
+    /* Badge dinámico debajo del avatar */
     .user-info {
-        gap: 8px;
-        padding: 8px 10px;
+        position: relative;
+        display: flex;
+        flex-direction: column; /* Avatar arriba, badge debajo */
+        align-items: center;
+        gap: 4px;
+        border-radius: 12px; /* menos redondo que 50% */
+        padding: 6px 10px;
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .user-info .mobile-badge {
+        background: #4f46e5;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 2px 6px;
         border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: nowrap;
+    }
+
+    .user-details {
+        display: flex; /* mostrar info debajo del avatar */
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .mobile-client-name {
+        font-weight: 600;
+        color: #222;
+    }
+
+    .mobile-segment {
+        color: #555;
+    }
+
+    .mobile-discount {
+        color: #0b6b00;
+        font-weight: 600;
+    }
+
+    .arrow-down {
+        display: none;
     }
 
     .user-name {
@@ -169,20 +218,4 @@
 }
 
 @media (max-width: 480px) {
-    .user-details {
-        display: none; /* en pantallas muy pequeñas solo mostrar el avatar */
-    }
-
-    .user-info {
-        border-radius: 50%;
-        padding: 6px;
-    }
-    .user-avatar {
-        width: 50px;
-        height: 50px;
-    }
-
-    .arrow-down {
-        display: none;
-    }
 }
