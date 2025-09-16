@@ -45,12 +45,12 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # Seguridad
 # ============================================================================
 #: Clave secreta de Django. **Nunca debe compartirse ni versionarse.**
-SECRET_KEY = 'django-insecure-a59ch^c$8!qa+s&5@-zq-=q_cyz!e5!x@hsqg8dsa7_sr-t^s&'
+SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 
 
 #: Lista de hosts permitidos para el despliegue.
-ALLOWED_HOSTS = ['192.168.0.5', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 
 # ============================================================================
 # Configuracion de Email
@@ -89,7 +89,7 @@ INSTALLED_APPS = [
     'cotizaciones',
     'monedas',
     'metodos_pagos',
-    'cliente_usuario'
+    'cliente_usuario',
 ]
 # ============================================================================
 # Middleware
@@ -194,6 +194,9 @@ USE_TZ = True
 # ============================================================================
 
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / "media"
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
