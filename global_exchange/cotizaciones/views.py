@@ -5,7 +5,7 @@ from django.urls import reverse
 from .models import TasaDeCambio, Moneda
 from .forms import TasaDeCambioForm
 from django.db.models import Q
-
+from datetime import datetime
 
 def cotizacion_lista(request):
     """
@@ -26,17 +26,30 @@ def cotizacion_lista(request):
     form = TasaDeCambioForm()  # formulario vacío para crear nueva tasa
     q = request.GET.get("q", "").strip()
     campo = request.GET.get("campo", "").strip()
+    vigencia = request.GET.get("vigencia", "").strip()
     
     # 🔍 Filtro de búsqueda
     if q:
         if campo == "moneda_destino":
             tasas = tasas.filter(moneda_destino__nombre__icontains=q)
+        # 🔍 Filtro por fecha exacta de vigencia
+            tasas = tasas.filter(vigencia__date=vigencia)
         else:
             # Si no elige campo, buscar en ambos
             tasas = tasas.filter(
                 Q(moneda_destino__nombre__icontains=q) |
                 Q(moneda_origen__nombre__icontains=q)
             )
+
+
+           # 🔍 filtro por fecha vigencia
+    if vigencia:
+        try:
+            fecha = datetime.strptime(vigencia, "%d/%m/%Y %H:%M")
+            tasas = tasas.filter(vigencia__date=fecha.date())
+        except ValueError:
+            pass    
+    
 
     # 🔹 Mantener orden por vigencia después del filtro
     tasas = tasas.order_by('-vigencia')
@@ -47,7 +60,8 @@ def cotizacion_lista(request):
         "modal_type": "create",  
         "obj_id": None,
         "q": q,
-        "campo": campo 
+        "campo": campo,
+        "vigencia": vigencia,
     })
 
 
@@ -193,11 +207,13 @@ def cotizacion_detalle(request, pk):
         }
     """
     cotizacion = get_object_or_404(TasaDeCambio, pk=pk)
+    print(cotizacion, flush=True)
+    print(cotizacion.vigencia, flush=True)
     return JsonResponse({
         "id": cotizacion.id,
         "moneda_origen": cotizacion.moneda_origen.id if cotizacion.moneda_origen else None,
         "moneda_destino": cotizacion.moneda_destino.id if cotizacion.moneda_destino else None,
         "monto_compra": float(cotizacion.monto_compra),
         "monto_venta": float(cotizacion.monto_venta),
-        "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M:%S") if cotizacion.vigencia else None,
+        "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M") if cotizacion.vigencia else None,
     })

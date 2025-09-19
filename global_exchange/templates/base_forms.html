@@ -424,6 +424,11 @@
         if (modalTitle && data.modal_title) {
           modalTitle.textContent = data.modal_title;
         }
+        document.getElementById("id_vigencia").value = data.vigencia;
+        if (flatpickrInstance) {
+            flatpickrInstance.setDate(data.vigencia, true, "Y-m-d H:i");
+        }
+
       })
       .catch(error => {
         console.error('Error al cargar datos del usuario:', error);
