@@ -90,6 +90,7 @@ INSTALLED_APPS = [
     'monedas',
     'metodos_pagos',
     'cliente_usuario',
+    'operaciones',
 ]
 # ============================================================================
 # Middleware
