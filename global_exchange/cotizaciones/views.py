@@ -26,30 +26,17 @@ def cotizacion_lista(request):
     form = TasaDeCambioForm()  # formulario vacío para crear nueva tasa
     q = request.GET.get("q", "").strip()
     campo = request.GET.get("campo", "").strip()
-    vigencia = request.GET.get("vigencia", "").strip()
     
     # 🔍 Filtro de búsqueda
     if q:
         if campo == "moneda_destino":
             tasas = tasas.filter(moneda_destino__nombre__icontains=q)
-        # 🔍 Filtro por fecha exacta de vigencia
-            tasas = tasas.filter(vigencia__date=vigencia)
         else:
             # Si no elige campo, buscar en ambos
             tasas = tasas.filter(
                 Q(moneda_destino__nombre__icontains=q) |
                 Q(moneda_origen__nombre__icontains=q)
             )
-
-
-           # 🔍 filtro por fecha vigencia
-    if vigencia:
-        try:
-            fecha = datetime.strptime(vigencia, "%d/%m/%Y %H:%M")
-            tasas = tasas.filter(vigencia__date=fecha.date())
-        except ValueError:
-            pass    
-    
 
     # 🔹 Mantener orden por vigencia después del filtro
     tasas = tasas.order_by('-vigencia')
@@ -61,7 +48,6 @@ def cotizacion_lista(request):
         "obj_id": None,
         "q": q,
         "campo": campo,
-        "vigencia": vigencia,
     })
 
 
