@@ -7,23 +7,8 @@
 {% endblock %}
 
 {% block form_fields %}
-
-<div class="form-group">
-  <label for="{{ form.moneda_origen.id_for_label }}">Moneda base</label>
-  <div class="input-icon">
-    <span class="icon">💵</span>
-    {{ form.moneda_origen|add_class:"custom-input"|attr:"disabled:true"}}
-    <!-- Campo hidden para enviar el valor por POST -->
-    <input type="hidden" name="moneda_origen" value="{{ form.moneda_origen.value }}">
-  </div>
-  {% if form.moneda_origen.errors %}
-  <div class="error-messages">
-    {% for error in form.moneda_origen.errors %}
-    <span class="error-text">{{ error }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
-</div>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <div class="form-group">
   <label for="{{ form.moneda_destino.id_for_label }}">Moneda destino</label>
@@ -39,7 +24,6 @@
   </div>
   {% endif %}
 </div>
-
 
 <div class="form-group">
   <label for="{{ form.monto_compra.id_for_label }}">Compra</label>
@@ -72,7 +56,7 @@
 </div>
 
 <div class="form-group">
-  <label for="{{ form.vigencia.id_for_label }}">Vigencia</label>
+  <label for="{{ form.vigencia.id_for_label }}">Vigencia Desde:</label>
   <div class="input-icon">
     <span class="icon"><i class="bi bi-calendar" style="color: black;"></i> </span>
     {{ form.vigencia|add_class:"custom-input" }}
@@ -86,7 +70,6 @@
   </div>
   {% endif %}
 </div>
-
 
 {% if show_modal and modal_type == "edit" %}
 <script>
@@ -160,7 +143,8 @@ function setupTasaValidation() {
             if (!errorContainer.length) {
                 errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
             }
-            errorContainer.html(error);
+            // Usar append en vez de html para no sobrescribir errores existentes
+            errorContainer.append(error);
         },
         highlight: function(element, errorClass, validClass) {
             $(element).addClass("error custom-input").removeClass(validClass);
@@ -233,7 +217,14 @@ function setupTasaValidation() {
 // Inicializar al abrir modal
 $(document).ready(function() {
     setupTasaValidation();
-
+     // guardamos la instancia en una variable
+    flatpickrInstance = flatpickr("#id_vigencia", {
+        enableTime: true,
+        dateFormat: "d/m/Y H:i",  // el mismo formato que devuelve Django
+        time_24hr: true,
+        altInput: true,
+        altFormat: "d/m/Y H:i"
+    });
     // Abrir selector de fecha al hacer foco
     const inputDate = document.getElementById("id_vigencia");
     if (inputDate) {
@@ -245,11 +236,7 @@ $(document).ready(function() {
         });
     }
 });
-
-
 </script>
-
-
 
 <style>
   .custom-input {
@@ -329,14 +316,11 @@ $(document).ready(function() {
     position: relative;
 }
 .error-messages {
-  position: absolute;
-  left: 0px;
-  bottom: -30px;
-  transform: translateY(-50%);
+  position: relative;  /* o quitar completamente */
+  margin-top: 4px;
   color: red;
   font-size: 12px;
 }
-
 
 
 .error-messages .error-message {
@@ -366,3 +350,5 @@ $(document).ready(function() {
 
 </style>
 {% endblock %}
+
+

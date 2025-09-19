@@ -106,7 +106,7 @@ def home(request):
     
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     descuento = 0
-    segmento_nombre = "Sin segmentación"
+    segmento_nombre = "Sin Clientes"
 
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
@@ -534,15 +534,16 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
-    segmento_nombre = "Sin Segmentación"
+    segmento_nombre = "Sin Clientes"
+    descuento=0
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
-    segmento_nombre = "Sin segmentación"
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         segmento_nombre = cliente_operativo.segmentacion.nombre
-        descuento = float(cliente_operativo.segmentacion.descuento)
+        if cliente_operativo.segmentacion.descuento:
+            descuento = float(cliente_operativo.segmentacion.descuento)
 
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)

@@ -5,7 +5,7 @@ from django.urls import reverse
 from .models import TasaDeCambio, Moneda
 from .forms import TasaDeCambioForm
 from django.db.models import Q
-
+from datetime import datetime
 
 def cotizacion_lista(request):
     """
@@ -47,7 +47,7 @@ def cotizacion_lista(request):
         "modal_type": "create",  
         "obj_id": None,
         "q": q,
-        "campo": campo 
+        "campo": campo,
     })
 
 
@@ -193,11 +193,13 @@ def cotizacion_detalle(request, pk):
         }
     """
     cotizacion = get_object_or_404(TasaDeCambio, pk=pk)
+    print(cotizacion, flush=True)
+    print(cotizacion.vigencia, flush=True)
     return JsonResponse({
         "id": cotizacion.id,
         "moneda_origen": cotizacion.moneda_origen.id if cotizacion.moneda_origen else None,
         "moneda_destino": cotizacion.moneda_destino.id if cotizacion.moneda_destino else None,
         "monto_compra": float(cotizacion.monto_compra),
         "monto_venta": float(cotizacion.monto_venta),
-        "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M:%S") if cotizacion.vigencia else None,
+        "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M") if cotizacion.vigencia else None,
     })
