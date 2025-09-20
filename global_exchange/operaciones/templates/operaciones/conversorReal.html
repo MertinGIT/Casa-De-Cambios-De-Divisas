@@ -167,9 +167,13 @@
     <span class="close">&times;</span>
     <h3>Confirmar transacción</h3>
     <div id="detalle-transaccion" style="text-align:left;margin:1rem 0;font-weight:500;"></div>
+    <div id="mensaje-error-tasa" style="color:red; margin-top: -20px"></div>
     <button id="btn-confirmar">Continuar</button>
     <button id="btn-cancelar">Cancelar</button>
+    
   </div>
+  <!-- Aquí pondremos el mensaje de error -->
+  
 </div>
 
 <!-- MODAL PIN -->
@@ -304,9 +308,10 @@ const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
       },
       success: function(resp){
         if(resp && resp.resultado !== undefined){
-          campos.$resultado.val(resp.resultado);
-          campos.$resultado.data("tasa", resp.tasa);
-        } else {
+        campos.$resultado.val(resp.resultado);
+        campos.$resultado.data("tasa", resp.tasa);
+        campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
+      } else {
           let resultadoCalc = op==="venta"
             ? (monto / tasaVta).toFixed(2)
             : (monto * tasaCmp).toFixed(2);  
@@ -353,28 +358,28 @@ const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
       return;
     }
 
-    // si no existe resultado calculado todavía, calcular localmente
-let resultadoCalc = campos.$resultado.val();
+        // si no existe resultado calculado todavía, calcular localmente
+    let resultadoCalc = campos.$resultado.val();
 
-if(!resultadoCalc){
-  if (campos.op === "venta") {
-    resultadoCalc = (monto / tasaVta).toFixed(2);
-  } else {
-    resultadoCalc = (monto * tasaCmp).toFixed(2);
-  }
-  campos.$resultado.val(resultadoCalc);
-}
+    if(!resultadoCalc){
+      if (campos.op === "venta") {
+        resultadoCalc = (monto / tasaVta).toFixed(2);
+      } else {
+        resultadoCalc = (monto * tasaCmp).toFixed(2);
+      }
+      campos.$resultado.val(resultadoCalc);
+    }
 
 
     const tipoTexto = campos.op === "venta" ? "Compra" : "Venta";
     const tasaUsada = campos.op === "venta" ? tasaVta : tasaCmp;
 
-const detalleHtml = `
-  <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
-  <p><strong>Monto origen:</strong> ${monto} ${origenVal}</p>
-  <p><strong>Monto destino:</strong> ${resultadoCalc} ${destinoVal}</p>
-  <p><strong>Tasa utilizada:</strong> ${tasaUsada.toFixed(2)} PYG</p>
-`;
+  const detalleHtml = `
+    <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
+    <p><strong>Monto origen:</strong> ${monto} ${origenVal}</p>
+    <p><strong>Monto destino:</strong> ${resultadoCalc} ${destinoVal}</p>
+    <p><strong>Tasa utilizada:</strong> ${tasaUsada.toFixed(2)} PYG</p>
+  `;
 
     $("#detalle-transaccion").html(detalleHtml);
     $("#modal-confirmacion").fadeIn().css("display","flex");
@@ -382,14 +387,129 @@ const detalleHtml = `
 
   // Botones modales
   $("#btn-cancelar, .modal .close").click(function(){ $(this).closest(".modal").fadeOut(); });
-  $("#btn-confirmar").click(function(){ $("#modal-confirmacion").fadeOut(); $("#modal-pin").fadeIn().css("display","flex"); $(".pin-digit").val("").first().focus(); });
+// Declaración global
+var fechaNavegador = null;
+var advertenciaMostrada = false; // 🔑 Flag para controlar el mensaje
+$(document).ready(function() {
+  // Botones modales
+  $("#btn-cancelar, .modal .close").click(function(){
+    if (advertenciaMostrada) {
+      location.reload(); // 🔄 Recargar si ya se mostró la advertencia
+    } else {
+      $(this).closest(".modal").fadeOut(); 
+    }
+  });
+
+  // Cuando el usuario hace clic en "Realizar transacción"
+  $("#btn-convertir").click(function(){
+  obtenerHoraServidor(function(fechaServidor){
+    fechaNavegador = fechaServidor; 
+    $("#modal-confirmacion").fadeIn().css("display","flex"); 
+    console.log("Hora servidor usada:", fechaNavegador);
+  });
+});
+
+  // Botón para continuar a pesar de cambio de tasa
+  $("#btn-continuar-tasa").click(function(){
+    fechaNavegador = new Date(); // actualizamos fecha usada
+    $("#mensaje-error-tasa").hide();
+    $(this).hide();
+    abrirPinModal();
+  });
+  // Delegación para elementos que pueden estar ocultos inicialmente
+$(document).on("click", "#btn-continuar-tasa", function(){
+    fechaNavegador = new Date(); // actualizamos fecha usada
+    $("#mensaje-error-tasa").hide();
+    $(this).hide();
+    abrirPinModal();
+});
+  $("#btn-confirmar").click(function(){
+    const campos = getCampos();
+    $.ajax({
+      url: "{% url 'verificar_tasa' %}",
+      type: "GET",
+      data: { origen: campos.$origen.val(), destino: campos.$destino.val() },
+      success: function(resp){
+        const fechaBaseDatos = new Date(resp.fecha_tasa);
+        console.log("fechaNavegador:", fechaNavegador);
+        console.log("fechaBaseDatos:", fechaBaseDatos);
+
+        if(fechaBaseDatos > fechaNavegador){ 
+          // Mostrar mensaje en rojo y botón continuar
+          $("#mensaje-error-tasa").text(
+            "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa."
+          ).show();
+          $("#btn-continuar-tasa").show();
+          advertenciaMostrada = true; // 🔑 Activamos flag
+          return;
+        }
+
+        // Si no cambió, permitir confirmar
+        abrirPinModal();
+      }
+    });
+  });
+  function abrirPinModal(){
+    $("#modal-confirmacion").fadeOut();
+    $("#modal-pin").fadeIn().css("display","flex");
+    $(".pin-digit").val("").first().focus();
+  }
+});
+  function obtenerHoraServidor(callback){
+  $.get("{% url 'hora_servidor' %}", function(resp){
+    const fechaServidor = new Date(resp.hora);
+    callback(fechaServidor);
+  });
+}
 
   $(".pin-digit").on("input", function(){ let next=$(this).next(".pin-digit"); if(this.value.length && next.length) next.focus(); });
   $("#btn-verificar-pin").click(function(){
-    let pinIngresado = ""; $(".pin-digit").each(function(){ pinIngresado += $(this).val(); });
-    if(pinIngresado==="1234"){ $("#modal-pin").fadeOut(); $("#modal-exito").fadeIn().css("display","flex"); }
-    else { $("#mensaje-pin").fadeIn(); $(".pin-digit").val("").first().focus(); }
-  });
+    let pinIngresado = ""; 
+    $(".pin-digit").each(function(){ pinIngresado += $(this).val(); });
+
+    if(pinIngresado==="1234"){
+      console.log("ingreso el pin 1234");
+        // 🔹 Construir el JSON de transacción
+        const transaccionData = {
+            email: "{{ email_cliente_operativo }}",  // o donde tengas el email del cliente logueado
+            monto: $("#valor-compra").val(),
+            moneda: $("#origen-compra").val(),
+            tipo: "debito",
+            estado: "aceptada",
+            referencia: "TX-" + Date.now(),
+            motivo: `Cambio de ${$("#origen-compra").val()}}`
+        };
+        console.log("envio la transaccion al banco:", transaccionData);
+        // 🔹 Enviar al banco
+
+        fetch("http://127.0.0.1:8001/transaccion/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(transaccionData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+            console.log("Respuesta del banco:", data);
+
+            if(data.estado === "aceptada"){
+                $("#modal-pin").fadeOut(); 
+                $("#modal-exito").fadeIn().css("display","flex");
+            } else {
+                alert("Transacción rechazada: " + (data.mensaje || "Error desconocido"));
+            }
+        })
+        .catch(err => {
+            console.error("Error enviando transacción:", err);
+            alert("Error al conectar con el banco");
+        });
+
+    } else {
+        $("#mensaje-pin").fadeIn(); 
+        $(".pin-digit").val("").first().focus();
+    }
+});
   $("#btn-cerrar-exito").click(function(){ $("#modal-exito").fadeOut(); });
 
   // Filtro tabla

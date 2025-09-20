@@ -6,6 +6,9 @@ from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from clientes.models import Cliente
 from cliente_usuario.models import Usuario_Cliente
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import now
+import requests
 
 @login_required
 def simulador_operaciones(request):
@@ -46,7 +49,7 @@ def simulador_operaciones(request):
     # === Segmentación según usuario ===
     descuento = 0
     segmento_nombre = "Sin segmentación"
-    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user, request)
+    clientes_asociados, cliente_operativo, email_cliente_operativo = obtener_clientes_usuario(request.user, request)
 
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         descuento = float(cliente_operativo.segmentacion.descuento or 0)
@@ -133,9 +136,13 @@ def simulador_operaciones(request):
                 "ganancia_total": ganancia_total,
                 "segmento": segmento_nombre,
                 "descuento": descuento,
+                "tasa": PB_MONEDA,  
+                "fecha_tasa": ultimo["fecha"]  # viene de tu dict data_por_moneda
             })
 
     print("TC_VTA: ",TC_VTA,flush=True)
+    print("clientes_asociados: ",clientes_asociados,flush=True)
+    print("cliente_operativo: ",cliente_operativo,flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -154,7 +161,7 @@ def simulador_operaciones(request):
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
         "transacciones": transacciones,
-        
+        "email_cliente_operativo": email_cliente_operativo,
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
@@ -178,7 +185,7 @@ def obtener_clientes_usuario(user,request):
     
     clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
     cliente_operativo = None
-
+    print("usuarios_clientes: ",usuarios_clientes,flush=True)
     # Tomar de la sesión si existe
     if request and request.session.get('cliente_operativo_id'):
         cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
@@ -187,7 +194,12 @@ def obtener_clientes_usuario(user,request):
     if not cliente_operativo and clientes_asociados:
         cliente_operativo = clientes_asociados[0]
 
-    return clientes_asociados, cliente_operativo
+    # Obtener el email del cliente operativo
+    email_cliente_operativo = cliente_operativo.email if cliente_operativo else None
+    print("email_operativo: ",email_cliente_operativo,flush=True)
+
+
+    return clientes_asociados, cliente_operativo, email_cliente_operativo
 
 @login_required
 def set_cliente_operativo(request):
@@ -202,6 +214,7 @@ def set_cliente_operativo(request):
             cliente = Cliente.objects.select_related("segmentacion").get(
                 pk=cliente_id, estado="activo"
             )
+            print("cliente:", cliente,flush=True)
             # Guardar en sesión
             request.session['cliente_operativo_id'] = cliente.id
 
@@ -216,7 +229,8 @@ def set_cliente_operativo(request):
                 "success": True,
                 "segmento": segmento_nombre,
                 "descuento": descuento,
-                "cliente_nombre": cliente.nombre
+                "cliente_nombre": cliente.nombre,
+                "cliente_email": cliente.email
             })
 
         except Cliente.DoesNotExist:
@@ -225,3 +239,34 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+
+
+
+def verificar_tasa(request):
+    origen = request.GET.get("origen")
+    destino = request.GET.get("destino")
+    try:
+        tasa = TasaDeCambio.objects.filter(
+            moneda_origen__abreviacion=origen,
+            moneda_destino__abreviacion=destino
+        ).latest("fecha_actualizacion")
+        # Aseguramos que esté en formato ISO para JS
+        fecha_iso = tasa.fecha_actualizacion.isoformat()
+        return JsonResponse({"fecha_tasa": fecha_iso})
+    except TasaDeCambio.DoesNotExist:
+        return JsonResponse({"error": "No hay tasa disponible"}, status=404)
+    
+def hora_servidor(request):
+    return JsonResponse({"hora": now().isoformat()})    
+
+
+
+def enviar_transaccion_al_banco(cliente_id, monto, moneda):
+    url = "http://localhost:8001/api/banco/transaccion/"
+    data = {
+        "cliente_id": cliente_id,
+        "monto": monto,
+        "moneda": moneda
+    }
+    response = requests.post(url, json=data)
+    return response.json()
