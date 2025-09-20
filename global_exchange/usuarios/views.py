@@ -534,7 +534,7 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
-    segmento_nombre = "Sin Clientes"
+    segmento_nombre = "Sin Segmentación"
     descuento=0
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
