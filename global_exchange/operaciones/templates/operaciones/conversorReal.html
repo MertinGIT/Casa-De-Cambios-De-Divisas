@@ -26,10 +26,7 @@
 
       <!-- Estadísticas rápidas -->
       <section class="estadisticas-rapidas">
-        <h3>📊 Estadísticas rápidas</h3>
-        <p>Compras recientes: 8</p>
-        <p>Ventas recientes: 7</p>
-        <p>Monto promedio por operación: 950 USD</p>
+        {% include 'operaciones/medios_acreditacion.html' %}
       </section>
 
       <!-- Conversor -->
@@ -54,7 +51,7 @@
             <div class="input-icon-wrapper">
               <span class="icono">💵</span>
               <!-- origen-compra: sólo PYG aparece -->
-              <select id="origen-compra" name="origen_compra" class="input-select">
+              <select id="origen-compra" name="origen" class="input-select">
                 {% for moneda in monedas %}
                   {% if moneda.abreviacion == "PYG" %}
                     <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
@@ -62,14 +59,14 @@
                 {% endfor %}
               </select>
             </div>
-            <input type="text" id="valor-compra" name="valor_compra" class="input-text" placeholder="Monto">
+            <input type="text" id="valor-compra" name="valor" class="input-text" placeholder="Monto">
           </div>
 
           <div class="campo fila" id="compra-2">
             <div class="input-icon-wrapper">
               <span class="icono">💲</span>
               <!-- destino-compra: todas menos PYG -->
-              <select id="destino-compra" name="destino_compra" class="input-select">
+              <select id="destino-compra" name="destino" class="input-select">
                 {% for moneda in monedas %}
                   {% if moneda.abreviacion != "PYG" %}
                     <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
@@ -77,7 +74,7 @@
                 {% endfor %}
               </select>
             </div>
-            <input type="text" id="resultado-compra" name="resultado_compra" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
+            <input type="text" id="resultado-compra" name="resultado" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
           </div>
 
           <!-- ==== VENTA (se muestra cuando radio value === "compra") ==== -->
@@ -85,7 +82,7 @@
             <div class="input-icon-wrapper">
               <span class="icono">💵</span>
               <!-- origen-venta: todas menos PYG -->
-              <select id="origen-venta" name="origen_venta" class="input-select">
+              <select id="origen-venta" name="origen" class="input-select">
                 {% for moneda in monedas %}
                   {% if moneda.abreviacion != "PYG" %}
                     <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
@@ -93,14 +90,14 @@
                 {% endfor %}
               </select>
             </div>
-            <input type="text" id="valor-venta" name="valor_venta" class="input-text" placeholder="Monto">
+            <input type="text" id="valor-venta" name="valor" class="input-text" placeholder="Monto">
           </div>
 
           <div class="campo fila" id="venta-2" style="display:none;">
             <div class="input-icon-wrapper">
               <span class="icono">💲</span>
               <!-- destino-venta: sólo PYG -->
-              <select id="destino-venta" name="destino_venta" class="input-select">
+              <select id="destino-venta" name="destino" class="input-select">
                 {% for moneda in monedas %}
                   {% if moneda.abreviacion == "PYG" %}
                     <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
@@ -108,7 +105,7 @@
                 {% endfor %}
               </select>
             </div>
-            <input type="text" id="resultado-venta" name="resultado_venta" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
+            <input type="text" id="resultado-venta" name="resultado" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
           </div>
 
           <button type="submit" id="btn-convertir" class="btn-convertir">Realizar transacción</button>
@@ -161,6 +158,9 @@
 
 </div>
 
+<!-- MODAL Metodo Pago -->
+{% include 'operaciones/modalMetodoPago.html' %}
+
 <!-- MODAL CONFIRMACIÓN -->
 <div id="modal-confirmacion" class="modal">
   <div class="modal-content">
@@ -198,6 +198,17 @@
   </div>
 </div>
 
+<!-- MODAL MENSAJE -->
+<div id="modal-mensaje" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3 id="titulo-mensaje">⚠️ Atención</h3>
+    <p id="texto-mensaje"></p>
+    <button id="btn-cerrar-mensaje">Cerrar</button>
+  </div>
+</div>
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -207,13 +218,14 @@ $(document).ready(function(){
   const tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));
 const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
 
+console.log("Tasa Venta:", tasaVta, "Tasa Compra:", tasaCmp);
 
 
   // Muestra/oculta inputs según operación
   function actualizarCamposPorOperacion(){
   const op = $("input[name='operacion']:checked").val();
 
-  if(op === "venta"){ // "Compra (entrego PYG)"
+  if(op === "venta"){ // Venta -> "Compra por cliente (entrego PYG)"
     // mostrar compra
     $("#compra-1, #compra-2").show();
     $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
@@ -269,58 +281,31 @@ const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
     }
   }
 
-  // cálculo instantáneo (intenta por AJAX, si falla usa tasaSimulada)
+  // cálculo instantáneo
   function calcularResultado(){
-    const campos = getCampos();
-    if(!campos || !campos.$valor) return;
+  const campos = getCampos();
+  if(!campos || !campos.$valor) return;
 
-    // normalizar y validar input numérico
-    let raw = campos.$valor.val() || "";
-    raw = raw.replace(/[^0-9.]/g,'');
-    // evita múltiples puntos
-    const parts = raw.split('.');
-    if(parts.length>2) raw = parts.shift() + '.' + parts.join('');
-    campos.$valor.val(raw);
+  let raw = campos.$valor.val() || "";
+  raw = raw.replace(/[^0-9.]/g,'');
+  const parts = raw.split('.');
+  if(parts.length>2) raw = parts.shift() + '.' + parts.join('');
+  campos.$valor.val(raw);
 
-    const monto = parseFloat(raw);
-    const origenVal = campos.$origen.val();
-    const destinoVal = campos.$destino.val();
-
-    if(!monto || monto <= 0 || !origenVal || !destinoVal || origenVal === destinoVal){
-      campos.$resultado.val("");
-      return;
-    }
-
-    // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
-    $.ajax({
-      url: "{% url 'operaciones' %}",
-      type: "POST",
-      data: {
-        csrfmiddlewaretoken: "{{ csrf_token }}",
-        valor: monto,
-        operacion: campos.op,
-        origen: origenVal,
-        destino: destinoVal
-      },
-      success: function(resp){
-        if(resp && resp.resultado !== undefined){
-          campos.$resultado.val(resp.resultado);
-          campos.$resultado.data("tasa", resp.tasa);
-        } else {
-          let resultadoCalc = op==="venta"
-            ? (monto / tasaVta).toFixed(2)
-            : (monto * tasaCmp).toFixed(2);  
-
-        }
-      },
-      error: function(){
-        let resultadoCalc = op==="venta"
-  ? (monto / tasaVta).toFixed(2)
-  : (monto * tasaCmp).toFixed(2);
-
-      }
-    });
+  const monto = parseFloat(raw);
+  if(!monto || monto <= 0) {
+    campos.$resultado.val("");
+    return;
   }
+
+  // cálculo local inmediato
+  let resultadoCalc = campos.op === "venta"
+    ? (monto / tasaVta).toFixed(2)
+    : (monto * tasaCmp).toFixed(2);
+
+  campos.$resultado.val(resultadoCalc);
+}
+
 
   // Init y eventos
   actualizarCamposPorOperacion();
@@ -334,6 +319,18 @@ const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
     calcularResultado();
   });
 
+  function mostrarMensaje(titulo, texto){
+  $("#titulo-mensaje").text(titulo);
+  $("#texto-mensaje").text(texto);
+  $("#modal-mensaje").fadeIn().css("display","flex");
+}
+
+// Cerrar modal
+$("#btn-cerrar-mensaje, #modal-mensaje .close").click(function(){
+  $("#modal-mensaje").fadeOut();
+});
+
+
   // Submit del formulario: usa getCampos() para leer los campos correctos
   $("#form-conversor").submit(function(e){
     e.preventDefault();
@@ -344,14 +341,36 @@ const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
     const destinoVal = campos.$destino.val();
 
     if(!monto || monto <= 0){
-      alert("Ingrese un monto válido");
+      mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
       return;
     }
 
     if(origenVal === destinoVal){
-      alert("La moneda de origen y destino no puede ser la misma.");
+      mostrarMensaje("⚠️ Error", "La moneda de origen y destino no puede ser la misma.");
       return;
     }
+
+    $.ajax({
+        url: "{% url 'operaciones' %}",
+        method: "POST",
+        data: {
+            'csrfmiddlewaretoken': "{{ csrf_token }}",
+            'valor': campos.$valor.val(),
+            'origen': campos.$origen.val(),
+            'destino': campos.$destino.val(),
+            'operacion': campos.op
+        },
+        success: function(response){
+            // aquí response es JSON desde tu view
+            console.log(response);
+            campos.$resultado.val(response.resultado);
+            // abrir modal de confirmación si quieres
+            $("#modal-confirmacion").fadeIn().css("display","flex");
+        },
+        error: function(xhr){
+            alert(xhr.responseJSON?.error || "Error al realizar la transacción");
+        }
+    });
 
     // si no existe resultado calculado todavía, calcular localmente
 let resultadoCalc = campos.$resultado.val();
@@ -366,8 +385,8 @@ if(!resultadoCalc){
 }
 
 
-    const tipoTexto = campos.op === "venta" ? "Compra" : "Venta";
-    const tasaUsada = campos.op === "venta" ? tasaVta : tasaCmp;
+    const tipoTexto = campos.op === "venta" ? "Compra": "Venta";
+    const tasaUsada = campos.op === "venta" ?  tasaVta: tasaCmp;
 
 const detalleHtml = `
   <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
@@ -382,7 +401,7 @@ const detalleHtml = `
 
   // Botones modales
   $("#btn-cancelar, .modal .close").click(function(){ $(this).closest(".modal").fadeOut(); });
-  $("#btn-confirmar").click(function(){ $("#modal-confirmacion").fadeOut(); $("#modal-pin").fadeIn().css("display","flex"); $(".pin-digit").val("").first().focus(); });
+  $("#btn-confirmar").click(function(){ $("#modal-confirmacion").fadeOut(); $("#modal-metodo").fadeIn().css("display","flex"); $(".pin-digit").val("").first().focus(); });
 
   $(".pin-digit").on("input", function(){ let next=$(this).next(".pin-digit"); if(this.value.length && next.length) next.focus(); });
   $("#btn-verificar-pin").click(function(){
@@ -479,6 +498,14 @@ const detalleHtml = `
 .pin-container .pin-digit{width:50px;height:50px;text-align:center;font-size:1.4rem;border:1px solid #ddd;border-radius:8px;}
 .modal-content .close {position: absolute;top: 10px;right: 15px;font-size: 1.5rem;font-weight: bold;color: #555;cursor: pointer;transition: 0.2s;}
 .modal-content .close:hover {color: #dc2626;}
+#modal-mensaje .modal-content {
+  max-width: 350px;
+  text-align: center;
+  padding: 1.5rem 1rem;
+}
+#modal-mensaje .modal-content button {
+  margin-top: 1rem;
+}
 @media(max-width:992px){.dashboard-grid{grid-template-columns:1fr;}.fila{flex-direction:column;align-items:stretch;gap:0.5rem;}.input-icon-wrapper .input-select{width:100%;}}
 </style>
 

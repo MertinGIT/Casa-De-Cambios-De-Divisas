@@ -6,13 +6,15 @@ from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from clientes.models import Cliente
 from cliente_usuario.models import Usuario_Cliente
+from metodos_pagos.models import MetodoPago
+from django.views.decorators.csrf import csrf_exempt
 
 @login_required
 def simulador_operaciones(request):
     # === Datos de transacciones de prueba (estáticos) ===
     transacciones = [
       {"id": 1, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "monto": 1500.0, "estado": "Pendiente", "tipo": "Venta"},
-      {"id": 2, "fecha": '19/07/2025 02:40' , "monto": 3200.0, "estado": "Completado", "tipo": "Compra"},
+      {"id": 2, "fecha": '18/07/2025 02:40' , "monto": 3200.0, "estado": "Completado", "tipo": "Compra"},
       {"id": 3, "fecha": '19/08/2024 05:40', "monto": 500.0, "estado": "Cancelado", "tipo": "Venta"},
   ]
 
@@ -26,6 +28,11 @@ def simulador_operaciones(request):
         .select_related("moneda_origen", "moneda_destino")
         .order_by("moneda_destino", "-vigencia")
     )
+    
+    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion"))
+    print("metodos_pago: ",metodos_pago,flush=True)
+    
+    print("tasas 30: ",tasas,flush=True)
 
     # Reorganizar tasas en dict similar a tu data_por_moneda
     data_por_moneda = {}
@@ -38,6 +45,7 @@ def simulador_operaciones(request):
             "compra": float(tasa.monto_compra),
             "venta": float(tasa.monto_venta)
         })
+    print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
     # Comisiones y variables
     COMISION_VTA = 100
@@ -63,6 +71,7 @@ def simulador_operaciones(request):
     TC_VTA = 0
     TC_COMP = 0
     
+    
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
@@ -85,6 +94,8 @@ def simulador_operaciones(request):
         operacion = request.POST.get("operacion")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
+        
+        print("operacion view 88: ",operacion,flush=True)
 
         # Validar que no sea la misma moneda
         if origen == destino:
@@ -92,19 +103,27 @@ def simulador_operaciones(request):
 
         # Validar que Guaraní solo esté donde corresponde
         if operacion == "venta" and destino == "PYG":
-            return JsonResponse({"error": "No puedes vender hacia Guaraní."}, status=400)
+            return JsonResponse({"error": "No puedes Comprar hacia Guaraní."}, status=400)
         if operacion == "compra" and origen == "PYG":
-            return JsonResponse({"error": "No puedes comprar usando Guaraní como moneda de origen."}, status=400)
+            return JsonResponse({"error": "No puedes Vender usando Guaraní como moneda de origen."}, status=400)
 
         # Determinar moneda relevante según operación
-        moneda_seleccionada = destino if operacion == "venta" else origen
+        if operacion == "venta":
+            moneda_seleccionada = destino
+        else:
+            moneda_seleccionada = origen
+        
 
         try:
             valor = float(valor_input)
+            print("entro try 105: ",operacion,flush=True)
             if valor <= 0:
                 resultado = "Monto inválido"
             else:
+                print("moneda_seleccionada 109: ",moneda_seleccionada,flush=True)
+                print("data_por_moneda 110: ",data_por_moneda,flush=True)
                 registros = data_por_moneda.get(moneda_seleccionada, [])
+                print("registros 112: ",registros,flush=True)
                 if not registros:
                     resultado = "No hay cotización disponible"
                     ganancia_total = 0
@@ -114,14 +133,25 @@ def simulador_operaciones(request):
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
 
                     # === Fórmula de tu home ===
+                    #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
                     if operacion == "venta":
+                        print("venta",flush=True)
+                        print("Descuento: ",descuento,flush=True)
+                        print("COMISION_VTA: ",COMISION_VTA,flush=True)
+                        print("PB_MONEDA: ",PB_MONEDA,flush=True)
+                        print("valor: ",valor,flush=True)
+                        
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                        print("TC_VTA 138: ",TC_VTA,flush=True)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                        print("resultado 141: ",resultado,flush=True)
+                        print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
+                    print("resultado: ",resultado,flush=True)
 
         except ValueError:
             resultado = "Monto inválido"
@@ -135,7 +165,8 @@ def simulador_operaciones(request):
                 "descuento": descuento,
             })
 
-    print("TC_VTA: ",TC_VTA,flush=True)
+    print("TC_VTAfgh: ",TC_VTA,flush=True)
+    print("TC_COMP: ",TC_COMP,flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -154,7 +185,7 @@ def simulador_operaciones(request):
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
         "transacciones": transacciones,
-        
+        'medios': metodos_pago,
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
@@ -225,3 +256,19 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+
+def obtener_metodos_pago(request):
+    if request.method == "GET":
+        metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion")
+        return JsonResponse(list(metodos), safe=False)
+    
+
+@csrf_exempt
+def guardar_metodo_pago(request):
+    if request.method == "POST":
+        metodo_id = request.POST.get("metodo")
+        detalle = request.POST.get("detalle")
+        # acá podés enlazar con la transacción
+        print("Método elegido:", metodo_id, "Detalles:", detalle)
+        return JsonResponse({"status": "ok"})
+    return JsonResponse({"error": "Método no válido"}, status=400)
