@@ -535,6 +535,7 @@ def editarPerfil(request):
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
     segmento_nombre = "Sin Segmentación"
+    descuento=0
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
     # === SEGMENTACIÓN SEGÚN USUARIO ===
@@ -542,7 +543,8 @@ def editarPerfil(request):
     segmento_nombre = "Sin segmentación"
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         segmento_nombre = cliente_operativo.segmentacion.nombre
-        descuento = float(cliente_operativo.segmentacion.descuento)
+        if cliente_operativo.segmentacion.descuento:
+            descuento = float(cliente_operativo.segmentacion.descuento)
 
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)

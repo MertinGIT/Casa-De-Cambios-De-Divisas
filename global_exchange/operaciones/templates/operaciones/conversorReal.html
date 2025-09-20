@@ -2,7 +2,6 @@
 {% load static %}
 
 {% block dashboard_content %}
-
 <div class="dashboard-grid">
 
   <!-- COLUMNA IZQUIERDA -->
@@ -36,10 +35,12 @@
       <!-- Conversor -->
       <main class="conversor-container">
         <h2 class="title">💱 Conversor de Divisas</h2>
-        <form id="form-conversor" method="post" class="conversor-form">
+        <form id="form-conversor" method="post" class="conversor-form" action="{% url 'operaciones' %}">
           {% csrf_token %}
 
           <div class="campo fila operacion-toggle">
+            <!-- Nota: mantuve los values igual que tenías para no romper la lógica previa:
+                 value="venta" corresponde a "Compra (entrego PYG)" en tu UI original -->
             <label class="toggle-label">
               <input type="radio" name="operacion" value="venta" checked> Compra (entrego PYG)
             </label>
@@ -48,31 +49,69 @@
             </label>
           </div>
 
-          <div class="campo fila">
+          <!-- ==== COMPRA (se muestra cuando radio value === "venta") ==== -->
+          <div class="campo fila" id="compra-1">
             <div class="input-icon-wrapper">
               <span class="icono">💵</span>
-              <select id="origen" name="origen" class="input-select">
+              <!-- origen-compra: sólo PYG aparece -->
+              <select id="origen-compra" name="origen_compra" class="input-select">
                 {% for moneda in monedas %}
-                  <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
+                  {% if moneda.abreviacion == "PYG" %}
+                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
+                  {% endif %}
                 {% endfor %}
               </select>
             </div>
-            <input type="text" id="valor" name="valor" class="input-text" placeholder="Monto">
+            <input type="text" id="valor-compra" name="valor_compra" class="input-text" placeholder="Monto">
           </div>
 
-          <div class="campo fila">
+          <div class="campo fila" id="compra-2">
             <div class="input-icon-wrapper">
               <span class="icono">💲</span>
-              <select id="destino" name="destino" class="input-select">
+              <!-- destino-compra: todas menos PYG -->
+              <select id="destino-compra" name="destino_compra" class="input-select">
                 {% for moneda in monedas %}
-                  <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
+                  {% if moneda.abreviacion != "PYG" %}
+                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
+                  {% endif %}
                 {% endfor %}
               </select>
             </div>
-            <input type="text" id="resultado" name="resultado" class="input-text readonly" placeholder="Resultado" readonly>
+            <input type="text" id="resultado-compra" name="resultado_compra" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
           </div>
 
-          <button type="button" id="btn-enviar" class="btn-convertir">Enviar transacción</button>
+          <!-- ==== VENTA (se muestra cuando radio value === "compra") ==== -->
+          <div class="campo fila" id="venta-1" style="display:none;">
+            <div class="input-icon-wrapper">
+              <span class="icono">💵</span>
+              <!-- origen-venta: todas menos PYG -->
+              <select id="origen-venta" name="origen_venta" class="input-select">
+                {% for moneda in monedas %}
+                  {% if moneda.abreviacion != "PYG" %}
+                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <input type="text" id="valor-venta" name="valor_venta" class="input-text" placeholder="Monto">
+          </div>
+
+          <div class="campo fila" id="venta-2" style="display:none;">
+            <div class="input-icon-wrapper">
+              <span class="icono">💲</span>
+              <!-- destino-venta: sólo PYG -->
+              <select id="destino-venta" name="destino_venta" class="input-select">
+                {% for moneda in monedas %}
+                  {% if moneda.abreviacion == "PYG" %}
+                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+            </div>
+            <input type="text" id="resultado-venta" name="resultado_venta" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
+          </div>
+
+          <button type="submit" id="btn-convertir" class="btn-convertir">Realizar transacción</button>
         </form>
       </main>
 
@@ -125,9 +164,10 @@
 <!-- MODAL CONFIRMACIÓN -->
 <div id="modal-confirmacion" class="modal">
   <div class="modal-content">
+    <span class="close">&times;</span>
     <h3>Confirmar transacción</h3>
-    <p>¿Desea enviar esta transacción?</p>
-    <button id="btn-confirmar">Confirmar</button>
+    <div id="detalle-transaccion" style="text-align:left;margin:1rem 0;font-weight:500;"></div>
+    <button id="btn-confirmar">Continuar</button>
     <button id="btn-cancelar">Cancelar</button>
   </div>
 </div>
@@ -135,6 +175,7 @@
 <!-- MODAL PIN -->
 <div id="modal-pin" class="modal">
   <div class="modal-content">
+    <span class="close">&times;</span>
     <h3>Ingrese su PIN</h3>
     <p id="mensaje-pin" style="color:red; font-weight:600; display:none; margin-bottom:0.5rem;">PIN incorrecto</p>
     <div class="pin-container">
@@ -150,7 +191,8 @@
 <!-- MODAL ÉXITO -->
 <div id="modal-exito" class="modal">
   <div class="modal-content">
-    <h3>✅ Transacción realizada</h3>
+    <span class="close">&times;</span>
+    <h3>✅ Transacción realizada</h33>
     <p>Su transacción se completó correctamente.</p>
     <button id="btn-cerrar-exito">Cerrar</button>
   </div>
@@ -162,74 +204,193 @@
 <script>
 $(document).ready(function(){
 
-  // Conversor
-  const $origen = $("#origen"), $destino = $("#destino"), $valor = $("#valor"), $resultado = $("#resultado");
+  const tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));
+const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
 
+
+
+  // Muestra/oculta inputs según operación
   function actualizarCamposPorOperacion(){
-    const op = $("input[name='operacion']:checked").val();
-    $origen.prop("disabled", false);
-    $destino.prop("disabled", false);
-    $origen.find("option").prop("disabled", false);
-    $destino.find("option").prop("disabled", false);
-    if(op==="venta"){
-      $origen.val("PYG").prop("disabled",true);
-      $destino.find("option[value='PYG']").prop("disabled",true);
-      if($destino.val()==="PYG") $destino.val($destino.find("option:not([value='PYG'])").first().val());
-    }else{
-      $destino.val("PYG").prop("disabled",true);
-      $origen.find("option[value='PYG']").prop("disabled",true);
-      if($origen.val()==="PYG") $origen.val($origen.find("option:not([value='PYG'])").first().val());
-    }
-    $resultado.val("");
+  const op = $("input[name='operacion']:checked").val();
+
+  if(op === "venta"){ // "Compra (entrego PYG)"
+    // mostrar compra
+    $("#compra-1, #compra-2").show();
+    $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
+      .prop("disabled", false);
+
+    // ocultar venta
+    $("#venta-1, #venta-2").hide();
+    $("#venta-1 select, #venta-1 input, #venta-2 select, #venta-2 input")
+      .prop("disabled", true);
+
+    // forzar origen PYG
+    $("#origen-compra").val("PYG").prop("disabled", true);
+
+  } else { // op === "compra" → "Venta (recibo PYG)"
+    // mostrar venta
+    $("#venta-1, #venta-2").show();
+    $("#venta-1 select, #venta-1 input, #venta-2 select, #venta-2 input")
+      .prop("disabled", false);
+
+    // ocultar compra
+    $("#compra-1, #compra-2").hide();
+    $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
+      .prop("disabled", true);
+
+    // forzar destino PYG
+    $("#destino-venta").val("PYG").prop("disabled", true);
   }
-  actualizarCamposPorOperacion();
-  $(document).on("change","input[name='operacion']",actualizarCamposPorOperacion);
-  $valor.on("input",function(){this.value=this.value.replace(/[^0-9.]/g,'');});
 
-  // Botón enviar transacción -> abrir modal confirmación
-  $("#btn-enviar").click(function(){ 
-    $("#modal-confirmacion").css("display","flex"); // muestra y centra
-    $("#modal-confirmacion").fadeIn(); 
-  });
-  $("#btn-cancelar").click(function(){ 
-    $("#modal-confirmacion").fadeOut(); 
-  });
+  // limpiar resultados
+  $("#resultado-compra, #resultado-venta").val("");
+}
 
-  // Confirmar -> abrir modal PIN
-  $("#btn-confirmar").click(function(){
-    $("#modal-confirmacion").fadeOut();
-    $("#modal-pin").fadeIn();
-    $("#modal-pin").css("display","flex"); // muestra y centra
-    $("#mensaje-pin").hide();
-    $(".pin-digit").val("").first().focus();
-  });
 
-  // Foco automático en PIN
-  $(".pin-digit").on("input", function() {
-    let next = $(this).next(".pin-digit");
-    if(this.value.length && next.length) { next.focus(); }
-  });
-
-  // Verificar PIN
-  $("#btn-verificar-pin").click(function(){
-    let pinIngresado = "";
-    $(".pin-digit").each(function(){ pinIngresado += $(this).val(); });
-    const pinCorrecto = "1234"; // estático
-    if(pinIngresado===pinCorrecto){
-      $("#modal-pin").fadeOut();
-      $("#modal-exito").fadeIn();
-      $("#modal-exito").css("display","flex");
-      
-    } else {
-      $("#mensaje-pin").fadeIn();
-      $(".pin-digit").val("").first().focus();
+  // obtener los elementos relevantes según la operación activa
+  function getCampos() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
     }
+  }
+
+  // cálculo instantáneo (intenta por AJAX, si falla usa tasaSimulada)
+  function calcularResultado(){
+    const campos = getCampos();
+    if(!campos || !campos.$valor) return;
+
+    // normalizar y validar input numérico
+    let raw = campos.$valor.val() || "";
+    raw = raw.replace(/[^0-9.]/g,'');
+    // evita múltiples puntos
+    const parts = raw.split('.');
+    if(parts.length>2) raw = parts.shift() + '.' + parts.join('');
+    campos.$valor.val(raw);
+
+    const monto = parseFloat(raw);
+    const origenVal = campos.$origen.val();
+    const destinoVal = campos.$destino.val();
+
+    if(!monto || monto <= 0 || !origenVal || !destinoVal || origenVal === destinoVal){
+      campos.$resultado.val("");
+      return;
+    }
+
+    // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
+    $.ajax({
+      url: "{% url 'operaciones' %}",
+      type: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+        valor: monto,
+        operacion: campos.op,
+        origen: origenVal,
+        destino: destinoVal
+      },
+      success: function(resp){
+        if(resp && resp.resultado !== undefined){
+          campos.$resultado.val(resp.resultado);
+          campos.$resultado.data("tasa", resp.tasa);
+        } else {
+          let resultadoCalc = op==="venta"
+            ? (monto / tasaVta).toFixed(2)
+            : (monto * tasaCmp).toFixed(2);  
+
+        }
+      },
+      error: function(){
+        let resultadoCalc = op==="venta"
+  ? (monto / tasaVta).toFixed(2)
+  : (monto * tasaCmp).toFixed(2);
+
+      }
+    });
+  }
+
+  // Init y eventos
+  actualizarCamposPorOperacion();
+  $(document).on("change", "input[name='operacion']", function(){
+    actualizarCamposPorOperacion();
+    calcularResultado(); // recalcular si había valor
   });
 
-  // Cerrar modal éxito
-  $("#btn-cerrar-exito").click(function(){ 
-    $("#modal-exito").fadeOut(); 
+  // inputs que deben disparar el cálculo
+  $(document).on("input change", "#valor-compra, #valor-venta, #destino-compra, #origen-venta", function(){
+    calcularResultado();
   });
+
+  // Submit del formulario: usa getCampos() para leer los campos correctos
+  $("#form-conversor").submit(function(e){
+    e.preventDefault();
+
+    const campos = getCampos();
+    const monto = parseFloat(campos.$valor.val());
+    const origenVal = campos.$origen.val();
+    const destinoVal = campos.$destino.val();
+
+    if(!monto || monto <= 0){
+      alert("Ingrese un monto válido");
+      return;
+    }
+
+    if(origenVal === destinoVal){
+      alert("La moneda de origen y destino no puede ser la misma.");
+      return;
+    }
+
+    // si no existe resultado calculado todavía, calcular localmente
+let resultadoCalc = campos.$resultado.val();
+
+if(!resultadoCalc){
+  if (campos.op === "venta") {
+    resultadoCalc = (monto / tasaVta).toFixed(2);
+  } else {
+    resultadoCalc = (monto * tasaCmp).toFixed(2);
+  }
+  campos.$resultado.val(resultadoCalc);
+}
+
+
+    const tipoTexto = campos.op === "venta" ? "Compra" : "Venta";
+    const tasaUsada = campos.op === "venta" ? tasaVta : tasaCmp;
+
+const detalleHtml = `
+  <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
+  <p><strong>Monto origen:</strong> ${monto} ${origenVal}</p>
+  <p><strong>Monto destino:</strong> ${resultadoCalc} ${destinoVal}</p>
+  <p><strong>Tasa utilizada:</strong> ${tasaUsada.toFixed(2)} PYG</p>
+`;
+
+    $("#detalle-transaccion").html(detalleHtml);
+    $("#modal-confirmacion").fadeIn().css("display","flex");
+  });
+
+  // Botones modales
+  $("#btn-cancelar, .modal .close").click(function(){ $(this).closest(".modal").fadeOut(); });
+  $("#btn-confirmar").click(function(){ $("#modal-confirmacion").fadeOut(); $("#modal-pin").fadeIn().css("display","flex"); $(".pin-digit").val("").first().focus(); });
+
+  $(".pin-digit").on("input", function(){ let next=$(this).next(".pin-digit"); if(this.value.length && next.length) next.focus(); });
+  $("#btn-verificar-pin").click(function(){
+    let pinIngresado = ""; $(".pin-digit").each(function(){ pinIngresado += $(this).val(); });
+    if(pinIngresado==="1234"){ $("#modal-pin").fadeOut(); $("#modal-exito").fadeIn().css("display","flex"); }
+    else { $("#mensaje-pin").fadeIn(); $(".pin-digit").val("").first().focus(); }
+  });
+  $("#btn-cerrar-exito").click(function(){ $("#modal-exito").fadeOut(); });
 
   // Filtro tabla
   function aplicarFiltroUnico(){
@@ -258,11 +419,14 @@ $(document).ready(function(){
   ];
   new Chart(ctx,{
     type:'bar',
-    data:{ labels:dataTransacciones.map(d=>d.dia), datasets:[{
-      label:'Monto de transacción',
-      data:dataTransacciones.map(d=>d.monto),
-      backgroundColor:dataTransacciones.map(d=>d.tipo==='Compra'?'#16a34a':'#dc2626')
-    }]},
+    data:{
+      labels:dataTransacciones.map(d=>d.dia),
+      datasets:[{
+        label:'Monto de transacción',
+        data:dataTransacciones.map(d=>d.monto),
+        backgroundColor:dataTransacciones.map(d=>d.tipo==='Compra'?'#16a34a':'#dc2626')
+      }]
+    },
     options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
   });
 
@@ -270,6 +434,7 @@ $(document).ready(function(){
 </script>
 
 <style>
+/* (copié exactamente tu CSS) */
 .dashboard-grid{display:grid;grid-template-columns:minmax(300px,1fr) minmax(350px,1.2fr);gap:2rem;max-width:1200px;margin:2rem auto;}
 .col-left{display:flex;flex-direction:column;justify-content:space-between;}
 .col-right{display:flex;flex-direction:column;gap:1rem;}
@@ -294,9 +459,9 @@ $(document).ready(function(){
 .tabla-transacciones tbody tr:nth-child(even){background:#f9f9f9;}
 .tabla-transacciones td.tipo-compra::before{content:"🟢 ";}
 .tabla-transacciones td.tipo-venta::before{content:"🔴 ";}
-.estado.completada{color:#16a34a;font-weight:600;}
+.estado.completado{color:#16a34a;font-weight:600;}
 .estado.pendiente{color:#ca8a04;font-weight:600;}
-.estado.cancelada{color:#dc2626;font-weight:600;}
+.estado.cancelado{color:#dc2626;font-weight:600;}
 .indicadores{display:flex;justify-content:space-around;gap:1rem;padding:1rem;background:#f4f6fb;border-radius:12px;}
 .indicador{text-align:center;}
 .indicador .numero{font-size:1.3rem;font-weight:600;color:#1e2d70;}
@@ -305,49 +470,16 @@ $(document).ready(function(){
 .estadisticas-rapidas h3{margin-bottom:0.5rem;font-size:1.1rem;color:#1e2d70;}
 .filtro-transacciones{display:flex;gap:0.5rem;margin:1rem 0;}
 .filtro-transacciones .input-select,.filtro-transacciones .input-text{flex:1;padding:0.6rem 0.8rem;border-radius:10px;border:1px solid #ddd;}
-
-/* MODALES */
-.modal {
-  display: none;               /* se oculta por defecto */
-  position: fixed;
-  inset: 0;                     /* top:0; right:0; bottom:0; left:0; */
-  background: rgba(0,0,0,0.5);
-  justify-content: center;      /* centrado horizontal */
-  align-items: center;          /* centrado vertical */
-  z-index: 9999;
-}
-.modal-content {
-  background: #fff;
-  padding: 2rem 1.5rem;
-  border-radius: 12px;
-  max-width: 400px;
-  width: 90%;
-  text-align: center;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-  position: relative;
-}
-.modal-content button {
-  margin: 0.5rem;
-  padding: 0.6rem 1rem;
-  border: none;
-  border-radius: 8px;
-  background: #5d5fef;
-  color: #fff;
-  cursor: pointer;
-  transition: 0.3s;
-}
-.modal-content button:hover {
-  background: #4a4cd9;
-}
+.modal {display: none;position: fixed;inset: 0;background: rgba(0,0,0,0.5);justify-content: center;align-items: center;z-index: 9999;}
+.modal-content {background: #fff;padding: 2rem 1.5rem;border-radius: 12px;max-width: 400px;width: 90%;text-align: center;box-shadow: 0 6px 20px rgba(0,0,0,0.25);position: relative;}
+.modal-content button {margin: 0.5rem;padding:0.6rem 1rem;border:none;border-radius:8px;background:#5d5fef;color:#fff;cursor:pointer;transition:0.3s;}
+.modal-content button:hover{background:#4a4cd9;}
 #mensaje-pin { display: none; font-weight:600; color:red; margin-bottom:0.5rem; }
 .pin-container{display:flex;justify-content:space-between;gap:0.5rem;margin-bottom:1rem;}
 .pin-container .pin-digit{width:50px;height:50px;text-align:center;font-size:1.4rem;border:1px solid #ddd;border-radius:8px;}
-
-@media(max-width:992px){
-  .dashboard-grid{grid-template-columns:1fr;}
-  .fila{flex-direction:column;align-items:stretch;gap:0.5rem;}
-  .input-icon-wrapper .input-select{width:100%;}
-}
+.modal-content .close {position: absolute;top: 10px;right: 15px;font-size: 1.5rem;font-weight: bold;color: #555;cursor: pointer;transition: 0.2s;}
+.modal-content .close:hover {color: #dc2626;}
+@media(max-width:992px){.dashboard-grid{grid-template-columns:1fr;}.fila{flex-direction:column;align-items:stretch;gap:0.5rem;}.input-icon-wrapper .input-select{width:100%;}}
 </style>
 
 {% endblock %}
