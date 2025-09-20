@@ -20,5 +20,8 @@ COPY . .
 # Exponemos el puerto 8000 para el servidor Django
 EXPOSE 8000
 
-# Comando para correr el servidor Django
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Comando para correr el servidor Django en Desarrollo
+#CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+# Gunicorn como servidor WSGI
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "global_exchange.wsgi:application"]

@@ -3,34 +3,64 @@
 <!-- Componente del perfil del usuario -->
 <div class="user-profile">
     <div class="user-info" onclick="toggleDropdown()">
-        <!-- Si el usuario tiene avatar se usa, si no se carga uno por defecto -->
+        <!-- Avatar -->
         <img src="{% static 'usuarios/img/default-avatar.svg' %}" 
              alt="Usuario" 
              class="user-avatar" />
 
         <div class="user-details">
-            <span class="user-name">
+            <span class="user-name" id="userName">
                 {{ user.username }}
                 {% if cliente_operativo %}
                     ({{ cliente_operativo.nombre }})
                 {% endif %}
             </span>
-            <span class="user-role">{{ user.profile.role }}</span>
+
+            <!-- Rol, segmento y descuento separados para poder actualizarlos vía JS -->
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span class="user-role" id="userRole">{{ user.profile.role }}</span>
+                {% if segmento %}
+                <span class="user-segment" id="userSegment">• {{ segmento }}</span>
+                {% else %}
+                <span class="user-segment" id="userSegment"></span>
+                {% endif %}
+                {% if descuento is not None %}
+                <span class="user-discount" id="userDiscount">{{ descuento }}%</span>
+                {% else %}
+                <span class="user-discount" id="userDiscount"></span>
+                {% endif %}
+            </div>
         </div>
+
+        <!-- Información móvil debajo del avatar -->
+        
 
 
         <i class="arrow-down">&#9662;</i>
     </div>
 
-    <!-- Dropdown de clientes -->
+    <!-- Dropdown -->
     <div class="user-dropdown" id="userDropdown">
         <p class="dropdown-title">Seleccionar Cliente</p>
         <ul>
             {% for cliente in clientes_asociados %}
-                <li><a href="#" data-cliente-id="{{ cliente.id }}">{{ cliente.nombre }}</a></li>
+                <li>
+                    <a href="#"
+                       data-cliente-id="{{ cliente.id }}"
+                       class="{% if cliente_operativo and cliente.id == cliente_operativo.id %}selected{% endif %}">
+                        {{ cliente.nombre }}
+                    </a>
+                </li>
             {% empty %}
                 <li><span>No tiene clientes asignados</span></li>
             {% endfor %}
+        </ul>
+
+        <hr style="margin:10px 0; border:none; border-top:1px solid #7c7b7b;">
+
+        <ul>
+            <li><a href="{% url 'editarperfil' %}">&#x1F464; Editar perfil</a></li>
+            <li><a href="{% url 'signout' %}">🚪 Cerrar sesión</a></li>
         </ul>
     </div>
 </div>
@@ -38,28 +68,61 @@
 <link rel="stylesheet" href="{% static 'usuarios/css/perfil_usuario.css' %}">
 <script src="{% static 'usuarios/js/perfil_usuario.js' %}"></script>
 
-
 <script>
+/* --- listeners solo para los items que tienen data-cliente-id --- */
 const dropdownItems = document.querySelectorAll('.user-dropdown ul li a');
 
 dropdownItems.forEach(item => {
-    item.addEventListener('click', function(e){
-        e.preventDefault();
-        const nombreCliente = this.textContent;
-        const clienteId = this.dataset.clienteId;
+    if (item.dataset.clienteId) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
 
-        // Cambiar visualmente
-        document.querySelector('.user-name').innerHTML = "{{ user.username }} (" + nombreCliente + ")";
+            const clienteId = this.dataset.clienteId;
 
-        // Guardar en sesión
-        fetch("{% url 'set_cliente_operativo' %}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                "X-CSRFToken": "{{ csrf_token }}"
-            },
-            body: "cliente_id=" + clienteId
+            // Guardar en sesión en el backend y actualizar segmento/descuento en pantalla
+            fetch("{% url 'set_cliente_operativo' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: "cliente_id=" + clienteId
+            })
+            .then(resp => resp.json())
+            .then(data => {
+                if (data && data.success) {
+                    // Actualizar nombre de usuario + cliente
+                    const userNameEl = document.getElementById('userName');
+                    if (userNameEl) {
+                        userNameEl.innerHTML = "{{ user.username }}" + " (" + data.cliente_nombre + ")";
+                    }
+
+                    // Actualizar segmento
+                    const segEl = document.getElementById('userSegment');
+                    if (segEl) {
+                        segEl.textContent = data.segmento ? ("• " + data.segmento) : "";
+                    }
+
+                    // Actualizar descuento
+                    const descEl = document.getElementById('userDiscount');
+                    if (descEl) {
+                        descEl.textContent = data.descuento ? (parseFloat(data.descuento).toFixed(1) + "%") : "0,0%";
+                    }
+
+                    // Visual del dropdown
+                    dropdownItems.forEach(el => el.classList.remove("selected"));
+                    this.classList.add("selected");
+                } else {
+                    console.warn("No se pudo actualizar cliente operativo:", data);
+                }
+            })
+            .catch(err => {
+                console.error("Error actualizando cliente operativo:", err);
+            });
         });
-    });
+    }
 });
+
 </script>
+
+

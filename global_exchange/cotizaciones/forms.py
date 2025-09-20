@@ -41,6 +41,19 @@ class TasaDeCambioForm(forms.ModelForm):
         required=True,
         widget=forms.NumberInput(attrs={"step":  "any"})  # <-- importante
     )
+    
+    vigencia = forms.DateTimeField(
+        input_formats=["%d/%m/%Y %H:%M", "%Y-%m-%d %H:%M"],  # <-- acepta ambos
+        widget=forms.DateTimeInput(
+            format="%d/%m/%Y %H:%M",
+            attrs={
+                "class": "custom-input",
+                "id": "id_vigencia",
+                "placeholder": "dd/mm/aaaa hh:mm"
+            }
+        )
+    )
+
     def clean_monto_compra(self):
         """
         Valida y redondea el monto de compra.
@@ -114,7 +127,6 @@ class TasaDeCambioForm(forms.ModelForm):
         widgets = {
             "moneda_origen": forms.Select(attrs={"class": "custom-input", "id": "id_moneda_origen"}),
             "moneda_destino": forms.Select(attrs={"class": "custom-input", "id": "id_moneda_destino"}),
-            "vigencia": forms.DateTimeInput(attrs={"class": "custom-input", "id": "id_vigencia", "type": "datetime-local"}),
         }
 
     def __init__(self, *args, **kwargs):

@@ -2,15 +2,16 @@ from django.shortcuts import render
 
 from usuarios.forms import UserRolePermissionForm
 from usuarios.models import CustomUser
+from django.core.paginator import Paginator
+
 
 # Create your views here.
 def configuracion_view(request):
     return render(request, 'configuracion_home.html')
 
+"""
 def seguridad_hub(request):
-    """
     Hub principal de seguridad con tabs para usuarios y roles
-    """
     active_tab = request.GET.get('tab', 'usuarios')
     
     context = {
@@ -68,3 +69,4 @@ def seguridad_hub(request):
         })
     
     return render(request, "security_hub.html", context)
+"""

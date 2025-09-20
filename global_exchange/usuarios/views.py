@@ -106,7 +106,7 @@ def home(request):
     
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     descuento = 0
-    segmento_nombre = "Sin segmentación"
+    segmento_nombre = "Sin Clientes"
 
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
@@ -163,16 +163,21 @@ def home(request):
                             key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
                             reverse=True
                         )
-                        ultimo = registros_ordenados[0]
+                        ultimo = registros_ordenados[-1]
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     else:
                         PB_MONEDA = 0
+                        
+                    print("PB_MONEDA:", PB_MONEDA,flush=True)
 
                     # === CÁLCULOS ===
+                    print("operacion:", operacion,flush=True)
                     if operacion == "venta":  # Vender PYG → otra moneda
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                        print("COMISION_VTA:", COMISION_VTA, flush=True)
+                        print("descuento:", descuento, flush=True)
                     else:  # Compra: otra moneda → PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
                         print("TC_COMP:", TC_COMP, flush=True)
@@ -529,14 +534,16 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
-    segmento_nombre = "Sin Segmentación"
+    segmento_nombre = "Sin Clientes"
+    descuento=0
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
-    segmento_nombre = "Sin segmentación"
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         segmento_nombre = cliente_operativo.segmentacion.nombre
+        if cliente_operativo.segmentacion.descuento:
+            descuento = float(cliente_operativo.segmentacion.descuento)
 
     if request.method == 'POST':
         form = CustomUserChangeForm(request.POST, instance=request.user)
@@ -551,11 +558,11 @@ def editarPerfil(request):
                 return render(request, 'editarperfil.html', {'form': form,  'success': True,
         "segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,})
             else:
                 return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,})
         """
         # Eliminar cuenta
         elif action == 'eliminar':
@@ -574,7 +581,7 @@ def editarPerfil(request):
 
     return render(request, 'editarperfil.html', {'form': form,"segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,})
 
 
 """
@@ -793,7 +800,13 @@ def obtener_clientes_usuario(user,request):
         - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
     """
 
-    usuarios_clientes = Usuario_Cliente.objects.select_related("id_cliente__segmentacion").filter(id_usuario=user)
+     # Solo clientes activos
+    usuarios_clientes = (
+        Usuario_Cliente.objects
+        .select_related("id_cliente__segmentacion")
+        .filter(id_usuario=user, id_cliente__estado="activo")
+    )
+    
     clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
     cliente_operativo = None
 
@@ -810,8 +823,37 @@ def obtener_clientes_usuario(user,request):
 
 @login_required
 def set_cliente_operativo(request):
+    """
+    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
+    con segmento y descuento para actualizar el front sin recargar.
+    """
     cliente_id = request.POST.get('cliente_id')
+
     if cliente_id:
-        request.session['cliente_operativo_id'] = int(cliente_id)
-        return JsonResponse({'success': True})
-    return JsonResponse({'success': False}, status=400)
+        try:
+            cliente = Cliente.objects.select_related("segmentacion").get(
+                pk=cliente_id, estado="activo"
+            )
+            # Guardar en sesión
+            request.session['cliente_operativo_id'] = cliente.id
+
+            # Datos a devolver
+            segmento_nombre = None
+            descuento = 0
+            if cliente.segmentacion and cliente.segmentacion.estado == "activo":
+                segmento_nombre = cliente.segmentacion.nombre
+                descuento = float(cliente.segmentacion.descuento or 0)
+
+            return JsonResponse({
+                "success": True,
+                "segmento": segmento_nombre,
+                "descuento": descuento,
+                "cliente_nombre": cliente.nombre
+            })
+
+        except Cliente.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "Cliente no encontrado"}, status=404
+            )
+
+    return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)

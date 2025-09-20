@@ -6,6 +6,7 @@ from usuarios.forms import CustomUserCreationForm
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from datetime import datetime
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -42,12 +43,13 @@ class UsuariosViewsTest(TestCase):
 
         # Crear tasa de cambio reciente
         hoy = datetime.today()
+        aware_dt = timezone.make_aware(hoy)
         TasaDeCambio.objects.create(
             moneda_origen=self.usd,
             moneda_destino=self.mxn,
             monto_compra=5000,
             monto_venta=5050,
-            vigencia=hoy,
+            vigencia=aware_dt,
             estado=True
         )
 
