@@ -56,6 +56,35 @@
 </div>
 
 <div class="form-group">
+  <label for="{{ form.comision_compra.id_for_label }}">Comisión Compra</label>
+  <div class="input-icon">
+    <span class="icon">💸</span>
+    {{ form.comision_compra|add_class:"custom-input" }}
+  </div>
+  {% if form.comision_compra.errors %}
+  <div class="error-messages">
+    {% for error in form.comision_compra.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+<div class="form-group">
+  <label for="{{ form.comision_venta.id_for_label }}">Comisión Venta</label>
+  <div class="input-icon">
+    <span class="icon">💸</span>
+    {{ form.comision_venta|add_class:"custom-input" }}
+  </div>
+  {% if form.comision_venta.errors %}
+  <div class="error-messages">
+    {% for error in form.comision_venta.errors %}
+    <span class="error-text">{{ error }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<div class="form-group">
   <label for="{{ form.vigencia.id_for_label }}">Vigencia Desde:</label>
   <div class="input-icon">
     <span class="icon"><i class="bi bi-calendar" style="color: black;"></i> </span>
@@ -116,6 +145,8 @@ function setupTasaValidation() {
             moneda_destino: { required: true },
             monto_compra: { required: true, number: true, min: 0 },
             monto_venta: { required: true, number: true, min: 0 },
+            comision_compra: { required: true, number: true },
+            comision_venta: { required: true, number: true },
             vigencia: { required: true }
         },
         messages: {
@@ -130,6 +161,14 @@ function setupTasaValidation() {
                 required: "Debes ingresar el monto de venta.",
                 number: "Ingrese un número válido",
                 min: "El valor no puede ser negativo."
+            },
+            comision_compra: {
+                required: "Debes ingresar la comisión de compra.",
+                number: "Ingrese un número válido."
+            },
+            comision_venta: {
+                required: "Debes ingresar la comisión de venta.",
+                number: "Ingrese un número válido."
             },
             vigencia: { required: "Debes ingresar la fecha y hora de vigencia." }
         },

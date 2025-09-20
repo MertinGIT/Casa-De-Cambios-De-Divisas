@@ -72,6 +72,7 @@ def cotizacion_nuevo(request):
         if form.is_valid():
             cotizacion = form.save(commit=False)
             cotizacion.estado = True
+            # Los valores de comisión ya están en el form, no sobrescribir
             cotizacion.save()
             # Si es AJAX devolvemos éxito en JSON
             print(cotizacion, flush=True)
@@ -201,5 +202,7 @@ def cotizacion_detalle(request, pk):
         "moneda_destino": cotizacion.moneda_destino.id if cotizacion.moneda_destino else None,
         "monto_compra": float(cotizacion.monto_compra),
         "monto_venta": float(cotizacion.monto_venta),
+        "comision_compra": float(cotizacion.comision_compra),
+        "comision_venta": float(cotizacion.comision_venta),
         "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M") if cotizacion.vigencia else None,
     })
