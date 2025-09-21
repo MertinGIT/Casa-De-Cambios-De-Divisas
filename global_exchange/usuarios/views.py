@@ -167,12 +167,9 @@ def home(request):
                             reverse=True
                         )
                         ultimo = registros_ordenados[0]
-<<<<<<< HEAD
                         print(f"Registros ordenados: {registros_ordenados}", flush=True)
                         print(f"Ultimo {ultimo}", flush=True)
-=======
                         print("registrohome:", registros_ordenados, flush=True)
->>>>>>> feature/cancelacion-cotizacion
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                         COMISION_VTA = ultimo["comision_venta"]
                         COMISION_COM = ultimo["comision_compra"]
