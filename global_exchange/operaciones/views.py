@@ -85,14 +85,17 @@ def simulador_operaciones(request):
         if abrev != "PYG" and registros:
             # Tomar el registro más reciente
             tasa_default = registros[-1]
+            print("tasa_default:",tasa_default,flush=True)
             break
             
     if tasa_default:
         PB_MONEDA = tasa_default["venta"]  # por defecto
         TASA_REF_ID = tasa_default["id"]
         # Calculamos las tasas considerando las comisiones
-        TC_VTA = tasa_default["venta"] + COMISION_VTA
-        TC_COMP = tasa_default["compra"] - COMISION_COM
+        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+        print("TC_VTA 88: ",TC_VTA,flush=True)
+        print("TC_COMP 88: ",TC_COMP,flush=True)
     else:
         TC_VTA = 0
         TC_COMP = 0
@@ -145,6 +148,7 @@ def simulador_operaciones(request):
                     TASA_REF_ID = ultimo["id"]
                     # === Fórmula de tu home ===
                     #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
+                    print("operacion: ", operacion, flush=True)
                     if operacion == "venta":
                         print("venta",flush=True)
                         print("Descuento: ",descuento,flush=True)
@@ -160,13 +164,18 @@ def simulador_operaciones(request):
                         print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+                        print("TC_COMP 1: ",TC_COMP,flush=True)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
                     print("resultado: ",resultado,flush=True)
-                
         except ValueError:
             resultado = "Monto inválido"
-
+        tasa_usada = 0
+        if(operacion == "venta"):
+            tasa_usada = TC_VTA
+        else:
+            tasa_usada = TC_COMP
+        print("resultado 111: ",resultado,flush=True)
         # Respuesta AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
@@ -174,14 +183,14 @@ def simulador_operaciones(request):
                 "ganancia_total": ganancia_total,
                 "segmento": segmento_nombre,
                 "descuento": descuento,
-                "tasa": PB_MONEDA,  
+                "tasa": tasa_usada,  
                 "fecha_tasa": ultimo["fecha"]  # viene de tu dict data_por_moneda
             })
-
-    print("TC_VTA: ",TC_VTA,flush=True)
+    print("TC_VTA: ", TC_VTA,flush=True)
     print("clientes_asociados: ",clientes_asociados,flush=True)
     print("cliente_operativo: ",cliente_operativo,flush=True)
-    
+    print("TC_VTA 222: ",TC_VTA,flush=True)
+    print("TC_COMP222: ",TC_COMP,flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,

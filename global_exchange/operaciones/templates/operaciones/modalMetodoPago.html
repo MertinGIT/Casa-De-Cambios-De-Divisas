@@ -101,14 +101,14 @@ $(document).ready(function(){
 
   // Confirmar método de pago y generar JSON simulado
   $("#form-metodo-pago").submit(function(e){
+    
       e.preventDefault();
-
       let medioId = $("input[name='medio']:checked").val();
       if(!medioId){
           alert("Seleccione un medio de pago");
           return;
       }
-
+      
       let detalles = $("#detalle-pago").val();
 
       $("#modal-metodo").fadeOut();
@@ -137,5 +137,6 @@ $(document).ready(function(){
       console.log("Transacción simulada:", JSON.stringify(transferencia, null, 2));
   });
 
+  
 });
 </script>
