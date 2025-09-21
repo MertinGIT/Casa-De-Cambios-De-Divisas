@@ -8,27 +8,52 @@ from django.http import JsonResponse
 def check_nombre_segmentacion(request):
     """
     Verifica si el nombre de una segmentación ya existe en la base de datos.
-
-    Parámetros POST esperados:
-        - nombre: str, nombre a validar.
-        - obj_id: int o str, ID del objeto a excluir (en caso de edición).
-
-    Retorna:
-        JsonResponse con True si el nombre NO existe (válido) o False si ya está en uso.
     """
     if request.method == 'POST':
         nombre = request.POST.get('nombre', '').strip()
         obj_id = request.POST.get('obj_id')
+        
+        # Debug log para verificar parámetros recibidos
+        print(f"🔍 DEBUG - check_nombre_segmentacion:")
+        print(f"   - nombre: '{nombre}'")
+        print(f"   - obj_id: '{obj_id}' (type: {type(obj_id)})")
+        print(f"   - POST data: {dict(request.POST)}")
+
+        if not nombre:
+            print("❌ Nombre vacío, retornando False")
+            return JsonResponse(False, safe=False)
 
         query = Segmentacion.objects.filter(nombre__iexact=nombre)
+        print(f"🔎 Query inicial encontró: {query.count()} registros")
 
         # Si hay obj_id (edición), excluir ese registro
-        if obj_id and obj_id != 'null' and obj_id != '':
-            query = query.exclude(pk=obj_id)
+        if obj_id and obj_id != 'null' and obj_id != '' and obj_id != 'None':
+            try:
+                obj_id_int = int(obj_id)
+                query_before = query.count()
+                query = query.exclude(pk=obj_id_int)
+                query_after = query.count()
+                print(f"✅ Excluyendo registro con ID: {obj_id_int}")
+                print(f"   - Registros antes de excluir: {query_before}")
+                print(f"   - Registros después de excluir: {query_after}")
+            except (ValueError, TypeError) as e:
+                print(f"❌ Error al convertir obj_id a int: {obj_id} - Error: {e}")
+        else:
+            print(f"⚠️  No se excluyó ningún registro (obj_id: {obj_id})")
 
         exists = query.exists()
+        is_valid = not exists
+        
+        print(f"📊 RESULTADO:")
+        print(f"   - Query exists: {exists}")
+        print(f"   - Is valid: {is_valid}")
+        print(f"   - Retornando: {is_valid}")
+        print("=" * 50)
 
-        return JsonResponse(not exists, safe=False)
+        return JsonResponse(is_valid, safe=False)
+
+    print("❌ Método no es POST")
+    return JsonResponse(False, safe=False)
 
 def lista_segmentaciones(request):
     """
@@ -182,3 +207,4 @@ def segmentacion_detalle(request, pk):
         "descuento": float(segmentacion.descuento),
         "estado": segmentacion.estado,
     })
+

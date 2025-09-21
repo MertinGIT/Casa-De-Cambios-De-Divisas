@@ -151,7 +151,32 @@ function setupTipoClienteValidation() {
             nombre: {
                 required: true,
                 minlength: 2,
-                maxlength: 100
+                maxlength: 100,
+                remote: {
+                    url: "{% url 'check-nombre-segmentacion' %}",
+                    type: "post",
+                    data: {
+                        nombre: function() {
+                            return $("#form-accion input[name='nombre']").val();
+                        },
+                        obj_id: function() {
+                            // Obtener directamente del campo que ya existe en tu modal
+                            let objId = $("#obj_id").val();
+                            
+                            console.log("obj_id encontrado para validación:", objId);
+                            
+                            // Si está vacío, devolver null para que sea tratado como creación
+                            return (objId && objId !== '') ? objId : null;
+                        },
+                        csrfmiddlewaretoken: function() {
+                            return $("input[name='csrfmiddlewaretoken']").val();
+                        }
+                    },
+                    // Agregar callback para debug
+                    beforeSend: function(xhr, settings) {
+                        console.log("Enviando validación remota:", settings.data);
+                    }
+                }
             },
             descripcion: {
                 required: true,
@@ -163,31 +188,6 @@ function setupTipoClienteValidation() {
                 number: true,
                 min: 0,
                 max: 100
-            }, 
-            // Validación remota para nombre único
-            nombre: {
-                required: true,
-                minlength: 2,
-                maxlength: 100,
-                remote: {
-                    url: "{% url 'check-nombre-segmentacion'%}",
-                    type: "post",
-                    data: {
-                        nombre: function() {
-                            return $("#form-accion input[name='nombre']").val();
-                        },
-                        obj_id: function() {
-                            let objId = $("#obj_id").val(); // campo oculto en el modal para edición
-                            return (objId && objId !== '') ? objId : null;
-                        },
-                        csrfmiddlewaretoken: function() {
-                            return $("input[name='csrfmiddlewaretoken']").val();
-                        }
-                    },
-                    beforeSend: function(xhr, settings) {
-                        console.log("Enviando validación remota de nombre:", settings.data);
-                    }
-                }
             }
         },
         messages: {
@@ -371,35 +371,68 @@ function setupTipoClienteValidation() {
     return tipoClienteValidator;
 }
 
-// Inicializar validación
+// Sobrescribir funciones del modal para incluir validación (igual que en el template de cliente)
 $(document).ready(function() {
-    console.log("Iniciando sistema de validación...");
-    
-    // Configurar validación inicial
-    setupTipoClienteValidation();
-    
-    // Re-configurar validación cuando se abra un modal
-    $(document).on('shown.bs.modal', '#modal-accion', function() {
-        console.log("Modal abierto, configurando validación...");
+    // Guardar funciones originales
+    const originalOpenCreateModal = window.openCreateModal;
+    const originalOpenEditModal = window.openEditModal;
+    const originalCloseModal = window.closeModal;
+
+    // Nueva función para crear modal
+    window.openCreateModal = function(createUrl, title) {
+        console.log("Abriendo modal crear tipo cliente con validación");
+        
+        if (originalOpenCreateModal) {
+            originalOpenCreateModal(createUrl, title);
+        }
+        
+        // Configurar validación después de que el modal se abra
         setTimeout(function() {
             setupTipoClienteValidation();
-        }, 100);
-    });
-    
-    // Limpiar validación al cerrar modal
-    $(document).on('hidden.bs.modal', '#modal-accion', function() {
-        console.log("Modal cerrado, limpiando validación...");
+        }, 200);
+    };
+
+    // Nueva función para editar modal - ESTA ES LA CLAVE
+    window.openEditModal = function(id, editUrl, detalle, title) {
+        console.log("Abriendo modal editar tipo cliente con validación, ID:", id);
+        
+        if (originalOpenEditModal) {
+            originalOpenEditModal(id, editUrl, detalle, title);
+        }
+        
+        // Configurar validación después de cargar datos
+        setTimeout(function() {
+            // Asegurar que el campo obj_id tenga el ID correcto
+            const objIdField = $("#obj_id");
+            if (objIdField.length) {
+                objIdField.val(id);
+                console.log("Campo obj_id actualizado con valor:", id);
+            }
+            
+            setupTipoClienteValidation();
+        }, 1000); // Timeout más largo para que el fetch termine
+    };
+
+    // Nueva función para cerrar modal
+    window.closeModal = function() {
+        console.log("Cerrando modal tipo cliente y limpiando validación");
+        
+        // Limpiar validación
         if (tipoClienteValidator) {
             tipoClienteValidator.destroy();
             tipoClienteValidator = null;
         }
         
-        // Limpiar clases y mensajes
+        // Limpiar clases y mensajes manualmente
         $("#form-accion .error").removeClass('error');
         $("#form-accion .valid").removeClass('valid');
-        $("#form-accion .error-messages").empty();
-    });
-    
+        $(".error-messages").empty();
+        
+        if (originalCloseModal) {
+            originalCloseModal();
+        }
+    };
+
     console.log("Sistema de validación de tipo de cliente inicializado");
 });
 </script>
