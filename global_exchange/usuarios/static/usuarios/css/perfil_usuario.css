@@ -1,6 +1,6 @@
 /* Contenedor fijo arriba a la derecha */
 .user-profile {
-    position: absolute;
+    position: fixed;
     top: 15px;
     right: 20px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;

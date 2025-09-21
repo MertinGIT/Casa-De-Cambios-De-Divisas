@@ -163,7 +163,8 @@ def home(request):
                             key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
                             reverse=True
                         )
-                        ultimo = registros_ordenados[-1]
+                        ultimo = registros_ordenados[0]
+                        print("registrohome:", registros_ordenados, flush=True)
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     else:
                         PB_MONEDA = 0
@@ -473,7 +474,7 @@ def pagina_aterrizaje(request):
             "venta": float(tasa.monto_venta),
         })
     print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)
-
+    
     # === Preparar cotizaciones para mostrar en landing (solo más reciente por moneda) ===
     cotizaciones = []
     for abrev, registros in data_por_moneda.items():
@@ -489,7 +490,7 @@ def pagina_aterrizaje(request):
             'venta': ultimo['venta'],
             'logo': logo
         })
-
+    print("registros22", registros, flush=True)
     # Limitar a máximo 6 monedas
     cotizaciones = cotizaciones[:6]
     print("cotizaciones aterrizaje:", cotizaciones, flush=True)
