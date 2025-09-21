@@ -167,8 +167,12 @@ def home(request):
                             reverse=True
                         )
                         ultimo = registros_ordenados[0]
+<<<<<<< HEAD
                         print(f"Registros ordenados: {registros_ordenados}", flush=True)
                         print(f"Ultimo {ultimo}", flush=True)
+=======
+                        print("registrohome:", registros_ordenados, flush=True)
+>>>>>>> feature/cancelacion-cotizacion
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                         COMISION_VTA = ultimo["comision_venta"]
                         COMISION_COM = ultimo["comision_compra"]
@@ -487,7 +491,7 @@ def pagina_aterrizaje(request):
             "venta": float(tasa.monto_venta),
         })
     print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)
-
+    
     # === Preparar cotizaciones para mostrar en landing (solo más reciente por moneda) ===
     cotizaciones = []
     for abrev, registros in data_por_moneda.items():
@@ -503,7 +507,7 @@ def pagina_aterrizaje(request):
             'venta': ultimo['venta'],
             'logo': logo
         })
-
+    print("registros22", registros, flush=True)
     # Limitar a máximo 6 monedas
     cotizaciones = cotizaciones[:6]
     print("cotizaciones aterrizaje:", cotizaciones, flush=True)
@@ -548,7 +552,7 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
-    segmento_nombre = "Sin Clientes"
+    segmento_nombre = "Sin Segmentación"
     descuento=0
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
