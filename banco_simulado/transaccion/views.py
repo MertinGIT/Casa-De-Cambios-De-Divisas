@@ -24,7 +24,7 @@ def transaccion_banco_view(request):
 
             cuenta, created = Cliente.objects.get_or_create(email=email)
 
-            if tipo == "debito":
+            if tipo == "compra":
                 if cuenta.saldo >= monto:
                     cuenta.saldo -= monto
                     cuenta.save()
@@ -36,7 +36,7 @@ def transaccion_banco_view(request):
                         "estado": transaccion.estado,
                         "datos": TransaccionBancoSerializer(transaccion).data
                     }, status=status.HTTP_201_CREATED)
-            elif tipo == "credito":
+            elif tipo == "venta":
                 cuenta.saldo += monto
                 cuenta.save()
                 transaccion = serializer.save(estado="aceptada")
