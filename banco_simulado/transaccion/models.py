@@ -11,7 +11,7 @@ class Cliente(models.Model):
 class Transaccion(models.Model):
     email = models.EmailField()  # referencia al cliente por correo
     monto = models.FloatField()
-    moneda = models.CharField(max_length=3)  # PYG, USD, EUR
+    moneda = models.CharField(max_length=10)  # PYG, USD, EUR
     tipo = models.CharField(max_length=10)   # debito / credito
     estado = models.CharField(max_length=20, default="pendiente")
     fecha = models.DateTimeField(auto_now_add=True)
