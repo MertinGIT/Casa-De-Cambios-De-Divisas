@@ -1,0 +1,458 @@
+<div id="modal-confirmacion" class="modal-confirmacion">
+  <div class="modal-overlay" onclick="cerrarModalConfirmacion()"></div>
+
+  <div class="modal-content-confirmacion">
+    <div class="modal-header-confirmacion">
+      <div class="modal-icon-confirmacion">
+        <span>🔒</span>
+      </div>
+      <h3 class="modal-title-confirmacion">Confirmar transacción</h3>
+      <button
+        class="modal-close-confirmacion"
+        onclick="cerrarModalConfirmacion()"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="modal-body-confirmacion">
+      <div class="transaction-summary">
+        <div class="summary-header">
+          <span class="summary-label">Resumen de la operación</span>
+        </div>
+
+        <div class="summary-items">
+          <div class="summary-item">
+            <div class="item-icon">📊</div>
+            <div class="item-content">
+              <span class="item-label">Tipo de operación</span>
+              <span class="item-value" id="modal-tipo"></span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="item-icon">💵</div>
+            <div class="item-content">
+              <span class="item-label">Monto a entregar</span>
+              <span class="item-value" id="modal-entregar"></span>
+            </div>
+          </div>
+
+          <div class="summary-item highlight">
+            <div class="item-icon">💰</div>
+            <div class="item-content">
+              <span class="item-label">Monto a recibir</span>
+              <span class="item-value" id="modal-recibir"></span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="item-icon">📈</div>
+            <div class="item-content">
+              <span class="item-label">Tasa aplicada</span>
+              <span class="item-value" id="modal-tasa"></span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="item-icon">⚡</div>
+            <div class="item-content">
+              <span class="item-label">Descuento</span>
+              <span class="item-value" id="modal-comision"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="mensaje-error-tasa" class="error-message" style="display: none">
+        ⚠️ La tasa de cambio usada ya no es la más reciente. Debe recalcular
+        para usar la última tasa.
+      </div>
+    </div>
+
+    <div class="modal-footer-confirmacion">
+      <button
+        class="btn-modal-confirmacion secondary"
+        onclick="cerrarModalConfirmacion()"
+      >
+        <span>Cancelar</span>
+      </button>
+      <button
+        class="btn-modal-confirmacion primary"
+        onclick="confirmarTransaccion()"
+      >
+        <span>Confirmar</span>
+        <div class="btn-arrow">→</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function mostrarModalConfirmacion(datos) {
+    // Datos recibidos del conversor
+    document.getElementById("modal-tipo").textContent = datos.tipo;
+    document.getElementById("modal-entregar").textContent = datos.entregar;
+    document.getElementById("modal-recibir").textContent = datos.recibir;
+    document.getElementById("modal-tasa").textContent = datos.tasa;
+    document.getElementById("modal-comision").textContent = datos.descuento;
+
+    // Mostrar modal
+    const modal = document.getElementById("modal-confirmacion");
+    modal.style.display = "flex";
+
+    const content = modal.querySelector(".modal-content-confirmacion");
+    content.style.transform = "scale(0.7) translateY(-50px)";
+    content.style.opacity = "0";
+
+    requestAnimationFrame(() => {
+      content.style.transition =
+        "all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+      content.style.transform = "scale(1) translateY(0)";
+      content.style.opacity = "1";
+    });
+  }
+
+  function cerrarModalConfirmacion() {
+    const modal = document.getElementById("modal-confirmacion");
+    const content = modal.querySelector(".modal-content-confirmacion");
+
+    content.style.transition = "all 0.2s ease-out";
+    content.style.transform = "scale(0.7) translateY(-50px)";
+    content.style.opacity = "0";
+
+    setTimeout(() => {
+      modal.style.display = "none";
+      document.getElementById("mensaje-error-tasa").style.display = "none";
+    }, 200);
+  }
+
+  function confirmarTransaccion() {
+    cerrarModalConfirmacion();
+    mostrarModalPago();
+  }
+
+  function mostrarErrorTasa() {
+    document.getElementById("mensaje-error-tasa").style.display = "block";
+  }
+
+  // Cerrar modal con ESC
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      cerrarModalConfirmacion();
+    }
+  });
+
+  // Manejar el envío del formulario del conversor
+  function getCampos() {
+    const op = $("input[name='operacion']:checked").val();
+    if (op === "venta") {
+      // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op,
+      };
+    } else {
+      // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op,
+      };
+    }
+  }
+
+  $("#form-conversor").submit(function (e) {
+    e.preventDefault();
+    const campos = getCampos();
+    const monto = parseFloat(campos.$valor.val());
+    const origenVal = campos.$origen.val();
+    const destinoVal = campos.$destino.val();
+
+    if (!monto || monto <= 0) {
+      mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
+      return;
+    }
+
+    if (origenVal === destinoVal) {
+      mostrarMensaje(
+        "⚠️ Error",
+        "La moneda de origen y destino no puede ser la misma."
+      );
+      return;
+    }
+
+    // si no existe resultado calculado todavía, calcular localmente
+    let resultadoCalc = campos.$resultado.val();
+
+    if (!resultadoCalc) {
+      if (campos.op === "venta") {
+        resultadoCalc = (monto / tasaVta).toFixed(2);
+      } else {
+        resultadoCalc = (monto * tasaCmp).toFixed(2);
+      }
+      campos.$resultado.val(resultadoCalc);
+    }
+
+    $.ajax({
+      url: "{% url 'operaciones' %}",
+      method: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+        valor: campos.$valor.val(),
+        origen: campos.$origen.val(),
+        destino: campos.$destino.val(),
+        operacion: campos.op,
+      },
+      success: function (response) {
+        // Mostrar el modal con los datos que vinieron del servidor
+        const datos = {
+          tipo: campos.op === "venta" ? "Compra" : "Venta",
+          entregar: campos.$valor.val() + " " + campos.$origen.val(),
+          recibir: response.resultado + " " + campos.$destino.val(),
+          tasa: response.tasa + " (" + response.fecha_tasa + ")",
+          descuento: response.descuento + "%",
+        };
+
+        window.datos = datos;
+        mostrarModalConfirmacion(datos);
+      },
+      error: function (xhr) {
+        mostrarMensaje("⚠️ Error", "Error al realizar la transacción");
+      },
+    });
+  });
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+    background: #f4f6fb;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .demo-btn {
+    background: #5d5fef;
+    color: white;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  .demo-btn:hover {
+    background: #4a4cd9;
+    transform: translateY(-2px);
+  } /* MODAL CONFIRMACIÓN */
+  .modal-confirmacion {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 1rem;
+  }
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+  }
+  .modal-content-confirmacion {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+    max-width: 450px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header-confirmacion {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 2rem 2rem 1rem;
+    position: relative;
+  }
+  .modal-icon-confirmacion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #e8f2ff, #d1e7ff);
+    color: #1e2d70;
+  }
+  .modal-title-confirmacion {
+    color: #1e2d70;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex: 1;
+    line-height: 1.3;
+  }
+  .modal-close-confirmacion {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+  .modal-close-confirmacion:hover {
+    background: #f4f6fb;
+    color: #dc2626;
+  }
+  .modal-body-confirmacion {
+    padding: 0 2rem 1rem;
+  }
+  .modal-footer-confirmacion {
+    padding: 1rem 2rem 2rem;
+    display: flex;
+    gap: 0.75rem;
+  }
+  .transaction-summary {
+    background: #f4f6fb;
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid #e8ecf7;
+  }
+  .summary-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  .summary-label {
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .summary-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #e8ecf7;
+  }
+  .summary-item.highlight {
+    border-color: #5d5fef;
+    background: linear-gradient(135deg, #f8f9ff, #f1f3ff);
+  }
+  .item-icon {
+    font-size: 1.2rem;
+  }
+  .item-content {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .item-label {
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .item-value {
+    color: #1e2d70;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .error-message {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid #fecaca;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+  .btn-modal-confirmacion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    border-radius: 12px;
+    padding: 0.9rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+  }
+  .btn-modal-confirmacion.primary {
+    background: #5d5fef;
+    color: #fff;
+  }
+  .btn-modal-confirmacion.primary:hover {
+    background: #4a4cd9;
+    transform: translateY(-1px);
+  }
+  .btn-modal-confirmacion.secondary {
+    background: #f4f6fb;
+    color: #666;
+    border: 1px solid #e8ecf7;
+  }
+  .btn-modal-confirmacion.secondary:hover {
+    background: #e8ecf7;
+    color: #1e2d70;
+  }
+  .btn-arrow {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+  }
+  .btn-modal-confirmacion:hover .btn-arrow {
+    transform: translateX(3px);
+  } /* RESPONSIVE */
+  @media (max-width: 500px) {
+    .modal-content-confirmacion {
+      margin: 1rem;
+      max-width: none;
+    }
+    .modal-header-confirmacion,
+    .modal-body-confirmacion,
+    .modal-footer-confirmacion {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+    .modal-footer-confirmacion {
+      flex-direction: column;
+    }
+  }
+</style>

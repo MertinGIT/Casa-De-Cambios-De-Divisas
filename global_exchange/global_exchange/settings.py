@@ -91,11 +91,13 @@ INSTALLED_APPS = [
     'metodos_pagos',
     'cliente_usuario',
     'operaciones',
+    'corsheaders',
 ]
 # ============================================================================
 # Middleware
 # ============================================================================
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -152,6 +154,13 @@ DATABASES = {
     }
 }
 
+# Permitir solo tu frontend
+#CORS_ALLOWED_ORIGINS = [
+#    "http://localhost:8000",
+#]
+CORS_ALLOW_ALL_ORIGINS = True
+# ⚠️ Si querés permitir todos (solo en desarrollo):
+# CORS_ALLOW_ALL_ORIGINS = True
 
 
 # ============================================================================

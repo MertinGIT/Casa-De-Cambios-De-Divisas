@@ -1,0 +1,507 @@
+<!-- MODAL PIN -->
+<div id="modal-pin" class="modal-pin">
+  <div class="modal-overlay" onclick="cerrarModalPin()"></div>
+  <div class="modal-content-pin">
+    <div class="modal-header-pin">
+      <div class="modal-icon-pin">
+        <span>🔐</span>
+      </div>
+      <h3 class="modal-title-pin">Verificación de seguridad</h3>
+      <button class="modal-close-pin" onclick="cerrarModalPin()">
+        &times;
+      </button>
+    </div>
+
+    <div class="modal-body-pin">
+      <p class="pin-instruction">Ingrese su PIN de 4 dígitos para continuar</p>
+
+      <div class="pin-error" id="mensaje-pin" style="display: none">
+        <span class="error-icon">⚠️</span>
+        <span>PIN incorrecto. Intente nuevamente.</span>
+      </div>
+
+      <div class="pin-container">
+        <input type="text" maxlength="1" class="pin-digit" data-index="0" />
+        <input type="text" maxlength="1" class="pin-digit" data-index="1" />
+        <input type="text" maxlength="1" class="pin-digit" data-index="2" />
+        <input type="text" maxlength="1" class="pin-digit" data-index="3" />
+      </div>
+
+      <div class="security-info">
+        <span class="security-icon">🛡️</span>
+        <span>Tu información está protegida con encriptación SSL</span>
+      </div>
+    </div>
+
+    <div class="modal-footer-pin">
+      <button class="btn-modal-pin" onclick="verificarPin()">
+        <span>Verificar PIN</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function mostrarModalPin() {
+    console.log("mostrarModalPinnnnnnnnnnnnnnnnn");
+    const modal = document.getElementById("modal-pin");
+    modal.style.display = "flex";
+
+    // Animación de entrada
+    const content = modal.querySelector(".modal-content-pin");
+    content.style.transform = "scale(0.7) translateY(-50px)";
+    content.style.opacity = '0';
+    // Resetear estados previos de animación
+    content.style.transition = "none";
+    console.log("mostrarModalPin");
+
+    requestAnimationFrame(() => {
+      console.log("requestAnimationFrame");
+      content.style.transition =
+        "all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+      content.style.transform = "scale(1) translateY(0)";
+      content.style.opacity = "1";
+      console.log("requestAnimationFrame");
+    });
+
+    // Focus en el primer input
+    setTimeout(() => {
+      document.querySelector(".pin-digit").focus();
+    }, 100);
+  }
+
+  function cerrarModalPin() {
+    const modal = document.getElementById("modal-pin");
+    const content = modal.querySelector(".modal-content-pin");
+
+    content.style.transition = "all 0.2s ease-out";
+    content.style.transform = "scale(0.7) translateY(-50px)";
+    content.style.opacity = "0";
+
+    setTimeout(() => {
+      modal.style.display = "none";
+      // Reset PIN inputs
+      document.querySelectorAll(".pin-digit").forEach((input) => {
+        input.value = "";
+        input.classList.remove("error");
+      });
+      document.getElementById("mensaje-pin").style.display = "none";
+    }, 200);
+  }
+
+  function mostrarMensaje(titulo, texto) {
+    $("#titulo-mensaje").text(titulo);
+    $("#texto-mensaje").text(texto);
+    $("#modal-mensaje").fadeIn().css("display", "flex");
+  }
+
+  function getCampos() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
+    }
+  }
+
+  function verificarPin() {
+    const pinInputs = document.querySelectorAll(".pin-digit");
+    let pin = "";
+    pinInputs.forEach((input) => {
+      pin += input.value;
+    });
+    const modal = $("#modal-pin");
+    console.log("monto pin:", modal.data("moneda"));
+
+
+    if (pin === "1234") {
+      cerrarModalPin();
+      const campos = getCampos();
+
+
+      email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
+      const modal = $("#modal-pin");
+        const monto = campos.$valor.val();
+        const moneda = campos.$origen.val() || campos.$destino.val();
+        const tipo = campos.op === "venta" ? "compra" : "venta";
+
+      if (email_cliente_operativo != "") {
+        const transaccionData = {
+          email: "{{ email_cliente_operativo}}",
+          monto: monto,
+          moneda: moneda,
+          tipo: tipo,
+          estado: "aceptada",
+          referencia: "TX-" + Date.now(),
+          motivo: `Cambio de ${moneda}`,
+        };
+        console.log("envio la transaccion al banco:", transaccionData);
+        // 🔹 Enviar al banco
+        fetch("http://127.0.0.1:8001/transaccion/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(transaccionData),
+        })
+          .then((resp) => resp.json())
+          .then((data) => {
+            console.log("Respuesta del banco:", data);
+
+            if (data.estado === "aceptada") {
+              $("#modal-pin").fadeOut();
+              // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
+              window.transaccionActual = {
+                ...window.datos,  // datos del padre
+                ...transaccionData      
+              };
+
+              $("#modal-exito").fadeIn().css("display", "flex");
+              mostrarModalExito();
+            } else {
+              $("#modal-exito").fadeOut();
+              mostrarMensaje(
+                "Transacción rechazada:",
+                data.mensaje || "Error al conectar con el banco"
+              );
+            }
+          })
+          .catch((err) => {
+            console.error("Error enviando transacción:", err);
+            mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+          });
+      } else {
+        console.log("No se encontró el email del cliente operativo.");
+        $("#modal-pin").fadeOut();
+        mostrarMensaje(
+          "⚠️ Error",
+          "No se encontró el email del cliente operativo."
+        );
+      }
+    } else {
+      document.getElementById("mensaje-pin").style.display = "block";
+      pinInputs.forEach((input) => {
+        input.value = "";
+        input.classList.add("error");
+      });
+      pinInputs[0].focus();
+
+      setTimeout(() => {
+        pinInputs.forEach((input) => {
+          input.classList.remove("error");
+        });
+      }, 2000);
+    }
+  }
+
+  // Funcionalidad PIN
+  document.addEventListener("DOMContentLoaded", function () {
+    const pinInputs = document.querySelectorAll(".pin-digit");
+
+    pinInputs.forEach((input, index) => {
+      input.addEventListener("input", function () {
+        // Solo permitir números
+        this.value = this.value.replace(/[^0-9]/g, "");
+
+        if (this.value.length === 1) {
+          if (index < pinInputs.length - 1) {
+            pinInputs[index + 1].focus();
+          }
+        }
+      });
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Backspace" && this.value === "") {
+          if (index > 0) {
+            pinInputs[index - 1].focus();
+          }
+        }
+        if (e.key === "Enter") {
+          verificarPin();
+        }
+      });
+
+      input.addEventListener("paste", function (e) {
+        e.preventDefault();
+        const paste = (e.clipboardData || window.clipboardData).getData("text");
+        const digits = paste.replace(/[^0-9]/g, "").split("");
+
+        digits.forEach((digit, i) => {
+          if (index + i < pinInputs.length) {
+            pinInputs[index + i].value = digit;
+          }
+        });
+
+        if (digits.length >= 4) {
+          verificarPin();
+        }
+      });
+    });
+  });
+
+  // Cerrar modal con ESC
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") {
+      cerrarModalPin();
+    }
+  });
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      sans-serif;
+    background: #f4f6fb;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .demo-btn {
+    background: #5d5fef;
+    color: white;
+    border: none;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .demo-btn:hover {
+    background: #4a4cd9;
+    transform: translateY(-2px);
+  }
+
+  /* MODAL PIN */
+  .modal-pin {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    padding: 1rem;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .modal-content-pin {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    position: relative;
+    z-index: 1;
+    max-width: 380px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-header-pin {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 2rem 2rem 1rem;
+    position: relative;
+  }
+
+  .modal-icon-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    color: #0369a1;
+  }
+
+  .modal-title-pin {
+    color: #1e2d70;
+    font-size: 1.3rem;
+    font-weight: 700;
+    flex: 1;
+    line-height: 1.3;
+  }
+
+  .modal-close-pin {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+
+  .modal-close-pin:hover {
+    background: #f4f6fb;
+    color: #dc2626;
+  }
+
+  .modal-body-pin {
+    padding: 0 2rem 1rem;
+  }
+
+  .modal-footer-pin {
+    padding: 1rem 2rem 2rem;
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .pin-instruction {
+    text-align: center;
+    color: #666;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+  }
+
+  .pin-error {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: 1px solid #fecaca;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .pin-container {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin: 2rem 0;
+  }
+
+  .pin-digit {
+    width: 60px;
+    height: 60px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    border: 2px solid #e8ecf7;
+    border-radius: 12px;
+    background: #f4f6fb;
+    color: #1e2d70;
+    transition: all 0.2s ease;
+    outline: none;
+  }
+
+  .pin-digit:focus {
+    border-color: #5d5fef;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(93, 95, 239, 0.1);
+  }
+
+  .pin-digit.error {
+    border-color: #dc2626;
+    background: #fef2f2;
+    animation: shake 0.5s ease-in-out;
+  }
+
+  @keyframes shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-5px);
+    }
+    75% {
+      transform: translateX(5px);
+    }
+  }
+
+  .security-info {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #666;
+    font-size: 0.8rem;
+    margin-top: 1rem;
+  }
+
+  .btn-modal-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border: none;
+    border-radius: 12px;
+    padding: 0.9rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    background: #5d5fef;
+    color: #fff;
+  }
+
+  .btn-modal-pin:hover {
+    background: #4a4cd9;
+    transform: translateY(-1px);
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 500px) {
+    .modal-content-pin {
+      margin: 1rem;
+      max-width: none;
+    }
+
+    .modal-header-pin,
+    .modal-body-pin,
+    .modal-footer-pin {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+
+    .pin-digit {
+      width: 50px;
+      height: 50px;
+      font-size: 1.3rem;
+    }
+  }
+</style>

@@ -84,22 +84,6 @@ def home(request):
     )
     print("tasas:", tasas, flush=True)
 
-
-    # Reorganizar datos en un dict similar a tu data_por_moneda
-    data_por_moneda = {}
-    for tasa in tasas:
-        abrev = tasa.moneda_destino.abreviacion
-        if abrev not in data_por_moneda:
-            data_por_moneda[abrev] = []
-        # Insertar al inicio para que el primero sea el más reciente
-        data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
-        })
-
-    print("data_por_moneda:", data_por_moneda, flush=True)
-
     # Comisiones y segmentos
     COMISION_VTA = 100
     COMISION_COM = 50
@@ -131,7 +115,29 @@ def home(request):
     origen = ""
     destino = ""
     
-    
+    # Reorganizar datos en un dict similar a tu data_por_moneda
+    data_por_moneda = {}
+    for tasa in tasas:
+        abrev = tasa.moneda_destino.abreviacion
+        if abrev not in data_por_moneda:
+            data_por_moneda[abrev] = []
+            
+        # PB_MONEDA según operación
+        PB_MONEDA_VTA = float(tasa.monto_venta)
+        PB_MONEDA_COMP = float(tasa.monto_compra)
+        
+        # Calculamos tasas según fórmula
+        #TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        #TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
+        
+        # Insertar al inicio para que el primero sea el más reciente
+        data_por_moneda[abrev].insert(0, {
+            "fecha": tasa.vigencia.strftime("%d %b"),
+            "compra": float(tasa.monto_compra),
+            "venta": float(tasa.monto_venta)
+        })
+
+    print("data_por_moneda:", data_por_moneda, flush=True)
     
     if request.method == "POST":
         valor_input = request.POST.get("valor", "").strip()
@@ -163,7 +169,8 @@ def home(request):
                             key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
                             reverse=True
                         )
-                        ultimo = registros_ordenados[-1]
+                        ultimo = registros_ordenados[0]
+                        print("registrohome:", registros_ordenados, flush=True)
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     else:
                         PB_MONEDA = 0
@@ -459,6 +466,15 @@ def pagina_aterrizaje(request):
         .select_related("moneda_origen", "moneda_destino")
         .order_by("moneda_destino__abreviacion", "-vigencia")
     )
+    
+    # Comisiones y descuento por segmentacion de clientes
+    COMISION_VTA = 100
+    COMISION_COM = 50
+    descuento = 0
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        descuento = float(cliente_operativo.segmentacion.descuento)
 
     # === Reorganizar datos en dict por moneda_destino ===
     data_por_moneda = {}
@@ -466,14 +482,24 @@ def pagina_aterrizaje(request):
         abrev = tasa.moneda_destino.abreviacion
         if abrev not in data_por_moneda:
             data_por_moneda[abrev] = []
+            
+        # PB_MONEDA según operación
+        PB_MONEDA_VTA = float(tasa.monto_venta)
+        PB_MONEDA_COMP = float(tasa.monto_compra)
+        
+        # Calculamos tasas según fórmula
+        TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
+        
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta),
+            "compra": round(TC_COMP, 2),
+            "venta": round(TC_VTA, 2)
         })
-    print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)
 
+    print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)
+    
     # === Preparar cotizaciones para mostrar en landing (solo más reciente por moneda) ===
     cotizaciones = []
     for abrev, registros in data_por_moneda.items():
@@ -489,7 +515,7 @@ def pagina_aterrizaje(request):
             'venta': ultimo['venta'],
             'logo': logo
         })
-
+    print("registros22", registros, flush=True)
     # Limitar a máximo 6 monedas
     cotizaciones = cotizaciones[:6]
     print("cotizaciones aterrizaje:", cotizaciones, flush=True)
@@ -534,7 +560,7 @@ def editarPerfil(request):
             - Crea un formulario con los datos actuales del usuario.
         - Renderiza `editarperfil.html` con el formulario y mensajes.
     """
-    segmento_nombre = "Sin Clientes"
+    segmento_nombre = "Sin Segmentación"
     descuento=0
     storage = messages.get_messages(request)
     storage.used = True  # Limpia todos los mensajes previos
