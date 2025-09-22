@@ -5,11 +5,11 @@
         <div class="modal-header-pago">
             <span class="close-btn" onclick="cerrarModalPago()">&times;</span>
             <h3 class="modal-title">Seleccione método de pago</h3>
-            <p class="modal-subtitle">Total a pagar: <span class="precio-total">$150.00</span></p>
+            <p class="modal-subtitle">Total a pagar: <span class="precio-total" id="precio_a_pagar"></span></p>
         </div>
 
         <div class="modal-body-exito">
-            <form id="form-metodo-pago">
+            <form id="form-metodo-pago"  autocomplete="off">
                 <!-- Métodos de pago -->
                 <div class="metodos-container">
                     <div class="metodo-item">
@@ -148,6 +148,16 @@
     </div>
 </div>
 
+<!-- MODAL MENSAJE -->
+<div id="modal-mensaje-pago" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3 id="titulo-mensaje">⚠️ Atención</h3>
+    <p id="texto-mensaje"></p>
+    <button id="btn-cerrar-mensaje-pago">Cerrar</button>
+  </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     initModalMetodoPago();
@@ -199,6 +209,12 @@ function initModalMetodoPago() {
         }
     });
 }
+
+// Cerrar modal con el botón
+$("#btn-cerrar-mensaje-pago").click(function () {
+    $("#modal-mensaje-pago").fadeOut();
+});
+
 
 function handleMetodoChange(metodSeleccionado) {
     const infoPago = document.getElementById('info-pago');
@@ -269,6 +285,20 @@ function mostrarModalPago() {
     }
     
     modal.style.display = 'flex';
+
+    const campos = getCampos();
+
+    let total = "";
+    let moneda_a_pagar = "";
+
+    if (campos.op === "compra") {
+        total = campos.$valor.val();       // monto que ingresa el usuario
+        moneda_a_pagar = campos.$origen.val(); // ej: PYG
+    } else if (campos.op === "venta") {
+        total = campos.$valor.val();       // monto que ingresa el usuario
+        moneda_a_pagar = campos.$origen.val(); // ej: USD
+    }
+    $("#precio_a_pagar").text(total + " " + moneda_a_pagar);
     
     // Animación de entrada
     const content = modal.querySelector('.modal-content-exito');
@@ -283,6 +313,27 @@ function mostrarModalPago() {
         });
     }
 }
+
+function getCampos() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
+    }
+  }
 
 function cerrarModalPago() {
     console.log("Cerrando modal método de pago");
@@ -330,6 +381,12 @@ function resetearFormularioMetodo() {
     inputs.forEach(input => input.value = '');
 }
 
+function mostrarMensajeErrorPago(titulo, texto) {
+    $("#titulo-mensaje").text(titulo);
+    $("#texto-mensaje").text(texto);
+    $("#modal-mensaje-pago").fadeIn().css("display", "flex");
+  }
+
 function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
     
@@ -337,6 +394,89 @@ function confirmarMetodoPago() {
     
     if (!metodoSeleccionado) {
         alert('Por favor seleccione un método de pago');
+        return;
+    }
+
+    // Validar campos según el método seleccionado
+    let esValido = true;
+    let mensajeError = '';
+
+    switch (metodoSeleccionado.value) {
+        case 'tarjeta':
+            const numeroTarjeta = document.getElementById('numero-tarjeta').value.trim();
+            const fechaExp = document.getElementById('fecha-exp').value.trim();
+            const titular = document.getElementById('nombre-tarjeta').value.trim();
+            const cvv = document.getElementById('cvv').value.trim();
+            
+            if (!numeroTarjeta || numeroTarjeta.length < 16) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese un número de tarjeta válido';
+            } else if (!fechaExp || fechaExp.length < 5 || !fechaExp.includes('/')) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese una fecha de expiración válida (MM/AA)';
+            } else if (!cvv || cvv.length < 3) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese un CVV válido';
+            } else if (!titular || titular.length < 2) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese el nombre del titular';
+            }
+            
+            // Validar que la fecha no esté vencida
+            if (esValido && fechaExp) {
+                const [mes, año] = fechaExp.split('/');
+                const fechaActual = new Date();
+                const añoCompleto = 2000 + parseInt(año);
+                const fechaTarjeta = new Date(añoCompleto, parseInt(mes) - 1);
+                
+                if (fechaTarjeta < fechaActual) {
+                    esValido = false;
+                    mensajeError = 'La tarjeta ha expirado';
+                }
+            }
+            break;
+            
+        case 'billetera':
+            const tipoBilletera = document.getElementById('tipo-billetera').value;
+            const emailBilletera = document.getElementById('email-billetera').value.trim();
+            
+            if (!tipoBilletera) {
+                esValido = false;
+                mensajeError = 'Por favor seleccione un tipo de billetera digital';
+            } else if (!emailBilletera) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese su email o número de celular';
+            } else if (emailBilletera.includes('@') && !validateEmail(emailBilletera)) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese un email válido';
+            } else if (!emailBilletera.includes('@') && emailBilletera.length < 8) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese un número de celular válido';
+            }
+            break;
+            
+        case 'transferencia':
+            const banco = document.getElementById('banco').value;
+            const cuenta = document.getElementById('cuenta-numero').value.trim();
+            
+            if (!banco) {
+                esValido = false;
+                mensajeError = 'Por favor seleccione un banco';
+            } else if (!cuenta || cuenta.length < 8) {
+                esValido = false;
+                mensajeError = 'Por favor ingrese un número de cuenta válido';
+            }
+            break;
+            
+        case 'efectivo':
+            break;
+    }
+    console.log("Validación de formulario:", !esValido, mensajeError);
+
+    if (!esValido) {
+        console.log("Error de validación:", mensajeError);
+        mostrarMensajeErrorPago("⚠️ Transacción rechazada:",mensajeError);
+        //alert(mensajeError);
         return;
     }
 
@@ -349,31 +489,20 @@ function confirmarMetodoPago() {
 
     switch (metodoSeleccionado.value) {
         case 'tarjeta':
-            const numeroTarjeta = document.getElementById('numero-tarjeta');
-            const fechaExp = document.getElementById('fecha-exp');
-            const titular = document.getElementById('nombre-tarjeta');
-            const cvv = document.getElementById('cvv');
-            
-            datosTransaccion.numeroTarjeta = numeroTarjeta ? numeroTarjeta.value : '';
-            datosTransaccion.fechaExp = fechaExp ? fechaExp.value : '';
-            datosTransaccion.titular = titular ? titular.value : '';
-            datosTransaccion.cvv = cvv ? cvv.value : '';
+            datosTransaccion.numeroTarjeta = document.getElementById('numero-tarjeta').value;
+            datosTransaccion.fechaExp = document.getElementById('fecha-exp').value;
+            datosTransaccion.titular = document.getElementById('nombre-tarjeta').value;
+            datosTransaccion.cvv = document.getElementById('cvv').value;
             break;
             
         case 'billetera':
-            const tipoBilletera = document.getElementById('tipo-billetera');
-            const emailBilletera = document.getElementById('email-billetera');
-            
-            datosTransaccion.tipoBilletera = tipoBilletera ? tipoBilletera.value : '';
-            datosTransaccion.email = emailBilletera ? emailBilletera.value : '';
+            datosTransaccion.tipoBilletera = document.getElementById('tipo-billetera').value;
+            datosTransaccion.email = document.getElementById('email-billetera').value;
             break;
             
         case 'transferencia':
-            const banco = document.getElementById('banco');
-            const cuenta = document.getElementById('cuenta-numero');
-            
-            datosTransaccion.banco = banco ? banco.value : '';
-            datosTransaccion.cuenta = cuenta ? cuenta.value : '';
+            datosTransaccion.banco = document.getElementById('banco').value;
+            datosTransaccion.cuenta = document.getElementById('cuenta-numero').value;
             break;
             
         case 'efectivo':
@@ -396,6 +525,11 @@ function confirmarMetodoPago() {
             modalPin.style.display = 'flex';
         }
     }
+}
+// Función auxiliar para validar email
+function validateEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
 }
 </script>
 

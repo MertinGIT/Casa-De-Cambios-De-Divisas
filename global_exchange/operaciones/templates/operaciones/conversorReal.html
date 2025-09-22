@@ -1,5 +1,6 @@
 {% extends 'baseDashboardUsuario.html' %} 
 {% load static %} 
+{% load humanize %}
 {% block dashboard_content %}
 <div class="dashboard-grid">
   <!-- COLUMNA IZQUIERDA -->
@@ -109,7 +110,7 @@
               class="input-text readonly"
               placeholder="Resultado"
               readonly
-              value="{{ resultado }}"
+              value="{{ resultado|floatformat:2|intcomma }}"
             />
           </div>
 
@@ -154,7 +155,7 @@
               class="input-text readonly"
               placeholder="Resultado"
               readonly
-              value="{{ resultado }}"
+              value="{{ resultado|floatformat:2|intcomma }}"
             />
           </div>
 
@@ -336,6 +337,11 @@
           campos.$resultado.val("");
           return;
         }
+        // formateador
+        const formatter = new Intl.NumberFormat("es-ES", {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
         // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
         $.ajax({
           url: "{% url 'operaciones' %}",
@@ -349,13 +355,17 @@
           },
           success: function (resp) {
             if (resp && resp.resultado !== undefined) {
-              campos.$resultado.val(resp.resultado);
+              const resultadoNumero = parseFloat(resp.resultado);
+              const resultadoFormateado = formatter.format(resultadoNumero);
+              campos.$resultado.val(resultadoFormateado);
               campos.$resultado.data("tasa", resp.tasa);
               campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
             } else {
               let resultadoCalc = campos.op === "venta"
                 ? (monto / tasaVta).toFixed(2)
                 : (monto * tasaCmp).toFixed(2);
+                const resultadoFormateado = formatter.format(parseFloat(resultadoCalc));
+        campos.$resultado.val(resultadoFormateado);
 
             }
             console.log("resp", resp);
@@ -364,12 +374,17 @@
             let resultadoCalc = campos.op === "venta"
               ? (monto / tasaVta).toFixed(2)
               : (monto * tasaCmp).toFixed(2);
+              const resultadoFormateado = formatter.format(parseFloat(resultadoCalc));
+      campos.$resultado.val(resultadoFormateado);
           }
         });
         // cálculo local inmediato
         let resultadoCalc = campos.op === "venta"
           ? (monto / tasaVta).toFixed(2)
           : (monto * tasaCmp).toFixed(2);
+          const resultadoFormateado = formatter.format(parseFloat(resultadoCalc));
+  console.log("resultadoCalc formateado:", resultadoFormateado);
+  campos.$resultado.val(resultadoFormateado);
       }
       // Init y eventos
       actualizarCamposPorOperacion();
@@ -394,84 +409,6 @@
         $("#modal-mensaje").fadeOut();
         location.reload(); // recargar página al cerrar el mensaje
       });
-
-
-      // Submit del formulario: usa getCampos() para leer los campos correctos
-      $("#form-conversor").submit(function (e) {
-        e.preventDefault();
-
-        const campos = getCampos();
-        const monto = parseFloat(campos.$valor.val());
-        const origenVal = campos.$origen.val();
-        const destinoVal = campos.$destino.val();
-
-        if (!monto || monto <= 0) {
-          mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
-          return;
-        }
-
-        if (origenVal === destinoVal) {
-          mostrarMensaje("⚠️ Error", "La moneda de origen y destino no puede ser la misma.");
-          return;
-        }
-
-        // si no existe resultado calculado todavía, calcular localmente
-        let resultadoCalc = campos.$resultado.val();
-        $.ajax({
-          url: "{% url 'operaciones' %}",
-          method: "POST",
-          data: {
-            'csrfmiddlewaretoken': "{{ csrf_token }}",
-            'valor': campos.$valor.val(),
-            'origen': campos.$origen.val(),
-            'destino': campos.$destino.val(),
-            'operacion': campos.op
-          },
-          success: function (response) {
-            // aquí response es JSON desde tu view
-            console.log(response);
-            campos.$resultado.val(response.resultado);
-            // abrir modal de confirmación si quieres
-            $("#modal-confirmacion").fadeIn().css("display", "flex");
-          },
-          error: function (xhr) {
-            mostrarMensaje("⚠️ Error", "Error al realizar la transacción");
-
-          }
-        });
-
-
-        if (!resultadoCalc) {
-          if (campos.op === "venta") {
-            resultadoCalc = (monto / tasaVta).toFixed(2);
-          } else {
-            resultadoCalc = (monto * tasaCmp).toFixed(2);
-          }
-          campos.$resultado.val(resultadoCalc);
-        }
-
-
-        const tipoTexto = campos.op === "venta" ? "Compra" : "Venta";
-        const tasaUsada = campos.op === "venta" ? tasaVta : tasaCmp;
-
-        const detalleHtml = `
-      <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
-      <p><strong>Monto origen:</strong> ${monto} ${origenVal}</p>
-      <p><strong>Monto destino:</strong> ${resultadoCalc} ${destinoVal}</p>
-      <p><strong>Tasa utilizada:</strong> ${tasaUsada.toFixed(2)} PYG</p>
-    `;
-      $("#detalle-transaccion").html(detalleHtml);
-      const datos = {
-        tipo: campos.op === "venta" ? "Compra" : "Venta",
-        entregar: monto + " " + origenVal,
-        recibir: resultadoCalc + " " + destinoVal,
-        tasa: tasaUsada.toFixed(2) + " PYG",
-        comision: "0.00 PYG" // o calcula la comisión si la tienes
-      };
-      mostrarModalConfirmacion(datos);
-    });
-
-
 
       // Declaración global
       var fechaNavegador = null;
@@ -508,8 +445,9 @@
         $("#btn-confirmar").click(function () {
           verificarTasaActualizada(function(tasaActualizada) {
           if (tasaActualizada) {
-            $("#modal-confirmacion").fadeOut();
-            $("#modal-metodo").fadeIn().css("display", "flex");
+            //$("#modal-confirmacion").fadeOut();
+            //$("#modal-metodo").fadeIn().css("display", "flex");
+            console.log("Tasa actualizada, procediendo a método de pago");
           }else{
             mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
             $("#modal-confirmacion").fadeOut();
@@ -560,6 +498,7 @@
       $(".pin-digit").on("input", function () { let next = $(this).next(".pin-digit"); if (this.value.length && next.length) next.focus(); });
 
       const PB_MONEDA = "{{ PB_MONEDA }}";
+      const tasa_recibida = "{{ tasa }}";
       const TASA_REF_ID = "{{ TASA_REF_ID }}";
 
       const monedasMap = {};
@@ -668,7 +607,7 @@ function procesarTransaccion() {
       estado: "pendiente",
       moneda_origen_id: moneda_origen_id,
       moneda_destino_id: moneda_destino_id,
-      tasa_usada: parseFloat(PB_MONEDA),
+      tasa_usada: parseFloat(tasa_recibida),
       tasa_ref_id: TASA_REF_ID,
     };
     
@@ -1029,7 +968,7 @@ function procesarTransaccion() {
     background: rgba(0, 0, 0, 0.5);
     justify-content: center;
     align-items: center;
-    z-index: 9999;
+    z-index: 99999;
   }
   .modal-content {
     background: #fff;
@@ -1086,6 +1025,9 @@ function procesarTransaccion() {
   }
   .modal-content .close:hover {
     color: #dc2626;
+  }
+  #modal-mensaje{
+    z-index: 99999;
   }
   #modal-mensaje .modal-content {
     max-width: 350px;
@@ -1145,13 +1087,6 @@ function procesarTransaccion() {
     font-weight: 700;
     color: #1e2d70;
     margin-bottom: 0.25rem;
-  }
-
-  .label {
-    display: block;
-    font-size: 0.8rem;
-    color: #666;
-    font-weight: 500;
   }
 
   .trend-indicator {

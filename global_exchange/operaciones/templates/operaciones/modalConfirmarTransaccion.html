@@ -57,7 +57,7 @@
           <div class="summary-item">
             <div class="item-icon">⚡</div>
             <div class="item-content">
-              <span class="item-label">Comisión</span>
+              <span class="item-label">Descuento</span>
               <span class="item-value" id="modal-comision"></span>
             </div>
           </div>
@@ -95,7 +95,7 @@
     document.getElementById("modal-entregar").textContent = datos.entregar;
     document.getElementById("modal-recibir").textContent = datos.recibir;
     document.getElementById("modal-tasa").textContent = datos.tasa;
-    document.getElementById("modal-comision").textContent = datos.comision;
+    document.getElementById("modal-comision").textContent = datos.descuento;
 
     // Mostrar modal
     const modal = document.getElementById("modal-confirmacion");
@@ -174,14 +174,29 @@
     const origenVal = campos.$origen.val();
     const destinoVal = campos.$destino.val();
 
-    if(!monto || monto <= 0){
+    if (!monto || monto <= 0) {
       mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
       return;
     }
 
-    if(origenVal === destinoVal){
-      mostrarMensaje("⚠️ Error", "La moneda de origen y destino no puede ser la misma.");
+    if (origenVal === destinoVal) {
+      mostrarMensaje(
+        "⚠️ Error",
+        "La moneda de origen y destino no puede ser la misma."
+      );
       return;
+    }
+
+    // si no existe resultado calculado todavía, calcular localmente
+    let resultadoCalc = campos.$resultado.val();
+
+    if (!resultadoCalc) {
+      if (campos.op === "venta") {
+        resultadoCalc = (monto / tasaVta).toFixed(2);
+      } else {
+        resultadoCalc = (monto * tasaCmp).toFixed(2);
+      }
+      campos.$resultado.val(resultadoCalc);
     }
 
     $.ajax({
@@ -201,13 +216,14 @@
           entregar: campos.$valor.val() + " " + campos.$origen.val(),
           recibir: response.resultado + " " + campos.$destino.val(),
           tasa: response.tasa + " (" + response.fecha_tasa + ")",
-          comision: response.ganancia_total + " PYG",
+          descuento: response.descuento + "%",
         };
 
+        window.datos = datos;
         mostrarModalConfirmacion(datos);
       },
       error: function (xhr) {
-        console.error(xhr.responseJSON.error);
+        mostrarMensaje("⚠️ Error", "Error al realizar la transacción");
       },
     });
   });
