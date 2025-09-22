@@ -141,7 +141,7 @@
             <button type="button" class="btn-modal-exito secondary" onclick="cerrarModalPago()">
                 <span>Cancelar</span>
             </button>
-            <button type="button" class="btn-modal-exito primary" onclick="confirmarPago()" id="btn-confirmar" disabled>
+            <button type="button" class="btn-modal-exito primary" id="btn-confirmar-pago" disabled>
                 <span>Confirmar pago</span>
             </button>
         </div>
@@ -149,12 +149,130 @@
 </div>
 
 <script>
-    function mostrarModalPago() {
+document.addEventListener('DOMContentLoaded', function() {
+    initModalMetodoPago();
+});
+
+function initModalMetodoPago() {
+    console.log("Inicializando modal método de pago");
+    
+    // Event delegation para los radio buttons
+    document.addEventListener('change', function(e) {
+        if (e.target.matches('input[name="metodo"]')) {
+            console.log("Método seleccionado:", e.target.value);
+            handleMetodoChange(e.target.value);
+        }
+    });
+
+    // Event delegation para formateo de inputs
+    document.addEventListener('input', function(e) {
+        if (e.target.id === 'numero-tarjeta') {
+            formatearNumeroTarjeta(e.target);
+        } else if (e.target.id === 'fecha-exp') {
+            formatearFechaExpiracion(e.target);
+        } else if (e.target.id === 'cvv') {
+            soloNumeros(e.target);
+        }
+    });
+
+    // Event listener para el botón confirmar
+    document.addEventListener('click', function(e) {
+        if (e.target.id === 'btn-confirmar-pago' || e.target.closest('#btn-confirmar-pago')) {
+            e.preventDefault();
+            confirmarMetodoPago();
+        }
+    });
+
+    // Event listener para submit del formulario
+    document.addEventListener('submit', function(e) {
+        if (e.target.id === 'form-metodo-pago') {
+            e.preventDefault();
+            confirmarMetodoPago();
+        }
+    });
+
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e) {
         const modal = document.getElementById('modal-metodo');
-        modal.style.display = 'flex';
-        console.log("mostrar modal metodo pago");
-        // Animación de entrada
-        const content = modal.querySelector('.modal-content-exito');
+        if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+            cerrarModalPago();
+        }
+    });
+}
+
+function handleMetodoChange(metodSeleccionado) {
+    const infoPago = document.getElementById('info-pago');
+    const btnConfirmar = document.getElementById('btn-confirmar-pago');
+    
+    // Mostrar contenedor de información con animación suave
+    infoPago.style.display = 'block';
+    infoPago.style.opacity = '0';
+    infoPago.style.transform = 'translateY(-10px)';
+    
+    setTimeout(() => {
+        infoPago.style.transition = 'all 0.3s ease';
+        infoPago.style.opacity = '1';
+        infoPago.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Ocultar todos los formularios
+    const formMetodos = document.querySelectorAll('.form-metodo');
+    formMetodos.forEach(form => {
+        form.style.display = 'none';
+    });
+    
+    // Mostrar el formulario correspondiente con animación
+    const targetForm = document.getElementById(`form-${metodSeleccionado}`);
+    if (targetForm) {
+        setTimeout(() => {
+            targetForm.style.display = 'block';
+            targetForm.style.opacity = '0';
+            targetForm.style.transform = 'translateY(-10px)';
+            
+            setTimeout(() => {
+                targetForm.style.transition = 'all 0.3s ease';
+                targetForm.style.opacity = '1';
+                targetForm.style.transform = 'translateY(0)';
+            }, 10);
+        }, 150);
+    }
+    
+    // Habilitar botón de confirmar
+    btnConfirmar.disabled = false;
+}
+
+function formatearNumeroTarjeta(input) {
+    let value = input.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+    input.value = formattedValue;
+}
+
+function formatearFechaExpiracion(input) {
+    let value = input.value.replace(/\D/g, '');
+    if (value.length >= 2) {
+        value = value.slice(0,2) + '/' + value.slice(2,4);
+    }
+    input.value = value;
+}
+
+function soloNumeros(input) {
+    input.value = input.value.replace(/[^0-9]/g, '');
+}
+
+function mostrarModalPago() {
+    console.log("Mostrando modal método de pago");
+    const modal = document.getElementById('modal-metodo');
+    
+    if (!modal) {
+        console.error("Modal no encontrado");
+        return;
+    }
+    
+    modal.style.display = 'flex';
+    
+    // Animación de entrada
+    const content = modal.querySelector('.modal-content-exito');
+    if (content) {
         content.style.transform = 'scale(0.7) translateY(-50px)';
         content.style.opacity = '0';
         
@@ -164,181 +282,124 @@
             content.style.opacity = '1';
         });
     }
+}
 
-    function cerrarModalPago() {
-        const modal = document.getElementById('modal-metodo');
-        const content = modal.querySelector('.modal-content-exito');
-        
+function cerrarModalPago() {
+    console.log("Cerrando modal método de pago");
+    const modal = document.getElementById('modal-metodo');
+    
+    if (!modal) return;
+    
+    const content = modal.querySelector('.modal-content-exito');
+    
+    if (content) {
         content.style.transition = 'all 0.2s ease-out';
         content.style.transform = 'scale(0.7) translateY(-50px)';
         content.style.opacity = '0';
         
         setTimeout(() => {
             modal.style.display = 'none';
-            //resetearFormulario();
+            resetearFormularioMetodo();
         }, 200);
+    } else {
+        modal.style.display = 'none';
+        resetearFormularioMetodo();
     }
+}
 
-    function resetearFormulario() {
-        // Limpiar selecciones
-        document.querySelectorAll('input[name="metodo"]').forEach(radio => {
-            radio.checked = false;
-        });
-        
-        // Ocultar formularios
-        document.getElementById('info-pago').style.display = 'none';
-        document.querySelectorAll('.form-metodo').forEach(form => {
-            form.style.display = 'none';
-        });
-        
-        // Deshabilitar botón
-        document.getElementById('btn-confirmar').disabled = true;
-        
-        // Limpiar campos
-        const modal = document.getElementById('modal-metodo');
-        modal('input[type="text"], select').forEach(input => {
-            input.value = '';
-        });
-    }
-
-    function confirmarPago() {
-        const metodoSeleccionado = document.querySelector('input[name="metodo"]:checked');
-        if (!metodoSeleccionado) {
-            alert('Por favor seleccione un método de pago');
-            return;
-        }
-        // Recopilar datos del formulario según el método
-        const datosTransaccion = {
-            metodo: metodoSeleccionado.value,
-            timestamp: new Date().toISOString(),
-            total: '$150.00'
-        };
-
-        switch (metodoSeleccionado.value) {
-            case 'tarjeta':
-                datosTransaccion.numeroTarjeta = document.getElementById('numero-tarjeta').value;
-                datosTransaccion.fechaExp = document.getElementById('fecha-exp').value;
-                datosTransaccion.titular = document.getElementById('nombre-tarjeta').value;
-                break;
-            case 'billetera':
-                datosTransaccion.tipoBilletera = document.getElementById('tipo-billetera').value;
-                datosTransaccion.email = document.getElementById('email-billetera').value;
-                break;
-            case 'transferencia':
-                datosTransaccion.banco = document.getElementById('banco').value;
-                datosTransaccion.cuenta = document.getElementById('cuenta-numero').value;
-                break;
-        }
-
-        console.log('Datos de transacción:', datosTransaccion);
-        
-        // Cerrar modal de pago y mostrar éxito
-        cerrarModalPago();
-        mostrarModalPin();
-    }
-  // Confirmar método de pago y generar JSON simulado
-  $("#form-metodo-pago").submit(function(e){
+function resetearFormularioMetodo() {
+    console.log("Reseteando formulario");
     
-      e.preventDefault();
-      let medioId = $("input[name='medio']:checked").val();
-      if(!medioId){
-          alert("Seleccione un medio de pago");
-          return;
-      }
-      
-      let detalles = $("#detalle-pago").val();
+    // Limpiar selecciones
+    const metodosRadio = document.querySelectorAll('input[name="metodo"]');
+    metodosRadio.forEach(radio => radio.checked = false);
+    
+    // Ocultar formularios
+    const infoPago = document.getElementById('info-pago');
+    const formMetodos = document.querySelectorAll('.form-metodo');
+    
+    if (infoPago) infoPago.style.display = 'none';
+    formMetodos.forEach(form => form.style.display = 'none');
+    
+    // Deshabilitar botón
+    const btnConfirmar = document.getElementById('btn-confirmar-pago');
+    if (btnConfirmar) btnConfirmar.disabled = true;
+    
+    // Limpiar campos
+    const inputs = document.querySelectorAll('#modal-metodo input[type="text"], #modal-metodo select');
+    inputs.forEach(input => input.value = '');
+}
 
-    // Event listeners para mostrar formularios según método seleccionado
-    document.addEventListener('DOMContentLoaded', function() {
-        const metodosRadio = document.querySelectorAll('input[name="metodo"]');
-        const infoPago = document.getElementById('info-pago');
-        const btnConfirmar = document.getElementById('btn-confirmar');
+function confirmarMetodoPago() {
+    console.log("Confirmando método de pago");
+    
+    const metodoSeleccionado = document.querySelector('input[name="metodo"]:checked');
+    
+    if (!metodoSeleccionado) {
+        alert('Por favor seleccione un método de pago');
+        return;
+    }
 
-        metodosRadio.forEach(radio => {
-            radio.addEventListener('change', function() {
-                // Mostrar contenedor de información
-                infoPago.style.display = 'block';
-                
-                // Ocultar todos los formularios
-                document.querySelectorAll('.form-metodo').forEach(form => {
-                    form.style.display = 'none';
-                });
-                
-                // Mostrar el formulario correspondiente
-                const formId = `form-${this.value}`;
-                const targetForm = document.getElementById(formId);
-                if (targetForm) {
-                    targetForm.style.display = 'block';
-                }
-                
-                // Habilitar botón de confirmar
-                btnConfirmar.disabled = false;
-            });
-        });
+    // Recopilar datos del formulario según el método
+    const datosTransaccion = {
+        metodo: metodoSeleccionado.value,
+        timestamp: new Date().toISOString(),
+        total: document.querySelector('.precio-total')?.textContent || '$0.00'
+    };
 
-        // Formateo automático para número de tarjeta
-        document.getElementById('numero-tarjeta').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-            e.target.value = formattedValue;
-        });
+    switch (metodoSeleccionado.value) {
+        case 'tarjeta':
+            const numeroTarjeta = document.getElementById('numero-tarjeta');
+            const fechaExp = document.getElementById('fecha-exp');
+            const titular = document.getElementById('nombre-tarjeta');
+            const cvv = document.getElementById('cvv');
+            
+            datosTransaccion.numeroTarjeta = numeroTarjeta ? numeroTarjeta.value : '';
+            datosTransaccion.fechaExp = fechaExp ? fechaExp.value : '';
+            datosTransaccion.titular = titular ? titular.value : '';
+            datosTransaccion.cvv = cvv ? cvv.value : '';
+            break;
+            
+        case 'billetera':
+            const tipoBilletera = document.getElementById('tipo-billetera');
+            const emailBilletera = document.getElementById('email-billetera');
+            
+            datosTransaccion.tipoBilletera = tipoBilletera ? tipoBilletera.value : '';
+            datosTransaccion.email = emailBilletera ? emailBilletera.value : '';
+            break;
+            
+        case 'transferencia':
+            const banco = document.getElementById('banco');
+            const cuenta = document.getElementById('cuenta-numero');
+            
+            datosTransaccion.banco = banco ? banco.value : '';
+            datosTransaccion.cuenta = cuenta ? cuenta.value : '';
+            break;
+            
+        case 'efectivo':
+            datosTransaccion.observaciones = "Pago contra entrega";
+            break;
+    }
 
-        // Formateo automático para fecha de expiración
-        document.getElementById('fecha-exp').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            if (value.length >= 2) {
-                value = value.slice(0,2) + '/' + value.slice(2,4);
-            }
-            e.target.value = value;
-        });
-        // Solo números para CVV
-        document.getElementById('cvv').addEventListener('input', function(e) {
-            e.target.value = e.target.value.replace(/[^0-9]/g, '');
-        });
-    });
-
-    // Cerrar con ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            cerrarModalPago();
+    console.log('Datos de transacción:', datosTransaccion);
+    
+    // Cerrar modal de pago
+    cerrarModalPago();
+    
+    // Llamar a la función que continúa el flujo (modal PIN)
+    if (typeof mostrarModalPin === 'function') {
+        mostrarModalPin();
+    } else {
+        // Si no existe la función, mostrar modal PIN directamente
+        const modalPin = document.getElementById('modal-pin');
+        if (modalPin) {
+            modalPin.style.display = 'flex';
         }
-    });
-  
-});
+    }
+}
 </script>
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
-
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        background: #f4f6fb;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .demo-btn {
-        background: #5d5fef;
-        color: white;
-        border: none;
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .demo-btn:hover {
-        background: #4a4cd9;
-        transform: translateY(-2px);
-    }
-
     /* MODAL MÉTODOS DE PAGO */
     .modal-exito {
         display: none;
@@ -517,6 +578,8 @@
         padding: 1.5rem;
         border: 1px solid #e8ecf7;
         margin-top: 1rem;
+        display: none;
+        transition: all 0.3s ease;
     }
 
     .form-title {
@@ -556,6 +619,7 @@
         font-size: 0.9rem;
         transition: border-color 0.3s ease;
         background: white;
+        box-sizing: border-box;
     }
 
     .form-group input:focus,
@@ -563,6 +627,10 @@
         outline: none;
         border-color: #5d5fef;
         box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+    }
+
+    .form-metodo {
+        transition: all 0.3s ease;
     }
 
     .info-efectivo {

@@ -197,7 +197,7 @@
       success: function (response) {
         // Mostrar el modal con los datos que vinieron del servidor
         const datos = {
-          tipo: campos.op === "compra" ? "Compra" : "Venta",
+          tipo: campos.op === "venta" ? "Compra" : "Venta",
           entregar: campos.$valor.val() + " " + campos.$origen.val(),
           recibir: response.resultado + " " + campos.$destino.val(),
           tasa: response.tasa + " (" + response.fecha_tasa + ")",
