@@ -13,7 +13,7 @@ from django.utils.timezone import now
 import requests
 from metodos_pagos.models import MetodoPago
 from django.views.decorators.csrf import csrf_exempt
-
+import json
 
 @login_required
 def simulador_operaciones(request):
@@ -25,8 +25,8 @@ def simulador_operaciones(request):
   ]
 
     # === Monedas activas desde la BD ===
-    monedas = list(Moneda.objects.filter(estado=True).values("abreviacion", "nombre"))
-
+    monedas = list(Moneda.objects.filter(estado=True).values("id","abreviacion", "nombre"))
+    print("monedas: ",monedas,flush=True)
     # === Tasas de cambio activas ordenadas por vigencia más reciente ===
     tasas = (
         TasaDeCambio.objects
@@ -85,12 +85,17 @@ def simulador_operaciones(request):
         if abrev != "PYG" and registros:
             # Tomar el registro más reciente
             tasa_default = registros[-1]
+            print("tasa_default:",tasa_default,flush=True)
             break
             
     if tasa_default:
+        PB_MONEDA = tasa_default["venta"]  # por defecto
+        TASA_REF_ID = tasa_default["id"]
         # Calculamos las tasas considerando las comisiones
-        TC_VTA = tasa_default["venta"] + COMISION_VTA
-        TC_COMP = tasa_default["compra"] - COMISION_COM
+        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+        print("TC_VTA 88: ",TC_VTA,flush=True)
+        print("TC_COMP 88: ",TC_COMP,flush=True)
     else:
         TC_VTA = 0
         TC_COMP = 0
@@ -101,7 +106,9 @@ def simulador_operaciones(request):
         operacion = request.POST.get("operacion")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
-        
+        print("origen: ",origen,flush=True)
+        print("destino: ",operacion,flush=True)
+
         print("operacion view 88: ",operacion,flush=True)
 
         # Validar que no sea la misma moneda
@@ -138,9 +145,10 @@ def simulador_operaciones(request):
                     # Tomar el registro más reciente
                     ultimo = registros[-1]
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
-
+                    TASA_REF_ID = ultimo["id"]
                     # === Fórmula de tu home ===
                     #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
+                    print("operacion: ", operacion, flush=True)
                     if operacion == "venta":
                         print("venta",flush=True)
                         print("Descuento: ",descuento,flush=True)
@@ -156,28 +164,18 @@ def simulador_operaciones(request):
                         print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+                        print("TC_COMP 1: ",TC_COMP,flush=True)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
                     print("resultado: ",resultado,flush=True)
-                
-
-                
-                    transaccion = Transaccion(
-                        usuario = request.user,
-                        monto = Decimal(valor),
-                        tipo = operacion,
-                        estado = "pendiente",  # o "confirmada" si querés
-                        moneda_origen = Moneda.objects.get(abreviacion=origen),
-                        moneda_destino = Moneda.objects.get(abreviacion=destino),
-                        tasa_usada = Decimal(PB_MONEDA),
-                        tasa_ref_id=ultimo["id"]  # <-- guardamos el ID directo
-                    )
-                    transaccion.save()
-                    print("Transacción guardada con ID:", transaccion.id, flush=True)
-
         except ValueError:
             resultado = "Monto inválido"
-
+        tasa_usada = 0
+        if(operacion == "venta"):
+            tasa_usada = TC_VTA
+        else:
+            tasa_usada = TC_COMP
+        print("resultado 111: ",resultado,flush=True)
         # Respuesta AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({
@@ -185,13 +183,14 @@ def simulador_operaciones(request):
                 "ganancia_total": ganancia_total,
                 "segmento": segmento_nombre,
                 "descuento": descuento,
-                "tasa": PB_MONEDA,  
+                "tasa": tasa_usada,  
                 "fecha_tasa": ultimo["fecha"]  # viene de tu dict data_por_moneda
             })
-
-    print("TC_VTA: ",TC_VTA,flush=True)
+    print("TC_VTA: ", TC_VTA,flush=True)
     print("clientes_asociados: ",clientes_asociados,flush=True)
     print("cliente_operativo: ",cliente_operativo,flush=True)
+    print("TC_VTA 222: ",TC_VTA,flush=True)
+    print("TC_COMP222: ",TC_COMP,flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -212,7 +211,8 @@ def simulador_operaciones(request):
         "transacciones": transacciones,
         "email_cliente_operativo": email_cliente_operativo,
         'medios': metodos_pago,
-
+        "PB_MONEDA": PB_MONEDA,
+        "TASA_REF_ID": TASA_REF_ID,
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
@@ -339,3 +339,93 @@ def guardar_metodo_pago(request):
         return JsonResponse({"status": "ok"})
     return JsonResponse({"error": "Método no válido"}, status=400)
 
+def guardar_transaccion(request):
+    try:
+        data = json.loads(request.body.decode("utf-8"))
+    except Exception as e:
+        return JsonResponse({"success": False, "error": "JSON inválido", "detail": str(e)}, status=400)
+
+    try:
+        usuario = request.user if request.user.is_authenticated else None
+        monto = Decimal(str(data.get("monto", "0")))
+        tipo = data.get("tipo")
+        estado = data.get("estado", "pendiente").lower()
+
+        # Recibir IDs directamente
+        moneda_origen_id = data.get("moneda_origen_id")
+        moneda_destino_id = data.get("moneda_destino_id")
+        tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
+        tasa_ref_id = data.get("tasa_ref_id")
+
+        if not (moneda_origen_id and moneda_destino_id and tasa_ref_id):
+            return JsonResponse({"success": False, "error": "Faltan campos obligatorios"}, status=400)
+
+        # Buscar por ID directamente
+        moneda_origen = Moneda.objects.get(id=moneda_origen_id)
+        moneda_destino = Moneda.objects.get(id=moneda_destino_id)
+        tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
+
+        # Guardar transacción
+        transaccion = Transaccion.objects.create(
+            usuario=usuario,
+            monto=monto,
+            tipo=tipo,
+            estado=estado,
+            moneda_origen=moneda_origen,
+            moneda_destino=moneda_destino,
+            tasa_usada=tasa_usada,
+            tasa_ref=tasa_ref,
+        )
+
+        return JsonResponse({
+            "success": True,
+            "id": transaccion.id,
+            "estado": transaccion.estado,
+            "fecha": transaccion.fecha.strftime("%d/%m/%Y %H:%M"),
+        })
+
+    except Moneda.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Moneda no encontrada"}, status=404)
+    except TasaDeCambio.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Tasa de cambio no encontrada"}, status=404)
+    except Exception as e:
+        return JsonResponse({"success": False, "error": "Error al guardar", "detail": str(e)}, status=500)
+    
+
+def actualizar_estado_transaccion(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            transaccion_id = data.get("transaccion_id")
+            nuevo_estado = data.get("nuevo_estado")
+            
+            if not transaccion_id or not nuevo_estado:
+                return JsonResponse({
+                    "success": False, 
+                    "error": "Se requiere transaccion_id y nuevo_estado"
+                }, status=400)
+            
+            transaccion = Transaccion.objects.get(id=transaccion_id)
+            transaccion.estado = nuevo_estado
+            transaccion.save()
+            
+            return JsonResponse({
+                "success": True,
+                "id": transaccion.id,
+                "nuevo_estado": transaccion.estado,
+                "fecha_actualizacion": transaccion.fecha.strftime("%d/%m/%Y %H:%M")
+            })
+            
+        except Transaccion.DoesNotExist:
+            return JsonResponse({
+                "success": False, 
+                "error": "Transacción no encontrada"
+            }, status=404)
+        except Exception as e:
+            return JsonResponse({
+                "success": False, 
+                "error": "Error al actualizar", 
+                "detail": str(e)
+            }, status=500)
+    
+    return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)

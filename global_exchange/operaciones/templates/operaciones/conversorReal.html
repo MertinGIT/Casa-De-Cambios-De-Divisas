@@ -1,45 +1,42 @@
-{% extends 'baseDashboardUsuario.html' %}
-{% load static %}
-
+{% extends 'baseDashboardUsuario.html' %} 
+{% load static %} 
 {% block dashboard_content %}
 <div class="dashboard-grid">
-
   <!-- COLUMNA IZQUIERDA -->
   <div class="col-left">
     <div class="bloque-izquierdo">
-
       <!-- Indicadores principales -->
       <section class="indicadores">
         <div class="indicador-card">
-                <div class="indicador-icon">
-                    <i class="icon">📊</i>
-                </div>
-                <div class="indicador-content">
-                    <span class="numero">15</span>
-                    <span class="label">Transacciones totales</span>
-                    <div class="trend-indicator up">+8.2%</div>
-                </div>
-            </div>
-            <div class="indicador-card">
-                <div class="indicador-icon">
-                    <i class="icon">💰</i>
-                </div>
-                <div class="indicador-content">
-                    <span class="numero">1,350 USD</span>
-                    <span class="label">Ganancia estimada</span>
-                    <div class="trend-indicator up">+15.3%</div>
-                </div>
-            </div>
-            <div class="indicador-card">
-                <div class="indicador-icon">
-                    <i class="icon">⚡</i>
-                </div>
-                <div class="indicador-content">
-                    <span class="numero">Venta</span>
-                    <span class="label">Última operación</span>
-                    <div class="trend-indicator neutral">2 min ago</div>
-                </div>
-            </div>
+          <div class="indicador-icon">
+            <i class="icon">📊</i>
+          </div>
+          <div class="indicador-content">
+            <span class="numero">15</span>
+            <span class="label">Transacciones totales</span>
+            <div class="trend-indicator up">+8.2%</div>
+          </div>
+        </div>
+        <div class="indicador-card">
+          <div class="indicador-icon">
+            <i class="icon">💰</i>
+          </div>
+          <div class="indicador-content">
+            <span class="numero">1,350 USD</span>
+            <span class="label">Ganancia estimada</span>
+            <div class="trend-indicator up">+15.3%</div>
+          </div>
+        </div>
+        <div class="indicador-card">
+          <div class="indicador-icon">
+            <i class="icon">⚡</i>
+          </div>
+          <div class="indicador-content">
+            <span class="numero">Venta</span>
+            <span class="label">Última operación</span>
+            <div class="trend-indicator neutral">2 min ago</div>
+          </div>
+        </div>
       </section>
 
       <!-- Estadísticas rápidas -->
@@ -50,17 +47,24 @@
       <!-- Conversor -->
       <main class="conversor-container">
         <h2 class="title">💱 Conversor de Divisas</h2>
-        <form id="form-conversor" method="post" class="conversor-form" action="{% url 'operaciones' %}">
+        <form
+          id="form-conversor"
+          method="post"
+          class="conversor-form"
+          action="{% url 'operaciones' %}"
+        >
           {% csrf_token %}
 
           <div class="campo fila operacion-toggle">
             <!-- Nota: mantuve los values igual que tenías para no romper la lógica previa:
                  value="venta" corresponde a "Compra (entrego PYG)" en tu UI original -->
             <label class="toggle-label">
-              <input type="radio" name="operacion" value="venta" checked> Compra (entrego PYG)
+              <input type="radio" name="operacion" value="venta" checked />
+              Compra (entrego PYG)
             </label>
             <label class="toggle-label">
-              <input type="radio" name="operacion" value="compra"> Venta (recibo PYG)
+              <input type="radio" name="operacion" value="compra" /> Venta
+              (recibo PYG)
             </label>
           </div>
 
@@ -70,14 +74,20 @@
               <span class="icono">💵</span>
               <!-- origen-compra: sólo PYG aparece -->
               <select id="origen-compra" name="origen" class="input-select">
-                {% for moneda in monedas %}
-                  {% if moneda.abreviacion == "PYG" %}
-                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
-                  {% endif %}
-                {% endfor %}
+                {% for moneda in monedas %} {% if moneda.abreviacion == "PYG" %}
+                <option value="{{ moneda.abreviacion }}">
+                  {{ moneda.nombre }} ({{ moneda.abreviacion }})
+                </option>
+                {% endif %} {% endfor %}
               </select>
             </div>
-            <input type="text" id="valor-compra" name="valor" class="input-text" placeholder="Monto">
+            <input
+              type="text"
+              id="valor-compra"
+              name="valor"
+              class="input-text"
+              placeholder="Monto"
+            />
           </div>
 
           <div class="campo fila" id="compra-2">
@@ -85,51 +95,74 @@
               <span class="icono">💲</span>
               <!-- destino-compra: todas menos PYG -->
               <select id="destino-compra" name="destino" class="input-select">
-                {% for moneda in monedas %}
-                  {% if moneda.abreviacion != "PYG" %}
-                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
-                  {% endif %}
-                {% endfor %}
+                {% for moneda in monedas %} {% if moneda.abreviacion != "PYG" %}
+                <option value="{{ moneda.abreviacion }}">
+                  {{ moneda.nombre }} ({{ moneda.abreviacion }})
+                </option>
+                {% endif %} {% endfor %}
               </select>
             </div>
-            <input type="text" id="resultado-compra" name="resultado" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
+            <input
+              type="text"
+              id="resultado-compra"
+              name="resultado"
+              class="input-text readonly"
+              placeholder="Resultado"
+              readonly
+              value="{{ resultado }}"
+            />
           </div>
 
           <!-- ==== VENTA (se muestra cuando radio value === "compra") ==== -->
-          <div class="campo fila" id="venta-1" style="display:none;">
+          <div class="campo fila" id="venta-1" style="display: none">
             <div class="input-icon-wrapper">
               <span class="icono">💵</span>
               <!-- origen-venta: todas menos PYG -->
               <select id="origen-venta" name="origen" class="input-select">
-                {% for moneda in monedas %}
-                  {% if moneda.abreviacion != "PYG" %}
-                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
-                  {% endif %}
-                {% endfor %}
+                {% for moneda in monedas %} {% if moneda.abreviacion != "PYG" %}
+                <option value="{{ moneda.abreviacion }}">
+                  {{ moneda.nombre }} ({{ moneda.abreviacion }})
+                </option>
+                {% endif %} {% endfor %}
               </select>
             </div>
-            <input type="text" id="valor-venta" name="valor" class="input-text" placeholder="Monto">
+            <input
+              type="text"
+              id="valor-venta"
+              name="valor"
+              class="input-text"
+              placeholder="Monto"
+            />
           </div>
 
-          <div class="campo fila" id="venta-2" style="display:none;">
+          <div class="campo fila" id="venta-2" style="display: none">
             <div class="input-icon-wrapper">
               <span class="icono">💲</span>
               <!-- destino-venta: sólo PYG -->
               <select id="destino-venta" name="destino" class="input-select">
-                {% for moneda in monedas %}
-                  {% if moneda.abreviacion == "PYG" %}
-                    <option value="{{ moneda.abreviacion }}">{{ moneda.nombre }} ({{ moneda.abreviacion }})</option>
-                  {% endif %}
-                {% endfor %}
+                {% for moneda in monedas %} {% if moneda.abreviacion == "PYG" %}
+                <option value="{{ moneda.abreviacion }}">
+                  {{ moneda.nombre }} ({{ moneda.abreviacion }})
+                </option>
+                {% endif %} {% endfor %}
               </select>
             </div>
-            <input type="text" id="resultado-venta" name="resultado" class="input-text readonly" placeholder="Resultado" readonly value="{{ resultado }}">
+            <input
+              type="text"
+              id="resultado-venta"
+              name="resultado"
+              class="input-text readonly"
+              placeholder="Resultado"
+              readonly
+              value="{{ resultado }}"
+            />
           </div>
 
-          <button type="submit" id="btn-convertir" class="btn-convertir">Realizar transacción</button>
+          <button type="submit" id="btn-convertir" class="btn-convertir">
+            Realizar transacción
+          </button>
         </form>
       </main>
-
     </div>
   </div>
 
@@ -144,7 +177,12 @@
           <option value="monto">Monto</option>
           <option value="estado">Estado</option>
         </select>
-        <input type="text" id="filtro-general" placeholder="Buscar..." class="input-text">
+        <input
+          type="text"
+          id="filtro-general"
+          placeholder="Buscar..."
+          class="input-text"
+        />
       </div>
 
       <table class="tabla-transacciones">
@@ -163,17 +201,22 @@
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
             <td>{{ t.monto }}</td>
-            <td><span class="estado {{ t.estado|lower }}">{{ t.estado }}</span></td>
+            <td>
+              <span class="estado {{ t.estado|lower }}">{{ t.estado }}</span>
+            </td>
             <td class="tipo-{{ t.tipo|lower }}">{{ t.tipo }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
 
-      <canvas id="grafico-transacciones" height="200" style="margin-top:1rem;"></canvas>
+      <canvas
+        id="grafico-transacciones"
+        height="200"
+        style="margin-top: 1rem"
+      ></canvas>
     </section>
   </div>
-
 </div>
 
 <!-- MODAL Metodo Pago -->
@@ -198,547 +241,956 @@
   </div>
 </div>
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-$(document).ready(function(){
+    $(document).ready(function () {
 
-  const tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));
-const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
+      const tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));
+      const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
 
-console.log("Tasa Venta:", tasaVta, "Tasa Compra:", tasaCmp);
+      console.log("Tasa Venta:", tasaVta, "Tasa Compra:", tasaCmp);
+      console.log("resultado", "{{resultado}}");
 
+      // Muestra/oculta inputs según operación
+      function actualizarCamposPorOperacion() {
+        const op = $("input[name='operacion']:checked").val();
 
-  // Muestra/oculta inputs según operación
-  function actualizarCamposPorOperacion(){
-  const op = $("input[name='operacion']:checked").val();
+        if (op === "venta") { // Venta -> "Compra por cliente (entrego PYG)"
+          // mostrar compra
+          $("#compra-1, #compra-2").show();
+          $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
+            .prop("disabled", false);
 
-  if(op === "venta"){ // Venta -> "Compra por cliente (entrego PYG)"
-    // mostrar compra
-    $("#compra-1, #compra-2").show();
-    $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
-      .prop("disabled", false);
+          // ocultar venta
+          $("#venta-1, #venta-2").hide();
+          $("#venta-1 select, #venta-1 input, #venta-2 select, #venta-2 input")
+            .prop("disabled", true);
 
-    // ocultar venta
-    $("#venta-1, #venta-2").hide();
-    $("#venta-1 select, #venta-1 input, #venta-2 select, #venta-2 input")
-      .prop("disabled", true);
+          // forzar origen PYG
+          $("#origen-compra").val("PYG").prop("disabled", true);
 
-    // forzar origen PYG
-    $("#origen-compra").val("PYG").prop("disabled", true);
+        } else { // op === "compra" → "Venta (recibo PYG)"
+          // mostrar venta
+          $("#venta-1, #venta-2").show();
+          $("#venta-1 select, #venta-1 input, #venta-2 select, #venta-2 input")
+            .prop("disabled", false);
 
-  } else { // op === "compra" → "Venta (recibo PYG)"
-    // mostrar venta
-    $("#venta-1, #venta-2").show();
-    $("#venta-1 select, #venta-1 input, #venta-2 select, #venta-2 input")
-      .prop("disabled", false);
+          // ocultar compra
+          $("#compra-1, #compra-2").hide();
+          $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
+            .prop("disabled", true);
 
-    // ocultar compra
-    $("#compra-1, #compra-2").hide();
-    $("#compra-1 select, #compra-1 input, #compra-2 select, #compra-2 input")
-      .prop("disabled", true);
-
-    // forzar destino PYG
-    $("#destino-venta").val("PYG").prop("disabled", true);
-  }
-
-  // limpiar resultados
-  $("#resultado-compra, #resultado-venta").val("");
-}
-
-
-  // obtener los elementos relevantes según la operación activa
-  function getCampos() {
-    const op = $("input[name='operacion']:checked").val();
-    if(op === "venta"){ // compra inputs activos
-      return {
-        $origen: $("#origen-compra"),
-        $destino: $("#destino-compra"),
-        $valor: $("#valor-compra"),
-        $resultado: $("#resultado-compra"),
-        op
-      };
-    } else { // venta inputs activos
-      return {
-        $origen: $("#origen-venta"),
-        $destino: $("#destino-venta"),
-        $valor: $("#valor-venta"),
-        $resultado: $("#resultado-venta"),
-        op
-      };
-    }
-  }
-
-  // cálculo instantáneo
-  function calcularResultado(){
-  const campos = getCampos();
-  if(!campos || !campos.$valor) return;
-
-  let raw = campos.$valor.val() || "";
-  raw = raw.replace(/[^0-9.]/g,'');
-  const parts = raw.split('.');
-  if(parts.length>2) raw = parts.shift() + '.' + parts.join('');
-  campos.$valor.val(raw);
-    const monto = parseFloat(raw);
-    const origenVal = campos.$origen.val();
-    const destinoVal = campos.$destino.val();
-
-    if(!monto || monto <= 0 || !origenVal || !destinoVal || origenVal === destinoVal){
-      campos.$resultado.val("");
-      return;
-    }
-    
-    if(!monto || monto <= 0) {
-    campos.$resultado.val("");
-    return;
-    // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
-    $.ajax({
-      url: "{% url 'operaciones' %}",
-      type: "POST",
-      data: {
-        csrfmiddlewaretoken: "{{ csrf_token }}",
-        valor: monto,
-        operacion: campos.op,
-        origen: origenVal,
-        destino: destinoVal
-      },
-      success: function(resp){
-        if(resp && resp.resultado !== undefined){
-        campos.$resultado.val(resp.resultado);
-        campos.$resultado.data("tasa", resp.tasa);
-        campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
-      } else {
-          let resultadoCalc = op==="venta"
-            ? (monto / tasaVta).toFixed(2)
-            : (monto * tasaCmp).toFixed(2);  
-
+          // forzar destino PYG
+          $("#destino-venta").val("PYG").prop("disabled", true);
         }
-      },
-      error: function(){
-        let resultadoCalc = op==="venta"
-        ? (monto / tasaVta).toFixed(2)
-        : (monto * tasaCmp).toFixed(2);
+
+        // limpiar resultados
+        $("#resultado-compra, #resultado-venta").val("");
       }
-    });
-
-  
-
-  }
-
-  // cálculo local inmediato
-  let resultadoCalc = campos.op === "venta"
-    ? (monto / tasaVta).toFixed(2)
-    : (monto * tasaCmp).toFixed(2);
-
-  campos.$resultado.val(resultadoCalc);
-}
 
 
-  // Init y eventos
-  actualizarCamposPorOperacion();
-  $(document).on("change", "input[name='operacion']", function(){
-    actualizarCamposPorOperacion();
-    calcularResultado(); // recalcular si había valor
-  });
+      // obtener los elementos relevantes según la operación activa
+      function getCampos() {
+        const op = $("input[name='operacion']:checked").val();
+        if (op === "venta") { // compra inputs activos
+          return {
+            $origen: $("#origen-compra"),
+            $destino: $("#destino-compra"),
+            $valor: $("#valor-compra"),
+            $resultado: $("#resultado-compra"),
+            op
+          };
+        } else { // venta inputs activos
+          return {
+            $origen: $("#origen-venta"),
+            $destino: $("#destino-venta"),
+            $valor: $("#valor-venta"),
+            $resultado: $("#resultado-venta"),
+            op
+          };
+        }
+      }
 
-  // inputs que deben disparar el cálculo
-  $(document).on("input change", "#valor-compra, #valor-venta, #destino-compra, #origen-venta", function(){
-    calcularResultado();
-  });
+      // cálculo instantáneo
+      function calcularResultado() {
+        const campos = getCampos();
+        if (!campos || !campos.$valor) return;
 
-  function mostrarMensaje(titulo, texto){
-  $("#titulo-mensaje").text(titulo);
-  $("#texto-mensaje").text(texto);
-  $("#modal-mensaje").fadeIn().css("display","flex");
-}
+        let raw = campos.$valor.val() || "";
+        raw = raw.replace(/[^0-9.]/g, '');
+        const parts = raw.split('.');
+        if (parts.length > 2) raw = parts.shift() + '.' + parts.join('');
+        campos.$valor.val(raw);
+        const monto = parseFloat(raw);
+        const origenVal = campos.$origen.val();
+        const destinoVal = campos.$destino.val();
 
-// Cerrar modal
-$("#btn-cerrar-mensaje, #modal-mensaje .close").click(function(){
-  $("#modal-mensaje").fadeOut();
-});
+        if (!monto || monto <= 0 || !origenVal || !destinoVal || origenVal === destinoVal) {
+          campos.$resultado.val("");
+          return;
+        }
+
+        if (!monto || monto <= 0) {
+          campos.$resultado.val("");
+          return;
+        }
+        // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
+        $.ajax({
+          url: "{% url 'operaciones' %}",
+          type: "POST",
+          data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            valor: monto,
+            operacion: campos.op,
+            origen: origenVal,
+            destino: destinoVal
+          },
+          success: function (resp) {
+            if (resp && resp.resultado !== undefined) {
+              campos.$resultado.val(resp.resultado);
+              campos.$resultado.data("tasa", resp.tasa);
+              campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
+            } else {
+              let resultadoCalc = campos.op === "venta"
+                ? (monto / tasaVta).toFixed(2)
+                : (monto * tasaCmp).toFixed(2);
+
+            }
+            console.log("resp", resp);
+          },
+          error: function () {
+            let resultadoCalc = campos.op === "venta"
+              ? (monto / tasaVta).toFixed(2)
+              : (monto * tasaCmp).toFixed(2);
+          }
+        });
+        // cálculo local inmediato
+        let resultadoCalc = campos.op === "venta"
+          ? (monto / tasaVta).toFixed(2)
+          : (monto * tasaCmp).toFixed(2);
+      }
+      // Init y eventos
+      actualizarCamposPorOperacion();
+      $(document).on("change", "input[name='operacion']", function () {
+        actualizarCamposPorOperacion();
+        calcularResultado(); // recalcular si había valor
+      });
+
+      // inputs que deben disparar el cálculo
+      $(document).on("input change", "#valor-compra, #valor-venta, #destino-compra, #origen-venta", function () {
+        calcularResultado();
+      });
+
+      function mostrarMensaje(titulo, texto) {
+        $("#titulo-mensaje").text(titulo);
+        $("#texto-mensaje").text(texto);
+        $("#modal-mensaje").fadeIn().css("display", "flex");
+      }
+
+      // Cerrar modal
+      $("#btn-cerrar-mensaje, #modal-mensaje .close").click(function () {
+        $("#modal-mensaje").fadeOut();
+        location.reload(); // recargar página al cerrar el mensaje
+      });
 
 
-  // Submit del formulario: usa getCampos() para leer los campos correctos
-  $("#form-conversor").submit(function(e){
-    e.preventDefault();
+      // Submit del formulario: usa getCampos() para leer los campos correctos
+      $("#form-conversor").submit(function (e) {
+        e.preventDefault();
 
-    const campos = getCampos();
-    const monto = parseFloat(campos.$valor.val());
-    const origenVal = campos.$origen.val();
-    const destinoVal = campos.$destino.val();
+        const campos = getCampos();
+        const monto = parseFloat(campos.$valor.val());
+        const origenVal = campos.$origen.val();
+        const destinoVal = campos.$destino.val();
 
-    if(!monto || monto <= 0){
-      mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
-      return;
-    }
+        if (!monto || monto <= 0) {
+          mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
+          return;
+        }
 
-    if(origenVal === destinoVal){
-      mostrarMensaje("⚠️ Error", "La moneda de origen y destino no puede ser la misma.");
-      return;
-    }
+        if (origenVal === destinoVal) {
+          mostrarMensaje("⚠️ Error", "La moneda de origen y destino no puede ser la misma.");
+          return;
+        }
 
-    // si no existe resultado calculado todavía, calcular localmente
-    let resultadoCalc = campos.$resultado.val();
-    $.ajax({
-        url: "{% url 'operaciones' %}",
-        method: "POST",
-        data: {
+        // si no existe resultado calculado todavía, calcular localmente
+        let resultadoCalc = campos.$resultado.val();
+        $.ajax({
+          url: "{% url 'operaciones' %}",
+          method: "POST",
+          data: {
             'csrfmiddlewaretoken': "{{ csrf_token }}",
             'valor': campos.$valor.val(),
             'origen': campos.$origen.val(),
             'destino': campos.$destino.val(),
             'operacion': campos.op
-        },
-        success: function(response){
+          },
+          success: function (response) {
             // aquí response es JSON desde tu view
             console.log(response);
             campos.$resultado.val(response.resultado);
-        },
-        error: function(xhr){
+            // abrir modal de confirmación si quieres
+            $("#modal-confirmacion").fadeIn().css("display", "flex");
+          },
+          error: function (xhr) {
             mostrarMensaje("⚠️ Error", "Error al realizar la transacción");
 
+          }
+        });
+
+
+        if (!resultadoCalc) {
+          if (campos.op === "venta") {
+            resultadoCalc = (monto / tasaVta).toFixed(2);
+          } else {
+            resultadoCalc = (monto * tasaCmp).toFixed(2);
+          }
+          campos.$resultado.val(resultadoCalc);
         }
+
+
+        const tipoTexto = campos.op === "venta" ? "Compra" : "Venta";
+        const tasaUsada = campos.op === "venta" ? tasaVta : tasaCmp;
+
+        const detalleHtml = `
+      <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
+      <p><strong>Monto origen:</strong> ${monto} ${origenVal}</p>
+      <p><strong>Monto destino:</strong> ${resultadoCalc} ${destinoVal}</p>
+      <p><strong>Tasa utilizada:</strong> ${tasaUsada.toFixed(2)} PYG</p>
+    `;
+      $("#detalle-transaccion").html(detalleHtml);
+      const datos = {
+        tipo: campos.op === "venta" ? "Compra" : "Venta",
+        entregar: monto + " " + origenVal,
+        recibir: resultadoCalc + " " + destinoVal,
+        tasa: tasaUsada.toFixed(2) + " PYG",
+        comision: "0.00 PYG" // o calcula la comisión si la tienes
+      };
+      mostrarModalConfirmacion(datos);
     });
 
-    
-    if(!resultadoCalc){
-      if (campos.op === "venta") {
-        resultadoCalc = (monto / tasaVta).toFixed(2);
-      } else {
-        resultadoCalc = (monto * tasaCmp).toFixed(2);
+
+
+      // Declaración global
+      var fechaNavegador = null;
+      var advertenciaMostrada = false; // 🔑 Flag para controlar el mensaje
+      $(document).ready(function () {
+        // Botones modales
+        $("#btn-cancelar, .modal .close").click(function () {
+          if (advertenciaMostrada) {
+            location.reload(); // 🔄 Recargar si ya se mostró la advertencia
+          } else {
+            $(this).closest(".modal").fadeOut();
+
+          }
+          $(".pin-digit").val("");
+        });
+
+        // Cuando el usuario hace clic en "Realizar transacción"
+        $("#btn-convertir").click(function () {
+          obtenerHoraServidor(function (fechaServidor) {
+            fechaNavegador = fechaServidor;
+            console.log("Hora servidor usada:", fechaNavegador);
+          });
+        });
+
+        // Botón para continuar a pesar de cambio de tasa
+        $("#btn-continuar-tasa").click(function () {
+          fechaNavegador = new Date(); // actualizamos fecha usada
+          $("#mensaje-error-tasa").hide();
+          $(this).hide();
+
+        });
+
+        // Nuevo botón para confirmar método de pago
+        $("#btn-confirmar").click(function () {
+          verificarTasaActualizada(function(tasaActualizada) {
+          if (tasaActualizada) {
+            $("#modal-confirmacion").fadeOut();
+            $("#modal-metodo").fadeIn().css("display", "flex");
+          }else{
+            mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+            $("#modal-confirmacion").fadeOut();
+          }
+          });
+        });
+
+        $("#form-metodo-pago").submit(function(e){
+          e.preventDefault();
+          verificarTasaActualizada(function(tasaActualizada) {
+
+          if (tasaActualizada) {
+            $("#modal-confirmacion").fadeOut();
+            $("#modal-pin").fadeIn().css("display", "flex");
+          }else{
+            mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+            $("#modal-pin").fadeOut();
+          }
+          });
+        });
+
+
+      });
+
+      function obtenerHoraServidor(callback) {
+        $.get("{% url 'hora_servidor' %}", function (resp) {
+          const fechaServidor = new Date(resp.hora);
+          callback(fechaServidor);
+        });
       }
-      campos.$resultado.val(resultadoCalc);
+
+      function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Comprueba si la cookie comienza con el nombre deseado
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+              cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+              break;
+            }
+          }
+        }
+        return cookieValue;
+      }
+
+      $(".pin-digit").on("input", function () { let next = $(this).next(".pin-digit"); if (this.value.length && next.length) next.focus(); });
+
+      const PB_MONEDA = "{{ PB_MONEDA }}";
+      const TASA_REF_ID = "{{ TASA_REF_ID }}";
+
+      const monedasMap = {};
+      {% for moneda in monedas %}
+      monedasMap["{{ moneda.abreviacion }}"] = {{ moneda.id }};
+      {% endfor %}
+
+    console.log("Mapa de monedas:", monedasMap);
+
+    // Función para obtener ID por abreviación
+    function obtenerIdMoneda(abreviacion) {
+      return monedasMap[abreviacion] || null;
     }
 
+    // Función reutilizable para verificar tasas
+    function verificarTasaActualizada(callback) {
+      const campos = getCampos();
+      console.log("Verificando tasa para:", campos.$origen.val(), "->", campos.$destino.val());
 
-    const tipoTexto = campos.op === "venta" ? "Compra": "Venta";
-    const tasaUsada = campos.op === "venta" ?  tasaVta: tasaCmp;
+      $.ajax({
+        url: "{% url 'verificar_tasa' %}",
+        type: "GET",
+        data: {
+          origen: campos.op == "venta" ? campos.$origen.val() : campos.$destino.val(),
+          destino: campos.op == "venta" ? campos.$destino.val() : campos.$origen.val()
+        },
+        success: function (resp) {
+          const fechaBaseDatos = new Date(resp.fecha_tasa);
+          console.log("fechaNavegador:", fechaNavegador);
+          console.log("fechaBaseDatos:", fechaBaseDatos);
 
-  const detalleHtml = `
-    <p><strong>Tipo de operación:</strong> ${campos.op === "venta" ? "Compra" : "Venta"}</p>
-    <p><strong>Monto origen:</strong> ${monto} ${origenVal}</p>
-    <p><strong>Monto destino:</strong> ${resultadoCalc} ${destinoVal}</p>
-    <p><strong>Tasa utilizada:</strong> ${tasaUsada.toFixed(2)} PYG</p>
-  `;
+          if (fechaBaseDatos > fechaNavegador) {
+            // Mostrar mensaje de advertencia
+            $("#btn-continuar-tasa").show();
+            $("#btn-confirmar").fadeOut();
+            advertenciaMostrada = true;
 
-    $("#detalle-transaccion").html(detalleHtml);
-    mostrarModalConfirmacion();
-  });
+            // Ejecutar callback con false (tasa desactualizada)
+            if (callback) callback(false);
+            return;
+          } else {
+            // Tasa actualizada, continuar
+            if (callback) callback(true);
+          }
+        },
+        error: function() {
+          console.error("Error al verificar tasa");
+          if (callback) callback(true); // En caso de error, permitir continuar
+        }
+      });
+    }
 
-  
+    $("#btn-verificar-pin").click(function () {
+      let pinIngresado = "";
+      $(".pin-digit").each(function () { pinIngresado += $(this).val(); });
 
-// Declaración global
-var fechaNavegador = null;
-var advertenciaMostrada = false; // 🔑 Flag para controlar el mensaje
-$(document).ready(function() {
-  // Botones modales
-  $("#btn-cancelar, .modal .close").click(function(){
-    if (advertenciaMostrada) {
-      location.reload(); // 🔄 Recargar si ya se mostró la advertencia
-    } else {
-      $(this).closest(".modal").fadeOut(); 
-      
+      if (pinIngresado === "1234") {
+        // Verificar tasa antes de proceder
+        verificarTasaActualizada(function(tasaActualizada) {
+          console.log("Tasa actualizada:", tasaActualizada);
+          if (tasaActualizada) {
+            // Proceder con la transacción
+            procesarTransaccion();
+          }else{
+            mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+            $("#modal-pin").fadeOut();
+          }
+        });
+      }else {
+        console.log("PIN incorrecto:", pinIngresado);
+        $("#mensaje-pin").fadeIn();
+        $(".pin-digit").val("").first().focus();
     }
     $(".pin-digit").val("");
-  });
-
-  // Cuando el usuario hace clic en "Realizar transacción"
-  $("#btn-convertir").click(function(){
-  obtenerHoraServidor(function(fechaServidor){
-    fechaNavegador = fechaServidor;  
-    console.log("Hora servidor usada:", fechaNavegador);
-  });
-});
-
-  // Botón para continuar a pesar de cambio de tasa
-  $("#btn-continuar-tasa").click(function(){
-    fechaNavegador = new Date(); // actualizamos fecha usada
-    $("#mensaje-error-tasa").hide();
-    $(this).hide();
-    
-  });
-  
-  $("#btn-confirmar").click(function(){
-    const campos = getCampos(); // 🔑 ahora "campos" está definido
-    console.log("Verificando tasa para:", campos.$origen.val(), "->", campos.$destino.val());
-    const urlVerificar = "{% url 'verificar_tasa' %}"; // 🔑 guardamos la url
-    console.log("url:", urlVerificar);
-
-    $.ajax({
-      url: "{% url 'verificar_tasa' %}",
-      type: "GET",
-      data: { origen: campos.op == "venta" ? campos.$origen.val() : campos.$destino.val(), destino: campos.op == "venta" ? campos.$destino.val() : campos.$origen.val() },
-      success: function(resp){
-        const fechaBaseDatos = new Date(resp.fecha_tasa);
-        console.log("fechaNavegador:", fechaNavegador);
-        console.log("fechaBaseDatos:", fechaBaseDatos);
-
-        if(fechaBaseDatos > fechaNavegador){ 
-          // Mostrar mensaje en rojo y botón continuar
-          $("#mensaje-error-tasa").text(
-            "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa."
-          ).show();
-          $("#btn-continuar-tasa").show();
-          $("#btn-confirmar").fadeOut();
-          advertenciaMostrada = true; // 🔑 Activamos flag
-          return;
-        }else{
-          $("#modal-confirmacion").fadeOut();
-          $("#modal-metodo").fadeIn().css("display","flex");
-          
-        }
-      }
     });
-  });
+
+
   
-});
-  function obtenerHoraServidor(callback){
-  $.get("{% url 'hora_servidor' %}", function(resp){
-    const fechaServidor = new Date(resp.hora);
-    callback(fechaServidor);
-  });
+// Función separada para procesar la transacción
+function procesarTransaccion() {
+  console.log("Procesando transacción...");
   
+  const campos = getCampos();
+  const origenAbrev = campos.$origen.val();
+  const destinoAbrev = campos.$destino.val();
+  
+  const moneda_origen_id = obtenerIdMoneda(origenAbrev);
+  const moneda_destino_id = obtenerIdMoneda(destinoAbrev);
+  
+  console.log("ID origen:", moneda_origen_id, "ID destino:", moneda_destino_id);
+  
+  // Validar que se encontraron los IDs
+  if (!moneda_origen_id || !moneda_destino_id) {
+    mostrarMensaje("⚠️ Error", "No se pudieron encontrar los IDs de las monedas");
+    return;
+  }
+
+  const email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
+  if (email_cliente_operativo != "") {
+
+    // PASO 1: Guardar en BD como PENDIENTE
+    const payloadLocal = {
+      usuario_id: "{{ request.user.id }}",
+      monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
+      tipo: campos.op === "venta" ? "compra" : "venta",
+      estado: "pendiente",
+      moneda_origen_id: moneda_origen_id,
+      moneda_destino_id: moneda_destino_id,
+      tasa_usada: parseFloat(PB_MONEDA),
+      tasa_ref_id: TASA_REF_ID,
+    };
+    
+    console.log("Guardando en BD LOCAL:", payloadLocal);
+
+    fetch("{% url 'guardar_transaccion' %}", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      },
+      body: JSON.stringify(payloadLocal),
+    })
+    .then(resp => resp.json())
+    .then(localResp => {
+      console.log("Guardada en BD:", localResp);
+      
+      if (localResp.success) {
+        const transaccionId = localResp.id;
+        
+        // PASO 2: Enviar al banco
+        const transaccionData = {
+          email: "{{ email_cliente_operativo}}",
+          monto: campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val(),
+          moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
+          tipo: campos.op === "venta" ? "compra" : "venta",
+          estado: "aceptada",
+          referencia: "TX-" + Date.now(),
+          motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`
+        };
+        
+        console.log("Enviando al banco:", transaccionData);
+
+        fetch("http://127.0.0.1:8001/transaccion/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(transaccionData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          console.log("Respuesta del banco:", data);
+          
+          // PASO 3: Decidir estado final
+          let estadoFinal = "pendiente";
+          if (data.estado === "aceptada") {
+            estadoFinal = "completada";
+          } else if (data.estado === "rechazada") {
+            estadoFinal = "cancelada";
+          }
+
+          // PASO 4: Actualizar estado en BD
+          const payloadActualizacion = {
+            transaccion_id: transaccionId,
+            nuevo_estado: estadoFinal
+          };
+
+          fetch("{% url 'actualizar_estado_transaccion' %}", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify(payloadActualizacion),
+          })
+          .then(resp => resp.json())
+          .then(updateResp => {
+            console.log("Estado actualizado:", updateResp);
+            
+            if (updateResp.success) {
+              if (estadoFinal === "completada") {
+                $("#modal-pin").fadeOut();
+                $("#modal-exito").fadeIn().css("display", "flex");
+              } else {
+                mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco");
+              }
+            } else {
+              mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");
+            }
+          })
+          .catch(err => {
+            console.error("Error actualizando estado:", err);
+            mostrarMensaje("⚠️ Error", "Error al actualizar el estado de la transacción");
+          });
+        })
+        .catch(err => {
+          console.error("Error enviando transacción:", err);
+          
+          // Si falla el banco, actualizar a "cancelada"
+          const payloadError = {
+            transaccion_id: transaccionId,
+            nuevo_estado: "cancelada"
+          };
+          
+          fetch("{% url 'actualizar_estado_transaccion' %}", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify(payloadError),
+          });
+          
+          mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+        });
+        
+      } else {
+        mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción inicial");
+      }
+    })
+    .catch(err => {
+      console.error("Error guardando en BD:", err);
+      mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción localmente");
+    });
+
+  } else {
+    console.log("No se encontró el email del cliente operativo.");
+    $("#modal-pin").fadeOut();
+    mostrarMensaje("⚠️ Error", "No se encontró el email del cliente operativo.");
+  }
 }
 
 
-  $(".pin-digit").on("input", function(){ let next=$(this).next(".pin-digit"); if(this.value.length && next.length) next.focus(); });
-  $(".btn-modal-pin").click(function(e){
-    console.log("submit metodo pago");
-    let pinIngresado = ""; 
-    $(".pin-digit").each(function(){ pinIngresado += $(this).val(); });
-    if(pinIngresado==="1234"){
-      console.log("ingreso el pin 1234");
-        // 🔹 Construir el JSON de transacción
-        
-        const campos = getCampos(); 
-        email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
-        if(email_cliente_operativo != ""){
-        const transaccionData = {
-            email: "{{ email_cliente_operativo}}",  // o donde tengas el email del cliente logueado
-            monto: campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val(),
-            moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
-            tipo: campos.op === "venta" ? "compra" : "venta",
-            estado: "aceptada",
-            referencia: "TX-" + Date.now(),
-            motivo: `Cambio de ${$("#origen-compra").val()}}`
-        };
-        console.log("envio la transaccion al banco:", transaccionData);
-        // 🔹 Enviar al banco
-          fetch("http://127.0.0.1:8001/transaccion/", {
-                      method: "POST",
-                      headers: {
-                          "Content-Type": "application/json",
-                      },
-                      body: JSON.stringify(transaccionData)
-                  })
-                  .then(resp => resp.json())
-                  .then(data => {
-                      console.log("Respuesta del banco:", data);
-
-                      if(data.estado === "aceptada"){
-                          $("#modal-pin").fadeOut(); 
-                          $("#modal-exito").fadeIn().css("display","flex");
-                      } else {
-                          mostrarMensaje("Transacción rechazada:", data.mensaje || "Error al conectar con el banco");
-                      }
-                  })
-                  .catch(err => {
-                      console.error("Error enviando transacción:", err);
-                      mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
-                
-                  });
-        }else{
-          console.log("No se encontró el email del cliente operativo.");
-          $("#modal-pin").fadeOut(); 
-          mostrarMensaje("⚠️ Error", "No se encontró el email del cliente operativo.");
-        }
-        
-
-    } else {
-        $("#mensaje-pin").fadeIn(); 
-        $(".pin-digit").val("").first().focus();
-        console.log("pin incorrecto");
-    }
-    $(".pin-digit").val("");
-});
-  
-
-
-  $("#btn-cerrar-exito").click(function(){ 
-    $("#modal-exito").fadeOut(); 
-    $(".input-text").val("");
-  });
-
-  // Filtro tabla
-  function aplicarFiltroUnico(){
-    const columna=$('#filtro-columna').val(), query=$('#filtro-general').val().toLowerCase();
-    $('.tabla-transacciones tbody tr').each(function(){
-      const t=$(this); let valor='';
-      switch(columna){
-        case 'fecha': valor=t.find('td:nth-child(2)').text().toLowerCase(); break;
-        case 'monto': valor=t.find('td:nth-child(3)').text().toLowerCase(); break;
-        case 'estado': valor=t.find('td:nth-child(4)').text().toLowerCase(); break;
-        case 'tipo': valor=t.find('td:nth-child(5)').text().toLowerCase(); break;
-      }
-      t.toggle(valor.includes(query));
+    $("#btn-cerrar-exito").click(function () {
+      $("#modal-exito").fadeOut();
+      $(".input-text").val("");
     });
-  }
-  $('#filtro-general, #filtro-columna').on('input change',aplicarFiltroUnico);
 
-  // Chart.js
-  const ctx=document.getElementById('grafico-transacciones').getContext('2d');
-  const dataTransacciones=[
-    { dia:'15/09', tipo:'Compra', monto:1200 },
-    { dia:'15/09', tipo:'Venta', monto:500 },
-    { dia:'14/09', tipo:'Venta', monto:850 },
-    { dia:'13/09', tipo:'Compra', monto:5000 },
-    { dia:'12/09', tipo:'Venta', monto:3300 },
-  ];
-  new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:dataTransacciones.map(d=>d.dia),
-      datasets:[{
-        label:'Monto de transacción',
-        data:dataTransacciones.map(d=>d.monto),
-        backgroundColor:dataTransacciones.map(d=>d.tipo==='Compra'?'#16a34a':'#dc2626')
-      }]
-    },
-    options:{ responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+    // Filtro tabla
+    function aplicarFiltroUnico() {
+      const columna = $('#filtro-columna').val(), query = $('#filtro-general').val().toLowerCase();
+      $('.tabla-transacciones tbody tr').each(function () {
+        const t = $(this); let valor = '';
+        switch (columna) {
+          case 'fecha': valor = t.find('td:nth-child(2)').text().toLowerCase(); break;
+          case 'monto': valor = t.find('td:nth-child(3)').text().toLowerCase(); break;
+          case 'estado': valor = t.find('td:nth-child(4)').text().toLowerCase(); break;
+          case 'tipo': valor = t.find('td:nth-child(5)').text().toLowerCase(); break;
+        }
+        t.toggle(valor.includes(query));
+      });
+    }
+    $('#filtro-general, #filtro-columna').on('input change', aplicarFiltroUnico);
+
+    // Chart.js
+    const ctx = document.getElementById('grafico-transacciones').getContext('2d');
+    const dataTransacciones = [
+      { dia: '15/09', tipo: 'Compra', monto: 1200 },
+      { dia: '15/09', tipo: 'Venta', monto: 500 },
+      { dia: '14/09', tipo: 'Venta', monto: 850 },
+      { dia: '13/09', tipo: 'Compra', monto: 5000 },
+      { dia: '12/09', tipo: 'Venta', monto: 3300 },
+    ];
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: dataTransacciones.map(d => d.dia),
+        datasets: [{
+          label: 'Monto de transacción',
+          data: dataTransacciones.map(d => d.monto),
+          backgroundColor: dataTransacciones.map(d => d.tipo === 'Compra' ? '#16a34a' : '#dc2626')
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+
   });
-
-});
 </script>
 
 <style>
-/* (copié exactamente tu CSS) */
-.dashboard-grid{display:grid;grid-template-columns:minmax(300px,1fr) minmax(350px,1.2fr);gap:2rem;max-width:1200px;margin:2rem auto;}
-.col-left{display:flex;flex-direction:column;justify-content:space-between;}
-.col-right{display:flex;flex-direction:column;gap:1rem;}
-.bloque-izquierdo{display:flex;flex-direction:column;gap:1rem;justify-content:center;}
-.conversor-container{padding:1.5rem;background:#fff;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,0.08);text-align:center;}
-.title{color:#1e2d70;margin-bottom:1rem;font-size:1.4rem;font-weight:600;}
-.conversor-form{display:flex;flex-direction:column;gap:1rem;}
-.fila{display:flex;align-items:center;gap:0.5rem;}
-.input-select,.input-text{padding:0.6rem 0.8rem;border-radius:10px;border:1px solid #ddd;font-size:0.95rem;flex:1;}
-.input-text.readonly{background:#f4f6fb;color:#555;cursor:not-allowed;}
-.btn-convertir{background:#5d5fef;color:#fff;font-weight:600;border:none;border-radius:10px;padding:0.8rem;cursor:pointer;transition:0.3s;}
-.btn-convertir:hover{background:#4a4cd9;}
-.operacion-toggle{justify-content:center;gap:1rem;display:flex;margin-bottom:0.5rem;}
-.toggle-label{cursor:pointer;font-weight:500;}
-.toggle-label input{margin-right:0.3rem;}
-.input-icon-wrapper{position:relative;}
-.input-icon-wrapper .icono{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:1.2rem;pointer-events:none;}
-.input-icon-wrapper .input-select{padding-left:35px;}
-.transacciones-container{padding:1.5rem;background:#fff;border-radius:16px;box-shadow:0 6px 20px rgba(0,0,0,0.08);}
-.tabla-transacciones{width:100%;border-collapse:collapse;margin-top:1rem;}
-.tabla-transacciones th,.tabla-transacciones td{padding:0.8rem;border-bottom:1px solid #eee;text-align:center;font-size:0.9rem;}
-.tabla-transacciones tbody tr:nth-child(even){background:#f9f9f9;}
-.tabla-transacciones td.tipo-compra::before{content:"🟢 ";}
-.tabla-transacciones td.tipo-venta::before{content:"🔴 ";}
-.estado.completado{color:#16a34a;font-weight:600;}
-.estado.pendiente{color:#ca8a04;font-weight:600;}
-.estado.cancelado{color:#dc2626;font-weight:600;}
-.indicadores{display:flex;justify-content:space-around;gap:1rem;padding:1rem;border-radius:12px;}
-.indicador{text-align:center;}
-.indicador .numero{font-size:1.3rem;font-weight:600;color:#1e2d70;}
-.indicador .label{font-size:0.85rem;color:#555;}
-.estadisticas-rapidas{padding:1rem;background:#f9f9f9;border-radius:12px;}
-.estadisticas-rapidas h3{margin-bottom:0.5rem;font-size:1.1rem;color:#1e2d70;}
-.filtro-transacciones{display:flex;gap:0.5rem;margin:1rem 0;}
-.filtro-transacciones .input-select,.filtro-transacciones .input-text{flex:1;padding:0.6rem 0.8rem;border-radius:10px;border:1px solid #ddd;}
-.modal {display: none;position: fixed;inset: 0;background: rgba(0,0,0,0.5);justify-content: center;align-items: center;z-index: 9999;}
-.modal-content {background: #fff;padding: 2rem 1.5rem;border-radius: 12px;max-width: 400px;width: 90%;text-align: center;box-shadow: 0 6px 20px rgba(0,0,0,0.25);position: relative;}
-.modal-content button {margin: 0.5rem;padding:0.6rem 1rem;border:none;border-radius:8px;background:#5d5fef;color:#fff;cursor:pointer;transition:0.3s;}
-.modal-content button:hover{background:#4a4cd9;}
-#mensaje-pin { display: none; font-weight:600; color:red; margin-bottom:0.5rem; }
-.pin-container{display:flex;justify-content:space-between;gap:0.5rem;margin-bottom:1rem;}
-.pin-container .pin-digit{width:50px;height:50px;text-align:center;font-size:1.4rem;border:1px solid #ddd;border-radius:8px;}
-.modal-content .close {position: absolute;top: 10px;right: 15px;font-size: 1.5rem;font-weight: bold;color: #555;cursor: pointer;transition: 0.2s;}
-.modal-content .close:hover {color: #dc2626;}
-#modal-mensaje .modal-content {
-  max-width: 350px;
-  text-align: center;
-  padding: 1.5rem 1rem;
-}
-#modal-mensaje .modal-content button {
-  margin-top: 1rem;
-}
-.indicador-card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 1.5rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-            border: 1px solid rgba(30, 45, 112, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) minmax(350px, 1.2fr);
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+  }
+  .col-left {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .col-right {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .bloque-izquierdo {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    justify-content: center;
+  }
+  .conversor-container {
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    text-align: center;
+  }
+  .title {
+    color: #1e2d70;
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+  .conversor-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .fila {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .input-select,
+  .input-text {
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+    font-size: 0.95rem;
+    flex: 1;
+  }
+  .input-text.readonly {
+    background: #f4f6fb;
+    color: #555;
+    cursor: not-allowed;
+  }
+  .btn-convertir {
+    background: #5d5fef;
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    padding: 0.8rem;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .btn-convertir:hover {
+    background: #4a4cd9;
+  }
+  .operacion-toggle {
+    justify-content: center;
+    gap: 1rem;
+    display: flex;
+    margin-bottom: 0.5rem;
+  }
+  .toggle-label {
+    cursor: pointer;
+    font-weight: 500;
+  }
+  .toggle-label input {
+    margin-right: 0.3rem;
+  }
+  .input-icon-wrapper {
+    position: relative;
+  }
+  .input-icon-wrapper .icono {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    pointer-events: none;
+  }
+  .input-icon-wrapper .input-select {
+    padding-left: 35px;
+  }
+  .transacciones-container {
+    padding: 1.5rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+  }
+  .tabla-transacciones {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  .tabla-transacciones th,
+  .tabla-transacciones td {
+    padding: 0.8rem;
+    border-bottom: 1px solid #eee;
+    text-align: center;
+    font-size: 0.9rem;
+  }
+  .tabla-transacciones tbody tr:nth-child(even) {
+    background: #f9f9f9;
+  }
+  .tabla-transacciones td.tipo-compra::before {
+    content: "🟢 ";
+  }
+  .tabla-transacciones td.tipo-venta::before {
+    content: "🔴 ";
+  }
+  .estado.completado {
+    color: #16a34a;
+    font-weight: 600;
+  }
+  .estado.pendiente {
+    color: #ca8a04;
+    font-weight: 600;
+  }
+  .estado.cancelado {
+    color: #dc2626;
+    font-weight: 600;
+  }
+  .indicadores {
+    display: flex;
+    justify-content: space-around;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  .indicador {
+    text-align: center;
+  }
+  .indicador .numero {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #1e2d70;
+  }
+  .indicador .label {
+    font-size: 0.85rem;
+    color: #555;
+  }
+  .estadisticas-rapidas {
+    padding: 1rem;
+    background: #f9f9f9;
+    border-radius: 12px;
+  }
+  .estadisticas-rapidas h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: #1e2d70;
+  }
+  .filtro-transacciones {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+  .filtro-transacciones .input-select,
+  .filtro-transacciones .input-text {
+    flex: 1;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    border: 1px solid #ddd;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+  .modal-content {
+    background: #fff;
+    padding: 2rem 1.5rem;
+    border-radius: 12px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    position: relative;
+  }
+  .modal-content button {
+    margin: 0.5rem;
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: #5d5fef;
+    color: #fff;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  .modal-content button:hover {
+    background: #4a4cd9;
+  }
+  #mensaje-pin {
+    display: none;
+    font-weight: 600;
+    color: red;
+    margin-bottom: 0.5rem;
+  }
+  .pin-container {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .pin-container .pin-digit {
+    width: 50px;
+    height: 50px;
+    text-align: center;
+    font-size: 1.4rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+  }
+  .modal-content .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #555;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+  .modal-content .close:hover {
+    color: #dc2626;
+  }
+  #modal-mensaje .modal-content {
+    max-width: 350px;
+    text-align: center;
+    padding: 1.5rem 1rem;
+  }
+  #modal-mensaje .modal-content button {
+    margin-top: 1rem;
+  }
+  .indicador-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(30, 45, 112, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
 
-        .indicador-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-        }
+  .indicador-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+  }
 
-        .indicador-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #5d5fef, #4a4cd9);
-        }
+  .indicador-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #5d5fef, #4a4cd9);
+  }
 
-        .indicador-icon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #f4f6fb, #e8ecf7);
-            border-radius: 12px;
-            font-size: 1.5rem;
-        }
+  .indicador-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #f4f6fb, #e8ecf7);
+    border-radius: 12px;
+    font-size: 1.5rem;
+  }
 
-        .indicador-content {
-            flex: 1;
-        }
+  .indicador-content {
+    flex: 1;
+  }
 
-        .numero {
-            display: block;
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #1e2d70;
-            margin-bottom: 0.25rem;
-        }
+  .numero {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e2d70;
+    margin-bottom: 0.25rem;
+  }
 
-        .label {
-            display: block;
-            font-size: 0.8rem;
-            color: #666;
-            font-weight: 500;
-        }
+  .label {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    font-weight: 500;
+  }
 
-        .trend-indicator {
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-top: 0.25rem;
-        }
+  .trend-indicator {
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+  }
 
-        .trend-indicator.up {
-            color: #16a34a;
-        }
+  .trend-indicator.up {
+    color: #16a34a;
+  }
 
-        .trend-indicator.neutral {
-            color: #666;
-        }
-@media(max-width:992px){.dashboard-grid{grid-template-columns:1fr;}.fila{flex-direction:column;align-items:stretch;gap:0.5rem;}.input-icon-wrapper .input-select{width:100%;}.indicadores{flex-wrap: wrap;justify-content:center;}.indicador{flex:1 1 45%;margin-bottom:1rem;}.col-right{margin-top:2rem;}}
+  .trend-indicator.neutral {
+    color: #666;
+  }
+  @media (max-width: 992px) {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    .fila {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+    .input-icon-wrapper .input-select {
+      width: 100%;
+    }
+    .indicadores {
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .indicador {
+      flex: 1 1 45%;
+      margin-bottom: 1rem;
+    }
+    .col-right {
+      margin-top: 2rem;
+    }
+  }
 </style>
 
 {% endblock %}

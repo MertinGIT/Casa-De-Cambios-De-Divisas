@@ -207,7 +207,6 @@
             alert('Por favor seleccione un método de pago');
             return;
         }
-
         // Recopilar datos del formulario según el método
         const datosTransaccion = {
             metodo: metodoSeleccionado.value,
@@ -237,6 +236,17 @@
         cerrarModalPago();
         mostrarModalPin();
     }
+  // Confirmar método de pago y generar JSON simulado
+  $("#form-metodo-pago").submit(function(e){
+    
+      e.preventDefault();
+      let medioId = $("input[name='medio']:checked").val();
+      if(!medioId){
+          alert("Seleccione un medio de pago");
+          return;
+      }
+      
+      let detalles = $("#detalle-pago").val();
 
     // Event listeners para mostrar formularios según método seleccionado
     document.addEventListener('DOMContentLoaded', function() {
@@ -281,7 +291,6 @@
             }
             e.target.value = value;
         });
-
         // Solo números para CVV
         document.getElementById('cvv').addEventListener('input', function(e) {
             e.target.value = e.target.value.replace(/[^0-9]/g, '');
@@ -294,6 +303,8 @@
             cerrarModalPago();
         }
     });
+  
+});
 </script>
 
 <style>
