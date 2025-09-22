@@ -857,3 +857,33 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+
+
+#Comunicacion via https con el backend
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def login_api(request):
+    if request.method == "POST":
+        import json
+        data = json.loads(request.body.decode("utf-8"))
+        username = data.get("username")
+        password = data.get("password")
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return JsonResponse({
+                "success": True,
+                "message": "Login exitoso",
+                "redirect_url": "http://127.0.0.1:8001/tauser_menu/"
+            })
+        else:
+            return JsonResponse({
+                "success": False,
+                "error": "Credenciales inválidas"
+            }, status=400)
+
+    return JsonResponse({"error": "Método no permitido"}, status=405)

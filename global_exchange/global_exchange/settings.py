@@ -91,11 +91,13 @@ INSTALLED_APPS = [
     'metodos_pagos',
     'cliente_usuario',
     'operaciones',
+    'corsheaders',
 ]
 # ============================================================================
 # Middleware
 # ============================================================================
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',   # <- Debe ir primero
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -107,6 +109,10 @@ MIDDLEWARE = [
     'roles_permisos.middleware.RoleBasedMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8001",  # donde corre tu frontend tauser
+]
+CORS_ALLOW_CREDENTIALS = True
 # ============================================================================
 # Configuración de plantillas
 # ============================================================================
