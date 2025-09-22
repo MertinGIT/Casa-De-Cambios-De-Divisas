@@ -11,4 +11,4 @@ tzdata==2025.2
 sphinx==8.2.3
 sphinx-rtd-theme==3.0.2
 gunicorn==23.0.0
-django-cors-headers>=3.13.0
+django-cors-headers==4.9.0

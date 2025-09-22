@@ -1,0 +1,353 @@
+<!-- MODAL ÉXITO -->
+    <div id="modal-exito" class="modal-exito">
+        <div class="modal-overlay" onclick="cerrarModalExito()"></div>
+        <div class="modal-content-exito">
+            <div class="modal-body-exito">
+                <div class="success-animation">
+                    <div class="success-checkmark">
+                        <div class="check-icon">
+                            <span class="icon-line line-tip"></span>
+                            <span class="icon-line line-long"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 class="success-title">¡Transacción exitosa!</h3>
+                <p class="success-message">Su operación se completó correctamente y será procesada en los próximos minutos.</p>
+                
+                <div class="success-details">
+                    <div class="detail-item">
+                        <span class="detail-label">ID de transacción:</span>
+                        <span class="detail-value" id="transaction-id">#TX-1728392847</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Tiempo estimado:</span>
+                        <span class="detail-value">2-3 minutos</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Estado:</span>
+                        <span class="detail-value" style="color: #16a34a;">Procesando</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer-exito">
+                <button class="btn-modal-exito secondary" onclick="descargarComprobante()">
+                    <span class="btn-icon">📄</span>
+                    <span>Descargar comprobante</span>
+                </button>
+                <button class="btn-modal-exito primary" onclick="cerrarModalExito()">
+                    <span>Continuar</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    function mostrarModalExito() {
+        const modal = document.getElementById('modal-exito');
+        modal.style.display = 'flex';
+        
+        // Animación de entrada
+        const content = modal.querySelector('.modal-content-exito');
+        content.style.transform = 'scale(0.7) translateY(-50px)';
+        content.style.opacity = '0';
+        
+        requestAnimationFrame(() => {
+            content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            content.style.transform = 'scale(1) translateY(0)';
+            content.style.opacity = '1';
+        });
+
+        // Generar ID de transacción único
+        const transactionId = '#TX-' + Date.now();
+        document.getElementById('transaction-id').textContent = transactionId;
+    }
+
+    function cerrarModalExito() {
+        const modal = document.getElementById('modal-exito');
+        const content = modal.querySelector('.modal-content-exito');
+        
+        content.style.transition = 'all 0.2s ease-out';
+        content.style.transform = 'scale(0.7) translateY(-50px)';
+        content.style.opacity = '0';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 200);
+    }
+
+    function descargarComprobante() {
+        // Simular descarga de comprobante
+        const link = document.createElement('a');
+        const transactionId = document.getElementById('transaction-id').textContent;
+        
+        // Crear contenido del comprobante
+        const comprobanteContent = `
+COMPROBANTE DE TRANSACCIÓN
+${transactionId}
+
+Fecha: ${new Date().toLocaleString()}
+Tipo: Compra USD
+Monto entregado: 735,000 PYG
+Monto recibido: $100.00 USD
+Tasa: 7,350 PYG
+Comisión: 3,675 PYG (0.5%)
+
+Estado: Procesando
+Tiempo estimado: 2-3 minutos
+
+¡Gracias por usar nuestros servicios!
+        `;
+        
+        const blob = new Blob([comprobanteContent], { type: 'text/plain' });
+        link.href = URL.createObjectURL(blob);
+        link.download = `comprobante_${transactionId.replace('#', '')}.txt`;
+        link.click();
+        
+        // Cleanup
+        URL.revokeObjectURL(link.href);
+    }
+
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarModalExito();
+        }
+    });
+
+    // Auto cerrar después de 10 segundos si no hay interacción
+    let autoCloseTimer;
+    
+    function iniciarAutoClose() {
+        clearTimeout(autoCloseTimer);
+        autoCloseTimer = setTimeout(() => {
+            cerrarModalExito();
+        }, 10000);
+    }
+
+    // Cancelar auto close si hay interacción
+    document.getElementById('modal-exito').addEventListener('click', function() {
+        clearTimeout(autoCloseTimer);
+    });
+</script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f4f6fb;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .demo-btn {
+        background: #5d5fef;
+        color: white;
+        border: none;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+        background: #4a4cd9;
+        transform: translateY(-2px);
+    }
+
+    /* MODAL ÉXITO */
+    .modal-exito {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        padding: 1rem;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content-exito {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 1;
+        max-width: 400px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-body-exito {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .modal-footer-exito {
+        padding: 1rem 2rem 2rem;
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .success-animation {
+        margin-bottom: 2rem;
+    }
+
+    .success-checkmark {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        position: relative;
+    }
+
+    .check-icon {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        border-radius: 50%;
+        box-sizing: content-box;
+        border: 4px solid #16a34a;
+        background: #f0fdf4;
+    }
+
+    .icon-line {
+        height: 5px;
+        background-color: #16a34a;
+        display: block;
+        border-radius: 2px;
+        position: absolute;
+        z-index: 10;
+    }
+
+    .icon-line.line-tip {
+        top: 46px;
+        left: 14px;
+        width: 25px;
+        transform: rotate(45deg);
+        animation: icon-line-tip 0.75s;
+    }
+
+    .icon-line.line-long {
+        top: 38px;
+        right: 8px;
+        width: 47px;
+        transform: rotate(-45deg);
+        animation: icon-line-long 0.75s;
+    }
+
+    @keyframes icon-line-tip {
+        0% { width: 0; left: 1px; top: 19px; }
+        54% { width: 0; left: 1px; top: 19px; }
+        70% { width: 50px; left: -8px; top: 37px; }
+        84% { width: 17px; left: 21px; top: 48px; }
+        100% { width: 25px; left: 14px; top: 46px; }
+    }
+
+    @keyframes icon-line-long {
+        0% { width: 0; right: 46px; top: 54px; }
+        65% { width: 0; right: 46px; top: 54px; }
+        84% { width: 55px; right: 0px; top: 35px; }
+        100% { width: 47px; right: 8px; top: 38px; }
+    }
+
+    .success-title {
+        color: #1e2d70;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+    }
+
+    .success-message {
+        color: #666;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        margin-bottom: 2rem;
+    }
+
+    .success-details {
+        background: #f4f6fb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e8ecf7;
+        margin-bottom: 1rem;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+    }
+
+    .detail-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .detail-label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .detail-value {
+        color: #1e2d70;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .btn-modal-exito {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: none;
+        border-radius: 12px;
+        padding: 0.9rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+
+    .btn-modal-exito.primary {
+        background: #5d5fef;
+        color: #fff;
+    }
+
+    .btn-modal-exito.primary:hover {
+        background: #4a4cd9;
+        transform: translateY(-1px);
+    }
+
+    .btn-modal-exito.secondary {
+        background: #f4f6fb;
+        color: #666;
+        border: 1px solid #e8ecf7;
+    }
+
+    .btn-modal-exito.secondary:hover {
+        background: #e8ecf7;
+        color: #1e2d70;
+    }
+
+    .btn-icon {
+        font-size: 1rem;
+    }
+
+</style>

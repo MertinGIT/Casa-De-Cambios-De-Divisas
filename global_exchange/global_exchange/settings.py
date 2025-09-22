@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     'cliente_usuario',
     'operaciones',
     'corsheaders',
+    'corsheaders',
 ]
 # ============================================================================
 # Middleware
@@ -158,6 +159,13 @@ DATABASES = {
     }
 }
 
+# Permitir solo tu frontend
+#CORS_ALLOWED_ORIGINS = [
+#    "http://localhost:8000",
+#]
+CORS_ALLOW_ALL_ORIGINS = True
+# ⚠️ Si querés permitir todos (solo en desarrollo):
+# CORS_ALLOW_ALL_ORIGINS = True
 
 
 # ============================================================================
