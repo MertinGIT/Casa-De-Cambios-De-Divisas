@@ -1,141 +1,649 @@
-<!-- MODAL MÉTODO DE PAGO -->
-<div id="modal-metodo" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>Seleccione un método de pago</h3>
-    <form id="form-metodo-pago">
-      <div id="lista-metodos" class="lista-metodos">
-        {% for medio in medios %}
-        <label>
-          <input type="radio" class="input-radio" name="medio" value="{{ medio.id }}">
-          {{ medio.tipo|capfirst }}: {{ medio.nombre }} ({{ medio.moneda }}) - Saldo: {{ medio.saldo }}
-        </label>
-        {% empty %}
-        <p>No hay medios de pago disponibles.</p>
-        {% endfor %}
-      </div>
+<!-- MODAL MÉTODOS DE PAGO -->
+<div id="modal-metodo" class="modal-exito">
+    <div class="modal-overlay" onclick="cerrarModalPago()"></div>
+    <div class="modal-content-exito">
+        <div class="modal-header-pago">
+            <span class="close-btn" onclick="cerrarModalPago()">&times;</span>
+            <h3 class="modal-title">Seleccione método de pago</h3>
+            <p class="modal-subtitle">Total a pagar: <span class="precio-total">$150.00</span></p>
+        </div>
 
-      <div id="info-extra" style="display:none; margin-top:1rem;">
-        <label>Detalles adicionales:</label>
-        <textarea id="detalle-pago" rows="3" placeholder="Datos de cuenta, tarjeta, etc."></textarea>
-      </div>
+        <div class="modal-body-exito">
+            <form id="form-metodo-pago">
+                <!-- Métodos de pago -->
+                <div class="metodos-container">
+                    <div class="metodo-item">
+                        <input type="radio" id="tarjeta" name="metodo" value="tarjeta" class="metodo-radio">
+                        <label for="tarjeta" class="metodo-label">
+                            <div class="metodo-icon">💳</div>
+                            <div class="metodo-info">
+                                <span class="metodo-nombre">Tarjeta de crédito/débito</span>
+                                <span class="metodo-desc">Visa, Mastercard, American Express</span>
+                            </div>
+                            <div class="metodo-check">✓</div>
+                        </label>
+                    </div>
 
-      <button type="submit" class="btn-confirmar">Confirmar Método</button>
-    </form>
-  </div>
+                    <div class="metodo-item">
+                        <input type="radio" id="billetera" name="metodo" value="billetera" class="metodo-radio">
+                        <label for="billetera" class="metodo-label">
+                            <div class="metodo-icon">📱</div>
+                            <div class="metodo-info">
+                                <span class="metodo-nombre">Billetera digital</span>
+                                <span class="metodo-desc">PayPal, Tigo Money, Personal Pay</span>
+                            </div>
+                            <div class="metodo-check">✓</div>
+                        </label>
+                    </div>
+
+                    <div class="metodo-item">
+                        <input type="radio" id="transferencia" name="metodo" value="transferencia" class="metodo-radio">
+                        <label for="transferencia" class="metodo-label">
+                            <div class="metodo-icon">🏦</div>
+                            <div class="metodo-info">
+                                <span class="metodo-nombre">Transferencia bancaria</span>
+                                <span class="metodo-desc">Banco Itaú, Banco Continental</span>
+                            </div>
+                            <div class="metodo-check">✓</div>
+                        </label>
+                    </div>
+
+                    <div class="metodo-item">
+                        <input type="radio" id="efectivo" name="metodo" value="efectivo" class="metodo-radio">
+                        <label for="efectivo" class="metodo-label">
+                            <div class="metodo-icon">💵</div>
+                            <div class="metodo-info">
+                                <span class="metodo-nombre">Pago en efectivo</span>
+                                <span class="metodo-desc">Pago contra entrega</span>
+                            </div>
+                            <div class="metodo-check">✓</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Información del método seleccionado -->
+                <div id="info-pago" class="info-pago" style="display: none;">
+                    
+                    <!-- Formulario para tarjeta -->
+                    <div id="form-tarjeta" class="form-metodo" style="display: none;">
+                        <h4 class="form-title">Información de la tarjeta</h4>
+                        <div class="form-group">
+                            <label for="numero-tarjeta">Número de tarjeta</label>
+                            <input type="text" id="numero-tarjeta" placeholder="1234 5678 9012 3456" maxlength="19">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="fecha-exp">Fecha de expiración</label>
+                                <input type="text" id="fecha-exp" placeholder="MM/AA" maxlength="5">
+                            </div>
+                            <div class="form-group">
+                                <label for="cvv">CVV</label>
+                                <input type="text" id="cvv" placeholder="123" maxlength="4">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="nombre-tarjeta">Nombre del titular</label>
+                            <input type="text" id="nombre-tarjeta" placeholder="Como aparece en la tarjeta">
+                        </div>
+                    </div>
+
+                    <!-- Formulario para billetera digital -->
+                    <div id="form-billetera" class="form-metodo" style="display: none;">
+                        <h4 class="form-title">Billetera digital</h4>
+                        <div class="form-group">
+                            <label for="tipo-billetera">Seleccionar billetera</label>
+                            <select id="tipo-billetera">
+                                <option value="">Seleccionar...</option>
+                                <option value="paypal">PayPal</option>
+                                <option value="tigo">Tigo Money</option>
+                                <option value="personal">Personal Pay</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="email-billetera">Email o número</label>
+                            <input type="text" id="email-billetera" placeholder="usuario@email.com o número de celular">
+                        </div>
+                    </div>
+
+                    <!-- Formulario para transferencia -->
+                    <div id="form-transferencia" class="form-metodo" style="display: none;">
+                        <h4 class="form-title">Transferencia bancaria</h4>
+                        <div class="form-group">
+                            <label for="banco">Banco</label>
+                            <select id="banco">
+                                <option value="">Seleccionar banco...</option>
+                                <option value="itau">Banco Itaú</option>
+                                <option value="continental">Banco Continental</option>
+                                <option value="vision">Visión Banco</option>
+                                <option value="basa">Banco BASA</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cuenta-numero">Número de cuenta</label>
+                            <input type="text" id="cuenta-numero" placeholder="Número de cuenta">
+                        </div>
+                    </div>
+
+                    <!-- Información para efectivo -->
+                    <div id="form-efectivo" class="form-metodo" style="display: none;">
+                        <h4 class="form-title">Pago en efectivo</h4>
+                        <div class="info-efectivo">
+                            <p>✅ El pago se realizará contra entrega</p>
+                            <p>💰 Tenga el monto exacto preparado</p>
+                            <p>📍 La entrega se realizará en la dirección indicada</p>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="modal-footer-exito">
+            <button type="button" class="btn-modal-exito secondary" onclick="cerrarModalPago()">
+                <span>Cancelar</span>
+            </button>
+            <button type="button" class="btn-modal-exito primary" onclick="confirmarPago()" id="btn-confirmar" disabled>
+                <span>Confirmar pago</span>
+            </button>
+        </div>
+    </div>
 </div>
 
-<style>
-.modal {
-  display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.5);
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-}
-.modal-content {
-  background:#fff;
-  padding:2rem 1.5rem;
-  border-radius:12px;
-  max-width:400px;
-  width:90%;
-  position:relative;
-  box-shadow:0 6px 20px rgba(0,0,0,0.25);
-}
-.modal-content .close {
-  position:absolute;
-  top:10px;
-  right:15px;
-  font-size:1.5rem;
-  font-weight:bold;
-  color:#555;
-  cursor:pointer;
-}
-.modal-content .close:hover { color:#dc2626; }
-
-.lista-metodos label {
-  display:block;
-  padding:0.5rem;
-  border:1px solid #ddd;
-  border-radius:8px;
-  margin-bottom:0.5rem;
-  cursor:pointer;
-}
-.lista-metodos input { margin-right:0.5rem; }
-
-.btn-confirmar {
-  margin-top:1rem;
-  padding:0.7rem 1rem;
-  border:none;
-  border-radius:10px;
-  background:#16a34a;
-  color:#fff;
-  cursor:pointer;
-  transition:0.3s;
-}
-.btn-confirmar:hover { background:#15803d; }
-</style>
-
 <script>
-$(document).ready(function(){
+    function mostrarModalPago() {
+        const modal = document.getElementById('modal-metodo');
+        modal.style.display = 'flex';
+        console.log("mostrar modal metodo pago");
+        // Animación de entrada
+        const content = modal.querySelector('.modal-content-exito');
+        content.style.transform = 'scale(0.7) translateY(-50px)';
+        content.style.opacity = '0';
+        
+        requestAnimationFrame(() => {
+            content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            content.style.transform = 'scale(1) translateY(0)';
+            content.style.opacity = '1';
+        });
+    }
 
-  
+    function cerrarModalPago() {
+        const modal = document.getElementById('modal-metodo');
+        const content = modal.querySelector('.modal-content-exito');
+        
+        content.style.transition = 'all 0.2s ease-out';
+        content.style.transform = 'scale(0.7) translateY(-50px)';
+        content.style.opacity = '0';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+            //resetearFormulario();
+        }, 200);
+    }
 
-  // Cerrar modal con la X
-  $(".modal .close").click(function(){
-      $(this).closest(".modal").fadeOut();
-      $("input[name='medio']").prop("checked", false);
-  });
+    function resetearFormulario() {
+        // Limpiar selecciones
+        document.querySelectorAll('input[name="metodo"]').forEach(radio => {
+            radio.checked = false;
+        });
+        
+        // Ocultar formularios
+        document.getElementById('info-pago').style.display = 'none';
+        document.querySelectorAll('.form-metodo').forEach(form => {
+            form.style.display = 'none';
+        });
+        
+        // Deshabilitar botón
+        document.getElementById('btn-confirmar').disabled = true;
+        
+        // Limpiar campos
+        const modal = document.getElementById('modal-metodo');
+        modal('input[type="text"], select').forEach(input => {
+            input.value = '';
+        });
+    }
 
-  // Mostrar detalles extra según tipo de medio
-  $("#lista-medios input[name='medio']").change(function(){
-      let labelText = $(this).parent().text().toLowerCase();
-      if(labelText.includes("tarjeta") || labelText.includes("billetera")){
-          $("#info-extra").slideDown();
-      } else {
-          $("#info-extra").slideUp();
-      }
-  });
+    function confirmarPago() {
+        const metodoSeleccionado = document.querySelector('input[name="metodo"]:checked');
+        if (!metodoSeleccionado) {
+            alert('Por favor seleccione un método de pago');
+            return;
+        }
 
-  // Confirmar método de pago y generar JSON simulado
-  $("#form-metodo-pago").submit(function(e){
-      e.preventDefault();
+        // Recopilar datos del formulario según el método
+        const datosTransaccion = {
+            metodo: metodoSeleccionado.value,
+            timestamp: new Date().toISOString(),
+            total: '$150.00'
+        };
 
-      let medioId = $("input[name='medio']:checked").val();
-      if(!medioId){
-          alert("Seleccione un medio de pago");
-          return;
-      }
+        switch (metodoSeleccionado.value) {
+            case 'tarjeta':
+                datosTransaccion.numeroTarjeta = document.getElementById('numero-tarjeta').value;
+                datosTransaccion.fechaExp = document.getElementById('fecha-exp').value;
+                datosTransaccion.titular = document.getElementById('nombre-tarjeta').value;
+                break;
+            case 'billetera':
+                datosTransaccion.tipoBilletera = document.getElementById('tipo-billetera').value;
+                datosTransaccion.email = document.getElementById('email-billetera').value;
+                break;
+            case 'transferencia':
+                datosTransaccion.banco = document.getElementById('banco').value;
+                datosTransaccion.cuenta = document.getElementById('cuenta-numero').value;
+                break;
+        }
 
-      let detalles = $("#detalle-pago").val();
+        console.log('Datos de transacción:', datosTransaccion);
+        
+        // Cerrar modal de pago y mostrar éxito
+        cerrarModalPago();
+        mostrarModalPin();
+    }
 
-      $("#modal-metodo").fadeOut();
-      $("#modal-pin").fadeIn().css("display","flex");
+    // Event listeners para mostrar formularios según método seleccionado
+    document.addEventListener('DOMContentLoaded', function() {
+        const metodosRadio = document.querySelectorAll('input[name="metodo"]');
+        const infoPago = document.getElementById('info-pago');
+        const btnConfirmar = document.getElementById('btn-confirmar');
 
-      // Datos estáticos simulados
-      const mediosSimulados = {
-          "1": {nombre: "Tarjeta Banco XYZ", tipo: "tarjeta", moneda: "USD", saldo: 1000},
-          "2": {nombre: "Efectivo", tipo: "efectivo", moneda: "PYG", saldo: 5000000},
-          "3": {nombre: "Billetera Digital", tipo: "billetera", moneda: "USD", saldo: 300}
-      };
+        metodosRadio.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Mostrar contenedor de información
+                infoPago.style.display = 'block';
+                
+                // Ocultar todos los formularios
+                document.querySelectorAll('.form-metodo').forEach(form => {
+                    form.style.display = 'none';
+                });
+                
+                // Mostrar el formulario correspondiente
+                const formId = `form-${this.value}`;
+                const targetForm = document.getElementById(formId);
+                if (targetForm) {
+                    targetForm.style.display = 'block';
+                }
+                
+                // Habilitar botón de confirmar
+                btnConfirmar.disabled = false;
+            });
+        });
 
-      let medioSeleccionado = mediosSimulados[medioId] || {nombre:"Desconocido", tipo:"desconocido", moneda:"USD", saldo:0};
+        // Formateo automático para número de tarjeta
+        document.getElementById('numero-tarjeta').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+            e.target.value = formattedValue;
+        });
 
-      // Generamos JSON de la "transferencia"
-      let transferencia = {
-          medio_id: medioId,
-          nombre: medioSeleccionado.nombre,
-          tipo: medioSeleccionado.tipo,
-          moneda: medioSeleccionado.moneda,
-          saldo_disponible: medioSeleccionado.saldo,
-          monto: 5000,   // monto simulado
-          detalles: detalles || ""
-      };
-      $("input[name='medio']").prop("checked", false);
-      console.log("Transacción simulada:", JSON.stringify(transferencia, null, 2));
-  });
+        // Formateo automático para fecha de expiración
+        document.getElementById('fecha-exp').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length >= 2) {
+                value = value.slice(0,2) + '/' + value.slice(2,4);
+            }
+            e.target.value = value;
+        });
 
-});
+        // Solo números para CVV
+        document.getElementById('cvv').addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/[^0-9]/g, '');
+        });
+    });
+
+    // Cerrar con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarModalPago();
+        }
+    });
 </script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f4f6fb;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .demo-btn {
+        background: #5d5fef;
+        color: white;
+        border: none;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+        background: #4a4cd9;
+        transform: translateY(-2px);
+    }
+
+    /* MODAL MÉTODOS DE PAGO */
+    .modal-exito {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        padding: 1rem;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content-exito {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 1;
+        max-width: 450px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header-pago {
+        padding: 2rem 2rem 1rem;
+        text-align: center;
+        position: relative;
+        border-bottom: 1px solid #e8ecf7;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f4f6fb;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #666;
+        transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+        background: #e8ecf7;
+        color: #1e2d70;
+    }
+
+    .modal-title {
+        color: #1e2d70;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .modal-subtitle {
+        color: #666;
+        font-size: 0.95rem;
+    }
+
+    .precio-total {
+        color: #16a34a;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .modal-body-exito {
+        padding: 1.5rem 2rem;
+    }
+
+    .modal-footer-exito {
+        padding: 1rem 2rem 2rem;
+        display: flex;
+        gap: 0.75rem;
+        border-top: 1px solid #e8ecf7;
+    }
+
+    /* MÉTODOS DE PAGO */
+    .metodos-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .metodo-item {
+        margin-bottom: 0.75rem;
+    }
+
+    .metodo-radio {
+        display: none;
+    }
+
+    .metodo-label {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid #e8ecf7;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #fff;
+        position: relative;
+    }
+
+    .metodo-radio:checked + .metodo-label {
+        border-color: #5d5fef;
+        background: #f8f8ff;
+    }
+
+    .metodo-radio:checked + .metodo-label .metodo-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .metodo-label:hover {
+        border-color: #c2c9d6;
+        background: #f9fafc;
+    }
+
+    .metodo-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .metodo-info {
+        flex: 1;
+        text-align: left;
+    }
+
+    .metodo-nombre {
+        display: block;
+        font-weight: 600;
+        color: #1e2d70;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .metodo-desc {
+        display: block;
+        color: #666;
+        font-size: 0.8rem;
+    }
+
+    .metodo-check {
+        width: 20px;
+        height: 20px;
+        background: #5d5fef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    /* FORMULARIOS */
+    .info-pago {
+        background: #f4f6fb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e8ecf7;
+        margin-top: 1rem;
+    }
+
+    .form-title {
+        color: #1e2d70;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-row {
+        display: flex;
+        gap: 1rem;
+    }
+
+    .form-row .form-group {
+        flex: 1;
+    }
+
+    .form-group label {
+        display: block;
+        color: #333;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: border-color 0.3s ease;
+        background: white;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #5d5fef;
+        box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+    }
+
+    .info-efectivo {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #e8ecf7;
+    }
+
+    .info-efectivo p {
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .info-efectivo p:last-child {
+        margin-bottom: 0;
+    }
+
+    /* BOTONES */
+    .btn-modal-exito {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: none;
+        border-radius: 12px;
+        padding: 0.9rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+
+    .btn-modal-exito:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .btn-modal-exito.primary {
+        background: #5d5fef;
+        color: #fff;
+    }
+
+    .btn-modal-exito.primary:hover:not(:disabled) {
+        background: #4a4cd9;
+        transform: translateY(-1px);
+    }
+
+    .btn-modal-exito.secondary {
+        background: #f4f6fb;
+        color: #666;
+        border: 1px solid #e8ecf7;
+    }
+
+    .btn-modal-exito.secondary:hover {
+        background: #e8ecf7;
+        color: #1e2d70;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 480px) {
+        .modal-content-exito {
+            max-width: 95%;
+            margin: 1rem;
+        }
+        
+        .form-row {
+            flex-direction: column;
+            gap: 0;
+        }
+        
+        .modal-header-pago,
+        .modal-body-exito,
+        .modal-footer-exito {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+        
+        .metodo-label {
+            padding: 0.75rem;
+        }
+        
+        .metodo-icon {
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+        }
+        
+        .modal-footer-exito {
+            flex-direction: column;
+        }
+    }
+</style>

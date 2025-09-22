@@ -10,18 +10,36 @@
 
       <!-- Indicadores principales -->
       <section class="indicadores">
-        <div class="indicador">
-          <span class="numero">15</span>
-          <span class="label">Transacciones totales</span>
-        </div>
-        <div class="indicador">
-          <span class="numero">1,350 USD</span>
-          <span class="label">Ganancia estimada</span>
-        </div>
-        <div class="indicador">
-          <span class="numero">Venta</span>
-          <span class="label">Última operación</span>
-        </div>
+        <div class="indicador-card">
+                <div class="indicador-icon">
+                    <i class="icon">📊</i>
+                </div>
+                <div class="indicador-content">
+                    <span class="numero">15</span>
+                    <span class="label">Transacciones totales</span>
+                    <div class="trend-indicator up">+8.2%</div>
+                </div>
+            </div>
+            <div class="indicador-card">
+                <div class="indicador-icon">
+                    <i class="icon">💰</i>
+                </div>
+                <div class="indicador-content">
+                    <span class="numero">1,350 USD</span>
+                    <span class="label">Ganancia estimada</span>
+                    <div class="trend-indicator up">+15.3%</div>
+                </div>
+            </div>
+            <div class="indicador-card">
+                <div class="indicador-icon">
+                    <i class="icon">⚡</i>
+                </div>
+                <div class="indicador-content">
+                    <span class="numero">Venta</span>
+                    <span class="label">Última operación</span>
+                    <div class="trend-indicator neutral">2 min ago</div>
+                </div>
+            </div>
       </section>
 
       <!-- Estadísticas rápidas -->
@@ -162,45 +180,13 @@
 {% include 'operaciones/modalMetodoPago.html' %}
 
 <!-- MODAL CONFIRMACIÓN -->
-<div id="modal-confirmacion" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>Confirmar transacción</h3>
-    <div id="detalle-transaccion" style="text-align:left;margin:1rem 0;font-weight:500;"></div>
-    <div id="mensaje-error-tasa" style="color:red; margin-top: -20px"></div>
-    <button id="btn-confirmar">Continuar</button>
-    <button id="btn-cancelar">Cancelar</button>
-    
-  </div>
-  <!-- Aquí pondremos el mensaje de error -->
-  
-</div>
+{% include 'operaciones/modalConfirmarTransaccion.html' %}
 
 <!-- MODAL PIN -->
-<div id="modal-pin" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>Ingrese su PIN</h3>
-    <p id="mensaje-pin" style="color:red; font-weight:600; display:none; margin-bottom:0.5rem;">PIN incorrecto</p>
-    <div class="pin-container">
-      <input type="text" maxlength="1" class="pin-digit">
-      <input type="text" maxlength="1" class="pin-digit">
-      <input type="text" maxlength="1" class="pin-digit">
-      <input type="text" maxlength="1" class="pin-digit">
-    </div>
-    <button id="btn-verificar-pin">Verificar</button>
-  </div>
-</div>
+{% include 'operaciones/modalPin.html' %}
 
 <!-- MODAL ÉXITO -->
-<div id="modal-exito" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3>✅ Transacción realizada</h33>
-    <p>Su transacción se completó correctamente.</p>
-    <button id="btn-cerrar-exito">Cerrar</button>
-  </div>
-</div>
+{% include 'operaciones/modalExito.html' %}
 
 <!-- MODAL MENSAJE -->
 <div id="modal-mensaje" class="modal">
@@ -409,8 +395,6 @@ $("#btn-cerrar-mensaje, #modal-mensaje .close").click(function(){
             // aquí response es JSON desde tu view
             console.log(response);
             campos.$resultado.val(response.resultado);
-            // abrir modal de confirmación si quieres
-            $("#modal-confirmacion").fadeIn().css("display","flex");
         },
         error: function(xhr){
             mostrarMensaje("⚠️ Error", "Error al realizar la transacción");
@@ -440,7 +424,7 @@ $("#btn-cerrar-mensaje, #modal-mensaje .close").click(function(){
   `;
 
     $("#detalle-transaccion").html(detalleHtml);
-    $("#modal-confirmacion").fadeIn().css("display","flex");
+    mostrarModalConfirmacion();
   });
 
   
@@ -520,16 +504,19 @@ $(document).ready(function() {
 
 
   $(".pin-digit").on("input", function(){ let next=$(this).next(".pin-digit"); if(this.value.length && next.length) next.focus(); });
-  $("#btn-verificar-pin").click(function(){
+  $(".btn-modal-pin").click(function(e){
+    console.log("submit metodo pago");
     let pinIngresado = ""; 
     $(".pin-digit").each(function(){ pinIngresado += $(this).val(); });
-
     if(pinIngresado==="1234"){
       console.log("ingreso el pin 1234");
         // 🔹 Construir el JSON de transacción
+        
         const campos = getCampos(); 
+        email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
+        if(email_cliente_operativo != ""){
         const transaccionData = {
-            email: "{{ email_cliente_operativo }}",  // o donde tengas el email del cliente logueado
+            email: "{{ email_cliente_operativo}}",  // o donde tengas el email del cliente logueado
             monto: campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val(),
             moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
             tipo: campos.op === "venta" ? "compra" : "venta",
@@ -539,37 +526,46 @@ $(document).ready(function() {
         };
         console.log("envio la transaccion al banco:", transaccionData);
         // 🔹 Enviar al banco
+          fetch("http://127.0.0.1:8001/transaccion/", {
+                      method: "POST",
+                      headers: {
+                          "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify(transaccionData)
+                  })
+                  .then(resp => resp.json())
+                  .then(data => {
+                      console.log("Respuesta del banco:", data);
 
-        fetch("http://127.0.0.1:8001/transaccion/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(transaccionData)
-        })
-        .then(resp => resp.json())
-        .then(data => {
-            console.log("Respuesta del banco:", data);
-
-            if(data.estado === "aceptada"){
-                $("#modal-pin").fadeOut(); 
-                $("#modal-exito").fadeIn().css("display","flex");
-            } else {
-                mostrarMensaje("Transacción rechazada:", data.mensaje || "Error al conectar con el banco");
-            }
-        })
-        .catch(err => {
-            console.error("Error enviando transacción:", err);
-            mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
-      
-        });
+                      if(data.estado === "aceptada"){
+                          $("#modal-pin").fadeOut(); 
+                          $("#modal-exito").fadeIn().css("display","flex");
+                      } else {
+                          mostrarMensaje("Transacción rechazada:", data.mensaje || "Error al conectar con el banco");
+                      }
+                  })
+                  .catch(err => {
+                      console.error("Error enviando transacción:", err);
+                      mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+                
+                  });
+        }else{
+          console.log("No se encontró el email del cliente operativo.");
+          $("#modal-pin").fadeOut(); 
+          mostrarMensaje("⚠️ Error", "No se encontró el email del cliente operativo.");
+        }
+        
 
     } else {
         $("#mensaje-pin").fadeIn(); 
         $(".pin-digit").val("").first().focus();
+        console.log("pin incorrecto");
     }
     $(".pin-digit").val("");
 });
+  
+
+
   $("#btn-cerrar-exito").click(function(){ 
     $("#modal-exito").fadeOut(); 
     $(".input-text").val("");
@@ -645,7 +641,7 @@ $(document).ready(function() {
 .estado.completado{color:#16a34a;font-weight:600;}
 .estado.pendiente{color:#ca8a04;font-weight:600;}
 .estado.cancelado{color:#dc2626;font-weight:600;}
-.indicadores{display:flex;justify-content:space-around;gap:1rem;padding:1rem;background:#f4f6fb;border-radius:12px;}
+.indicadores{display:flex;justify-content:space-around;gap:1rem;padding:1rem;border-radius:12px;}
 .indicador{text-align:center;}
 .indicador .numero{font-size:1.3rem;font-weight:600;color:#1e2d70;}
 .indicador .label{font-size:0.85rem;color:#555;}
@@ -670,7 +666,79 @@ $(document).ready(function() {
 #modal-mensaje .modal-content button {
   margin-top: 1rem;
 }
-@media(max-width:992px){.dashboard-grid{grid-template-columns:1fr;}.fila{flex-direction:column;align-items:stretch;gap:0.5rem;}.input-icon-wrapper .input-select{width:100%;}}
+.indicador-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(30, 45, 112, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .indicador-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        }
+
+        .indicador-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #5d5fef, #4a4cd9);
+        }
+
+        .indicador-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #f4f6fb, #e8ecf7);
+            border-radius: 12px;
+            font-size: 1.5rem;
+        }
+
+        .indicador-content {
+            flex: 1;
+        }
+
+        .numero {
+            display: block;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e2d70;
+            margin-bottom: 0.25rem;
+        }
+
+        .label {
+            display: block;
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .trend-indicator {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+
+        .trend-indicator.up {
+            color: #16a34a;
+        }
+
+        .trend-indicator.neutral {
+            color: #666;
+        }
+@media(max-width:992px){.dashboard-grid{grid-template-columns:1fr;}.fila{flex-direction:column;align-items:stretch;gap:0.5rem;}.input-icon-wrapper .input-select{width:100%;}.indicadores{flex-wrap: wrap;justify-content:center;}.indicador{flex:1 1 45%;margin-bottom:1rem;}.col-right{margin-top:2rem;}}
 </style>
 
 {% endblock %}

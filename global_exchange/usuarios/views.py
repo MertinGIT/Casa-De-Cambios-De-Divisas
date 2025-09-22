@@ -84,22 +84,6 @@ def home(request):
     )
     print("tasas:", tasas, flush=True)
 
-
-    # Reorganizar datos en un dict similar a tu data_por_moneda
-    data_por_moneda = {}
-    for tasa in tasas:
-        abrev = tasa.moneda_destino.abreviacion
-        if abrev not in data_por_moneda:
-            data_por_moneda[abrev] = []
-        # Insertar al inicio para que el primero sea el más reciente
-        data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
-        })
-
-    print("data_por_moneda:", data_por_moneda, flush=True)
-
     # Comisiones y segmentos
     COMISION_VTA = 100
     COMISION_COM = 50
@@ -131,7 +115,29 @@ def home(request):
     origen = ""
     destino = ""
     
-    
+    # Reorganizar datos en un dict similar a tu data_por_moneda
+    data_por_moneda = {}
+    for tasa in tasas:
+        abrev = tasa.moneda_destino.abreviacion
+        if abrev not in data_por_moneda:
+            data_por_moneda[abrev] = []
+            
+        # PB_MONEDA según operación
+        PB_MONEDA_VTA = float(tasa.monto_venta)
+        PB_MONEDA_COMP = float(tasa.monto_compra)
+        
+        # Calculamos tasas según fórmula
+        TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
+        
+        # Insertar al inicio para que el primero sea el más reciente
+        data_por_moneda[abrev].insert(0, {
+            "fecha": tasa.vigencia.strftime("%d %b"),
+            "compra": round(TC_COMP, 2),
+            "venta": round(TC_VTA, 2)
+        })
+
+    print("data_por_moneda:", data_por_moneda, flush=True)
     
     if request.method == "POST":
         valor_input = request.POST.get("valor", "").strip()
@@ -460,6 +466,15 @@ def pagina_aterrizaje(request):
         .select_related("moneda_origen", "moneda_destino")
         .order_by("moneda_destino__abreviacion", "-vigencia")
     )
+    
+    # Comisiones y descuento por segmentacion de clientes
+    COMISION_VTA = 100
+    COMISION_COM = 50
+    descuento = 0
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        descuento = float(cliente_operativo.segmentacion.descuento)
 
     # === Reorganizar datos en dict por moneda_destino ===
     data_por_moneda = {}
@@ -467,12 +482,22 @@ def pagina_aterrizaje(request):
         abrev = tasa.moneda_destino.abreviacion
         if abrev not in data_por_moneda:
             data_por_moneda[abrev] = []
+            
+        # PB_MONEDA según operación
+        PB_MONEDA_VTA = float(tasa.monto_venta)
+        PB_MONEDA_COMP = float(tasa.monto_compra)
+        
+        # Calculamos tasas según fórmula
+        TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
+        
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta),
+            "compra": round(TC_COMP, 2),
+            "venta": round(TC_VTA, 2)
         })
+
     print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)
     
     # === Preparar cotizaciones para mostrar en landing (solo más reciente por moneda) ===

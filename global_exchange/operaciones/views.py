@@ -246,8 +246,8 @@ def obtener_clientes_usuario(user,request):
         cliente_operativo = clientes_asociados[0]
 
     # Obtener el email del cliente operativo
-    email_cliente_operativo = cliente_operativo.email if cliente_operativo else None
-    print("email_operativo: ",email_cliente_operativo,flush=True)
+    email_cliente_operativo = cliente_operativo.email if cliente_operativo else ""
+    print("email_operativo: ", email_cliente_operativo, flush=True)
 
 
     return clientes_asociados, cliente_operativo, email_cliente_operativo
