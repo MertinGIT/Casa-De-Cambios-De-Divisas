@@ -9,5 +9,4 @@ urlpatterns = [
     path("guardar-metodo/", views.guardar_metodo_pago, name="guardar_metodo_pago"),
     path("guardar-transaccion/", views.guardar_transaccion, name="guardar_transaccion"),
     path('actualizar-estado-transaccion/', views.actualizar_estado_transaccion, name='actualizar_estado_transaccion'),
-
 ]
