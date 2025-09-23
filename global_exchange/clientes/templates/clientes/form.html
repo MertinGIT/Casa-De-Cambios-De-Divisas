@@ -5,6 +5,14 @@
 {% block form_title %}Agregar Cliente{% endblock %} 
 
 {% block form_fields %}
+<div class="form-group">
+  <label for="{{ form.cedula.id_for_label }}">Número de Documento *</label>
+  <div class="input-icon">
+    <span class="icon">🆔</span>
+    {{ form.cedula|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
 
 <div class="form-group">
   <label for="{{ form.nombre.id_for_label }}">Nombre *</label>
@@ -44,14 +52,7 @@
 </div>
 {% endif %}
 
-<div class="form-group">
-  <label for="{{ form.estado.id_for_label }}">Estado *</label>
-  <div class="input-icon">
-    <span class="icon">⚡</span>
-    {{ form.estado|add_class:"custom-input" }}
-  </div>
-  <div class="error-messages"></div>
-</div>
+
 
 <style>
 .custom-input {
@@ -166,8 +167,42 @@ function setupClienteValidation() {
 
     console.log("Configurando validación del formulario cliente");
     
+    // Debug: mostrar valores actuales de los campos
+    console.log("Valores actuales de campos:");
+    console.log("- Cédula:", $("#form-accion input[name='cedula']").val());
+    console.log("- Nombre:", $("#form-accion input[name='nombre']").val());
+    console.log("- Email:", $("#form-accion input[name='email']").val());
+    console.log("- Teléfono:", $("#form-accion input[name='telefono']").val());
+    console.log("- obj_id:", $("#obj_id").val());
+    
     clienteValidator = $form.validate({
         rules: {
+            cedula: {
+                required: true,
+                minlength: 6,
+                maxlength: 20,
+                digits: true,
+                remote: {
+                    url: "/clientes/check-cedula/",
+                    type: "post",
+                    data: {
+                        cedula: function() {
+                            return $("#form-accion input[name='cedula']").val();
+                        },
+                        obj_id: function() {
+                            let objId = $("#obj_id").val();
+                            console.log("obj_id encontrado para validación cedula:", objId);
+                            return (objId && objId !== '') ? objId : null;
+                        },
+                        csrfmiddlewaretoken: function() {
+                            return $("input[name='csrfmiddlewaretoken']").val();
+                        }
+                    },
+                    beforeSend: function(xhr, settings) {
+                        console.log("Enviando validación remota de cédula:", settings.data);
+                    }
+                }
+            },
             nombre: {
                 required: true,
                 minlength: 2,
@@ -217,6 +252,13 @@ function setupClienteValidation() {
             }
         },
         messages: {
+            cedula: {
+                required: "El número de documento es obligatorio",
+                digits: "El número de documento debe contener solo números",
+                minlength: "El número de documento debe tener al menos 6 caracteres",
+                maxlength: "El número de documento no puede exceder 20 caracteres",
+                remote: "Este número de documento ya está en uso"
+            },
             nombre: {
                 required: "El nombre es obligatorio",
                 minlength: "El nombre debe tener al menos 2 caracteres",
@@ -274,9 +316,17 @@ function setupClienteValidation() {
             console.log("Formulario inválido, errores:", validator.numberOfInvalids());
         }
     });
-  $("#form-accion input[name='telefono']").on("input", function() {
-      this.value = this.value.replace(/[^0-9]/g,''); // solo números
-  });
+
+    // Restricción para solo números en teléfono
+    $("#form-accion input[name='telefono']").on("input", function() {
+        this.value = this.value.replace(/[^0-9]/g,''); // solo números
+    });
+
+    // Restricción para solo números en cédula
+    $("#form-accion input[name='cedula']").on("input", function() {
+        this.value = this.value.replace(/[^0-9]/g,''); // solo números
+    });
+
     return clienteValidator;
 }
 
@@ -305,21 +355,39 @@ $(document).ready(function() {
     window.openEditModal = function(id, editUrl, detalle, title) {
         console.log("Abriendo modal editar con validación, ID:", id);
         
+        // Configurar obj_id ANTES de cargar datos
+        setTimeout(function() {
+            const objIdField = $("#obj_id");
+            if (objIdField.length) {
+                objIdField.val(id);
+                console.log("Campo obj_id preconfigurado con valor:", id);
+            }
+        }, 50);
+        
         if (originalOpenEditModal) {
             originalOpenEditModal(id, editUrl, detalle, title);
         }
         
-        // Configurar validación después de cargar datos
+        // Usar un enfoque más simple y directo
         setTimeout(function() {
-            // Asegurar que el campo obj_id tenga el ID correcto
+            console.log("Configurando validación después de cargar modal");
+            
+            // Asegurar nuevamente que obj_id esté configurado
             const objIdField = $("#obj_id");
             if (objIdField.length) {
                 objIdField.val(id);
-                console.log("Campo obj_id actualizado con valor:", id);
+                console.log("Campo obj_id final:", objIdField.val());
             }
             
             setupClienteValidation();
-        }, 1000); // Timeout más largo para que el fetch termine
+            
+            // Debug: mostrar si los campos tienen datos después de la configuración
+            console.log("Estado de campos después de configurar:");
+            console.log("- Cédula:", $("#form-accion input[name='cedula']").val());
+            console.log("- Nombre:", $("#form-accion input[name='nombre']").val());
+            console.log("- Email:", $("#form-accion input[name='email']").val());
+            
+        }, 1500); // Dar más tiempo para que se cargue el modal completamente
     };
 
     // Nueva función para cerrar modal

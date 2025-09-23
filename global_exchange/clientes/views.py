@@ -175,9 +175,32 @@ def cliente_detalle(request, pk):
     """
     cliente = get_object_or_404(Cliente, pk=pk)
     return JsonResponse({
+        "cedula": cliente.cedula,  
         "nombre": cliente.nombre,
         "email": cliente.email,
         "telefono": cliente.telefono,
         "segmentacion": cliente.segmentacion.id if cliente.segmentacion else None,
         "estado": cliente.estado,
     })
+
+def check_cedula(request):
+    """
+    Valida de manera AJAX si una cédula ya está registrada.
+
+    POST Params:
+        - cedula: número de documento a validar
+        - obj_id: ID del cliente a excluir (para edición)
+
+    Retorna:
+        JsonResponse: True si la cédula NO existe, False si ya está en uso.
+    """
+    if request.method == 'POST':
+        cedula = request.POST.get('cedula')
+        obj_id = request.POST.get('obj_id')
+
+        query = Cliente.objects.filter(cedula=cedula)
+        if obj_id and obj_id != 'null' and obj_id != '':
+            query = query.exclude(id=obj_id)
+
+        exists = query.exists()
+        return JsonResponse(not exists, safe=False)
