@@ -67,3 +67,4 @@ docker-compose.yml
 *.sublime-workspace
 .env
 
+global_exchange/metodos_acreditacion/
