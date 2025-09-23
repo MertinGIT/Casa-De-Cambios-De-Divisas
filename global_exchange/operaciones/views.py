@@ -77,6 +77,8 @@ def simulador_operaciones(request):
     destino = ""
     TC_VTA = 0
     TC_COMP = 0
+    PB_MONEDA=0
+    TASA_REF_ID=None
     
     
     # === Determinar tasas por defecto para mostrar en GET ===

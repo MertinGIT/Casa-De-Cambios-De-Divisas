@@ -472,9 +472,12 @@ def pagina_aterrizaje(request):
     COMISION_COM = 50
     descuento = 0
     # === SEGMENTACIÓN SEGÚN USUARIO ===
-    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
-    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
-        descuento = float(cliente_operativo.segmentacion.descuento)
+    if request.user.is_authenticated:  # solo si está logueado
+        clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user, request)
+
+        if (cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo"):
+            descuento = float(cliente_operativo.segmentacion.descuento)
+
 
     # === Reorganizar datos en dict por moneda_destino ===
     data_por_moneda = {}
@@ -502,6 +505,7 @@ def pagina_aterrizaje(request):
     
     # === Preparar cotizaciones para mostrar en landing (solo más reciente por moneda) ===
     cotizaciones = []
+    registros=[]
     for abrev, registros in data_por_moneda.items():
         ultimo = registros[-1]  # el más reciente
         # Intentar buscar logo PNG primero, si no, SVG
