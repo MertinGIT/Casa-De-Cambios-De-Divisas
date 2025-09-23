@@ -493,7 +493,7 @@ body {
         <thead>
           <tr>
             <th>Nombre</th>
-           <!-- <th>C.I.</th>-->
+            <th>Documento</th>
             <th>Email</th>
             <th>Teléfono</th>
             <th>Segmento</th>
@@ -506,7 +506,7 @@ body {
           {% for c in clientes %}
             <tr>
               <td data-label="Nombre">{{ c.nombre }}</td>
-             <!-- <td data-label="Cedula"> {{ c.cedula }}</td>-->
+              <td data-label="Cedula"> {{ c.cedula }}
               <td data-label="Email">{{ c.email }}</td>
               <td data-label="Teléfono">{{ c.telefono|default:"—" }}</td>
               <td data-label="Segmento">{{ c.segmentacion.nombre|default:"Sin segmento" }}</td>

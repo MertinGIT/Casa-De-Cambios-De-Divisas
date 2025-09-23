@@ -6,4 +6,5 @@ urlpatterns = [
     path("roles/", views.user_roles_lista, name="user_roles_lista"),
     path("roles/editar/<int:pk>/", views.user_roles_edit, name="user_roles_edit"),
     path("roles/detalle/<int:pk>/", views.user_roles_detalle, name="user_roles_detalle"),
+    path('api/login/', views.login_api, name='login_api'),
 ]

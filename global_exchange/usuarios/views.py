@@ -883,3 +883,58 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+
+
+#Comunicacion via https con el backend
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from rest_framework_simplejwt.tokens import RefreshToken
+@csrf_exempt
+@require_http_methods(["POST"])
+@csrf_exempt
+@require_http_methods(["POST"])
+def login_api(request):
+    data = json.loads(request.body.decode("utf-8"))
+    username = data.get("username")
+    password = data.get("password")
+
+    user = authenticate(request, username=username, password=password)
+    if user is not None:
+        # Iniciar sesión en Django (opcional)
+        login(request, user)
+
+        # Email real del usuario
+        email = user.email
+
+        # Generar tokens JWT
+        refresh = RefreshToken.for_user(user)
+        access_token = refresh.access_token
+
+        # Agregar email al payload
+        access_token.payload['email'] = email
+        access_token_str = str(access_token)
+        refresh_str = str(refresh)
+
+        # Respuesta con cookie segura para producción
+        response = JsonResponse({
+            "success": True,
+            "message": "Login exitoso",
+            "redirect_url": "http://127.0.0.1:8002/tauser_menu/",
+            "email": email
+        })
+
+        # Cookie HTTPOnly y Secure para el token
+        response.set_cookie(
+            key="access_token",
+            value=access_token_str,
+            httponly=True,      # No accesible por JS
+            secure=True,        # Solo HTTPS en producción
+            samesite="Lax",     # Ajustar según dominio
+            max_age=30*60       # 30 minutos, igual que tu token
+        )
+        return response
+    else:
+        return JsonResponse({
+            "success": False,
+            "error": "Credenciales inválidas"
+        }, status=400)

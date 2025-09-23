@@ -31,6 +31,8 @@ from logging import config
 from pathlib import Path
 import environ
 import os
+from datetime import datetime, timedelta
+
 
 env = environ.Env(
     DEBUG=(bool, False)   
@@ -97,7 +99,7 @@ INSTALLED_APPS = [
 # Middleware
 # ============================================================================
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',   # <- Debe ir primero
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -109,6 +111,11 @@ MIDDLEWARE = [
     'roles_permisos.middleware.RoleBasedMiddleware',
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    "http://127.0.0.1:8001",  # donde corre tu frontend tauser
+    "http://127.0.0.1:8002", 
+]
+CORS_ALLOW_CREDENTIALS = True
 # ============================================================================
 # Configuración de plantillas
 # ============================================================================
@@ -137,7 +144,15 @@ WSGI_APPLICATION = 'global_exchange.wsgi.application'
 # Base de datos
 # ============================================================================
 
+JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", SECRET_KEY)
 
+SIMPLE_JWT = {
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": JWT_SIGNING_KEY,   # usado para firmar/verificar HS256
+    # opcionales:
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+}
 
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 #: Modo debug (activar solo en desarrollo).
@@ -154,7 +169,7 @@ DATABASES = {
     }
 }
 
-# Permitir solo tu frontend
+# Permitir solo tu frontend  
 #CORS_ALLOWED_ORIGINS = [
 #    "http://localhost:8000",
 #]

@@ -33,8 +33,9 @@ class ClienteForm(forms.ModelForm):
 
     class Meta:
         model = Cliente
-        fields = ['nombre', 'email', 'telefono', 'segmentacion', 'estado']
+        fields = ['cedula','nombre', 'email', 'telefono', 'segmentacion', 'estado']
         labels = {
+            'cedula': 'Cédula',
             'nombre': 'Nombre',
             'email': 'Correo Electrónico',
             'telefono': 'Teléfono',
@@ -42,6 +43,11 @@ class ClienteForm(forms.ModelForm):
             'estado': 'Estado',
         }
         widgets = {
+            'cedula': forms.TextInput(attrs={
+                'class': 'form-control', 
+                'placeholder': 'Ingrese el número de documento ',
+                'required': True
+            }),
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control', 
                 'placeholder': 'Ingrese el nombre',
