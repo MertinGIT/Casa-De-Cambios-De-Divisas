@@ -2,6 +2,7 @@ from django.db import models
 
 class Cliente(models.Model):
     email = models.EmailField(unique=True)   # ahora el identificador es el email
+    nombre = models.CharField(max_length=100, blank=True, null=True)
     saldo = models.FloatField(default=0.0)
 
     def __str__(self):
