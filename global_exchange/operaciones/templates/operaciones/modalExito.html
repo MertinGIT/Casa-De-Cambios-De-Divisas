@@ -60,7 +60,8 @@
         });
 
         // Generar ID de transacción único
-        const transactionId = '#TX-' + Date.now();
+        const datos = window.transaccionActual;
+        const transactionId = datos.referencia;
         document.getElementById('transaction-id').textContent = transactionId;
     }
 
@@ -77,23 +78,60 @@
         }, 200);
     }
 
+    function getCampos() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
+    }
+  }
+
     function descargarComprobante() {
         // Simular descarga de comprobante
+        const datos = window.transaccionActual;
+        console.log("Datos de transacción para comprobante:", datos);
+        if (!datos) return console.log("No hay datos de transacción");
+
         const link = document.createElement('a');
-        const transactionId = document.getElementById('transaction-id').textContent;
-        
+        const transactionId = datos.referencia;
+        const campos = getCampos();
+
         // Crear contenido del comprobante
-        const comprobanteContent = `
-COMPROBANTE DE TRANSACCIÓN
-${transactionId}
+        
+        let  comprobanteContent = `
+        =========================================
+        COMPROBANTE DE TRANSACCIÓN
+        =========================================
+ID de Transacción: ${transactionId}
+Fecha: ${new Date().toLocaleString('es-PY')}
 
-Fecha: ${new Date().toLocaleString()}
-Tipo: Compra USD
-Monto entregado: 735,000 PYG
-Monto recibido: $100.00 USD
-Tasa: 7,350 PYG
-Comisión: 3,675 PYG (0.5%)
+-----------------------------------------
+           DETALLES DE OPERACIÓN
+-----------------------------------------
+Tipo de operación: ${datos.tipo}
+Monto entregado: ${campos.$valor.val()} ${campos.$origen.val()} 
+Monto recibido: ${campos.$resultado.val()} ${campos.$destino.val()}
+Tasa aplicada: ${datos.tasa}
+Descuento: ${datos.descuento}
+Motivo: ${datos.motivo || 'N/A'}
+ 
 
+-----------------------------------------
+              INFORMACIÓN
+-----------------------------------------
 Estado: Procesando
 Tiempo estimado: 2-3 minutos
 

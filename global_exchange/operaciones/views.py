@@ -89,7 +89,7 @@ def simulador_operaciones(request):
             break
             
     if tasa_default:
-        PB_MONEDA = tasa_default["venta"]  # por defecto
+        PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
         # Calculamos las tasas considerando las comisiones
         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
@@ -163,6 +163,7 @@ def simulador_operaciones(request):
                         print("resultado 141: ",resultado,flush=True)
                         print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
+                        print("PB_MONEDA16666666: ",PB_MONEDA,flush=True)
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
                         print("TC_COMP 1: ",TC_COMP,flush=True)
                         resultado = round(valor * TC_COMP, 2)
@@ -170,22 +171,24 @@ def simulador_operaciones(request):
                     print("resultado: ",resultado,flush=True)
         except ValueError:
             resultado = "Monto inválido"
-        tasa_usada = 0
-        if(operacion == "venta"):
-            tasa_usada = TC_VTA
-        else:
-            tasa_usada = TC_COMP
-        print("resultado 111: ",resultado,flush=True)
-        # Respuesta AJAX
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({
-                "resultado": resultado,
-                "ganancia_total": ganancia_total,
-                "segmento": segmento_nombre,
-                "descuento": descuento,
-                "tasa": tasa_usada,  
-                "fecha_tasa": ultimo["fecha"]  # viene de tu dict data_por_moneda
-            })
+    tasa_usada = 0
+    
+    if(operacion == "venta"):
+        tasa_usada = TC_VTA
+    else:
+        tasa_usada = TC_COMP
+    print("resultado 111: ",resultado,flush=True)
+    # Respuesta AJAX
+    print("tasa_usada.headers: ",tasa_usada,flush=True)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            "resultado": resultado,
+            "ganancia_total": ganancia_total,
+            "segmento": segmento_nombre,
+            "descuento": descuento,
+            "tasa": tasa_usada,  
+            "fecha_tasa": ultimo["fecha"]  # viene de tu dict data_por_moneda
+        })
     print("TC_VTA: ", TC_VTA,flush=True)
     print("clientes_asociados: ",clientes_asociados,flush=True)
     print("cliente_operativo: ",cliente_operativo,flush=True)

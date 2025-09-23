@@ -127,14 +127,14 @@ def home(request):
         PB_MONEDA_COMP = float(tasa.monto_compra)
         
         # Calculamos tasas según fórmula
-        TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-        TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
+        #TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        #TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
         
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": round(TC_COMP, 2),
-            "venta": round(TC_VTA, 2)
+            "compra": float(tasa.monto_compra),
+            "venta": float(tasa.monto_venta)
         })
 
     print("data_por_moneda:", data_por_moneda, flush=True)

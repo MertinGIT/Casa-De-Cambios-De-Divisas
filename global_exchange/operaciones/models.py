@@ -34,3 +34,4 @@ class Transaccion(models.Model):
     
     def _str_(self):
         return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
+
