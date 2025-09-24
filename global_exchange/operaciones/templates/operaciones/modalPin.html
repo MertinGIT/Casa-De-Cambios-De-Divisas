@@ -90,10 +90,16 @@
   }
 
   function mostrarMensaje(titulo, texto) {
-    $("#titulo-mensaje").text(titulo);
-    $("#texto-mensaje").text(texto);
-    $("#modal-mensaje").fadeIn().css("display", "flex");
-  }
+    console.log("mostrarMensaje en Pin:", titulo, texto);
+    
+    if (window.mostrarMensajeModal) {
+      // Mostrar mensaje
+      window.mostrarMensajeModal(titulo, texto);
+    } else {
+      console.error("Modal mensaje no disponible desde PIN");
+      alert(titulo + ": " + texto);
+    }
+}
 
   function getCampos() {
     const op = $("input[name='operacion']:checked").val();
@@ -172,7 +178,7 @@
               mostrarModalExito();
             } else {
               $("#modal-exito").fadeOut();
-              mostrarMensaje(
+              mostrarError(
                 "Transacción rechazada:",
                 data.mensaje || "Error al conectar con el banco"
               );
@@ -180,13 +186,13 @@
           })
           .catch((err) => {
             console.error("Error enviando transacción:", err);
-            mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+            mostrarError("Error", "Error al conectar con el banco");
           });
       } else {
         console.log("No se encontró el email del cliente operativo.");
         $("#modal-pin").fadeOut();
         mostrarMensaje(
-          "⚠️ Error",
+          "Error",
           "No se encontró el email del cliente operativo."
         );
       }
