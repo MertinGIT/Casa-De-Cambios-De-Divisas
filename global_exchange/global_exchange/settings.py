@@ -148,7 +148,7 @@ JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", SECRET_KEY)
 
 SIMPLE_JWT = {
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": JWT_SIGNING_KEY,   # usado para firmar/verificar HS256
+    "SIGNING_KEY": 'clave_super_secreta_compartida_local',   # usado para firmar/verificar HS256
     # opcionales:
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
