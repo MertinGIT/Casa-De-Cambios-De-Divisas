@@ -148,15 +148,6 @@
     </div>
 </div>
 
-<!-- MODAL MENSAJE -->
-<div id="modal-mensaje-pago" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3 id="titulo-mensaje">⚠️ Atención</h3>
-    <p id="texto-mensaje"></p>
-    <button id="btn-cerrar-mensaje-pago">Cerrar</button>
-  </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -381,11 +372,14 @@ function resetearFormularioMetodo() {
     inputs.forEach(input => input.value = '');
 }
 
-function mostrarMensajeErrorPago(titulo, texto) {
-    $("#titulo-mensaje").text(titulo);
-    $("#texto-mensaje").text(texto);
-    $("#modal-mensaje-pago").fadeIn().css("display", "flex");
+function mostrarMensaje(titulo, texto) {
+  if (window.mostrarMensajeModal) {
+    
+    window.mostrarMensajeModal(titulo, texto);
+  } else {
+    alert(titulo + ": " + texto);
   }
+}
 
 function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
@@ -475,7 +469,7 @@ function confirmarMetodoPago() {
 
     if (!esValido) {
         console.log("Error de validación:", mensajeError);
-        mostrarMensajeErrorPago("⚠️ Transacción rechazada:",mensajeError);
+        mostrarError("Transacción rechazada:",mensajeError);
         //alert(mensajeError);
         return;
     }
