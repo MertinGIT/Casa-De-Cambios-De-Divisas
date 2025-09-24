@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from medio_acreditacion.forms import MedioAcreditacionForm
+from medio_acreditacion.models import MedioAcreditacion
 from django.http import JsonResponse
 from .models import Cliente, Segmentacion
 from .forms import ClienteForm
@@ -62,7 +64,7 @@ class ClienteCreateView(CreateView):
     form_class = ClienteForm
     template_name = 'clientes/lista.html'
     success_url = reverse_lazy('clientes')
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["clientes"] = Cliente.objects.all().order_by('-id')

@@ -50,13 +50,15 @@ def simulador_operaciones(request):
             "id": tasa.id,  # <-- guardamos el ID
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(getattr(tasa, "comision_compra", 0)),
+            "comision_venta": float(getattr(tasa, "comision_venta", 0)),
         })
     print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
     # Comisiones y variables
-    COMISION_VTA = 100
-    COMISION_COM = 50
+    COMISION_VTA = 0
+    COMISION_COM = 0
 
     # === Segmentación según usuario ===
     descuento = 0
@@ -89,7 +91,6 @@ def simulador_operaciones(request):
             tasa_default = registros[-1]
             print("tasa_default:",tasa_default,flush=True)
             break
-            
     if tasa_default:
         PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
@@ -152,18 +153,9 @@ def simulador_operaciones(request):
                     #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
                     print("operacion: ", operacion, flush=True)
                     if operacion == "venta":
-                        print("venta",flush=True)
-                        print("Descuento: ",descuento,flush=True)
-                        print("COMISION_VTA: ",COMISION_VTA,flush=True)
-                        print("PB_MONEDA: ",PB_MONEDA,flush=True)
-                        print("valor: ",valor,flush=True)
-                        
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-                        print("TC_VTA 138: ",TC_VTA,flush=True)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
-                        print("resultado 141: ",resultado,flush=True)
-                        print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
                         print("PB_MONEDA16666666: ",PB_MONEDA,flush=True)
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
