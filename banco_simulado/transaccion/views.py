@@ -1,9 +1,9 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
 from .models import Transaccion, Cliente
 from .serializers import TransaccionBancoSerializer, ClienteSerializer
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
 @api_view(['GET', 'POST', 'PUT'])
 def transaccion_banco_view(request):
     if request.method == 'GET':
@@ -90,24 +90,40 @@ def transaccion_banco_view(request):
             }, status=status.HTTP_400_BAD_REQUEST)
     
 
-
-
+from django.conf import settings
+from rest_framework_simplejwt.backends import TokenBackend
 @api_view(['GET', 'POST'])
 def cliente_view(request):
     if request.method == 'GET':
-        # Obtener el email del usuario que hizo la solicitud
-        email = request.GET.get("email")  # lo pasaremos desde el frontend
+        # Esperamos Authorization: Bearer <token>
+        auth_header = request.headers.get('Authorization')
+        if not auth_header:
+            return Response({"error": "Falta Authorization header"}, status=status.HTTP_401_UNAUTHORIZED)
 
+        try:
+            token = auth_header.split()[1]
+        except IndexError:
+            return Response({"error": "Header Authorization mal formado"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Decodificar y verificar token sin buscar user en DB
+        try:
+            tb = TokenBackend(algorithm=settings.SIMPLE_JWT['ALGORITHM'],
+                              signing_key=settings.SIMPLE_JWT['SIGNING_KEY'])
+            payload = tb.decode(token, verify=True)
+        except Exception as e:
+            return Response({"error": "Token inválido", "detail": str(e)}, status=status.HTTP_401_UNAUTHORIZED)
+
+        email = payload.get('email')
         if not email:
-            return Response({"error": "Falta el parámetro 'email'."}, status=400)
+            return Response({"error": "Email no presente en token"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             cliente = Cliente.objects.get(email=email)
             serializer = ClienteSerializer(cliente)
             return Response(serializer.data)
         except Cliente.DoesNotExist:
-            return Response({"error": "Cliente no encontrado"}, status=404)
-    
+            return Response({"error": "Cliente no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+
     elif request.method == 'POST':
         serializer = ClienteSerializer(data=request.data)
         if serializer.is_valid():
