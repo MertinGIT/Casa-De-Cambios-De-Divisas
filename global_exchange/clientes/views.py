@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView
+from medio_acreditacion.forms import MedioAcreditacionForm
+from medio_acreditacion.models import MedioAcreditacion
 from django.http import JsonResponse
 from .models import Cliente, Segmentacion
 from .forms import ClienteForm
@@ -62,7 +64,7 @@ class ClienteCreateView(CreateView):
     form_class = ClienteForm
     template_name = 'clientes/lista.html'
     success_url = reverse_lazy('clientes')
-
+    
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["clientes"] = Cliente.objects.all().order_by('-id')
@@ -180,4 +182,18 @@ def cliente_detalle(request, pk):
         "telefono": cliente.telefono,
         "segmentacion": cliente.segmentacion.id if cliente.segmentacion else None,
         "estado": cliente.estado,
+    })
+
+
+def cliente_medios(request, pk):
+    """
+    Vista para mostrar los medios de acreditación asociados a un cliente y gestionarlos.
+    """
+    cliente = get_object_or_404(Cliente, pk=pk)
+    medios = MedioAcreditacion.objects.filter(cliente=cliente)
+    form = MedioAcreditacionForm()
+    return render(request, 'clientes/medios_cliente.html', {
+        'cliente': cliente,
+        'medios': medios,
+        'form': form,
     })

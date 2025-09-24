@@ -50,13 +50,15 @@ def simulador_operaciones(request):
             "id": tasa.id,  # <-- guardamos el ID
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(getattr(tasa, "comision_compra", 0)),
+            "comision_venta": float(getattr(tasa, "comision_venta", 0)),
         })
     print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
     # Comisiones y variables
-    COMISION_VTA = 100
-    COMISION_COM = 50
+    COMISION_VTA = 0
+    COMISION_COM = 0
 
     # === Segmentación según usuario ===
     descuento = 0
@@ -86,9 +88,9 @@ def simulador_operaciones(request):
             # Tomar el registro más reciente
             tasa_default = registros[-1]
             break
-            
     if tasa_default:
-        # Calculamos las tasas considerando las comisiones
+        COMISION_VTA = tasa_default.get("comision_venta", 0)
+        COMISION_COM = tasa_default.get("comision_compra", 0)
         TC_VTA = tasa_default["venta"] + COMISION_VTA
         TC_COMP = tasa_default["compra"] - COMISION_COM
     else:
@@ -138,22 +140,13 @@ def simulador_operaciones(request):
                     # Tomar el registro más reciente
                     ultimo = registros[-1]
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
-
+                    COMISION_VTA = ultimo.get("comision_venta", 0)
+                    COMISION_COM = ultimo.get("comision_compra", 0)
                     # === Fórmula de tu home ===
-                    #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
                     if operacion == "venta":
-                        print("venta",flush=True)
-                        print("Descuento: ",descuento,flush=True)
-                        print("COMISION_VTA: ",COMISION_VTA,flush=True)
-                        print("PB_MONEDA: ",PB_MONEDA,flush=True)
-                        print("valor: ",valor,flush=True)
-                        
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-                        print("TC_VTA 138: ",TC_VTA,flush=True)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
-                        print("resultado 141: ",resultado,flush=True)
-                        print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
                         resultado = round(valor * TC_COMP, 2)
