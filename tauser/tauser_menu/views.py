@@ -13,6 +13,7 @@ import requests
 from rest_framework_simplejwt.authentication import JWTAuthentication
 def mostrar_saldo(request):
     # Tomar token desde cookie segura
+    nombre=""
     token = request.COOKIES.get("access_token")
     print("Token en sesión:", token)
     if not token:
@@ -22,6 +23,7 @@ def mostrar_saldo(request):
         headers = {"Authorization": f"Bearer {token}"}
         # Llamada al endpoint de clientes en global_exchange
         response = requests.get("http://127.0.0.1:8001/clientes/", headers=headers)
+        print("Respuesta del servicio de clientes:", response.status_code, response.text)
     
 
         if response.status_code != 200:
