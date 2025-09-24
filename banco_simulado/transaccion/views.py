@@ -1,8 +1,8 @@
 from rest_framework.decorators import api_view,authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Transaccion, Cliente
-from .serializers import TransaccionBancoSerializer, ClienteSerializer
+from .models import Transaccion, Cliente, Cuenta
+from .serializers import TransaccionBancoSerializer, ClienteSerializer, CuentaSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
 @api_view(['GET', 'POST', 'PUT'])
 def transaccion_banco_view(request):
@@ -130,3 +130,26 @@ def cliente_view(request):
             cliente = serializer.save()
             return Response(ClienteSerializer(cliente).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+#Obtener Cuenta por nro_cuenta
+@api_view(['GET'])
+
+def obtener_cuenta(request, nro_cuenta):
+    try:
+        cuenta = Cuenta.objects.get(nro_cuenta = nro_cuenta)
+        serializer = CuentaSerializer(cuenta)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Cuenta.DoesNotExist:
+        return Response({"error": "Cuenta no encontrada"}, status=status.HTTP_404_NOT_FOUND)
+    
+@api_view(['GET'])
+def obtener_cuentas_por_documento(request, documento):
+    try:
+        cliente = Cliente.objects.get(documento=documento)
+        cuentas = Cuenta.objects.filter(cliente=cliente)
+        serializer = CuentaSerializer(cuentas, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Cliente.DoesNotExist:
+        return Response({"error": "Cliente no encontrado"}, status=status.HTTP_404_NOT_FOUND)
+    
