@@ -43,6 +43,7 @@ urlpatterns = [
     path('set_cliente_operativo/', usuarios_views.set_cliente_operativo, name='set_cliente_operativo'),
     path('operaciones/', include(operaciones_urls)),
     
+    
     # Rutas solo para administradores
     path('admin/', admin_views.admin_dashboard, name='admin_dashboard'),
     path('admin/empleados/', usuarios_views.crud_empleados, name='empleados'),
@@ -56,6 +57,7 @@ urlpatterns = [
     path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
     path('admin/cliente_usuario/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
+    path('usuarios/', include('usuarios.urls')),
 
 ]
 

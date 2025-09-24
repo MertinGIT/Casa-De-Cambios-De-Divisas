@@ -34,6 +34,7 @@ class Cliente(models.Model):
     )
     cedula = models.CharField(
         max_length=20,
+        unique=True,
         blank=True,
         null=True,
         help_text="Número de cédula o identificación del cliente (opcional)"

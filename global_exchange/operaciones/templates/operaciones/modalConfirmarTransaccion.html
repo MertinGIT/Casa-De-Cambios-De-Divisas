@@ -88,7 +88,23 @@
   </div>
 </div>
 
+<!-- MODAL MENSAJE -->
+<div id="modal-mensaje" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h3 id="titulo-mensaje-transaccion">⚠️ Atención</h3>
+    <p id="texto-mensaje-transaccion"></p>
+    <button id="btn-cerrar-mensaje">Cerrar</button>
+  </div>
+</div>
+
 <script>
+  function mostrarMensajeTransaccion(titulo, texto) {
+    $("#titulo-mensaje-transaccion").text(titulo);
+    $("#texto-mensaje-transaccion").text(texto);
+    $("#modal-mensaje").fadeIn().css("display", "flex");
+  }
+
   function mostrarModalConfirmacion(datos) {
     // Datos recibidos del conversor
     document.getElementById("modal-tipo").textContent = datos.tipo;
@@ -174,13 +190,19 @@
     const origenVal = campos.$origen.val();
     const destinoVal = campos.$destino.val();
 
+    if (!origenVal || destinoVal <= 0) {
+      mostrarMensajeTransaccion("⚠️ Error", "No hay monedas disponibles");
+      console.log("No hay monedas disponibles");
+      return;
+    }
+
     if (!monto || monto <= 0) {
-      mostrarMensaje("⚠️ Error", "Ingrese un monto válido");
+      mostrarMensajeTransaccion("⚠️ Error", "Ingrese un monto válido");
       return;
     }
 
     if (origenVal === destinoVal) {
-      mostrarMensaje(
+      mostrarMensajeTransaccion(
         "⚠️ Error",
         "La moneda de origen y destino no puede ser la misma."
       );
@@ -223,7 +245,7 @@
         mostrarModalConfirmacion(datos);
       },
       error: function (xhr) {
-        mostrarMensaje("⚠️ Error", "Error al realizar la transacción");
+        mostrarMensajeTransaccion("⚠️ Error", "Error al realizar la transacción");
       },
     });
   });

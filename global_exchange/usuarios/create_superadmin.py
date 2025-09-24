@@ -20,7 +20,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "global_exchange.settings")
 django.setup()
 
 from django.contrib.auth import get_user_model
-
+from monedas.models import Moneda
 User = get_user_model()
 
 """
@@ -43,6 +43,7 @@ User = get_user_model()
         - Imprime mensajes indicando si se creó el usuario o si ya
           existía.
     """
+    
 def crear_superadmin_manual():
     username = "superadmin"
     email = "admin@empresa.com"
@@ -64,5 +65,15 @@ def crear_superadmin_manual():
     else:
         print("El superadmin ya existe.")
 
+    # Crear moneda Guaraní si no existe
+    guarani, created = Moneda.objects.get_or_create(
+        abreviacion='PYG',
+        defaults={'nombre': 'Guaraní'}
+    )
+    if created:
+        print("Moneda Guaraní creada correctamente.")
+    else:
+        print("La moneda Guaraní ya existe.")
+        
 if __name__ == "__main__":
     crear_superadmin_manual()

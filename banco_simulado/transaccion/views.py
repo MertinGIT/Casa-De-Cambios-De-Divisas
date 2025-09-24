@@ -91,12 +91,22 @@ def transaccion_banco_view(request):
     
 
 
+
 @api_view(['GET', 'POST'])
 def cliente_view(request):
     if request.method == 'GET':
-        clientes = Cliente.objects.all()
-        serializer = ClienteSerializer(clientes, many=True)
-        return Response(serializer.data)
+        # Obtener el email del usuario que hizo la solicitud
+        email = request.GET.get("email")  # lo pasaremos desde el frontend
+
+        if not email:
+            return Response({"error": "Falta el parámetro 'email'."}, status=400)
+
+        try:
+            cliente = Cliente.objects.get(email=email)
+            serializer = ClienteSerializer(cliente)
+            return Response(serializer.data)
+        except Cliente.DoesNotExist:
+            return Response({"error": "Cliente no encontrado"}, status=404)
     
     elif request.method == 'POST':
         serializer = ClienteSerializer(data=request.data)
