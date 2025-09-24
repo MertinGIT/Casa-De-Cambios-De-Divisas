@@ -17,6 +17,18 @@ import json
 
 @login_required
 def simulador_operaciones(request):
+    """
+    Simula operaciones de compra/venta de monedas.
+
+    Obtiene las tasas de cambio activas, métodos de pago disponibles,
+    y datos de clientes asociados al usuario para calcular resultados
+    de transacciones con comisiones y posibles descuentos por segmentación.
+
+    :param request: Objeto HTTP con información de la petición.
+    :type request: HttpRequest
+    :return: Página renderizada con contexto de simulación o JsonResponse si es AJAX.
+    :rtype: HttpResponse | JsonResponse
+    """
     # === Datos de transacciones de prueba (estáticos) ===
     transacciones = [
       {"id": 1, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "monto": 1500.0, "estado": "Pendiente", "tipo": "Venta"},
@@ -77,7 +89,8 @@ def simulador_operaciones(request):
     destino = ""
     TC_VTA = 0
     TC_COMP = 0
-    
+    PB_MONEDA = 0
+    TASA_REF_ID =None
     
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
@@ -225,9 +238,14 @@ def simulador_operaciones(request):
 
 def obtener_clientes_usuario(user,request):
     """
-    Devuelve:
-        - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    Obtiene los clientes asociados a un usuario y determina cuál es el cliente operativo.
+
+    :param user: Usuario autenticado.
+    :type user: User
+    :param request: Objeto HTTP con información de la petición (usado para sesión).
+    :type request: HttpRequest
+    :return: Tupla con (lista de clientes asociados, cliente operativo actual, email del cliente operativo).
+    :rtype: tuple[list[Cliente], Cliente | None, str]
     """
 
      # Solo clientes activos
@@ -258,8 +276,15 @@ def obtener_clientes_usuario(user,request):
 @login_required
 def set_cliente_operativo(request):
     """
-    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
-    con segmento y descuento para actualizar el front sin recargar.
+    Establece en sesión el cliente operativo para el usuario autenticado.
+
+    Permite cambiar el cliente activo en el contexto de las operaciones.
+    Devuelve información de segmentación y descuento del cliente seleccionado.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :return: JsonResponse con los datos del cliente operativo o error.
+    :rtype: JsonResponse
     """
     cliente_id = request.POST.get('cliente_id')
 
@@ -298,6 +323,17 @@ def set_cliente_operativo(request):
 
 
 def verificar_tasa(request):
+    """
+    Verifica la tasa de cambio entre dos monedas.
+
+    Devuelve la última tasa registrada entre el origen y destino,
+    junto con su fecha de actualización.
+
+    :param request: Objeto HTTP con los parámetros "origen" y "destino".
+    :type request: HttpRequest
+    :return: JsonResponse con fecha de la tasa o error si no existe.
+    :rtype: JsonResponse
+    """
     origen = request.GET.get("origen")
     destino = request.GET.get("destino")
     try:
@@ -312,11 +348,31 @@ def verificar_tasa(request):
         return JsonResponse({"error": "No hay tasa disponible"}, status=404)
     
 def hora_servidor(request):
+    """
+    Devuelve la hora actual del servidor.
+
+    :param request: Objeto HTTP.
+    :type request: HttpRequest
+    :return: JsonResponse con la hora ISO.
+    :rtype: JsonResponse
+    """
     return JsonResponse({"hora": now().isoformat()})    
 
 
 
 def enviar_transaccion_al_banco(cliente_id, monto, moneda):
+    """
+    Envía una transacción al servicio bancario externo.
+
+    :param cliente_id: ID del cliente.
+    :type cliente_id: int
+    :param monto: Monto de la transacción.
+    :type monto: Decimal | float
+    :param moneda: Abreviación de la moneda.
+    :type moneda: str
+    :return: Respuesta en formato JSON del servicio bancario.
+    :rtype: dict
+    """
     url = "http://localhost:8001/api/banco/transaccion/"
     data = {
         "cliente_id": cliente_id,
@@ -327,6 +383,14 @@ def enviar_transaccion_al_banco(cliente_id, monto, moneda):
     return response.json()
 
 def obtener_metodos_pago(request):
+    """
+    Devuelve la lista de métodos de pago activos.
+
+    :param request: Objeto HTTP.
+    :type request: HttpRequest
+    :return: JsonResponse con la lista de métodos.
+    :rtype: JsonResponse
+    """
     if request.method == "GET":
         metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion")
         return JsonResponse(list(metodos), safe=False)
@@ -334,6 +398,14 @@ def obtener_metodos_pago(request):
 
 @csrf_exempt
 def guardar_metodo_pago(request):
+    """
+    Guarda el método de pago seleccionado en una transacción.
+
+    :param request: Objeto HTTP con datos "metodo" y "detalle".
+    :type request: HttpRequest
+    :return: JsonResponse con estado de la operación.
+    :rtype: JsonResponse
+    """
     if request.method == "POST":
         metodo_id = request.POST.get("metodo")
         detalle = request.POST.get("detalle")
@@ -343,6 +415,17 @@ def guardar_metodo_pago(request):
     return JsonResponse({"error": "Método no válido"}, status=400)
 
 def guardar_transaccion(request):
+    """
+    Guarda una transacción en la base de datos.
+
+    Recibe los datos en JSON: monto, tipo, monedas, tasa y estado.
+    Asocia la transacción con el usuario autenticado si lo hay.
+
+    :param request: Objeto HTTP con los datos de la transacción.
+    :type request: HttpRequest
+    :return: JsonResponse con la información de la transacción guardada o error.
+    :rtype: JsonResponse
+    """
     try:
         data = json.loads(request.body.decode("utf-8"))
     except Exception as e:
@@ -396,6 +479,17 @@ def guardar_transaccion(request):
     
 
 def actualizar_estado_transaccion(request):
+    """
+    Actualiza el estado de una transacción existente.
+
+    Recibe en JSON el ID de la transacción y el nuevo estado,
+    luego lo guarda en la base de datos.
+
+    :param request: Objeto HTTP con datos "transaccion_id" y "nuevo_estado".
+    :type request: HttpRequest
+    :return: JsonResponse con resultado de la actualización.
+    :rtype: JsonResponse
+    """
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))

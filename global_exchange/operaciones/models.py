@@ -4,6 +4,29 @@ from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 
 class Transaccion(models.Model):
+    """
+    Representa una operación de cambio de moneda realizada por un usuario.
+
+    Este modelo guarda la información de cada transacción, incluyendo
+    el usuario que la realiza, las monedas origen y destino, la tasa usada,
+    el monto y el estado actual de la operación.
+
+    Atributos:
+        usuario (CustomUser): Usuario que realiza la transacción. Puede ser None.
+        id (int): Identificador único de la transacción.
+        fecha (datetime): Fecha y hora en que se creó la transacción.
+        monto (Decimal): Cantidad de dinero involucrada en la transacción.
+        tipo (str): Tipo de operación: "compra" o "venta".
+        estado (str): Estado actual de la transacción. Valores posibles:
+            - "pendiente"
+            - "confirmada"
+            - "cancelada_cotizacion"
+            - "cancelada_usuario"
+        moneda_origen (Moneda): Moneda desde la cual se hace la conversión.
+        moneda_destino (Moneda): Moneda a la cual se convierte el monto.
+        tasa_usada (Decimal): Tasa de cambio congelada al iniciar la operación.
+        tasa_ref (TasaDeCambio): Referencia a la tasa vigente utilizada.
+    """
     ESTADOS = [
         ("pendiente", "Pendiente"),
         ("confirmada", "Confirmada"),
@@ -32,6 +55,13 @@ class Transaccion(models.Model):
     tasa_ref = models.ForeignKey(TasaDeCambio, on_delete=models.PROTECT)  # referencia a la tasa vigente
 
     
-    def _str_(self):
+    def __str__(self):
+        """
+        Devuelve una representación legible de la transacción.
+
+        :return: String con la información de la transacción.
+        :rtype: str
+        :example: "Transacción 1 - COMPRA 1000 Dólar -> Guaraní [pendiente]"
+        """
         return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
 
