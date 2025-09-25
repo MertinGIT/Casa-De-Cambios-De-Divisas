@@ -17,6 +17,18 @@ import json
 
 @login_required
 def simulador_operaciones(request):
+    """
+    Simula operaciones de compra/venta de monedas.
+
+    Obtiene las tasas de cambio activas, métodos de pago disponibles,
+    y datos de clientes asociados al usuario para calcular resultados
+    de transacciones con comisiones y posibles descuentos por segmentación.
+
+    :param request: Objeto HTTP con información de la petición.
+    :type request: HttpRequest
+    :return: Página renderizada con contexto de simulación o JsonResponse si es AJAX.
+    :rtype: HttpResponse | JsonResponse
+    """
     # === Datos de transacciones de prueba (estáticos) ===
     transacciones = [
       {"id": 1, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "monto": 1500.0, "estado": "Pendiente", "tipo": "Venta"},
@@ -47,12 +59,12 @@ def simulador_operaciones(request):
         if abrev not in data_por_moneda:
             data_por_moneda[abrev] = []
         data_por_moneda[abrev].insert(0, {
-            "id": tasa.id,  # <-- guardamos el ID
+            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
             "venta": float(tasa.monto_venta),
-            "comision_compra": float(getattr(tasa, "comision_compra", 0)),
-            "comision_venta": float(getattr(tasa, "comision_venta", 0)),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta)
         })
     print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
@@ -79,9 +91,8 @@ def simulador_operaciones(request):
     destino = ""
     TC_VTA = 0
     TC_COMP = 0
-    PB_MONEDA=0
-    TASA_REF_ID=None
-    
+    PB_MONEDA = 0
+    TASA_REF_ID =None
     
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
@@ -91,7 +102,10 @@ def simulador_operaciones(request):
             tasa_default = registros[-1]
             print("tasa_default:",tasa_default,flush=True)
             break
+            
     if tasa_default:
+        COMISION_VTA = tasa_default.get("comision_venta", 0)
+        COMISION_COM = tasa_default.get("comision_compra", 0)
         PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
         # Calculamos las tasas considerando las comisiones
@@ -147,15 +161,26 @@ def simulador_operaciones(request):
                 else:
                     # Tomar el registro más reciente
                     ultimo = registros[-1]
+                    COMISION_VTA = ultimo.get("comision_venta", 0)
+                    COMISION_COM = ultimo.get("comision_compra", 0)
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
                     # === Fórmula de tu home ===
                     #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
                     print("operacion: ", operacion, flush=True)
                     if operacion == "venta":
+                        print("venta",flush=True)
+                        print("Descuento: ",descuento,flush=True)
+                        print("COMISION_VTA: ",COMISION_VTA,flush=True)
+                        print("PB_MONEDA: ",PB_MONEDA,flush=True)
+                        print("valor: ",valor,flush=True)
+                        
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                        print("TC_VTA 138: ",TC_VTA,flush=True)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                        print("resultado 141: ",resultado,flush=True)
+                        print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
                         print("PB_MONEDA16666666: ",PB_MONEDA,flush=True)
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
@@ -213,7 +238,6 @@ def simulador_operaciones(request):
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
-
 
 
 

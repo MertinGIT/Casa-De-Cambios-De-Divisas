@@ -93,6 +93,7 @@ INSTALLED_APPS = [
     'metodos_pagos',
     'cliente_usuario',
     'operaciones',
+    'medio_acreditacion',
     'corsheaders',
 ]
 # ============================================================================
