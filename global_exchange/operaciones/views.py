@@ -252,7 +252,7 @@ def simulador_operaciones(request):
                     "nombre": m.moneda.nombre,
                     "abreviacion": m.moneda.abreviacion,
                 },
-                "tiempo_acreditacion": "1-2 horas"  # si lo querés fijo por ahora
+                "tiempo_acreditacion": "2-3 minutos"  # si lo querés fijo por ahora
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
     context = {

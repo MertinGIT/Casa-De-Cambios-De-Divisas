@@ -587,8 +587,6 @@
       $(".pin-digit").val("");
       });
 
-
-
   // Función separada para procesar la transacción
   function procesarTransaccion() {
     console.log("Procesando transacción...");
@@ -644,12 +642,14 @@
           // PASO 2: Enviar al banco
           const transaccionData = {
             email: "{{ email_cliente_operativo}}",
+            
             monto: campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val(),
             moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
             tipo: campos.op === "venta" ? "compra" : "venta",
             estado: "aceptada",
             referencia: "TX-" + Date.now(),
             motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`
+
           };
 
           console.log("Enviando al banco:", transaccionData);

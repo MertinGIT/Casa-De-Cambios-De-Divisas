@@ -17,12 +17,15 @@ def transaccion_banco_view(request):
 
     elif request.method == 'POST':
         serializer = TransaccionBancoSerializer(data=request.data)
+        print("Datos recibidos para crear transacción:", serializer)
         if serializer.is_valid():
-            email = request.data.get("email")
-            monto = float(request.data.get("monto", 0))
+            nro_cuenta = request.data.get("nro_cuenta")
+            monto = request.data.get("monto", 0)
             tipo = request.data.get("tipo")  # debito / credito
 
-            cuenta, created = Cliente.objects.get_or_create(email=email)
+            cuenta, created = Cuenta.objects.get_or_create(nro_cuenta=nro_cuenta)
+            print("Cuenta obtenida o creada:", cuenta, "Creada:", created)
+            transaccion = serializer.save(cuenta=cuenta)
 
             if tipo == "compra":
                 if cuenta.saldo >= monto:

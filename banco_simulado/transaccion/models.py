@@ -122,11 +122,9 @@ class Transaccion(models.Model):
     ]
     """
     cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE, related_name="transacciones")
-    """
     cuenta_destino = models.ForeignKey(
         Cuenta, on_delete=models.SET_NULL, null=True, blank=True, related_name="transferencias_recibidas"
     )
-    """
     cedula = models.CharField(max_length=15)
     monto = models.DecimalField(max_digits=15, decimal_places=2)
     tipo = models.CharField(max_length=20)
@@ -135,9 +133,7 @@ class Transaccion(models.Model):
     referencia = models.CharField(max_length=50, blank=True, null=True, unique=True)
     motivo = models.TextField(blank=True, null=True)
     descripcion = models.CharField(max_length=200, blank=True, null=True)
-    """
-    usuario_ejecutor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    """
+    #usuario_ejecutor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         constraints = [
