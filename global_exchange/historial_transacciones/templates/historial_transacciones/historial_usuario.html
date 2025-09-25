@@ -1,0 +1,205 @@
+{% extends 'baseDashboardUsuario.html' %}
+{% load humanize %}
+{% block dashboard_content %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<style>
+body{font-family:'Inter',sans-serif!important;}
+.main-wrapper{padding:24px;min-height:100vh;max-width:1200px;margin:0 auto;}
+.page-container{background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.1);}
+.page-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:32px;}
+.page-title{font-size:24px;font-weight:600;margin:0;color:#1a1a1a;}
+.user-box{background:#f3f4f6;padding:12px 18px;border-radius:10px;font-size:13px;line-height:1.4;}
+.user-box span{display:block;color:#374151;}
+.table-container{overflow-x:auto;border:1px solid #e1e5e9;border-radius:8px;}
+.custom-table{width:100%;border-collapse:collapse;background:#fff;}
+.custom-table thead th{padding:14px 18px;font-size:13px;text-align:left;font-weight:600;color:#5D5FEF;border-bottom:1px solid #f0f0f0;}
+.custom-table tbody td{padding:18px;font-size:14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.custom-table tbody tr:hover{background:#f9fafb;}
+.status-badge,.type-badge{padding:6px 14px;border-radius:4px;font-size:12px;font-weight:500;display:inline-block;min-width:80px;text-align:center;}
+.status-confirmada{background:#9CDBA6;color:#028a39;}
+.status-pendiente{background:#FFF2CC;color:#B68B00;}
+.status-cancelada{background:#FFC5C5;color:#C40000;}
+.type-compra{background:#CCE5FF;color:#005fa3;}
+.type-venta{background:#FFE4CC;color:#a65400;}
+.no-results{text-align:center;padding:52px 16px;color:#B5B7C0;font-style:italic;}
+.actions-bar{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-export{background:#152C70;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;}
+.btn-export:hover{background:#1b3c90;}
+.search-input{border:1px solid #e1e5e9;border-radius:6px;padding:8px 12px;font-size:14px;width:240px;}
+.search-input:focus{outline:none;border-color:#5D5FEF;box-shadow:0 0 0 3px rgba(93,95,239,.15);}
+.search-field-selector{border:1px solid #e1e5e9;border-radius:6px;padding:8px 10px;font-size:14px;background:#fff;}
+.header-right form{display:flex;align-items:center;gap:10px;}
+@media(max-width:768px){
+  .custom-table thead{display:none;}
+  .custom-table tbody tr{display:block;margin:0 0 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px;}
+  .custom-table tbody td{display:block;padding:6px 4px;border:none;}
+  .custom-table tbody td:before{content:attr(data-label) ": ";font-weight:600;color:#5D5FEF;min-width:90px;display:inline-block;}
+}
+.filters-inline{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;}
+.filter-control{border:1px solid #e1e5e9;border-radius:6px;padding:6px 10px;font-size:13px;}
+.filter-label{font-size:12px;font-weight:600;color:#555;margin-right:4px;}
+.reset-link{font-size:12px;color:#5D5FEF;text-decoration:none;margin-left:4px;}
+.reset-link:hover{text-decoration:underline;}
+@media(max-width:768px){
+  .filters-inline{flex-direction:column;align-items:stretch;}
+}
+.export-bar{
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+  margin:-12px 0 18px 0;
+  flex-wrap:wrap;
+}
+.btn-export-main{
+  background:#152C70;
+  color:#fff;
+  border:none;
+  padding:9px 18px;
+  border-radius:6px;
+  font-size:13px;
+  font-weight:500;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  box-shadow:0 1px 2px rgba(0,0,0,.15);
+}
+.btn-export-main:hover{background:#1b3c90;}
+.actions-bar .btn-export{display:none;} /* ocultar anteriores si quedaron */
+@media(max-width:768px){
+  .export-bar{justify-content:stretch;}
+  .export-bar button{flex:1;}
+}
+</style>
+
+<div class="main-wrapper">
+  <div class="page-container">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <h1 class="page-title">Historial de Transacciones</h1>
+        <div class="user-box">
+          <strong>Usuario:</strong> <span>{{ request.user.username }}</span>
+          <span>Email: {{ request.user.email|default:"-" }}</span>
+          <span>Total: {{ transacciones.count }} transacción(es)</span>
+        </div>
+      </div>
+      <div class="actions-bar">
+        <form method="get">
+          <input name="q" value="{{ q }}" class="search-input" placeholder="Buscar...">
+          <select name="campo" class="search-field-selector">
+            <option value="">Busca por</option>
+            <option value="id" {% if campo == 'id' %}selected{% endif %}>ID</option>
+            <option value="estado" {% if campo == 'estado' %}selected{% endif %}>Estado</option>
+            <option value="tipo" {% if campo == 'tipo' %}selected{% endif %}>Tipo</option>
+          </select>
+          <div class="filters-inline">
+            <div>
+              <span class="filter-label">Moneda</span>
+              <select name="moneda" class="filter-control">
+                <option value="">Todas</option>
+                {% for m in monedas_disponibles %}
+                  <option value="{{ m }}" {% if m == moneda_sel %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div>
+              <span class="filter-label">Desde</span>
+              <input type="date" name="fecha_inicio" value="{{ fecha_inicio }}" class="filter-control">
+            </div>
+            <div>
+              <span class="filter-label">Hasta</span>
+              <input type="date" name="fecha_fin" value="{{ fecha_fin }}" class="filter-control">
+            </div>
+            <div style="align-self:flex-end;">
+              <button class="btn-export" style="background:#5D5FEF" type="submit">Filtrar</button>
+              <a class="reset-link" href="{% url 'historial_transacciones:historial_usuario' %}">Limpiar</a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Barra de exportaciones separada -->
+    <div class="export-bar">
+      <button class="btn-export-main" onclick="window.location='{% url 'historial_transacciones:exportar_historial_excel' %}'">
+        <!-- icono excel simple -->
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M4 2h10l6 6v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4c0-1.1.9-2 2-2zm9 1.5V9h5.5L13 3.5zM8.2 18l2.2-3.6L8.4 11h1.8l1.1 2.3L12.4 11h1.7l-1.9 3.3 2.2 3.7h-1.9l-1.3-2.6-1.4 2.6H8.2z"/></svg>
+        Excel
+      </button>
+      <button class="btn-export-main" onclick="window.location='{% url 'historial_transacciones:exportar_historial_pdf' %}'" style="background:#B42318;">
+        <!-- icono pdf simple -->
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2zm7 1.5V9h5.5L13 3.5zM8 12h3c1.1 0 2 .9 2 2 0 1.2-.9 2-2 2H9v2H8v-6zm3 3c.6 0 1-.4 1-1s-.4-1-1-1H9v2h2zM15 12h3v1h-2v1h2v1h-2v2h-1v-5z"/></svg>
+        PDF
+      </button>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Tipo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in transacciones %}
+          <tr onclick="abrirDetalle({{ t.id }})" style="cursor:pointer">
+            <td data-label="ID">{{ t.id }}</td>
+            <td data-label="Fecha">{{ t.fecha|date:"d/m/Y H:i" }}</td>
+            <td data-label="Monto">{{ t.monto|floatformat:2 }}</td>
+            <td data-label="Estado">
+              {% if t.estado == 'confirmada' %}
+                <span class="status-badge status-confirmada">Confirmada</span>
+              {% elif t.estado == 'pendiente' %}
+                <span class="status-badge status-pendiente">Pendiente</span>
+              {% else %}
+                <span class="status-badge status-cancelada">
+                  {% if 'cancelada' in t.estado %}Cancelada{% else %}{{ t.estado }}{% endif %}
+                </span>
+              {% endif %}
+            </td>
+            <td data-label="Tipo">
+              {% if t.tipo == 'compra' %}
+                <span class="type-badge type-compra">Compra</span>
+              {% else %}
+                <span class="type-badge type-venta">Venta</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" class="no-results">No existen transacciones.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-detalle" class="modal fade" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" id="modal-detalle-content"></div>
+  </div>
+</div>
+
+<script>
+function abrirDetalle(id){
+  const url = "{% url 'historial_transacciones:detalle_transaccion' 0 %}".replace('0', id);
+  $('#modal-detalle').modal('show');
+  $('#modal-detalle-content').html('<div class="p-4 text-center">Cargando...</div>');
+  fetch(url).then(r=>r.text()).then(html=>{
+    $('#modal-detalle-content').html(html);
+  }).catch(()=>$('#modal-detalle-content').html('<div class="p-4 text-danger">Error</div>'));
+}
+</script>
+{% endblock %}

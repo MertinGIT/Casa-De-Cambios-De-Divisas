@@ -3,6 +3,19 @@ from usuarios.models import CustomUser
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 
+class TransaccionQuerySet(models.QuerySet):
+    def recientes(self, limite=5, usuario=None):
+        qs = self.order_by('-fecha')
+        if usuario is not None:
+            qs = qs.filter(usuario=usuario)
+        return qs[:limite]
+
+class TransaccionManager(models.Manager):
+    def get_queryset(self):
+        return TransaccionQuerySet(self.model, using=self._db)
+    def recientes(self, limite=5, usuario=None):
+        return self.get_queryset().recientes(limite=limite, usuario=usuario)
+
 class Transaccion(models.Model):
     """
     Representa una operación de cambio de moneda realizada por un usuario.
@@ -54,6 +67,7 @@ class Transaccion(models.Model):
     tasa_usada = models.DecimalField(max_digits=23, decimal_places=8)  # tasa congelada al iniciar la operación
     tasa_ref = models.ForeignKey(TasaDeCambio, on_delete=models.PROTECT)  # referencia a la tasa vigente
 
+
     
     def __str__(self):
         """
@@ -65,3 +79,19 @@ class Transaccion(models.Model):
         """
         return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
 
+    objects = TransaccionManager()
+
+
+    class Meta:
+        ordering = ["-fecha"]
+        indexes = [
+            models.Index(fields=["-fecha"]),
+            models.Index(fields=["estado"]),
+        ]
+
+    @classmethod
+    def ultimas(cls, limite=5, usuario=None):
+        return cls.objects.recientes(limite=limite, usuario=usuario)
+
+    def __str__(self):
+        return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"

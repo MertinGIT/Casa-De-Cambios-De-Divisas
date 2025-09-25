@@ -14,6 +14,10 @@ import requests
 from metodos_pagos.models import MetodoPago
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.utils import timezone
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
 
 @login_required
 def simulador_operaciones(request):
@@ -36,6 +40,19 @@ def simulador_operaciones(request):
       {"id": 3, "fecha": '19/08/2024 05:40', "monto": 500.0, "estado": "Cancelado", "tipo": "Venta"},
   ]
 
+    # === Transacciones dinámicas: últimas 5 del usuario ===
+    transacciones_qs = Transaccion.ultimas(limite=5, usuario=request.user)\
+        .select_related("moneda_origen", "moneda_destino")
+
+    # Para el gráfico (orden cronológico ascendente)
+    transacciones_chart = [
+        {
+            "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
+            "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
+            "monto": float(t.monto),
+        }
+        for t in reversed(list(transacciones_qs))
+    ]
     # === Monedas activas desde la BD ===
     monedas = list(Moneda.objects.filter(estado=True).values("id","abreviacion", "nombre"))
     print("monedas: ",monedas,flush=True)
@@ -59,16 +76,18 @@ def simulador_operaciones(request):
         if abrev not in data_por_moneda:
             data_por_moneda[abrev] = []
         data_por_moneda[abrev].insert(0, {
-            "id": tasa.id,  # <-- guardamos el ID
+            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta)
         })
     print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
     # Comisiones y variables
-    COMISION_VTA = 100
-    COMISION_COM = 50
+    COMISION_VTA = 0
+    COMISION_COM = 0
 
     # === Segmentación según usuario ===
     descuento = 0
@@ -102,6 +121,8 @@ def simulador_operaciones(request):
             break
             
     if tasa_default:
+        COMISION_VTA = tasa_default.get("comision_venta", 0)
+        COMISION_COM = tasa_default.get("comision_compra", 0)
         PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
         # Calculamos las tasas considerando las comisiones
@@ -157,6 +178,8 @@ def simulador_operaciones(request):
                 else:
                     # Tomar el registro más reciente
                     ultimo = registros[-1]
+                    COMISION_VTA = ultimo.get("comision_venta", 0)
+                    COMISION_COM = ultimo.get("comision_compra", 0)
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
                     # === Fórmula de tu home ===
@@ -224,15 +247,15 @@ def simulador_operaciones(request):
         "cliente_operativo": cliente_operativo,
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
-        "transacciones": transacciones,
+        "transacciones": transacciones_qs,  # para la tabla
         "email_cliente_operativo": email_cliente_operativo,
         'medios': metodos_pago,
         "PB_MONEDA": PB_MONEDA,
         "TASA_REF_ID": TASA_REF_ID,
+        "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
-
 
 
 

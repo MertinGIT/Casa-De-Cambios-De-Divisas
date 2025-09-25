@@ -41,6 +41,18 @@ class TasaDeCambioForm(forms.ModelForm):
         required=True,
         widget=forms.NumberInput(attrs={"step":  "any"})  # <-- importante
     )
+    comision_compra = forms.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        required=False,
+        widget=forms.NumberInput(attrs={"step": "any", "class": "custom-input"})
+    )
+    comision_venta = forms.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        required=False,
+        widget=forms.NumberInput(attrs={"step": "any", "class": "custom-input"})
+    )
     
     vigencia = forms.DateTimeField(
         input_formats=["%d/%m/%Y %H:%M", "%Y-%m-%d %H:%M"],  # <-- acepta ambos
@@ -96,6 +108,36 @@ class TasaDeCambioForm(forms.ModelForm):
             monto = monto.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return monto
 
+    def clean_comision_compra(self):
+        """
+        Valida y redondea la comisión de compra.
+
+        - Verifica que la comisión no sea negativa.
+        - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
+
+        """
+        comision = self.cleaned_data.get("comision_compra")
+        if comision is not None:
+            if comision < 0:
+                raise forms.ValidationError("La comisión de compra no puede ser negativa.")
+            comision = comision.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return comision
+
+    def clean_comision_venta(self):
+        """
+        Valida y redondea la comisión de venta.
+
+        - Verifica que la comisión no sea negativa.
+        - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
+
+        """
+        comision = self.cleaned_data.get("comision_venta")
+        if comision is not None:
+            if comision < 0:
+                raise forms.ValidationError("La comisión de venta no puede ser negativa.")
+            comision = comision.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        return comision
+
     def clean(self):
         """
         Valida que la moneda de origen y destino no sean iguales.
@@ -116,17 +158,21 @@ class TasaDeCambioForm(forms.ModelForm):
 
     class Meta:
         model = TasaDeCambio
-        fields = ['moneda_origen', 'moneda_destino', 'monto_compra', 'monto_venta', 'vigencia', 'estado']
+        fields = ['moneda_origen', 'moneda_destino', 'monto_compra', 'monto_venta', 'comision_compra', 'comision_venta', 'vigencia', 'estado']
         labels = {
             "moneda_origen": "Moneda Origen",
             "moneda_destino": "Moneda Destino",
             "monto_compra": "Compra",
             "monto_venta": "Venta",
+            "comision_compra": "Comisión Compra",
+            "comision_venta": "Comisión Venta",
             "vigencia": "Vigencia",
         }
         widgets = {
             "moneda_origen": forms.Select(attrs={"class": "custom-input", "id": "id_moneda_origen"}),
             "moneda_destino": forms.Select(attrs={"class": "custom-input", "id": "id_moneda_destino"}),
+            "comision_compra": forms.NumberInput(attrs={"step": "any", "class": "custom-input"}),
+            "comision_venta": forms.NumberInput(attrs={"step": "any", "class": "custom-input"}),
         }
 
     def __init__(self, *args, **kwargs):

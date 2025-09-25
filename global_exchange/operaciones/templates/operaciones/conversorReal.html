@@ -1,5 +1,7 @@
 {% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
 {% block dashboard_content %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <div class="dashboard-grid">
   <!-- COLUMNA IZQUIERDA -->
   <div class="col-left">
@@ -40,7 +42,7 @@
 
       <!-- Estadísticas rápidas -->
       <section class="estadisticas-rapidas">
-        {% include 'operaciones/medios_acreditacion.html' %}
+        {% include 'operaciones/limites_operaciones.html' %}
       </section>
 
       <!-- Conversor -->
@@ -764,14 +766,9 @@
 
       // Chart.js
       const ctx = document.getElementById('grafico-transacciones').getContext('2d');
-      const dataTransacciones = [
-        { dia: '15/09', tipo: 'Compra', monto: 1200 },
-        { dia: '15/09', tipo: 'Venta', monto: 500 },
-        { dia: '14/09', tipo: 'Venta', monto: 850 },
-        { dia: '13/09', tipo: 'Compra', monto: 5000 },
-        { dia: '12/09', tipo: 'Venta', monto: 3300 },
-      ];
-      new Chart(ctx, {
+      const dataTransacciones = JSON.parse('{{ data_transacciones_json|escapejs }}');
+      if (dataTransacciones.lenght != 0) {
+        new Chart(ctx, {
         type: 'bar',
         data: {
           labels: dataTransacciones.map(d => d.dia),
@@ -783,7 +780,12 @@
         },
         options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
-
+      } else {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#555";
+        ctx.textAlign = "center";
+        ctx.fillText("No hay datos para mostrar", ctx.canvas.width / 2, ctx.canvas.height / 2);
+      }
     });
 </script>
 
@@ -792,7 +794,7 @@
     display: grid;
     grid-template-columns: minmax(300px, 1fr) minmax(350px, 1.2fr);
     gap: 2rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 2rem auto;
   }
   .col-left {
@@ -892,6 +894,7 @@
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    height: 100%;
   }
   .tabla-transacciones {
     width: 100%;
