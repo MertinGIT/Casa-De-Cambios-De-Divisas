@@ -1,0 +1,766 @@
+
+<!-- MODAL MEDIOS DE ACREDITACIÓN -->
+<div id="modal-acreditacion" class="modal-acreditacion">
+    <div class="modal-overlay" onclick="cerrarModalAcreditacion()"></div>
+    <div class="modal-content-acreditacion">
+        <div class="modal-header-acreditacion">
+            <span class="close-btn" onclick="cerrarModalAcreditacion()">&times;</span>
+            <h3 class="modal-title">Seleccione medio de acreditación</h3>
+            <p class="modal-subtitle">Dónde desea recibir: <span class="monto-acreditar" id="monto_a_acreditar"></span></p>
+        </div>
+
+        <div class="modal-body-acreditacion">
+            <form id="form-medio-acreditacion" autocomplete="off">
+                <!-- Medios de acreditación dinámicos -->
+                <div class="medios-container" id="medios-acreditacion-container">
+                    <!-- Se llenarán dinámicamente desde la BD -->
+                </div>
+
+                <!-- Información del medio seleccionado -->
+                <div id="info-acreditacion" class="info-acreditacion" style="display: none;">
+                    <div class="acreditacion-seleccionada">
+                        <h4 class="info-title">Información de acreditación</h4>
+                        <div class="info-detalle">
+                            <div class="detalle-row">
+                                <span class="detalle-label">Entidad:</span>
+                                <span class="detalle-valor" id="detalle-entidad">-</span>
+                            </div>
+                            <div class="detalle-row">
+                                <span class="detalle-label">Tipo de cuenta:</span>
+                                <span class="detalle-valor" id="detalle-tipo">-</span>
+                            </div>
+                            <div class="detalle-row">
+                                <span class="detalle-label">Número:</span>
+                                <span class="detalle-valor" id="detalle-numero">-</span>
+                            </div>
+                            <div class="detalle-row">
+                                <span class="detalle-label">Titular:</span>
+                                <span class="detalle-valor" id="detalle-titular">-</span>
+                            </div>
+                            <div class="detalle-row">
+                                <span class="detalle-label">Moneda:</span>
+                                <span class="detalle-valor" id="detalle-moneda">-</span>
+                            </div>
+                        </div>
+
+                        <div class="tiempo-acreditacion">
+                            <div class="tiempo-icon">⏰</div>
+                            <div class="tiempo-info">
+                                <span class="tiempo-label">Tiempo estimado:</span>
+                                <span class="tiempo-valor" id="tiempo-estimado">Inmediato</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado si no hay medios -->
+                <div id="sin-medios" class="sin-medios" style="display: none;">
+                    <div class="sin-medios-icon">🏦</div>
+                    <h4>No hay medios de acreditación disponibles</h4>
+                    <p>Para poder recibir sus fondos, debe configurar al menos un medio de acreditación en su perfil.
+                    </p>
+                    <button type="button" class="btn-configurar" onclick="irAConfiguracion()">
+                        Configurar medios
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="modal-footer-acreditacion">
+            <button type="button" class="btn-modal-acreditacion secondary" onclick="cerrarModalAcreditacion()">
+                <span>Cancelar</span>
+            </button>
+            <button type="button" class="btn-modal-acreditacion primary" id="btn-confirmar-acreditacion" disabled>
+                <span>Confirmar acreditación</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Datos simulados desde la BD - en tu implementación vendrán del backend
+    const mediosAcreditacionData = JSON.parse('{{ medios_acreditacion|escapejs }}');
+
+
+    let medioSeleccionado = null;
+
+    function mostrarModalAcreditacion() {
+        const modal = document.getElementById('modal-acreditacion');
+        modal.style.display = 'flex';
+
+        // Cargar medios de acreditación
+        cargarMediosAcreditacion();
+
+        // Animación de entrada
+        const content = modal.querySelector('.modal-content-acreditacion');
+        content.style.transform = 'scale(0.7) translateY(-50px)';
+        content.style.opacity = '0';
+
+        requestAnimationFrame(() => {
+            content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            content.style.transform = 'scale(1) translateY(0)';
+            content.style.opacity = '1';
+        });
+    }
+
+    function cerrarModalAcreditacion() {
+        const modal = document.getElementById('modal-acreditacion');
+        const content = modal.querySelector('.modal-content-acreditacion');
+
+        content.style.transition = 'all 0.2s ease-out';
+        content.style.transform = 'scale(0.7) translateY(-50px)';
+        content.style.opacity = '0';
+
+        setTimeout(() => {
+            modal.style.display = 'none';
+            resetearFormularioAcreditacion();
+        }, 200);
+    }
+
+    function cargarMediosAcreditacion() {
+        const container = document.getElementById('medios-acreditacion-container');
+        const sinMedios = document.getElementById('sin-medios');
+
+        if (mediosAcreditacionData.length === 0) {
+            container.style.display = 'none';
+            sinMedios.style.display = 'block';
+            return;
+        }
+
+        container.innerHTML = '';
+        sinMedios.style.display = 'none';
+
+        mediosAcreditacionData.forEach(medio => {
+            const medioElement = createMedioElement(medio);
+            container.appendChild(medioElement);
+            console.log(medio.numero_cuenta); // probá que se imprime
+        });
+    }
+
+    function createMedioElement(medio) {
+        const div = document.createElement('div');
+        div.className = 'medio-item';
+
+        // Determinar icono según tipo de entidad
+        let icono = '🏦';
+        switch (medio.entidad.tipo) {
+            case 'BILLETERA':
+                icono = '📱';
+                break;
+            case 'COOPERATIVA':
+                icono = '🏢';
+                break;
+            case 'FINTECH':
+                icono = '💳';
+                break;
+        }
+
+        // Determinar descripción según tipo de cuenta
+        let tipoDescripcion = '';
+        switch (medio.tipo_cuenta) {
+            case 'AHORRO':
+                tipoDescripcion = 'Cuenta de Ahorro';
+                break;
+            case 'CORRIENTE':
+                tipoDescripcion = 'Cuenta Corriente';
+                break;
+            case 'BILLETERA':
+                tipoDescripcion = 'Billetera Digital';
+                break;
+            case 'TARJETA_DEBITO':
+                tipoDescripcion = 'Tarjeta de Débito';
+                break;
+            case 'TARJETA_CREDITO':
+                tipoDescripción = 'Tarjeta de Crédito';
+                break;
+            default:
+                tipoDescripcion = medio.tipo_cuenta;
+        }
+
+        div.innerHTML = `
+                <input type="radio" id="medio-${medio.id}" name="medio_acreditacion" value="${medio.id}" class="medio-radio">
+                <label for="medio-${medio.id}" class="medio-label">
+                    <div class="medio-icon">${icono}</div>
+                    <div class="medio-info">
+                        <span class="medio-nombre">${medio.entidad.nombre}</span>
+                        <span class="medio-desc">${tipoDescripcion} • ${medio.numero_cuenta} • ${medio.moneda.abreviacion}</span>
+                    </div>
+                    <div class="medio-check">✓</div>
+                </label>
+            `;
+
+        // Agregar event listener
+        const radio = div.querySelector('.medio-radio');
+        radio.addEventListener('change', () => {
+            if (radio.checked) {
+                seleccionarMedio(medio);
+            }
+        });
+
+        return div;
+    }
+
+    function seleccionarMedio(medio) {
+        medioSeleccionado = medio;
+
+        // Mostrar información del medio seleccionado
+        const infoAcreditacion = document.getElementById('info-acreditacion');
+        infoAcreditacion.style.display = 'block';
+
+        // Actualizar detalles
+        document.getElementById('detalle-entidad').textContent = medio.entidad.nombre;
+        document.getElementById('detalle-tipo').textContent = getTipoDescripcion(medio.tipo_cuenta);
+        document.getElementById('detalle-numero').textContent = medio.numero_cuenta;
+        document.getElementById('detalle-titular').textContent = medio.titular;
+        document.getElementById('detalle-moneda').textContent = `${medio.moneda.nombre} (${medio.moneda.abreviacion})`;
+        document.getElementById('tiempo-estimado').textContent = medio.tiempo_acreditacion;
+
+        // Habilitar botón de confirmar
+        document.getElementById('btn-confirmar-acreditacion').disabled = false;
+
+        // Animación suave
+        infoAcreditacion.style.opacity = '0';
+        infoAcreditacion.style.transform = 'translateY(-10px)';
+
+        setTimeout(() => {
+            infoAcreditacion.style.transition = 'all 0.3s ease';
+            infoAcreditacion.style.opacity = '1';
+            infoAcreditacion.style.transform = 'translateY(0)';
+        }, 10);
+    }
+
+    function getTipoDescripcion(tipo) {
+        const tipos = {
+            'AHORRO': 'Cuenta de Ahorro',
+            'CORRIENTE': 'Cuenta Corriente',
+            'BILLETERA': 'Billetera Digital',
+            'TARJETA_DEBITO': 'Tarjeta de Débito',
+            'TARJETA_CREDITO': 'Tarjeta de Crédito'
+        };
+        return tipos[tipo] || tipo;
+    }
+
+    function confirmarAcreditacion() {
+        if (!medioSeleccionado) {
+            alert('Por favor seleccione un medio de acreditación');
+            return;
+        }
+
+        console.log('Medio de acreditación seleccionado:', medioSeleccionado);
+
+        // Guardar objeto global completo para usar en modal PIN
+    window.datosAcreditacion = {
+        id: medioSeleccionado.id,
+        entidad: medioSeleccionado.entidad.id,
+        numero_cuenta: medioSeleccionado.numero_cuenta,
+        titular: medioSeleccionado.titular,
+        tipo_cuenta: medioSeleccionado.tipo_cuenta,
+        moneda: medioSeleccionado.moneda.abreviacion,
+    };
+        console.log("Medio seleccionado guardado globalmente:", window.medioSeleccionadoGlobal);
+
+        // Cerrar modal
+        cerrarModalAcreditacion();
+        mostrarModalPin();
+    }
+
+    function resetearFormularioAcreditacion() {
+        // Limpiar selección
+        const radios = document.querySelectorAll('input[name="medio_acreditacion"]');
+        radios.forEach(radio => radio.checked = false);
+
+        // Ocultar información
+        document.getElementById('info-acreditacion').style.display = 'none';
+
+        // Deshabilitar botón
+        document.getElementById('btn-confirmar-acreditacion').disabled = true;
+
+        // Limpiar variable
+        medioSeleccionado = null;
+    }
+
+    function irAConfiguracion() {
+        alert('Redirigir a configuración de medios de acreditación');
+        // Aquí redirigirías al CRUD de medios de acreditación
+    }
+
+    // Event listeners
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('btn-confirmar-acreditacion').addEventListener('click', confirmarAcreditacion);
+
+        // Cerrar con ESC
+        document.addEventListener('keydown', function (e) {
+            const modal = document.getElementById('modal-acreditacion');
+            if (e.key === 'Escape' && modal && modal.style.display === 'flex') {
+                cerrarModalAcreditacion();
+            }
+        });
+    });
+
+    // Función para cargar medios desde el backend (para tu implementación)
+    function cargarMediosDesdeBackend(clienteId) {
+        // En tu implementación real, harías una llamada AJAX:
+        /*
+        fetch(`/api/clientes/${clienteId}/medios-acreditacion/`)
+            .then(response => response.json())
+            .then(data => {
+                mediosAcreditacionData = data;
+                cargarMediosAcreditacion();
+            })
+            .catch(error => {
+                console.error('Error cargando medios:', error);
+                document.getElementById('sin-medios').style.display = 'block';
+            });
+        */
+    }
+    function getCampos() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
+    }
+}
+
+
+function actualizarMonto() {
+    const campos = getCampos();  // obtiene los inputs activos según operación
+    const total = campos.$resultado.val();        // valor del input resultado
+    const moneda_a_pagar = campos.$destino.val(); // moneda destino
+
+    $("#monto_a_acreditar").text(total + " " + moneda_a_pagar);
+}
+// Llamar cuando cambia la operación
+$("input[name='operacion']").change(actualizarMonto);
+
+// Llamar cuando cambia el input de valor o cuando se hace la conversión
+$("#valor-compra, #valor-venta").on("input", actualizarMonto);
+
+// O si tienes un botón de conversión:
+$("#btn-convertir").click(actualizarMonto);
+
+    
+</script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f4f6fb;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+
+    .demo-btn {
+        background: #5d5fef;
+        color: white;
+        border: none;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .demo-btn:hover {
+        background: #4a4cd9;
+        transform: translateY(-2px);
+    }
+
+    /* MODAL ACREDITACIÓN */
+    .modal-acreditacion {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        justify-content: center;
+        align-items: center;
+        z-index: 10000;
+        padding: 1rem;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .modal-content-acreditacion {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+        position: relative;
+        z-index: 1;
+        max-width: 500px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header-acreditacion {
+        padding: 2rem 2rem 1rem;
+        text-align: center;
+        position: relative;
+        border-bottom: 1px solid #e8ecf7;
+    }
+
+    .close-btn {
+        position: absolute;
+        top: 1rem;
+        right: 1.5rem;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f4f6fb;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 1.2rem;
+        color: #666;
+        transition: all 0.2s ease;
+    }
+
+    .close-btn:hover {
+        background: #e8ecf7;
+        color: #1e2d70;
+    }
+
+    .modal-title {
+        color: #1e2d70;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .modal-subtitle {
+        color: #666;
+        font-size: 0.95rem;
+    }
+
+    .monto-acreditar {
+        color: #16a34a;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .modal-body-acreditacion {
+        padding: 1.5rem 2rem;
+    }
+
+    .modal-footer-acreditacion {
+        padding: 1rem 2rem 2rem;
+        display: flex;
+        gap: 0.75rem;
+        border-top: 1px solid #e8ecf7;
+    }
+
+    /* MEDIOS DE ACREDITACIÓN */
+    .medios-container {
+        margin-bottom: 1.5rem;
+    }
+
+    .medio-item {
+        margin-bottom: 0.75rem;
+    }
+
+    .medio-radio {
+        display: none;
+    }
+
+    .medio-label {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border: 2px solid #e8ecf7;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #fff;
+        position: relative;
+    }
+
+    .medio-radio:checked+.medio-label {
+        border-color: #5d5fef;
+        background: #f8f8ff;
+    }
+
+    .medio-radio:checked+.medio-label .medio-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .medio-label:hover {
+        border-color: #c2c9d6;
+        background: #f9fafc;
+    }
+
+    .medio-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .medio-info {
+        flex: 1;
+        text-align: left;
+    }
+
+    .medio-nombre {
+        display: block;
+        font-weight: 600;
+        color: #1e2d70;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .medio-desc {
+        display: block;
+        color: #666;
+        font-size: 0.8rem;
+    }
+
+    .medio-check {
+        width: 20px;
+        height: 20px;
+        background: #5d5fef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    /* INFORMACIÓN DE ACREDITACIÓN */
+    .info-acreditacion {
+        background: #f4f6fb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        border: 1px solid #e8ecf7;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .info-title {
+        color: #1e2d70;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .info-detalle {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        border: 1px solid #e8ecf7;
+        margin-bottom: 1rem;
+    }
+
+    .detalle-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        align-items: center;
+    }
+
+    .detalle-row:last-child {
+        margin-bottom: 0;
+    }
+
+    .detalle-label {
+        color: #666;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .detalle-valor {
+        color: #1e2d70;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-align: right;
+    }
+
+    .tiempo-acreditacion {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        background: #e8f5e8;
+        border: 1px solid #c6f6d5;
+        border-radius: 8px;
+        padding: 0.75rem;
+    }
+
+    .tiempo-icon {
+        font-size: 1.2rem;
+    }
+
+    .tiempo-info {
+        flex: 1;
+    }
+
+    .tiempo-label {
+        display: block;
+        color: #065f46;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    .tiempo-valor {
+        display: block;
+        color: #047857;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    /* SIN MEDIOS */
+    .sin-medios {
+        text-align: center;
+        padding: 2rem;
+        background: #f9f9f9;
+        border-radius: 12px;
+        border: 2px dashed #ddd;
+    }
+
+    .sin-medios-icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.6;
+    }
+
+    .sin-medios h4 {
+        color: #1e2d70;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .sin-medios p {
+        color: #666;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+
+    .btn-configurar {
+        background: #5d5fef;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-configurar:hover {
+        background: #4a4cd9;
+        transform: translateY(-1px);
+    }
+
+    /* BOTONES */
+    .btn-modal-acreditacion {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border: none;
+        border-radius: 12px;
+        padding: 0.9rem 1.5rem;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 1;
+    }
+
+    .btn-modal-acreditacion:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
+    .btn-modal-acreditacion.primary {
+        background: #5d5fef;
+        color: #fff;
+    }
+
+    .btn-modal-acreditacion.primary:hover:not(:disabled) {
+        background: #4a4cd9;
+        transform: translateY(-1px);
+    }
+
+    .btn-modal-acreditacion.secondary {
+        background: #f4f6fb;
+        color: #666;
+        border: 1px solid #e8ecf7;
+    }
+
+    .btn-modal-acreditacion.secondary:hover {
+        background: #e8ecf7;
+        color: #1e2d70;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 500px) {
+        .modal-content-acreditacion {
+            max-width: 95%;
+            margin: 1rem;
+        }
+
+        .modal-header-acreditacion,
+        .modal-body-acreditacion,
+        .modal-footer-acreditacion {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        .medio-label {
+            padding: 0.75rem;
+        }
+
+        .medio-icon {
+            font-size: 1.2rem;
+            margin-right: 0.75rem;
+        }
+
+        .modal-footer-acreditacion {
+            flex-direction: column;
+        }
+
+        .detalle-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+
+        .detalle-valor {
+            text-align: left;
+        }
+    }
+</style>

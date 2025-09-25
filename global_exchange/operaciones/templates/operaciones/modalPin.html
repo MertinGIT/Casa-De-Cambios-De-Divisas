@@ -136,7 +136,6 @@
       cerrarModalPin();
       const campos = getCampos();
 
-
       email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
       const modal = $("#modal-pin");
         const monto = campos.$valor.val();
@@ -152,6 +151,8 @@
           estado: "aceptada",
           referencia: "TX-" + Date.now(),
           motivo: `Cambio de ${moneda}`,
+          cedula: "{{cliente_operativo.cedula}}",
+          cuenta: window.datosAcreditacion.numero_cuenta,                          //nro de cuenta en realidad es
         };
         console.log("envio la transaccion al banco:", transaccionData);
         // 🔹 Enviar al banco
@@ -170,10 +171,12 @@
               $("#modal-pin").fadeOut();
               // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
               window.transaccionActual = {
-                ...window.datos,  // datos del padre
+                ...window.datos, // datos del padre
+                ...window.datosAcreditacion,
                 ...transaccionData      
               };
-
+              
+              
               $("#modal-exito").fadeIn().css("display", "flex");
               mostrarModalExito();
             } else {

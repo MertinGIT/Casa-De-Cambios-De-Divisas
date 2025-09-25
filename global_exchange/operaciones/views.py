@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
+from medio_acreditacion.models import MedioAcreditacion
 from operaciones.models import Transaccion
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
@@ -230,6 +231,30 @@ def simulador_operaciones(request):
     print("cliente_operativo: ",cliente_operativo,flush=True)
     print("TC_VTA 222: ",TC_VTA,flush=True)
     print("TC_COMP222: ",TC_COMP,flush=True)
+
+
+    # Obtener medios de acreditación del cliente operativo
+    medios_acreditacion = []
+    if cliente_operativo:
+        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True)
+        for m in medios_qs:
+            medios_acreditacion.append({
+                "id": m.id,
+                "entidad": {
+                    "nombre": m.entidad.nombre,
+                    "tipo": m.entidad.tipo,
+                },
+                "tipo_cuenta": m.tipo_cuenta,
+                "numero_cuenta": m.numero_cuenta,
+                "titular": m.titular,
+                "documento_titular": m.documento_titular,
+                "moneda": {
+                    "nombre": m.moneda.nombre,
+                    "abreviacion": m.moneda.abreviacion,
+                },
+                "tiempo_acreditacion": "1-2 horas"  # si lo querés fijo por ahora
+            })
+        print("medios_acreditacion:", medios_acreditacion, flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -253,6 +278,7 @@ def simulador_operaciones(request):
         "PB_MONEDA": PB_MONEDA,
         "TASA_REF_ID": TASA_REF_ID,
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
+        "medios_acreditacion": json.dumps(medios_acreditacion),
     }
 
     return render(request, 'operaciones/conversorReal.html', context)

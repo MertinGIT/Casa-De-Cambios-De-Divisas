@@ -111,11 +111,7 @@ class Cuenta(models.Model):
 # TRANSACCIONES
 # ============================
 class Transaccion(models.Model):
-    TIPOS_TRANSACCION = [
-        ("debito", "Débito"),
-        ("credito", "Crédito"),
-        ("transferencia", "Transferencia"),
-    ]
+    
 
     """
     ESTADOS_TRANSACCION = [
@@ -133,7 +129,7 @@ class Transaccion(models.Model):
     """
     cedula = models.CharField(max_length=15)
     monto = models.DecimalField(max_digits=15, decimal_places=2)
-    tipo = models.CharField(max_length=20, choices=TIPOS_TRANSACCION)
+    tipo = models.CharField(max_length=20)
     estado = models.CharField(max_length=20, default="pendiente")
     fecha = models.DateTimeField(auto_now_add=True)
     referencia = models.CharField(max_length=50, blank=True, null=True, unique=True)
@@ -233,7 +229,12 @@ class TasaCambio(models.Model):
 
 
 class Comision(models.Model):
-    tipo_transaccion = models.CharField(max_length=20, choices=Transaccion.TIPOS_TRANSACCION)
+    TIPOS_TRANSACCION = [
+        ("debito", "Débito"),
+        ("credito", "Crédito"),
+        ("transferencia", "Transferencia"),
+    ]
+    tipo_transaccion = models.CharField(max_length=20, choices=TIPOS_TRANSACCION)
     porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     monto_fijo = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
