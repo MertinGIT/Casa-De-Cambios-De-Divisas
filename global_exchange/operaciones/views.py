@@ -3,6 +3,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
+from medio_acreditacion.models import MedioAcreditacion
 from operaciones.models import Transaccion
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
@@ -14,9 +15,25 @@ import requests
 from metodos_pagos.models import MetodoPago
 from django.views.decorators.csrf import csrf_exempt
 import json
+from django.utils import timezone
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+
 
 @login_required
 def simulador_operaciones(request):
+    """
+    Simula operaciones de compra/venta de monedas.
+
+    Obtiene las tasas de cambio activas, métodos de pago disponibles,
+    y datos de clientes asociados al usuario para calcular resultados
+    de transacciones con comisiones y posibles descuentos por segmentación.
+
+    :param request: Objeto HTTP con información de la petición.
+    :type request: HttpRequest
+    :return: Página renderizada con contexto de simulación o JsonResponse si es AJAX.
+    :rtype: HttpResponse | JsonResponse
+    """
     # === Datos de transacciones de prueba (estáticos) ===
     transacciones = [
       {"id": 1, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "monto": 1500.0, "estado": "Pendiente", "tipo": "Venta"},
@@ -24,6 +41,19 @@ def simulador_operaciones(request):
       {"id": 3, "fecha": '19/08/2024 05:40', "monto": 500.0, "estado": "Cancelado", "tipo": "Venta"},
   ]
 
+    # === Transacciones dinámicas: últimas 5 del usuario ===
+    transacciones_qs = Transaccion.ultimas(limite=5, usuario=request.user)\
+        .select_related("moneda_origen", "moneda_destino")
+
+    # Para el gráfico (orden cronológico ascendente)
+    transacciones_chart = [
+        {
+            "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
+            "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
+            "monto": float(t.monto),
+        }
+        for t in reversed(list(transacciones_qs))
+    ]
     # === Monedas activas desde la BD ===
     monedas = list(Moneda.objects.filter(estado=True).values("id","abreviacion", "nombre"))
     print("monedas: ",monedas,flush=True)
@@ -47,16 +77,18 @@ def simulador_operaciones(request):
         if abrev not in data_por_moneda:
             data_por_moneda[abrev] = []
         data_por_moneda[abrev].insert(0, {
-            "id": tasa.id,  # <-- guardamos el ID
+            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta)
         })
     print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
     # Comisiones y variables
-    COMISION_VTA = 100
-    COMISION_COM = 50
+    COMISION_VTA = 0
+    COMISION_COM = 0
 
     # === Segmentación según usuario ===
     descuento = 0
@@ -77,9 +109,8 @@ def simulador_operaciones(request):
     destino = ""
     TC_VTA = 0
     TC_COMP = 0
-    PB_MONEDA=0
-    TASA_REF_ID=None
-    
+    PB_MONEDA = 0
+    TASA_REF_ID =None
     
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
@@ -91,6 +122,8 @@ def simulador_operaciones(request):
             break
             
     if tasa_default:
+        COMISION_VTA = tasa_default.get("comision_venta", 0)
+        COMISION_COM = tasa_default.get("comision_compra", 0)
         PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
         # Calculamos las tasas considerando las comisiones
@@ -146,6 +179,8 @@ def simulador_operaciones(request):
                 else:
                     # Tomar el registro más reciente
                     ultimo = registros[-1]
+                    COMISION_VTA = ultimo.get("comision_venta", 0)
+                    COMISION_COM = ultimo.get("comision_compra", 0)
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
                     # === Fórmula de tu home ===
@@ -196,6 +231,30 @@ def simulador_operaciones(request):
     print("cliente_operativo: ",cliente_operativo,flush=True)
     print("TC_VTA 222: ",TC_VTA,flush=True)
     print("TC_COMP222: ",TC_COMP,flush=True)
+
+
+    # Obtener medios de acreditación del cliente operativo
+    medios_acreditacion = []
+    if cliente_operativo:
+        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True)
+        for m in medios_qs:
+            medios_acreditacion.append({
+                "id": m.id,
+                "entidad": {
+                    "nombre": m.entidad.nombre,
+                    "tipo": m.entidad.tipo,
+                },
+                "tipo_cuenta": m.tipo_cuenta,
+                "numero_cuenta": m.numero_cuenta,
+                "titular": m.titular,
+                "documento_titular": m.documento_titular,
+                "moneda": {
+                    "nombre": m.moneda.nombre,
+                    "abreviacion": m.moneda.abreviacion,
+                },
+                "tiempo_acreditacion": "2-3 minutos"  # si lo querés fijo por ahora
+            })
+        print("medios_acreditacion:", medios_acreditacion, flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -213,23 +272,29 @@ def simulador_operaciones(request):
         "cliente_operativo": cliente_operativo,
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
-        "transacciones": transacciones,
+        "transacciones": transacciones_qs,  # para la tabla
         "email_cliente_operativo": email_cliente_operativo,
         'medios': metodos_pago,
         "PB_MONEDA": PB_MONEDA,
         "TASA_REF_ID": TASA_REF_ID,
+        "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
+        "medios_acreditacion": json.dumps(medios_acreditacion),
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
 
 
 
-
 def obtener_clientes_usuario(user,request):
     """
-    Devuelve:
-        - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    Obtiene los clientes asociados a un usuario y determina cuál es el cliente operativo.
+
+    :param user: Usuario autenticado.
+    :type user: User
+    :param request: Objeto HTTP con información de la petición (usado para sesión).
+    :type request: HttpRequest
+    :return: Tupla con (lista de clientes asociados, cliente operativo actual, email del cliente operativo).
+    :rtype: tuple[list[Cliente], Cliente | None, str]
     """
 
      # Solo clientes activos
@@ -260,8 +325,15 @@ def obtener_clientes_usuario(user,request):
 @login_required
 def set_cliente_operativo(request):
     """
-    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
-    con segmento y descuento para actualizar el front sin recargar.
+    Establece en sesión el cliente operativo para el usuario autenticado.
+
+    Permite cambiar el cliente activo en el contexto de las operaciones.
+    Devuelve información de segmentación y descuento del cliente seleccionado.
+
+    :param request: Objeto HTTP con la información de la petición.
+    :type request: HttpRequest
+    :return: JsonResponse con los datos del cliente operativo o error.
+    :rtype: JsonResponse
     """
     cliente_id = request.POST.get('cliente_id')
 
@@ -300,6 +372,17 @@ def set_cliente_operativo(request):
 
 
 def verificar_tasa(request):
+    """
+    Verifica la tasa de cambio entre dos monedas.
+
+    Devuelve la última tasa registrada entre el origen y destino,
+    junto con su fecha de actualización.
+
+    :param request: Objeto HTTP con los parámetros "origen" y "destino".
+    :type request: HttpRequest
+    :return: JsonResponse con fecha de la tasa o error si no existe.
+    :rtype: JsonResponse
+    """
     origen = request.GET.get("origen")
     destino = request.GET.get("destino")
     try:
@@ -314,11 +397,31 @@ def verificar_tasa(request):
         return JsonResponse({"error": "No hay tasa disponible"}, status=404)
     
 def hora_servidor(request):
+    """
+    Devuelve la hora actual del servidor.
+
+    :param request: Objeto HTTP.
+    :type request: HttpRequest
+    :return: JsonResponse con la hora ISO.
+    :rtype: JsonResponse
+    """
     return JsonResponse({"hora": now().isoformat()})    
 
 
 
 def enviar_transaccion_al_banco(cliente_id, monto, moneda):
+    """
+    Envía una transacción al servicio bancario externo.
+
+    :param cliente_id: ID del cliente.
+    :type cliente_id: int
+    :param monto: Monto de la transacción.
+    :type monto: Decimal | float
+    :param moneda: Abreviación de la moneda.
+    :type moneda: str
+    :return: Respuesta en formato JSON del servicio bancario.
+    :rtype: dict
+    """
     url = "http://localhost:8001/api/banco/transaccion/"
     data = {
         "cliente_id": cliente_id,
@@ -329,6 +432,14 @@ def enviar_transaccion_al_banco(cliente_id, monto, moneda):
     return response.json()
 
 def obtener_metodos_pago(request):
+    """
+    Devuelve la lista de métodos de pago activos.
+
+    :param request: Objeto HTTP.
+    :type request: HttpRequest
+    :return: JsonResponse con la lista de métodos.
+    :rtype: JsonResponse
+    """
     if request.method == "GET":
         metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion")
         return JsonResponse(list(metodos), safe=False)
@@ -336,6 +447,14 @@ def obtener_metodos_pago(request):
 
 @csrf_exempt
 def guardar_metodo_pago(request):
+    """
+    Guarda el método de pago seleccionado en una transacción.
+
+    :param request: Objeto HTTP con datos "metodo" y "detalle".
+    :type request: HttpRequest
+    :return: JsonResponse con estado de la operación.
+    :rtype: JsonResponse
+    """
     if request.method == "POST":
         metodo_id = request.POST.get("metodo")
         detalle = request.POST.get("detalle")
@@ -345,6 +464,17 @@ def guardar_metodo_pago(request):
     return JsonResponse({"error": "Método no válido"}, status=400)
 
 def guardar_transaccion(request):
+    """
+    Guarda una transacción en la base de datos.
+
+    Recibe los datos en JSON: monto, tipo, monedas, tasa y estado.
+    Asocia la transacción con el usuario autenticado si lo hay.
+
+    :param request: Objeto HTTP con los datos de la transacción.
+    :type request: HttpRequest
+    :return: JsonResponse con la información de la transacción guardada o error.
+    :rtype: JsonResponse
+    """
     try:
         data = json.loads(request.body.decode("utf-8"))
     except Exception as e:
@@ -398,6 +528,17 @@ def guardar_transaccion(request):
     
 
 def actualizar_estado_transaccion(request):
+    """
+    Actualiza el estado de una transacción existente.
+
+    Recibe en JSON el ID de la transacción y el nuevo estado,
+    luego lo guarda en la base de datos.
+
+    :param request: Objeto HTTP con datos "transaccion_id" y "nuevo_estado".
+    :type request: HttpRequest
+    :return: JsonResponse con resultado de la actualización.
+    :rtype: JsonResponse
+    """
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))

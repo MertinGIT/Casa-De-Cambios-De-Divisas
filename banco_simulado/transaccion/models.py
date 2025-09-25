@@ -111,31 +111,29 @@ class Cuenta(models.Model):
 # TRANSACCIONES
 # ============================
 class Transaccion(models.Model):
-    TIPOS_TRANSACCION = [
-        ("debito", "Débito"),
-        ("credito", "Crédito"),
-        ("transferencia", "Transferencia"),
-    ]
+    
 
+    """
     ESTADOS_TRANSACCION = [
         ("pendiente", "Pendiente"),
         ("completada", "Completada"),
         ("fallida", "Fallida"),
         ("cancelada", "Cancelada"),
     ]
-
+    """
     cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE, related_name="transacciones")
     cuenta_destino = models.ForeignKey(
         Cuenta, on_delete=models.SET_NULL, null=True, blank=True, related_name="transferencias_recibidas"
     )
+    cedula = models.CharField(max_length=15)
     monto = models.DecimalField(max_digits=15, decimal_places=2)
-    tipo = models.CharField(max_length=20, choices=TIPOS_TRANSACCION)
-    estado = models.CharField(max_length=20, choices=ESTADOS_TRANSACCION, default="pendiente")
+    tipo = models.CharField(max_length=20)
+    estado = models.CharField(max_length=20, default="pendiente")
     fecha = models.DateTimeField(auto_now_add=True)
     referencia = models.CharField(max_length=50, blank=True, null=True, unique=True)
     motivo = models.TextField(blank=True, null=True)
     descripcion = models.CharField(max_length=200, blank=True, null=True)
-    usuario_ejecutor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    #usuario_ejecutor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -227,7 +225,12 @@ class TasaCambio(models.Model):
 
 
 class Comision(models.Model):
-    tipo_transaccion = models.CharField(max_length=20, choices=Transaccion.TIPOS_TRANSACCION)
+    TIPOS_TRANSACCION = [
+        ("debito", "Débito"),
+        ("credito", "Crédito"),
+        ("transferencia", "Transferencia"),
+    ]
+    tipo_transaccion = models.CharField(max_length=20, choices=TIPOS_TRANSACCION)
     porcentaje = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     monto_fijo = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
