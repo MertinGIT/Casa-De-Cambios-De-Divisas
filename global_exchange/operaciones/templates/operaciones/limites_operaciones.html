@@ -1,77 +1,70 @@
 <!-- Módulo de Límites Compacto -->
-    <section class="limites-compacto">
-        <div class="limites-header">
-            <h3 class="limites-titulo">Límites de Operaciones</h3>
-            <div class="tab-selector">
-                <button class="tab-btn active" data-tab="diario">Diario</button>
-                <button class="tab-btn" data-tab="mensual">Mensual</button>
-                <button class="tab-btn" data-tab="monedas">Monedas</button>
-            </div>
+<section class="limites-compacto">
+    <div class="limites-header">
+        <h3 class="limites-titulo">Límites de Operaciones</h3>
+        <div class="tab-selector">
+            <button class="tab-btn active" data-tab="diario">Diario</button>
+            <button class="tab-btn" data-tab="mensual">Mensual</button>
+            <button class="tab-btn" data-tab="monedas">Monedas</button>
         </div>
+    </div>
 
-        <!-- Vista Diaria -->
-        <div class="tab-content active" id="tab-diario">
-            <div class="limite-display">
-                <div class="limite-main">
-                    <div class="limite-amount">
-                        <span class="amount-usado">₲ 15.500.000</span>
-                        <span class="amount-total">/ ₲ 100.000.000</span>
-                    </div>
-                    <div class="limite-percentage">15.5%</div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-track">
-                        <div class="progress-bar" style="width: 15.5%"></div>
-                    </div>
-                </div>
-                <div class="limite-info">
-                    <span class="info-disponible">Disponible: ₲ 84.500.000</span>
-                    <span class="info-renovacion">Renueva: 00:00</span>
+    <!-- Vista Diaria -->
+    <div class="tab-content active" id="tab-diario">
+        {% for limite in limites_cliente %}
+        <div class="limite-display">
+            <div class="limite-main">
+                <div class="limite-amount">
+                    <span class="amount-total">₲ {{ limite.limite_diario|floatformat:0 }}</span>
                 </div>
             </div>
+            <div class="limite-info">
+                <span class="info-disponible">Disponible: ₲ {{ limite.limite_diario|floatformat:0 }}</span>
+                <span class="info-renovacion">Renueva: {{ limite.renovacion_diaria|default:"00:00" }}</span>
+            </div>
         </div>
+        {% endfor %}
+    </div>
 
-        <!-- Vista Mensual -->
-        <div class="tab-content" id="tab-mensual">
-            <div class="limite-display">
-                <div class="limite-main">
-                    <div class="limite-amount">
-                        <span class="amount-usado">₲ 125.750.000</span>
-                        <span class="amount-total">/ ₲ 800.000.000</span>
-                    </div>
-                    <div class="limite-percentage mensual">15.7%</div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-track">
-                        <div class="progress-bar mensual" style="width: 15.7%"></div>
-                    </div>
-                </div>
-                <div class="limite-info">
-                    <span class="info-disponible">Disponible: ₲ 674.250.000</span>
-                    <span class="info-renovacion">Día 1 próximo mes</span>
+    <!-- Vista Mensual -->
+    <div class="tab-content" id="tab-mensual">
+        {% for limite in limites_cliente %}
+        <div class="limite-display">
+            <div class="limite-main">
+                <div class="limite-amount">
+                    <span class="amount-total">₲ {{ limite.limite_mensual|floatformat:0 }}</span>
                 </div>
             </div>
+            <div class="limite-info">
+                <span class="info-disponible">Disponible: ₲ {{ limite.limite_mensual|floatformat:0 }}</span>
+                <span class="info-renovacion">Día 1 próximo mes</span>
+            </div>
         </div>
+        {% endfor %}
+    </div>
 
-        <!-- Vista Monedas -->
-        <div class="tab-content" id="tab-monedas">
-            <div class="monedas-grid">
-                <div class="moneda-item">
-                    <div class="moneda-header">
-                        <span class="moneda-flag">py</span>
-                        <span class="moneda-code">PYG</span>
-                        <span class="moneda-percent">8.2%</span>
-                    </div>
-                    <div class="moneda-progress">
-                        <div class="progress-mini">
-                            <div class="progress-fill" style="width: 8.2%"></div>
-                        </div>
-                    </div>
-                    <span class="moneda-amount">$820 / $10,000</span>
+    <!-- Vista Monedas -->
+    <div class="tab-content" id="tab-monedas">
+        <div class="monedas-grid">
+            {% for limite in limites_cliente %}
+            <div class="moneda-item">
+                <div class="moneda-header">
+                    <span class="moneda-flag">{{ limite.moneda.abreviacion|lower }}</span>
+                    <span class="moneda-code">{{ limite.moneda.abreviacion }}</span>
+                    <span class="moneda-percent">100%</span>
                 </div>
+                <div class="moneda-progress">
+                    <div class="progress-mini">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                </div>
+                <span class="moneda-amount">₲ {{ limite.limite_mensual|floatformat:0 }} / ₲ {{ limite.limite_mensual|floatformat:0 }}</span>
             </div>
+            {% endfor %}
         </div>
-    </section>
+    </div>
+</section>
+
 
     <script>
         // Funcionalidad de pestañas

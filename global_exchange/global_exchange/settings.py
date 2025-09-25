@@ -96,7 +96,6 @@ INSTALLED_APPS = [
     'medio_acreditacion',
     'corsheaders',
     'limite_moneda',
-    'medio_acreditacion'
     'historial_transacciones'
 ]
 # ============================================================================
