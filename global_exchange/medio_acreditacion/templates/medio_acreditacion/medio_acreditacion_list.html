@@ -27,21 +27,22 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
 .no-results { text-align: center; padding: 48px 16px; color: #B5B7C0; font-style: italic; font-size: 14px; }
 @media (max-width: 768px) { .main-wrapper { padding: 16px; } .page-container { padding: 20px; } .page-header { flex-direction: column; align-items: flex-start; gap: 16px; } .page-title { font-size: 20px; } .table-container { border: none; border-radius: 0; } .custom-table { font-size: 13px; } .custom-table thead { display: none; } .custom-table tbody tr { display: block; margin-bottom: 16px; background: #f9fafb; border-radius: 8px; padding: 16px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); } .custom-table tbody tr:hover { background-color: #f3f4f6; } .custom-table tbody td { display: block; padding: 4px 0; border: none; text-align: center; } .custom-table tbody td:before { content: attr(data-label) ": "; font-weight: 500; color: #5D5FEF; display: inline-block; min-width: 100px; margin-bottom: 2px; } .custom-table tbody td:last-child { margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; } .custom-table tbody td:last-child:before { content: "Acciones: "; } .btn { display: inline-block; margin: 2px 4px 2px 0; padding: 8px 12px; font-size: 12px; } }
 </style>
+{% include 'clientes/base_clientes.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
       <h1 class="page-title">Medios de Acreditación</h1>
       <form method="get" style="display: flex; align-items: center; gap: 12px;">
-        <label for="cliente_id" style="font-weight: 500; color: #152C70;">Filtrar por cliente:</label>
+        <label for="cliente_id" style="font-weight: 500; color: #152C70; width: 100%">Filtrar por cliente:</label>
         <select name="cliente_id" id="cliente_id" class="form-control" onchange="this.form.submit()" style="min-width: 200px;">
           <option value="">Todos</option>
           {% for c in clientes %}
             <option value="{{ c.id }}" {% if cliente and cliente.id == c.id %}selected{% endif %}>{{ c }}</option>
           {% endfor %}
         </select>
-      </form>
-      <button class="btn-add rounded border-0 my-2" onclick="openCreateModal('{% url 'medio_acreditacion_create' %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}', 'Agregar Medio de Acreditación')">+ Agregar Medio</button>   
+      </form>  
     </div>
+    <button class="btn-add rounded border-0 my-2" onclick="openCreateModal('{% url 'medio_acreditacion_create' %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}', 'Agregar Medio de Acreditación')">+ Agregar Acreditación</button> 
     <div class="table-container">
       <table class="custom-table">
         <thead>
@@ -67,26 +68,26 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Robo
               <td data-label="Moneda">{{ medio.moneda }}</td>
               <td data-label="Estado">{% if medio.estado %}<span class="status-badge status-activo">Activo</span>{% else %}<span class="status-badge status-inactivo">Inactivo</span>{% endif %}</td>
               <td data-label="Acciones">
-              <button class="btn-edit btn btn-sm btn-primary"
-                data-id="{{ medio.id }}"
-                data-edit="{% url 'medio_acreditacion_update' 0 %}"
-                data-title="Editar Medio de Acreditación"
-                data-detalle="{% url 'medio_acreditacion_detail' medio.id %}">
-                  Editar
-              </button>
+                <button class="btn-edit btn btn-sm btn-primary"
+                  data-id="{{ medio.id }}"
+                  data-edit="{% url 'medio_acreditacion_update' 0 %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}"
+                  data-title="Editar Medio de Acreditación"
+                  data-detalle="{% url 'medio_acreditacion_detail' medio.id %}">
+                    Editar
+                </button>
                 {% if medio.estado %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-danger"
-                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" 0 %}", "¿Seguro que deseas desactivar este registro?", "Desactivar")'>
+                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" 0 %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}", "¿Seguro que deseas desactivar este registro?", "Desactivar")'>
                     Desactivar
                   </button>
                 {% else %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-success"
-                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" 0 %}", "¿Seguro que deseas activar este registro?", "Activar")'>
+                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" 0 %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}", "¿Seguro que deseas activar este registro?", "Activar")'>
                     Activar
                   </button>
-                  {% endif %}
+                {% endif %}
               </td>
             </tr>
           {% empty %}

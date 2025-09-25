@@ -1,23 +1,18 @@
 <div class="contenedor-principal">
-  <main class="main-container">
+<main class="main-container">
 
-    <div class="modules">
+  <div class="modules">
 
-      <a href="{% url 'monedas' %}" class="module-btn {% if request.resolver_match.url_name == 'monedas' %}active-config{% endif %}">💰 Monedas</a>
+    <a href="{% url 'clientes' %}" class="module-btn {% if request.resolver_match.url_name == 'clientes' %}active-config{% endif %}">👤 Clientes</a>
 
-      <a href="{% url 'cotizacion' %}" class="module-btn {% if request.resolver_match.url_name == 'cotizacion' %}active-config{% endif %}">💱 Tasa de Cambio</a>
+    <a href="{% url 'cliente_usuario' %}" class="module-btn {% if request.resolver_match.url_name == 'cliente_usuario' %}active-config{% endif %}">👥 Clientes-Usuarios</a>
 
-      <a href="{% url 'metodos_pagos' %}" class="module-btn {% if request.resolver_match.url_name == 'metodos_pagos' %}active-config{% endif %}">💳 Métodos de Pago</a>
+    <a href="{% url 'medio_acreditacion_list' %}" class="module-btn {% if request.resolver_match.url_name == 'medio_acreditacion_list' %}active-config{% endif %}">💳 Medios de Acreditación</a>
 
-      <a href="{% url 'lista-segmentaciones' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-segmentaciones' %}active-config{% endif %}">👥 Segmentacion</a>
-
-      <a href="{% url 'user_roles_lista' %}" class="module-btn {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">🔒 Seguridad</a>
-
-    </div>
-
-  </main>
+    <a href="{% url 'lista-limites' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-limites' %}active-config{% endif %}">🪙 Limite de monedas</a>
+  </div>
+</main>
 </div>
-
 <style>
 body, html {
   height: 100%;
@@ -36,8 +31,8 @@ body, html {
   background-color: #ffffff;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
   /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
-  flex: 1;           
-  max-width: 1200px; 
+  flex: 1;           /* ocupa todo el espacio disponible */
+  max-width: 1200px; /* pero no más que esto */
   width: 100%;
   table-layout: fixed;
 }
@@ -50,12 +45,13 @@ body, html {
 .modules {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.2rem;
   justify-content: center;
+  
 }
 
 .module-btn {
-  display: inline-block; 
+  display: inline-block; /* Importante para que los <a> se vean como botones */
   padding: 0.9rem 1.8rem;
   border-radius: 14px;
   text-decoration: none;
@@ -64,6 +60,7 @@ body, html {
   cursor: pointer;
   font-weight: 600;
   font-size: 16px;
+  /*transition: all 0.3s ease;*/
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
@@ -94,13 +91,13 @@ body, html {
 
 @media (max-width: 480px) {
   .modules {
-    flex-direction: column; 
+    flex-direction: column; /* Botones uno debajo de otro */
     gap: 0.6rem;
     align-items: center;
   }
   .module-btn {
-    width: 100%; 
-    max-width: 250px; 
+    width: 100%; /* Ocupa todo el ancho disponible */
+    max-width: 250px; /* Limita el ancho máximo */
     font-size: 14px;
     padding: 0.7rem 1rem;
   }

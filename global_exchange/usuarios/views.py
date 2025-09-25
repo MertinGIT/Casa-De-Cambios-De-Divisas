@@ -84,6 +84,24 @@ def home(request):
     )
     print("tasas:", tasas, flush=True)
 
+
+    # Reorganizar datos en un dict similar a tu data_por_moneda
+    data_por_moneda = {}
+    for tasa in tasas:
+        abrev = tasa.moneda_destino.abreviacion
+        if abrev not in data_por_moneda:
+            data_por_moneda[abrev] = []
+        # Insertar al inicio para que el primero sea el más reciente
+        data_por_moneda[abrev].insert(0, {
+            "fecha": tasa.vigencia.strftime("%d %b"),
+            "compra": float(tasa.monto_compra),
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta)
+        })
+
+    print("data_por_moneda:", data_por_moneda, flush=True)
+
     # Comisiones y segmentos
     COMISION_VTA = 100
     COMISION_COM = 50
@@ -114,6 +132,8 @@ def home(request):
     operacion = "venta"
     origen = ""
     destino = ""
+    COMISION_VTA = None
+    COMISION_COM = None
     
     # Reorganizar datos en un dict similar a tu data_por_moneda
     data_por_moneda = {}
@@ -904,6 +924,7 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+	
 
 
 #Comunicacion via https con el backend
