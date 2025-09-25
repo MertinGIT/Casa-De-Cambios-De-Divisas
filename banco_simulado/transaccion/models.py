@@ -117,25 +117,31 @@ class Transaccion(models.Model):
         ("transferencia", "Transferencia"),
     ]
 
+    """
     ESTADOS_TRANSACCION = [
         ("pendiente", "Pendiente"),
         ("completada", "Completada"),
         ("fallida", "Fallida"),
         ("cancelada", "Cancelada"),
     ]
-
+    """
     cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE, related_name="transacciones")
+    """
     cuenta_destino = models.ForeignKey(
         Cuenta, on_delete=models.SET_NULL, null=True, blank=True, related_name="transferencias_recibidas"
     )
+    """
+    cedula = models.CharField(max_length=15)
     monto = models.DecimalField(max_digits=15, decimal_places=2)
     tipo = models.CharField(max_length=20, choices=TIPOS_TRANSACCION)
-    estado = models.CharField(max_length=20, choices=ESTADOS_TRANSACCION, default="pendiente")
+    estado = models.CharField(max_length=20, default="pendiente")
     fecha = models.DateTimeField(auto_now_add=True)
     referencia = models.CharField(max_length=50, blank=True, null=True, unique=True)
     motivo = models.TextField(blank=True, null=True)
     descripcion = models.CharField(max_length=200, blank=True, null=True)
+    """
     usuario_ejecutor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    """
 
     class Meta:
         constraints = [
