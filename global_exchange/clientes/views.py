@@ -206,3 +206,17 @@ def check_cedula(request):
 
         exists = query.exists()
         return JsonResponse(not exists, safe=False)
+
+
+def cliente_medios(request, pk):
+    """
+    Vista para mostrar los medios de acreditación asociados a un cliente y gestionarlos.
+    """
+    cliente = get_object_or_404(Cliente, pk=pk)
+    medios = MedioAcreditacion.objects.filter(cliente=cliente)
+    form = MedioAcreditacionForm()
+    return render(request, 'clientes/medios_cliente.html', {
+        'cliente': cliente,
+        'medios': medios,
+        'form': form,
+    })

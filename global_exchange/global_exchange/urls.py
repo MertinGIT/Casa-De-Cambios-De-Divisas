@@ -56,10 +56,11 @@ urlpatterns = [
     path('admin/configuracion/seguridad/usuarios/', include(usuarios_urls)),
     path('admin/configuracion/seguridad/roles/', include('roles_permisos.urls'), name='roles'),
     path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
-    path('admin/configuracion/', include('medio_acreditacion.urls')),
-    path('admin/cliente_usuario/', include(cliente_usuario_urls), name='cliente_usuario'),
+    path('admin/clientes/', include('medio_acreditacion.urls')),
+    path('admin/clientes/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
     path('usuarios/', include('usuarios.urls')),
+    path('limites/', include('limite_moneda.urls')),
     path('historial/', include('historial_transacciones.urls')),
 
 ]

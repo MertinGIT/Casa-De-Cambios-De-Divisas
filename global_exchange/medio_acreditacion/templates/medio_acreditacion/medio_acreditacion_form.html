@@ -6,39 +6,61 @@
 {% else %}
 <div class="form-group">
   <label for="{{ form.cliente.id_for_label }}">Cliente *</label>
-  {{ form.cliente|add_class:"form-control custom-input" }}
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    {{ form.cliente|add_class:"form-control custom-input" }}
+  </div>
   <div class="error-messages"></div>
 </div>
 {% endif %}
 <div class="form-group">
   <label for="{{ form.entidad.id_for_label }}">Entidad Financiera *</label>
-  {{ form.entidad|add_class:"form-control" }}
-  {% for error in form.entidad.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+  <div class="input-icon">
+    <span class="icon">🏦</span>
+    {{ form.entidad|add_class:"form-control custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 <div class="form-group">
   <label for="{{ form.numero_cuenta.id_for_label }}">Número de Cuenta/Teléfono *</label>
-  {{ form.numero_cuenta|add_class:"form-control" }}
-  {% for error in form.numero_cuenta.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+  <div class="input-icon">
+    <span class="icon">🔢</span>
+  {{ form.numero_cuenta|add_class:"form-control custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 <div class="form-group">
   <label for="{{ form.tipo_cuenta.id_for_label }}">Tipo de Cuenta *</label>
-  {{ form.tipo_cuenta|add_class:"form-control" }}
-  {% for error in form.tipo_cuenta.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+  <div class="input-icon">
+    <span class="icon">💳</span>
+    {{ form.tipo_cuenta|add_class:"form-control custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 <div class="form-group">
   <label for="{{ form.titular.id_for_label }}">Titular *</label>
-  {{ form.titular|add_class:"form-control" }}
-  {% for error in form.titular.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+  <div class="input-icon">
+    <span class="icon">🧑</span>
+    {{ form.titular|add_class:"form-control custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 <div class="form-group">
   <label for="{{ form.documento_titular.id_for_label }}">Documento del Titular</label>
-  {{ form.documento_titular|add_class:"form-control" }}
-  {% for error in form.documento_titular.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+  <div class="input-icon">
+    <span class="icon">🆔</span>
+    {{ form.documento_titular|add_class:"form-control custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+
 </div>
 <div class="form-group">
   <label for="{{ form.moneda.id_for_label }}">Moneda *</label>
-  {{ form.moneda|add_class:"form-control" }}
-  {% for error in form.moneda.errors %}<div class="text-danger">{{ error }}</div>{% endfor %}
+  <div class="input-icon">
+    <span class="icon">💵</span>
+    {{ form.moneda|add_class:"form-control custom-input" }}
+  </div>
+  <div class="error-messages"></div>
 </div>
 
 <style>
@@ -129,7 +151,7 @@
     minlength: jQuery.validator.format("Debe tener al menos {0} caracteres."),
   });
   function setupMedioAcreditacionValidation() {
-    const $form = $("#medio-acreditacion-form");
+    const $form = $("#form-accion");
     if (!$form.length) return;
     $form.validate({
       rules: {

@@ -144,6 +144,10 @@ def medio_acreditacion_toggle(request, pk):
     medio.estado = not medio.estado
     medio.save()
     messages.success(request, f'Medio {"activado" if medio.estado else "desactivado"}.')
+    cliente_id = request.GET.get('cliente_id') or medio.cliente_id
+    if cliente_id:
+        from django.urls import reverse
+        return redirect(f"{reverse('medio_acreditacion_list')}?cliente_id={cliente_id}")
     return redirect('medio_acreditacion_list')
 
 def medio_acreditacion_detail(request, pk):

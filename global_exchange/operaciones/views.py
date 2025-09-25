@@ -18,6 +18,8 @@ import json
 from django.utils import timezone
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
+from limite_moneda.models import LimiteTransaccion
+
 
 
 @login_required
@@ -255,6 +257,13 @@ def simulador_operaciones(request):
                 "tiempo_acreditacion": "2-3 minutos"  # si lo querés fijo por ahora
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
+        limites_cliente = []
+        if cliente_operativo:
+            limites_cliente = LimiteTransaccion.objects.filter(
+            cliente=cliente_operativo,
+            estado='activo'
+        ).select_related('moneda')
+    
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -279,7 +288,10 @@ def simulador_operaciones(request):
         "TASA_REF_ID": TASA_REF_ID,
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
         "medios_acreditacion": json.dumps(medios_acreditacion),
+        "limites_cliente": limites_cliente,
     }
+
+
 
     return render(request, 'operaciones/conversorReal.html', context)
 
