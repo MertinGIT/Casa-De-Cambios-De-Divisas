@@ -105,7 +105,7 @@ def exportar_historial_excel(request):
     ws = wb.active
     ws.title = "Historial"
 
-    headers = ["ID", "Fecha", "Monto", "Estado", "Tipo"]
+    headers = ["ID", "Fecha", "Monto", "Moneda Origen", "Moneda Destino", "Tipo", "Tasa Usada", "Estado"]
     ws.append(headers)
 
     for t in qs:
@@ -113,8 +113,12 @@ def exportar_historial_excel(request):
             t.id,
             timezone.localtime(t.fecha).strftime('%d/%m/%Y %H:%M') if t.fecha else '',
             float(t.monto) if getattr(t, 'monto', None) is not None else 0,
+            t.moneda_origen.abreviacion if t.moneda_origen else '',
+            t.moneda_destino.abreviacion if t.moneda_destino else '',
+            t.tipo,
+            t.tasa_usada if getattr(t, 'tasa_usada', None) is not None else '',
             t.estado,
-            t.tipo
+            
         ])
 
     for col in range(1, len(headers) + 1):
@@ -146,13 +150,18 @@ def exportar_historial_pdf(request):
     width, height = A4
     y = height - 50
 
+    # Título
     p.setFont("Helvetica-Bold", 14)
     p.drawString(40, y, "Historial de Transacciones")
     y -= 30
 
-    headers = ["ID", "Fecha", "Monto", "Estado", "Tipo"]
-    p.setFont("Helvetica-Bold", 10)
-    x_positions = [40, 100, 230, 320, 410]
+    # Encabezados (los mismos que en Excel)
+    headers = ["ID", "Fecha", "Monto", "Moneda Origen", "Moneda Destino", "Tipo", "Tasa Usada", "Estado"]
+    p.setFont("Helvetica-Bold", 9)
+
+    # Posiciones X (ajustadas para A4 horizontalmente)
+    x_positions = [40, 80, 150, 220, 300, 380, 450, 520]
+
     for x, h in zip(x_positions, headers):
         p.drawString(x, y, h)
     y -= 12
@@ -160,22 +169,32 @@ def exportar_historial_pdf(request):
     p.line(40, y, width - 40, y)
     y -= 10
 
-    p.setFont("Helvetica", 9)
+    # Filas de datos
+    p.setFont("Helvetica", 8)
     for t in qs:
-        if y < 60:
+        if y < 60:  # salto de página
             p.showPage()
             y = height - 50
-            p.setFont("Helvetica-Bold", 10)
+            p.setFont("Helvetica-Bold", 9)
             for x, h in zip(x_positions, headers):
                 p.drawString(x, y, h)
             y -= 22
-            p.setFont("Helvetica", 9)
+            p.setFont("Helvetica", 8)
 
-        p.drawString(x_positions[0], y, str(t.id))
-        p.drawString(x_positions[1], y, timezone.localtime(t.fecha).strftime('%d/%m/%Y %H:%M') if t.fecha else '')
-        p.drawString(x_positions[2], y, f"{t.monto}")
-        p.drawString(x_positions[3], y, t.estado)
-        p.drawString(x_positions[4], y, t.tipo)
+        valores = [
+            str(t.id),
+            timezone.localtime(t.fecha).strftime('%d/%m/%Y %H:%M') if t.fecha else '',
+            str(int(t.monto)) if getattr(t, 'monto', None) is not None else '0',
+            t.moneda_origen.abreviacion if t.moneda_origen else '',
+            t.moneda_destino.abreviacion if t.moneda_destino else '',
+            t.tipo,
+            str(int(t.tasa_usada)) if getattr(t, 'tasa_usada', None) is not None else '',
+            t.estado,
+        ]
+
+        for x, v in zip(x_positions, valores):
+            p.drawString(x, y, str(v))
+
         y -= 14
 
     p.showPage()

@@ -42,6 +42,9 @@ urlpatterns = [
     path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
     path('set_cliente_operativo/', usuarios_views.set_cliente_operativo, name='set_cliente_operativo'),
     path('operaciones/', include(operaciones_urls)),
+    path('usuarios/', include('usuarios.urls')),
+    path('historial/', include('historial_transacciones.urls'), name='historial_usuario'),
+
     
     
     # Rutas solo para administradores
@@ -57,9 +60,7 @@ urlpatterns = [
     path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
     path('admin/cliente_usuario/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
-    path('usuarios/', include('usuarios.urls')),
-    path('historial/', include('historial_transacciones.urls')),
-
+    
 ]
 
 

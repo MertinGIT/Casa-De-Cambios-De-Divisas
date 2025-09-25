@@ -14,14 +14,21 @@ body{font-family:'Inter',sans-serif!important;}
 .table-container{overflow-x:auto;border:1px solid #e1e5e9;border-radius:8px;}
 .custom-table{width:100%;border-collapse:collapse;background:#fff;}
 .custom-table thead th{padding:14px 18px;font-size:13px;text-align:left;font-weight:600;color:#5D5FEF;border-bottom:1px solid #f0f0f0;}
-.custom-table tbody td{padding:18px;font-size:14px;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
+.custom-table tbody td{padding:18px;font-size: 0.9rem;border-bottom:1px solid #f5f5f5;vertical-align:middle;}
 .custom-table tbody tr:hover{background:#f9fafb;}
-.status-badge,.type-badge{padding:6px 14px;border-radius:4px;font-size:12px;font-weight:500;display:inline-block;min-width:80px;text-align:center;}
-.status-confirmada{background:#9CDBA6;color:#028a39;}
-.status-pendiente{background:#FFF2CC;color:#B68B00;}
-.status-cancelada{background:#FFC5C5;color:#C40000;}
-.type-compra{background:#CCE5FF;color:#005fa3;}
-.type-venta{background:#FFE4CC;color:#a65400;}
+.status-badge,.type-badge{border-radius:4px;font-size:12px;font-weight:500;display:inline-block;min-width:80px;text-align:center;}
+.status-confirmado{color:#028a39; font-size: 0.9rem}
+.status-pendiente{color:#B68B00; font-size: 0.9rem}
+.status-cancelada{color:#C40000; font-size: 0.9rem}
+.type-compra, .type-venta {font-size: 0.9rem}
+.type-compra::before {
+    content: "🟢 ";
+    font-size: 0.9rem
+  }
+.type-venta::before {
+    content: "🔴 ";
+    font-size: 0.9rem
+  }
 .no-results{text-align:center;padding:52px 16px;color:#B5B7C0;font-style:italic;}
 .actions-bar{display:flex;gap:8px;flex-wrap:wrap;}
 .btn-export{background:#152C70;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;}
@@ -71,6 +78,7 @@ body{font-family:'Inter',sans-serif!important;}
   .export-bar{justify-content:stretch;}
   .export-bar button{flex:1;}
 }
+
 </style>
 
 <div class="main-wrapper">
@@ -98,7 +106,7 @@ body{font-family:'Inter',sans-serif!important;}
           <div class="filters-inline">
             <div>
               <span class="filter-label">Moneda</span>
-              <select name="moneda" class="filter-control">
+              <select name="moneda_sel" class="filter-control">
                 <option value="">Todas</option>
                 {% for m in monedas_disponibles %}
                   <option value="{{ m }}" {% if m == moneda_sel %}selected{% endif %}>{{ m }}</option>
@@ -139,47 +147,62 @@ body{font-family:'Inter',sans-serif!important;}
     <!-- Tabla -->
     <div class="table-container">
       <table class="custom-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Fecha</th>
-            <th>Monto</th>
-            <th>Estado</th>
-            <th>Tipo</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for t in transacciones %}
-          <tr onclick="abrirDetalle({{ t.id }})" style="cursor:pointer">
-            <td data-label="ID">{{ t.id }}</td>
-            <td data-label="Fecha">{{ t.fecha|date:"d/m/Y H:i" }}</td>
-            <td data-label="Monto">{{ t.monto|floatformat:2 }}</td>
-            <td data-label="Estado">
-              {% if t.estado == 'confirmada' %}
-                <span class="status-badge status-confirmada">Confirmada</span>
-              {% elif t.estado == 'pendiente' %}
-                <span class="status-badge status-pendiente">Pendiente</span>
-              {% else %}
-                <span class="status-badge status-cancelada">
-                  {% if 'cancelada' in t.estado %}Cancelada{% else %}{{ t.estado }}{% endif %}
-                </span>
-              {% endif %}
-            </td>
-            <td data-label="Tipo">
-              {% if t.tipo == 'compra' %}
-                <span class="type-badge type-compra">Compra</span>
-              {% else %}
-                <span class="type-badge type-venta">Venta</span>
-              {% endif %}
-            </td>
-          </tr>
-          {% empty %}
-          <tr>
-            <td colspan="5" class="no-results">No existen transacciones.</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Fecha</th>
+      <th>Monto</th>
+      <th>Moneda Origen</th>
+      <th>Moneda Destino</th>
+      <th>Tipo</th>
+      <th>Tasa Usada</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in transacciones %}
+    <tr>
+      <td data-label="ID">{{ t.id }}</td>
+      <td data-label="Fecha">{{ t.fecha|date:"d/m/Y H:i" }}</td>
+      <td data-label="Monto">{{ t.monto|floatformat:0 }}</td>
+
+      <!-- Compra: se da PYG -> origen PYG; Venta: se recibe PYG -> destino PYG -->
+      <td data-label="Moneda Origen">
+        {{ t.moneda_origen.abreviacion }}
+      </td>
+      <td data-label="Moneda Destino">
+        {{ t.moneda_destino.abreviacion }}
+      </td>
+
+      <td data-label="Tipo">
+        {% if t.tipo == 'compra' %}
+          <span class="type-badge type-compra">Compra</span>
+        {% else %}
+          <span class="type-badge type-venta">Venta</span>
+        {% endif %}
+      </td>
+      <td data-label="Tasa Usada">
+        {{ t.tasa_usada|floatformat:0 }}Gs
+      </td>
+      <td data-label="Estado">
+        {% if t.estado == 'completado' %}
+          <span class="status-badge status-confirmado">Completado</span>
+        {% elif t.estado == 'pendiente' %}
+          <span class="status-badge status-pendiente">Pendiente</span>
+        {% elif 'cancelada' in t.estado %}
+          <span class="status-badge status-cancelada">Cancelada</span>
+        {% else %}
+          <span class="status-badge">{{ t.estado }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="7" class="no-results">No existen transacciones.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
     </div>
 
   </div>
