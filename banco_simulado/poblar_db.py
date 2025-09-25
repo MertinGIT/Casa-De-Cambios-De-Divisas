@@ -180,46 +180,6 @@ def crear_comisiones():
         if created:
             print(f"✅ Comisión creada: {data['tipo']} - {data['porcentaje']}% + {data['monto_fijo']}")
 
-# Crear transacciones de ejemplo
-def crear_transacciones(cuentas):
-    tipos = ["debito", "credito", "transferencia"]
-    estados = ["pendiente", "completada", "fallida"]
-    
-    transacciones_creadas = 0
-    
-    for cuenta in cuentas:
-        # Crear entre 3 y 8 transacciones por cuenta
-        num_transacciones = random.randint(3, 8)
-        
-        for _ in range(num_transacciones):
-            tipo = random.choice(tipos)
-            monto = Decimal(str(round(random.uniform(50, 1000), 2)))
-            estado = random.choice(estados) if random.random() > 0.8 else "completada"  # 80% completadas
-            
-            # Para transferencias, elegir una cuenta destino diferente
-            cuenta_destino = None
-            if tipo == "transferencia":
-                cuentas_disponibles = [c for c in cuentas if c != cuenta and c.moneda == cuenta.moneda]
-                if cuentas_disponibles:
-                    cuenta_destino = random.choice(cuentas_disponibles)
-                else:
-                    tipo = "debito"  # Cambiar a débito si no hay cuentas compatibles
-            
-            transaccion = Transaccion.objects.create(
-                cuenta=cuenta,
-                cuenta_destino=cuenta_destino,
-                monto=monto,
-                tipo=tipo,
-                estado=estado,
-                fecha=timezone.now() - timedelta(days=random.randint(0, 30)),
-                referencia=f"REF{random.randint(100000, 999999)}",
-                motivo=f"{'Pago de servicios' if tipo == 'debito' else 'Depósito en cuenta' if tipo == 'credito' else 'Transferencia entre cuentas'}",
-                descripcion=f"Transacción {tipo} por {monto} {cuenta.moneda.codigo}"
-            )
-            transacciones_creadas += 1
-    
-    print(f"✅ {transacciones_creadas} transacciones creadas")
-
 if __name__ == "__main__":
     print("🚀 Iniciando población de base de datos...")
     
@@ -235,9 +195,6 @@ if __name__ == "__main__":
     crear_tasas_cambio(monedas)
     crear_comisiones()
     
-    # Crear transacciones de ejemplo
-    crear_transacciones(cuentas)
-    
     print("✅ Base de datos poblada exitosamente!")
     print(f"📊 Resumen:")
     print(f"   - {len(monedas)} monedas")
@@ -246,4 +203,3 @@ if __name__ == "__main__":
     print(f"   - {len(cuentas)} cuentas")
     print(f"   - {TasaCambio.objects.count()} tasas de cambio")
     print(f"   - {Comision.objects.count()} tipos de comisión")
-    print(f"   - {Transaccion.objects.count()} transacciones")

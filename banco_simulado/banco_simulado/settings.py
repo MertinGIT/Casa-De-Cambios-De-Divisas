@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
-
+import environ
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -47,7 +47,7 @@ JWT_SIGNING_KEY = os.environ.get("JWT_SIGNING_KEY", SECRET_KEY)
 
 SIMPLE_JWT = {
     "ALGORITHM": "HS256",
-    "SIGNING_KEY": "clave_super_secreta_compartida_local",   # usado para firmar/verificar HS256
+    "SIGNING_KEY": 'clave_super_secreta_compartida_local',   # usado para firmar/verificar HS256
     # opcionales:
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),

@@ -93,9 +93,11 @@ INSTALLED_APPS = [
     'metodos_pagos',
     'cliente_usuario',
     'operaciones',
+    'medio_acreditacion',
     'corsheaders',
     'limite_moneda',
     'medio_acreditacion'
+    'historial_transacciones'
 ]
 # ============================================================================
 # Middleware

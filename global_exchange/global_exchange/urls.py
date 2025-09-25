@@ -61,6 +61,7 @@ urlpatterns = [
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
     path('usuarios/', include('usuarios.urls')),
     path('limites/', include('limite_moneda.urls'))
+    path('historial/', include('historial_transacciones.urls')),
 
 ]
 

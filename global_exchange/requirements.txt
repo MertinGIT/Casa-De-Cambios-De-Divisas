@@ -13,3 +13,5 @@ sphinx-rtd-theme==3.0.2
 gunicorn==23.0.0
 django-cors-headers==4.9.0
 djangorestframework-simplejwt
+openpyxl
+reportlab

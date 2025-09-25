@@ -154,7 +154,9 @@ def home(request):
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta)
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta)
         })
 
     print("data_por_moneda:", data_por_moneda, flush=True)

@@ -90,10 +90,16 @@
   }
 
   function mostrarMensaje(titulo, texto) {
-    $("#titulo-mensaje").text(titulo);
-    $("#texto-mensaje").text(texto);
-    $("#modal-mensaje").fadeIn().css("display", "flex");
-  }
+    console.log("mostrarMensaje en Pin:", titulo, texto);
+    
+    if (window.mostrarMensajeModal) {
+      // Mostrar mensaje
+      window.mostrarMensajeModal(titulo, texto);
+    } else {
+      console.error("Modal mensaje no disponible desde PIN");
+      alert(titulo + ": " + texto);
+    }
+}
 
   function getCampos() {
     const op = $("input[name='operacion']:checked").val();
@@ -123,13 +129,11 @@
       pin += input.value;
     });
     const modal = $("#modal-pin");
-    console.log("monto pin:", modal.data("moneda"));
-
+    console.log("mostrarMensaje en Pin:", "{{cliente_operativo.id}}");
 
     if (pin === "1234") {
       cerrarModalPin();
       const campos = getCampos();
-
 
       email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
       const modal = $("#modal-pin");
@@ -140,12 +144,18 @@
       if (email_cliente_operativo != "") {
         const transaccionData = {
           email: "{{ email_cliente_operativo}}",
-          monto: monto,
+          monto: parseInt(monto,10),
           moneda: moneda,
           tipo: tipo,
           estado: "aceptada",
           referencia: "TX-" + Date.now(),
           motivo: `Cambio de ${moneda}`,
+          cedula: "{{cliente_operativo.cedula}}",
+          nro_cuenta: window.datosAcreditacion.numero_cuenta,
+          cliente_id:parseInt("{{ cliente_operativo.id }}", 10),
+          entidad_id:1,
+          usuario_ejecutor: parseInt("{{ user.id }}",10),
+          fecha: new Date().toISOString()
         };
         console.log("envio la transaccion al banco:", transaccionData);
         // 🔹 Enviar al banco
@@ -164,15 +174,17 @@
               $("#modal-pin").fadeOut();
               // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
               window.transaccionActual = {
-                ...window.datos,  // datos del padre
+                ...window.datos, // datos del padre
+                ...window.datosAcreditacion,
                 ...transaccionData      
               };
-
+              
+              
               $("#modal-exito").fadeIn().css("display", "flex");
               mostrarModalExito();
             } else {
               $("#modal-exito").fadeOut();
-              mostrarMensaje(
+              mostrarError(
                 "Transacción rechazada:",
                 data.mensaje || "Error al conectar con el banco"
               );
@@ -180,13 +192,13 @@
           })
           .catch((err) => {
             console.error("Error enviando transacción:", err);
-            mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+            mostrarError("Error", "Error al conectar con el banco");
           });
       } else {
         console.log("No se encontró el email del cliente operativo.");
         $("#modal-pin").fadeOut();
         mostrarMensaje(
-          "⚠️ Error",
+          "Error",
           "No se encontró el email del cliente operativo."
         );
       }

@@ -12,54 +12,62 @@
             <form id="form-metodo-pago"  autocomplete="off">
                 <!-- Métodos de pago -->
                 <div class="metodos-container">
-                    <div class="metodo-item">
-                        <input type="radio" id="tarjeta" name="metodo" value="tarjeta" class="metodo-radio">
-                        <label for="tarjeta" class="metodo-label">
-                            <div class="metodo-icon">💳</div>
-                            <div class="metodo-info">
-                                <span class="metodo-nombre">Tarjeta de crédito/débito</span>
-                                <span class="metodo-desc">Visa, Mastercard, American Express</span>
-                            </div>
-                            <div class="metodo-check">✓</div>
-                        </label>
-                    </div>
-
-                    <div class="metodo-item">
-                        <input type="radio" id="billetera" name="metodo" value="billetera" class="metodo-radio">
-                        <label for="billetera" class="metodo-label">
-                            <div class="metodo-icon">📱</div>
-                            <div class="metodo-info">
-                                <span class="metodo-nombre">Billetera digital</span>
-                                <span class="metodo-desc">PayPal, Tigo Money, Personal Pay</span>
-                            </div>
-                            <div class="metodo-check">✓</div>
-                        </label>
-                    </div>
-
-                    <div class="metodo-item">
-                        <input type="radio" id="transferencia" name="metodo" value="transferencia" class="metodo-radio">
-                        <label for="transferencia" class="metodo-label">
-                            <div class="metodo-icon">🏦</div>
-                            <div class="metodo-info">
-                                <span class="metodo-nombre">Transferencia bancaria</span>
-                                <span class="metodo-desc">Banco Itaú, Banco Continental</span>
-                            </div>
-                            <div class="metodo-check">✓</div>
-                        </label>
-                    </div>
-
-                    <div class="metodo-item">
-                        <input type="radio" id="efectivo" name="metodo" value="efectivo" class="metodo-radio">
-                        <label for="efectivo" class="metodo-label">
-                            <div class="metodo-icon">💵</div>
-                            <div class="metodo-info">
-                                <span class="metodo-nombre">Pago en efectivo</span>
-                                <span class="metodo-desc">Pago contra entrega</span>
-                            </div>
-                            <div class="metodo-check">✓</div>
-                        </label>
-                    </div>
+    {% for medio in medios %}
+        {% if "efectivo" not in medio.nombre|lower %}
+            {% if "tarjeta" in medio.nombre|lower %}
+                <div class="metodo-item">
+                    <input type="radio" id="tarjeta" name="metodo" value="tarjeta" class="metodo-radio">
+                    <label for="tarjeta" class="metodo-label">
+                        <div class="metodo-icon">💳</div>
+                        <div class="metodo-info">
+                            <span class="metodo-nombre">Tarjeta de crédito/débito</span>
+                            <span class="metodo-desc">Visa, Mastercard, American Express</span>
+                        </div>
+                        <div class="metodo-check">✓</div>
+                    </label>
                 </div>
+            {% elif "billetera" in medio.nombre|lower %}
+                <div class="metodo-item">
+                    <input type="radio" id="billetera" name="metodo" value="billetera" class="metodo-radio">
+                    <label for="billetera" class="metodo-label">
+                        <div class="metodo-icon">📱</div>
+                        <div class="metodo-info">
+                            <span class="metodo-nombre">Billetera digital</span>
+                            <span class="metodo-desc">PayPal, Tigo Money, Personal Pay</span>
+                        </div>
+                        <div class="metodo-check">✓</div>
+                    </label>
+                </div>
+            {% elif "banco" in medio.nombre|lower %}
+                <div class="metodo-item">
+                    <input type="radio" id="transferencia" name="metodo" value="transferencia" class="metodo-radio">
+                    <label for="transferencia" class="metodo-label">
+                        <div class="metodo-icon">🏦</div>
+                        <div class="metodo-info">
+                            <span class="metodo-nombre">Transferencia bancaria</span>
+                            <span class="metodo-desc">Banco Itaú, Banco Continental</span>
+                        </div>
+                        <div class="metodo-check">✓</div>
+                    </label>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endfor %}
+
+    {# Finalmente, agregamos el efectivo al final #}
+    <div class="metodo-item">
+        <input type="radio" id="efectivo" name="metodo" value="efectivo" class="metodo-radio">
+        <label for="efectivo" class="metodo-label">
+            <div class="metodo-icon">💵</div>
+            <div class="metodo-info">
+                <span class="metodo-nombre">Pago en efectivo</span>
+                <span class="metodo-desc">Pago contra entrega</span>
+            </div>
+            <div class="metodo-check">✓</div>
+        </label>
+    </div>
+</div>
+
 
                 <!-- Información del método seleccionado -->
                 <div id="info-pago" class="info-pago" style="display: none;">
@@ -148,15 +156,6 @@
     </div>
 </div>
 
-<!-- MODAL MENSAJE -->
-<div id="modal-mensaje-pago" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3 id="titulo-mensaje">⚠️ Atención</h3>
-    <p id="texto-mensaje"></p>
-    <button id="btn-cerrar-mensaje-pago">Cerrar</button>
-  </div>
-</div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -333,7 +332,7 @@ function getCampos() {
         op
       };
     }
-  }
+}
 
 function cerrarModalPago() {
     console.log("Cerrando modal método de pago");
@@ -381,11 +380,14 @@ function resetearFormularioMetodo() {
     inputs.forEach(input => input.value = '');
 }
 
-function mostrarMensajeErrorPago(titulo, texto) {
-    $("#titulo-mensaje").text(titulo);
-    $("#texto-mensaje").text(texto);
-    $("#modal-mensaje-pago").fadeIn().css("display", "flex");
+function mostrarMensaje(titulo, texto) {
+  if (window.mostrarMensajeModal) {
+    
+    window.mostrarMensajeModal(titulo, texto);
+  } else {
+    alert(titulo + ": " + texto);
   }
+}
 
 function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
@@ -475,7 +477,7 @@ function confirmarMetodoPago() {
 
     if (!esValido) {
         console.log("Error de validación:", mensajeError);
-        mostrarMensajeErrorPago("⚠️ Transacción rechazada:",mensajeError);
+        mostrarError("Transacción rechazada:",mensajeError);
         //alert(mensajeError);
         return;
     }
@@ -516,8 +518,9 @@ function confirmarMetodoPago() {
     cerrarModalPago();
     
     // Llamar a la función que continúa el flujo (modal PIN)
-    if (typeof mostrarModalPin === 'function') {
-        mostrarModalPin();
+    if (typeof mostrarModalAcreditacion === 'function') {
+        //mostrarModalPin();
+        mostrarModalAcreditacion();
     } else {
         // Si no existe la función, mostrar modal PIN directamente
         const modalPin = document.getElementById('modal-pin');

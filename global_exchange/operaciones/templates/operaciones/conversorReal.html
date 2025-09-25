@@ -1,5 +1,7 @@
 {% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
 {% block dashboard_content %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
 <div class="dashboard-grid">
   <!-- COLUMNA IZQUIERDA -->
   <div class="col-left">
@@ -40,7 +42,7 @@
 
       <!-- Estadísticas rápidas -->
       <section class="estadisticas-rapidas">
-        {% include 'operaciones/medios_acreditacion.html' %}
+        {% include 'operaciones/limites_operaciones.html' %}
       </section>
 
       <!-- Conversor -->
@@ -234,6 +236,9 @@
   </div>
 </div>
 
+<!-- MODAL Mensajes -->
+{% include 'operaciones/modalMensajes.html' %}
+
 <!-- MODAL Metodo Pago -->
 {% include 'operaciones/modalMetodoPago.html' %}
 
@@ -246,15 +251,9 @@
 <!-- MODAL ÉXITO -->
 {% include 'operaciones/modalExito.html' %}
 
-<!-- MODAL MENSAJE -->
-<div id="modal-mensaje" class="modal">
-  <div class="modal-content">
-    <span class="close">&times;</span>
-    <h3 id="titulo-mensaje">⚠️ Atención</h3>
-    <p id="texto-mensaje"></p>
-    <button id="btn-cerrar-mensaje">Cerrar</button>
-  </div>
-</div>
+<!-- MODAL MedioAcreditacion -->
+{% include 'operaciones/modalMedioAcreditacion.html' %}
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -413,17 +412,15 @@
         });
 
         function mostrarMensaje(titulo, texto) {
-          console.log("Mostrando mensaje:", titulo, texto);
-          $("#titulo-mensaje").text(titulo);
-          $("#texto-mensaje").text(texto);
-          $("#modal-mensaje").fadeIn().css("display", "flex");
+          if (window.mostrarMensajeModal) {
+            window.mostrarMensajeModal(titulo, texto);
+          } else {
+            console.error("Modal mensaje no disponible");
+            alert(titulo + ": " + texto);
+          }
         }
 
-        // Cerrar modal
-        $("#btn-cerrar-mensaje, #modal-mensaje .close").click(function () {
-          $("#modal-mensaje").fadeOut();
-          location.reload(); // recargar página al cerrar el mensaje
-        });
+        
 
         // Declaración global
         var fechaNavegador = null;
@@ -590,8 +587,6 @@
       $(".pin-digit").val("");
       });
 
-
-
   // Función separada para procesar la transacción
   function procesarTransaccion() {
     console.log("Procesando transacción...");
@@ -647,12 +642,14 @@
           // PASO 2: Enviar al banco
           const transaccionData = {
             email: "{{ email_cliente_operativo}}",
+            
             monto: campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val(),
             moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
             tipo: campos.op === "venta" ? "compra" : "venta",
             estado: "aceptada",
             referencia: "TX-" + Date.now(),
             motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`
+
           };
 
           console.log("Enviando al banco:", transaccionData);
@@ -773,13 +770,8 @@
 
       // Chart.js
       const ctx = document.getElementById('grafico-transacciones').getContext('2d');
-      const dataTransacciones = [
-        { dia: '15/09', tipo: 'Compra', monto: 1200 },
-        { dia: '15/09', tipo: 'Venta', monto: 500 },
-        { dia: '14/09', tipo: 'Venta', monto: 850 },
-        { dia: '13/09', tipo: 'Compra', monto: 5000 },
-        { dia: '12/09', tipo: 'Venta', monto: 3300 },
-      ];
+      const dataTransacciones = JSON.parse('{{ data_transacciones_json|escapejs }}');
+      if (dataTransacciones.lenght != 0) {
       new Chart(ctx, {
         type: 'bar',
         data: {
@@ -792,7 +784,12 @@
         },
         options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
-
+      } else {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#555";
+        ctx.textAlign = "center";
+        ctx.fillText("No hay datos para mostrar", ctx.canvas.width / 2, ctx.canvas.height / 2);
+      }
     });
 </script>
 
@@ -801,7 +798,7 @@
     display: grid;
     grid-template-columns: minmax(300px, 1fr) minmax(350px, 1.2fr);
     gap: 2rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 2rem auto;
   }
   .col-left {
@@ -901,6 +898,7 @@
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    height: 100%;
   }
   .tabla-transacciones {
     width: 100%;
@@ -985,29 +983,7 @@
     align-items: center;
     z-index: 99999;
   }
-  .modal-content {
-    background: #fff;
-    padding: 2rem 1.5rem;
-    border-radius: 12px;
-    max-width: 400px;
-    width: 90%;
-    text-align: center;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    position: relative;
-  }
-  .modal-content button {
-    margin: 0.5rem;
-    padding: 0.6rem 1rem;
-    border: none;
-    border-radius: 8px;
-    background: #5d5fef;
-    color: #fff;
-    cursor: pointer;
-    transition: 0.3s;
-  }
-  .modal-content button:hover {
-    background: #4a4cd9;
-  }
+  
   #mensaje-pin {
     display: none;
     font-weight: 600;
@@ -1027,30 +1003,6 @@
     font-size: 1.4rem;
     border: 1px solid #ddd;
     border-radius: 8px;
-  }
-  .modal-content .close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #555;
-    cursor: pointer;
-    transition: 0.2s;
-  }
-  .modal-content .close:hover {
-    color: #dc2626;
-  }
-  #modal-mensaje {
-    z-index: 99999;
-  }
-  #modal-mensaje .modal-content {
-    max-width: 350px;
-    text-align: center;
-    padding: 1.5rem 1rem;
-  }
-  #modal-mensaje .modal-content button {
-    margin-top: 1rem;
   }
   .indicador-card {
     background: #fff;
