@@ -1,0 +1,171 @@
+{% extends "base_forms.html" %}
+{% load widget_tweaks %}
+
+{% block form_title %}Agregar Medio de Acreditación{% endblock %}
+
+{% block form_fields %}
+<div class="form-group">
+  <label for="{{ form.cliente.id_for_label }}">Cliente *</label>
+  <div class="input-icon">
+    <span class="icon">🏢</span>
+    {{ form.cliente|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.entidad.id_for_label }}">Entidad Financiera *</label>
+  <div class="input-icon">
+    <span class="icon">🏦</span>
+    {{ form.entidad|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.numero_cuenta.id_for_label }}">Número de Cuenta/Teléfono *</label>
+  <div class="input-icon">
+    <span class="icon">🔢</span>
+    {{ form.numero_cuenta|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.tipo_cuenta.id_for_label }}">Tipo de Cuenta *</label>
+  <div class="input-icon">
+    <span class="icon">💳</span>
+    {{ form.tipo_cuenta|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.titular.id_for_label }}">Titular *</label>
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    {{ form.titular|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.documento_titular.id_for_label }}">Documento del Titular</label>
+  <div class="input-icon">
+    <span class="icon">🆔</span>
+    {{ form.documento_titular|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.moneda.id_for_label }}">Moneda *</label>
+  <div class="input-icon">
+    <span class="icon">💱</span>
+    {{ form.moneda|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.activo.id_for_label }}">Estado Activo</label>
+  <div class="input-icon">
+    <span class="icon">⚡</span>
+    {{ form.activo|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<style>
+/* Usa los mismos estilos que tu form de clientes */
+.custom-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #f0edff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.custom-input::placeholder { color: #6b7280; }
+.custom-input:focus { border-color: #5d5fef; box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1); }
+.custom-input.error { border-color: #ef4444 !important; background-color: #fef2f2; }
+.custom-input.valid { border-color: #10b981; background-color: #f0fdf4; }
+.input-icon { position: relative; margin-bottom: 4px; }
+.input-icon .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 16px; color: #5d5fef; z-index: 1; }
+.error-messages { min-height: 18px; margin-bottom: 8px; display: block; }
+.error-messages .error-message { color: #ef4444 !important; font-size: 12px !important; font-weight: normal !important; margin: 2px 0 !important; padding: 0 !important; display: block !important; background: none !important; border: none !important; text-align: left !important; line-height: 1.4 !important; animation: slideDown 0.3s ease-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+<script>
+// Similar validación JS que el form de clientes
+let medioValidator = null;
+jQuery.extend(jQuery.validator.messages, {
+    required: "Este campo es obligatorio.",
+    email: "Por favor, escribe una dirección de correo válida.",
+    digits: "Por favor, escribe sólo números.",
+    minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+    maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres.")
+});
+function setupMedioValidation() {
+    const $form = $("#form-medio");
+    if (!$form.length) return null;
+    if (medioValidator) { medioValidator.destroy(); medioValidator = null; }
+    medioValidator = $form.validate({
+        rules: {
+            cliente: { required: true },
+            entidad: { required: true },
+            numero_cuenta: { required: true, minlength: 5, maxlength: 50 },
+            tipo_cuenta: { required: true },
+            titular: { required: true, minlength: 2, maxlength: 200 },
+            documento_titular: { maxlength: 20 },
+            moneda: { required: true },
+        },
+        messages: {
+            cliente: { required: "Debe seleccionar un cliente" },
+            entidad: { required: "Debe seleccionar una entidad" },
+            numero_cuenta: { required: "El número es obligatorio", minlength: "Mínimo 5 caracteres", maxlength: "Máximo 50" },
+            tipo_cuenta: { required: "Debe seleccionar tipo de cuenta" },
+            titular: { required: "El titular es obligatorio", minlength: "Mínimo 2 caracteres", maxlength: "Máximo 200" },
+            documento_titular: { maxlength: "Máximo 20 caracteres" },
+            moneda: { required: "Debe seleccionar moneda" },
+        },
+        errorElement: 'div',
+        errorClass: 'error-message',
+        validClass: 'valid',
+        errorPlacement: function(error, element) {
+            let formGroup = element.closest('.form-group');
+            let errorContainer = formGroup.find('.error-messages');
+            if (!errorContainer.length) errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
+            errorContainer.html(error);
+        },
+        highlight: function(element, errorClass, validClass) {
+            $(element).addClass('error').removeClass(validClass);
+        },
+        unhighlight: function(element, errorClass, validClass) {
+            $(element).removeClass('error').addClass(validClass);
+        },
+        success: function(label, element) {
+            $(element).closest('.form-group').find('.error-messages').empty();
+        },
+        submitHandler: function(form) {
+            form.submit();
+        },
+        invalidHandler: function(event, validator) {
+            // Opcional: log de errores
+        }
+    });
+    $("#form-medio input[name='numero_cuenta']").on("input", function() {
+        this.value = this.value.replace(/[^0-9]/g,'');
+    });
+    return medioValidator;
+}
+$(document).ready(function() {
+    setupMedioValidation();
+});
+</script>
+{% endblock %}

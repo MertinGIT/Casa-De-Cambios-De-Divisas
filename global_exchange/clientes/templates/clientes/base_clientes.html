@@ -1,0 +1,104 @@
+<div class="contenedor-principal">
+<main class="main-container">
+
+  <div class="modules">
+
+    <a href="{% url 'clientes' %}" class="module-btn {% if request.resolver_match.url_name == 'clientes' %}active-config{% endif %}">👤 Clientes</a>
+
+    <a href="{% url 'cliente_usuario' %}" class="module-btn {% if request.resolver_match.url_name == 'cliente_usuario' %}active-config{% endif %}">👥 Clientes-Usuarios</a>
+
+    <a href="{% url 'medio_acreditacion_list' %}" class="module-btn {% if request.resolver_match.url_name == 'medio_acreditacion_list' %}active-config{% endif %}">💳 Medios de Acreditación</a>
+
+  </div>
+</main>
+</div>
+<style>
+body, html {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  /*background-color: #f4f6fb;*/
+}
+.contenedor-principal{
+  padding: 24px;
+}
+.main-container {
+  text-align: center;
+  padding: 3rem 2rem;
+  border-radius: 24px;
+  background-color: #ffffff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
+  flex: 1;           /* ocupa todo el espacio disponible */
+  max-width: 1200px; /* pero no más que esto */
+  width: 100%;
+  table-layout: fixed;
+}
+
+.main-container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+}
+
+.modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  justify-content: center;
+  
+}
+
+.module-btn {
+  display: inline-block; /* Importante para que los <a> se vean como botones */
+  padding: 0.9rem 1.8rem;
+  border-radius: 14px;
+  text-decoration: none;
+  background-color: #737791;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 16px;
+  /*transition: all 0.3s ease;*/
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.module-btn:hover {
+  background-color: #5d5fef;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+.active-config {
+  background-color: #5d5fef;
+  box-shadow: 0 6px 20px rgba(93, 95, 239, 0.4);
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    padding: 2rem 1rem;
+  }
+  .modules {
+    gap: 0.8rem;
+  }
+  .module-btn {
+    font-size: 14px;
+    padding: 0.7rem 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modules {
+    flex-direction: column; /* Botones uno debajo de otro */
+    gap: 0.6rem;
+    align-items: center;
+  }
+  .module-btn {
+    width: 100%; /* Ocupa todo el ancho disponible */
+    max-width: 250px; /* Limita el ancho máximo */
+    font-size: 14px;
+    padding: 0.7rem 1rem;
+  }
+}
+</style>

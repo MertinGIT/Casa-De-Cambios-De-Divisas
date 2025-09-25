@@ -84,6 +84,24 @@ def home(request):
     )
     print("tasas:", tasas, flush=True)
 
+
+    # Reorganizar datos en un dict similar a tu data_por_moneda
+    data_por_moneda = {}
+    for tasa in tasas:
+        abrev = tasa.moneda_destino.abreviacion
+        if abrev not in data_por_moneda:
+            data_por_moneda[abrev] = []
+        # Insertar al inicio para que el primero sea el más reciente
+        data_por_moneda[abrev].insert(0, {
+            "fecha": tasa.vigencia.strftime("%d %b"),
+            "compra": float(tasa.monto_compra),
+            "venta": float(tasa.monto_venta),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta)
+        })
+
+    print("data_por_moneda:", data_por_moneda, flush=True)
+
     # Comisiones y segmentos
     COMISION_VTA = 100
     COMISION_COM = 50
@@ -114,6 +132,8 @@ def home(request):
     operacion = "venta"
     origen = ""
     destino = ""
+    COMISION_VTA = None
+    COMISION_COM = None
     
     # Reorganizar datos en un dict similar a tu data_por_moneda
     data_por_moneda = {}
@@ -155,12 +175,16 @@ def home(request):
             valor = float(valor_input)
             if valor <= 0:
                 resultado = "Monto inválido"
+                COMISION_VTA = 0
+                COMISION_COM = 0
             else:
                 # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
                 registros = data_por_moneda.get(moneda_seleccionada, [])
                 if not registros:
                     resultado = "No hay cotización disponible" # no hay cotización, no mostrar nada
                     ganancia_total = 0
+                    COMISION_VTA = 0
+                    COMISION_COM = 0
                 else:
                     if registros:
                         print("entro",registros, flush=True)
@@ -170,13 +194,19 @@ def home(request):
                             reverse=True
                         )
                         ultimo = registros_ordenados[0]
+                        print(f"Registros ordenados: {registros_ordenados}", flush=True)
+                        print(f"Ultimo {ultimo}", flush=True)
                         print("registrohome:", registros_ordenados, flush=True)
                         PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
+                        COMISION_VTA = ultimo["comision_venta"]
+                        COMISION_COM = ultimo["comision_compra"]
                     else:
                         PB_MONEDA = 0
-                        
+                        COMISION_VTA = 0
+                        COMISION_COM = 0
                     print("PB_MONEDA:", PB_MONEDA,flush=True)
-
+                    print("COMISION_VTA:", COMISION_VTA,flush=True)
+                    print("COMISION_COM:", COMISION_COM,flush=True)
                     # === CÁLCULOS ===
                     print("operacion:", operacion,flush=True)
                     if operacion == "venta":  # Vender PYG → otra moneda
@@ -193,9 +223,10 @@ def home(request):
                         print("descuento:", descuento, flush=True)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
-
         except ValueError:
             resultado = "Monto inválido"
+            COMISION_VTA = 0
+            COMISION_COM = 0
 
         # Respuesta AJAX
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -203,7 +234,9 @@ def home(request):
                 "resultado": resultado,
                 "ganancia_total": ganancia_total,
                 "segmento": segmento_nombre,
-                "descuento": descuento
+                "descuento": descuento,
+                "comision_compra": COMISION_COM if operacion != "venta" else None,
+                "comision_venta": COMISION_VTA if operacion == "venta" else None,
             })
 
     
@@ -222,6 +255,8 @@ def home(request):
         "descuento": descuento,
         "clientes_asociados": clientes_asociados,
         "cliente_operativo": cliente_operativo,
+        "comision_compra": COMISION_COM if operacion != "venta" else None,
+        "comision_venta": COMISION_VTA if operacion == "venta" else None,
     }
     return render(request, 'home.html', context)
 
@@ -887,6 +922,7 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+	
 
 
 #Comunicacion via https con el backend

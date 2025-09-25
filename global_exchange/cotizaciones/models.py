@@ -1,6 +1,7 @@
 from django.db import models
 from monedas.models import Moneda
 
+
 class TasaDeCambio(models.Model):
     """
     Modelo que representa la tasa de cambio entre dos monedas.
@@ -31,7 +32,17 @@ class TasaDeCambio(models.Model):
             Valor al que la entidad vende la moneda de origen.
             - Máximo: 23 dígitos
             - Decimales: hasta 8
+            
+        comision_compra (DecimalField):
+            Comisión que se resta del monto de compra para calcular el precio final al usuario.
+            - Máximo: 23 dígitos
+            - Decimales: hasta 8
 
+        comision_venta (DecimalField):
+            Comisión que se suma al monto de venta para calcular el precio final al usuario.
+            - Máximo: 23 dígitos
+            - Decimales: hasta 8
+            
         vigencia (DateTimeField):
             Fecha y hora a partir de la cual la tasa de cambio entra en vigencia.
 
@@ -70,19 +81,30 @@ class TasaDeCambio(models.Model):
     )
     monto_compra = models.DecimalField(max_digits=23, decimal_places=8)
     monto_venta = models.DecimalField(max_digits=23, decimal_places=8)
+    comision_compra = models.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        default=0
+    )
+    comision_venta = models.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        default=0
+    )
     vigencia = models.DateTimeField()
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     estado = models.BooleanField(default=True)
-    
+
     class Meta:
         verbose_name = "Tasa de Cambio"
         verbose_name_plural = "Tasas de Cambio"
         ordering = ["-fecha_actualizacion"]
-    
 
     def __str__(self):
         """
         Retorna una representación legible de la tasa de cambio,
-        mostrando el par de monedas y sus valores de compra y venta.
+        mostrando el par de monedas, valores de compra/venta y comisiones.
         """
-        return f"{self.moneda_origen}/{self.moneda_destino} - Compra: {self.monto_compra} Venta: {self.monto_venta}"
+        return (f"{self.moneda_origen}/{self.moneda_destino} - "
+                f"Compra: {self.monto_compra} (Com: {self.comision_compra}) "
+                f"Venta: {self.monto_venta} (Com: {self.comision_venta})")

@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     'operaciones',
     'corsheaders',
     'limite_moneda',
+    'medio_acreditacion'
 ]
 # ============================================================================
 # Middleware
