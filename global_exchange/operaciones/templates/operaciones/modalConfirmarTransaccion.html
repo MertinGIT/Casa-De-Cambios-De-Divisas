@@ -185,6 +185,26 @@
       };
     }
   }
+  function validarMonto(monto) {
+    // Convertir a string
+    const montoStr = monto.toString();
+    // Separar parte entera y decimal
+    const partes = montoStr.split(".");
+    const enteros = partes[0] || "";
+    const decimales = partes[1] || "";
+    console.log("partes", partes);
+    console.log("enteros", enteros);
+    console.log("decimales", decimales);
+
+    if (enteros.length > 15 || decimales.length > 8) {
+        mostrarMensaje("Error", "El monto no puede tener más de 15 dígitos y más de 8 decimales.");
+        return false;
+    }
+
+  
+
+    return true;
+  }
 
   $("#form-conversor").submit(function (e) {
     e.preventDefault();
@@ -203,6 +223,9 @@
       mostrarMensaje("Error", "Ingrese un monto válido");
       return;
     }
+    const montoRaw = parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val());
+    console.log("123321123")
+    if (!validarMonto(montoRaw)) return;
 
     if (origenVal === destinoVal) {
       mostrarMensaje(
@@ -211,6 +234,8 @@
       );
       return;
     }
+
+
 
     // si no existe resultado calculado todavía, calcular localmente
     let resultadoCalc = campos.$resultado.val();

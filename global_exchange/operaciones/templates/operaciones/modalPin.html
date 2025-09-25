@@ -34,7 +34,7 @@
     </div>
 
     <div class="modal-footer-pin">
-      <button class="btn-modal-pin" onclick="verificarPin()">
+      <button class="btn-modal-pin"  id = "btn-verificar-pin" onclick="verificarPin()">
         <span>Verificar PIN</span>
       </button>
     </div>
@@ -121,7 +121,6 @@
       };
     }
   }
-
   function verificarPin() {
     const pinInputs = document.querySelectorAll(".pin-digit");
     let pin = "";
@@ -137,14 +136,15 @@
 
       email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
       const modal = $("#modal-pin");
-        const monto = campos.$valor.val();
-        const moneda = campos.$origen.val() || campos.$destino.val();
-        const tipo = campos.op === "venta" ? "compra" : "venta";
-
+      const monto = campos.op === "venta" ? campos.$valor.val() : campos.$resultado.val(); 
+      const moneda = campos.op === "venta" ? campos.$origen.val(): campos.$destino.val(); // si es compra
+      const tipo = campos.op === "venta" ? "compra" : "venta";
+      
+      console.log("monto", monto);
       if (email_cliente_operativo != "") {
         const transaccionData = {
           email: "{{ email_cliente_operativo}}",
-          monto: parseInt(monto,10),
+          monto: parseFloat(monto),
           moneda: moneda,
           tipo: tipo,
           estado: "aceptada",

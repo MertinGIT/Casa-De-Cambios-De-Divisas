@@ -79,6 +79,7 @@ class TasaDeCambioForm(forms.ModelForm):
         if monto is not None:
             # Validar dígitos antes y después de la coma
             str_monto = f"{monto:.2f}"  # convierte a string con 8 decimales
+            print("stringggggggggggggggggggggcompra",type(monto),flush=True)  # <class 'int'>
             entero, decimal = str_monto.split(".")
             if len(entero) > 15:
                 raise forms.ValidationError("Máximo 15 dígitos antes de la coma.")
@@ -100,6 +101,7 @@ class TasaDeCambioForm(forms.ModelForm):
         monto = self.cleaned_data["monto_venta"]
         if monto is not None:
             str_monto = f"{monto:.2f}"
+            print("stringggggggggggggggggggggventa",type(monto),flush=True)  # <class 'int'>
             entero, decimal = str_monto.split(".")
             if len(entero) > 15:
                 raise forms.ValidationError("Máximo 15 dígitos antes de la coma.")
