@@ -1,0 +1,300 @@
+{% extends "base_forms.html" %} 
+{% load widget_tweaks %}
+
+{% block form_title %}Agregar Límite de Transacción{% endblock %}
+
+{% block form_fields %}
+
+<div class="form-group">
+  <label for="{{ form.cliente.id_for_label }}">Cliente *</label>
+  <div class="input-icon">
+    <span class="icon">👤</span>
+    <select name="cliente" id="id_cliente" class="custom-input">
+      <option value="">Seleccione un cliente...</option>
+    </select>
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.moneda.id_for_label }}">Moneda *</label>
+  <div class="input-icon">
+    <span class="icon">💰</span>
+    <select name="moneda" id="id_moneda" class="custom-input">
+      <option value="">Seleccione una moneda...</option>
+    </select>
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.limite_diario.id_for_label }}">Límite Diario *</label>
+  <div class="input-icon">
+    <span class="icon">📅</span>
+    {{ form.limite_diario|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<div class="form-group">
+  <label for="{{ form.limite_mensual.id_for_label }}">Límite Mensual *</label>
+  <div class="input-icon">
+    <span class="icon">🗓️</span>
+    {{ form.limite_mensual|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages"></div>
+</div>
+
+<input type="hidden" id="id_obj_id" name="obj_id" value="{{ obj_id|default:'' }}">
+
+<style>
+.custom-input {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #f0edff;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.custom-input::placeholder { color: #6b7280; }
+.custom-input:focus { border-color: #5d5fef; box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1); }
+.custom-input.error { border-color: #ef4444 !important; background-color: #fef2f2; }
+.custom-input.valid { border-color: #10b981; background-color: #f0fdf4; }
+.input-icon { position: relative; margin-bottom: 4px; }
+.input-icon .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 16px; color: #5d5fef; z-index: 1; }
+.error-messages { min-height: 18px; margin-bottom: 8px; display: block; }
+.error-messages .error-message { color: #ef4444; font-size: 12px; margin: 2px 0; display: block; line-height: 1.4; animation: slideDown 0.3s ease-out; }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+.custom-input.loading {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+.custom-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* adicional para mejor visual en selects */
+select.custom-input.error { box-shadow: none; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+
+<script>
+let limiteValidator = null;
+
+jQuery.extend(jQuery.validator.messages, {
+    required: "Este campo es obligatorio.",
+    number: "Ingrese un número válido.",
+    min: jQuery.validator.format("El valor no puede ser menor a {0}."),
+    minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+    maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres.")
+});
+
+// Cargar clientes
+function loadClientes() {
+    const $clienteSelect = $('#id_cliente');
+    $clienteSelect.prop('disabled', true).addClass('loading');
+
+    $.ajax({
+        url: '{% url "get_clientes" %}',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            $clienteSelect.empty().append('<option value="">Seleccione un cliente...</option>');
+            $.each(data, function(i, cliente) {
+                $clienteSelect.append(
+                    $('<option></option>').val(cliente.id).text(cliente.nombre + (cliente.cedula ? ' (' + cliente.cedula + ')' : ''))
+                );
+            });
+        },
+        error: function() {
+            $clienteSelect.empty().append('<option value="">Error cargando clientes</option>');
+        },
+        complete: function() {
+            $clienteSelect.prop('disabled', false).removeClass('loading');
+        }
+    });
+}
+
+// Cargar monedas
+function loadMonedas() {
+    const $monedaSelect = $('#id_moneda');
+    $monedaSelect.prop('disabled', true).addClass('loading');
+
+    $.ajax({
+        url: '{% url "get_monedas" %}',
+        method: 'GET',
+        dataType: 'json',
+        success: function(data) {
+            $monedaSelect.empty().append('<option value="">Seleccione una moneda...</option>');
+            $.each(data, function(i, moneda) {
+                $monedaSelect.append(
+                    $('<option></option>').val(moneda.id).text(moneda.nombre + ' (' + moneda.abreviacion + ')')
+                );
+            });
+        },
+        error: function() {
+            $monedaSelect.empty().append('<option value="">Error cargando monedas</option>');
+        },
+        complete: function() {
+            $monedaSelect.prop('disabled', false).removeClass('loading');
+        }
+    });
+}
+
+// Validación de formulario
+function setupLimiteValidation() {
+    const $form = $("#form-accion");
+    if (!$form.length) return null;
+
+    if (limiteValidator) { limiteValidator.destroy(); limiteValidator = null; }
+
+    limiteValidator = $form.validate({
+        rules: {
+            cliente: { required: true },
+            moneda: { required: true },
+            limite_diario: { required: true, number: true, min: 0 },
+            limite_mensual: { required: true, number: true, min: 0 }
+        },
+        messages: {
+            cliente: { required: "Seleccione un cliente" },
+            moneda: { required: "Seleccione una moneda" },
+            limite_diario: { required: "Ingrese límite diario", number: "Debe ser un número", min: "No puede ser negativo" },
+            limite_mensual: { required: "Ingrese límite mensual", number: "Debe ser un número", min: "No puede ser negativo" }
+        },
+        errorElement: 'div',
+        errorClass: 'error-message',
+        validClass: 'valid',
+        errorPlacement: function(error, element) {
+            let formGroup = element.closest('.form-group');
+            let errorContainer = formGroup.find('.error-messages');
+            if (!errorContainer.length) errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
+            errorContainer.html(error);
+        },
+        highlight: function(element) { $(element).addClass('error').removeClass('valid'); },
+        unhighlight: function(element) { $(element).removeClass('error').addClass('valid'); },
+
+        // Antes de permitir el submit hacemos una verificación final síncrona
+        submitHandler: function(form) {
+            // hace la comprobación síncrona para que antes de "activar/guardar" se verifique que no exista otro activo
+            const canAssign = validateClienteMonedaSync();
+            if (!canAssign) {
+                // marcar error visual en moneda y evitar envío
+                const $moneda = $('#id_moneda');
+                const $group = $moneda.closest('.form-group');
+                $group.find('.error-messages').html('<div class="error-message">Este cliente ya tiene un límite activo para esta moneda.</div>');
+                $moneda.addClass('error').removeClass('valid');
+                if (limiteValidator) {
+                    limiteValidator.showErrors({ 'moneda': 'Este cliente ya tiene un límite activo para esta moneda.' });
+                }
+                return false;
+            }
+            form.submit();
+        }
+    });
+
+    return limiteValidator;
+}
+
+// Validación AJAX (asíncrona) para feedback inmediato al cambiar
+function validateClienteMoneda() {
+    const clienteId = $('#id_cliente').val();
+    const monedaId = $('#id_moneda').val();
+    const objId = $('#id_obj_id').val() || '';
+
+    // si no están ambos, limpiamos mensajes y salimos
+    if (!clienteId || !monedaId) {
+        const $moneda = $('#id_moneda');
+        $moneda.removeClass('error').removeClass('valid');
+        $moneda.closest('.form-group').find('.error-messages').html('');
+        return;
+    }
+
+    $.ajax({
+        url: '{% url "check-nombre-cliente" %}',
+        method: 'POST',
+        data: {
+            cliente: clienteId,
+            moneda: monedaId,
+            obj_id: objId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        success: function(canAssign) {
+            const $moneda = $('#id_moneda');
+            const $group = $moneda.closest('.form-group');
+            const $errContainer = $group.find('.error-messages');
+
+            if (!canAssign) {
+                // marcar en rojo y mostrar mensaje dentro del form
+                $moneda.addClass('error').removeClass('valid');
+                $errContainer.html('<div class="error-message">Este cliente ya tiene un límite activo para esta moneda.</div>');
+                if (limiteValidator) {
+                    limiteValidator.showErrors({ 'moneda': 'Este cliente ya tiene un límite activo para esta moneda.' });
+                }
+            } else {
+                // limpiar estado de error
+                $moneda.removeClass('error').addClass('valid');
+                $errContainer.html('');
+                if (limiteValidator) {
+                    // revalidar el campo moneda para que jQuery Validate actualice su estado
+                    limiteValidator.element('#id_moneda');
+                }
+            }
+        },
+        error: function() {
+            console.error("Error verificando cliente y moneda");
+        }
+    });
+}
+
+// Versión SÍNCRONA usada justo antes del submit (asegura verificación final)
+function validateClienteMonedaSync() {
+    const clienteId = $('#id_cliente').val();
+    const monedaId = $('#id_moneda').val();
+    const objId = $('#id_obj_id').val() || '';
+
+    if (!clienteId || !monedaId) return true;
+
+    let canAssign = true;
+    $.ajax({
+        url: '{% url "check-nombre-cliente" %}',
+        method: 'POST',
+        data: {
+            cliente: clienteId,
+            moneda: monedaId,
+            obj_id: objId,
+            csrfmiddlewaretoken: '{{ csrf_token }}'
+        },
+        dataType: 'json',
+        async: false, // petición síncrona para garantizar la verificación antes del submit
+        success: function(data) {
+            canAssign = !!data;
+        },
+        error: function() {
+            canAssign = false;
+        }
+    });
+
+    return canAssign;
+}
+
+$(document).ready(function() {
+    // Load data for comboboxes
+    loadClientes();
+    loadMonedas();
+
+    // Setup validation
+    setupLimiteValidation();
+
+    // Ejecutar validación al cambiar cliente o moneda (feedback inmediato)
+    $('#id_cliente, #id_moneda').on('change', validateClienteMoneda);
+});
+</script>
+
+{% endblock %}

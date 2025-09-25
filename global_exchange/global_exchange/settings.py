@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     'cliente_usuario',
     'operaciones',
     'corsheaders',
+    'limite_moneda',
 ]
 # ============================================================================
 # Middleware

@@ -58,6 +58,7 @@ urlpatterns = [
     path('admin/cliente_usuario/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
     path('usuarios/', include('usuarios.urls')),
+    path('limites/', include('limite_moneda.urls'))
 
 ]
 
