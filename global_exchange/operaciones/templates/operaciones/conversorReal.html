@@ -764,14 +764,9 @@
 
       // Chart.js
       const ctx = document.getElementById('grafico-transacciones').getContext('2d');
-      const dataTransacciones = [
-        { dia: '15/09', tipo: 'Compra', monto: 1200 },
-        { dia: '15/09', tipo: 'Venta', monto: 500 },
-        { dia: '14/09', tipo: 'Venta', monto: 850 },
-        { dia: '13/09', tipo: 'Compra', monto: 5000 },
-        { dia: '12/09', tipo: 'Venta', monto: 3300 },
-      ];
-      new Chart(ctx, {
+      const dataTransacciones = JSON.parse('{{ data_transacciones_json|escapejs }}');
+      if (dataTransacciones.lenght != 0) {
+        new Chart(ctx, {
         type: 'bar',
         data: {
           labels: dataTransacciones.map(d => d.dia),
@@ -783,7 +778,12 @@
         },
         options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
-
+      } else {
+        ctx.font = "16px Arial";
+        ctx.fillStyle = "#555";
+        ctx.textAlign = "center";
+        ctx.fillText("No hay datos para mostrar", ctx.canvas.width / 2, ctx.canvas.height / 2);
+      }
     });
 </script>
 
