@@ -217,12 +217,16 @@
           <tr>
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
-            <td>{{ t.monto }}</td>
+            <td>{{ t.monto|floatformat:0 }}Gs</td>
             <td>
               <span class="estado {{ t.estado|lower }}">{{ t.estado }}</span>
             </td>
             <td class="tipo-{{ t.tipo|lower }}">{{ t.tipo }}</td>
           </tr>
+          {% empty %}
+    <tr>
+      <td colspan="7" class="no-results">No existen transacciones.</td>
+    </tr>
           {% endfor %}
         </tbody>
       </table>

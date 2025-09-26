@@ -11,60 +11,48 @@ def historial_usuario(request):
     from operaciones.models import Transaccion
     from monedas.models import Moneda
 
+    # Parámetros
     q = request.GET.get('q', '').strip()
-    campo = request.GET.get('campo', '').strip()          # '', 'id', 'estado', 'tipo'
-    moneda = request.GET.get('moneda', '').strip()        # abreviación
+    campo = request.GET.get('campo', '').strip()              # id / estado / tipo
+    moneda = (request.GET.get('moneda') or
+              request.GET.get('moneda_sel') or '').strip()    # soporta ambos nombres
     fecha_inicio = request.GET.get('fecha_inicio', '').strip()
     fecha_fin = request.GET.get('fecha_fin', '').strip()
 
-    transacciones = Transaccion.objects.filter(usuario=request.user).select_related(
-        'moneda_origen', 'moneda_destino'
-    )
+    qs = (Transaccion.objects
+          .filter(usuario=request.user)
+          .select_related('moneda_origen', 'moneda_destino')
+          .order_by('-fecha'))
 
-    # Filtro moneda (si aparece en origen o destino)
+    # Filtro texto / campo
+    if q and campo:
+        if campo == 'id' and q.isdigit():
+            qs = qs.filter(id=int(q))
+        elif campo == 'estado':
+            qs = qs.filter(estado__icontains=q)
+        elif campo == 'tipo':
+            qs = qs.filter(tipo__icontains=q)
+
+    # Fechas (YYYY-MM-DD)
+    if fecha_inicio:
+        d = parse_date(fecha_inicio)
+        if d:
+            qs = qs.filter(fecha__date__gte=d)
+    if fecha_fin:
+        d = parse_date(fecha_fin)
+        if d:
+            qs = qs.filter(fecha__date__lte=d)
+
+    # Filtro moneda: si aparece como origen o destino
     if moneda:
-        transacciones = transacciones.filter(
-            models.Q(moneda_origen__abreviacion=moneda) |
-            models.Q(moneda_destino__abreviacion=moneda)
+        qs = qs.filter(
+            Q(moneda_origen__abreviacion=moneda) |
+            Q(moneda_destino__abreviacion=moneda)
         )
 
-    # Filtro fechas (fecha__date)
-    if fecha_inicio:
-        fi = parse_date(fecha_inicio)
-        if fi:
-            transacciones = transacciones.filter(fecha__date__gte=fi)
-    if fecha_fin:
-        ff = parse_date(fecha_fin)
-        if ff:
-            transacciones = transacciones.filter(fecha__date__lte=ff)
-
-    # Búsqueda
-    if q:
-        if campo == 'id' or campo == '':
-            if q.isdigit():
-                transacciones = transacciones.filter(id=int(q))
-            else:
-                # fallback a búsqueda amplia si no es número
-                transacciones = transacciones.filter(
-                    models.Q(estado__icontains=q) |
-                    models.Q(tipo__icontains=q)
-                )
-        elif campo == 'estado':
-            transacciones = transacciones.filter(estado__icontains=q)
-        elif campo == 'tipo':
-            transacciones = transacciones.filter(tipo__icontains=q)
-        else:
-            transacciones = transacciones.filter(
-                models.Q(id__icontains=q) |
-                models.Q(estado__icontains=q) |
-                models.Q(tipo__icontains=q)
-            )
-
-    transacciones = transacciones.order_by('-fecha')
-
-    # Monedas disponibles (abreviaciones únicas presentes en las transacciones del usuario)
+    # Monedas disponibles desde transacciones del usuario (evita listar sin uso)
     monedas_set = set()
-    for t in Transaccion.objects.filter(usuario=request.user).select_related('moneda_origen', 'moneda_destino'):
+    for t in qs:
         if t.moneda_origen:
             monedas_set.add(t.moneda_origen.abreviacion)
         if t.moneda_destino:
@@ -72,13 +60,14 @@ def historial_usuario(request):
     monedas_disponibles = sorted(monedas_set)
 
     context = {
-        'transacciones': transacciones,
+        'transacciones': qs,
         'q': q,
         'campo': campo,
-        'moneda_sel': moneda,
+        'moneda_sel': moneda,          # mantener compatibilidad
+        'moneda': moneda,
+        'monedas_disponibles': monedas_disponibles,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
-        'monedas_disponibles': monedas_disponibles,
     }
     return render(request, 'historial_transacciones/historial_usuario.html', context)
 
@@ -105,7 +94,7 @@ def exportar_historial_excel(request):
     ws = wb.active
     ws.title = "Historial"
 
-    headers = ["ID", "Fecha", "Monto", "Estado", "Tipo"]
+    headers = ["ID", "Fecha", "Monto", "Moneda Origen", "Moneda Destino", "Tipo", "Tasa Usada", "Estado"]
     ws.append(headers)
 
     for t in qs:
@@ -113,8 +102,12 @@ def exportar_historial_excel(request):
             t.id,
             timezone.localtime(t.fecha).strftime('%d/%m/%Y %H:%M') if t.fecha else '',
             float(t.monto) if getattr(t, 'monto', None) is not None else 0,
+            t.moneda_origen.abreviacion if t.moneda_origen else '',
+            t.moneda_destino.abreviacion if t.moneda_destino else '',
+            t.tipo,
+            t.tasa_usada if getattr(t, 'tasa_usada', None) is not None else '',
             t.estado,
-            t.tipo
+            
         ])
 
     for col in range(1, len(headers) + 1):
@@ -146,13 +139,18 @@ def exportar_historial_pdf(request):
     width, height = A4
     y = height - 50
 
+    # Título
     p.setFont("Helvetica-Bold", 14)
     p.drawString(40, y, "Historial de Transacciones")
     y -= 30
 
-    headers = ["ID", "Fecha", "Monto", "Estado", "Tipo"]
-    p.setFont("Helvetica-Bold", 10)
-    x_positions = [40, 100, 230, 320, 410]
+    # Encabezados (los mismos que en Excel)
+    headers = ["ID", "Fecha", "Monto", "Moneda Origen", "Moneda Destino", "Tipo", "Tasa Usada", "Estado"]
+    p.setFont("Helvetica-Bold", 9)
+
+    # Posiciones X (ajustadas para A4 horizontalmente)
+    x_positions = [40, 80, 150, 220, 300, 380, 450, 520]
+
     for x, h in zip(x_positions, headers):
         p.drawString(x, y, h)
     y -= 12
@@ -160,22 +158,32 @@ def exportar_historial_pdf(request):
     p.line(40, y, width - 40, y)
     y -= 10
 
-    p.setFont("Helvetica", 9)
+    # Filas de datos
+    p.setFont("Helvetica", 8)
     for t in qs:
-        if y < 60:
+        if y < 60:  # salto de página
             p.showPage()
             y = height - 50
-            p.setFont("Helvetica-Bold", 10)
+            p.setFont("Helvetica-Bold", 9)
             for x, h in zip(x_positions, headers):
                 p.drawString(x, y, h)
             y -= 22
-            p.setFont("Helvetica", 9)
+            p.setFont("Helvetica", 8)
 
-        p.drawString(x_positions[0], y, str(t.id))
-        p.drawString(x_positions[1], y, timezone.localtime(t.fecha).strftime('%d/%m/%Y %H:%M') if t.fecha else '')
-        p.drawString(x_positions[2], y, f"{t.monto}")
-        p.drawString(x_positions[3], y, t.estado)
-        p.drawString(x_positions[4], y, t.tipo)
+        valores = [
+            str(t.id),
+            timezone.localtime(t.fecha).strftime('%d/%m/%Y %H:%M') if t.fecha else '',
+            str(int(t.monto)) if getattr(t, 'monto', None) is not None else '0',
+            t.moneda_origen.abreviacion if t.moneda_origen else '',
+            t.moneda_destino.abreviacion if t.moneda_destino else '',
+            t.tipo,
+            str(int(t.tasa_usada)) if getattr(t, 'tasa_usada', None) is not None else '',
+            t.estado,
+        ]
+
+        for x, v in zip(x_positions, valores):
+            p.drawString(x, y, str(v))
+
         y -= 14
 
     p.showPage()
