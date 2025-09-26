@@ -9,6 +9,14 @@ Modelos
 .. autoclass:: medio_acreditacion.models.TipoEntidadFinanciera
 .. autoclass:: medio_acreditacion.models.MedioAcreditacion
 
+Formularios
+-----------
+
+.. autoclass:: medio_acreditacion.forms.TipoEntidadFinancieraForm
+   :exclude-members: base_fields, declared_fields
+
+.. autoclass:: medio_acreditacion.forms.MedioAcreditacionForm
+   :exclude-members: base_fields, declared_fields
 
 Vistas basadas en función
 ------------------------

@@ -9,6 +9,8 @@
 
     <a href="{% url 'medio_acreditacion_list' %}" class="module-btn {% if request.resolver_match.url_name == 'medio_acreditacion_list' %}active-config{% endif %}">💳 Medios de Acreditación</a>
 
+    <a href="{% url 'tipo_entidad_list' %}" class="module-btn {% if request.resolver_match.url_name == 'tipo_entidad_list' %}active-config{% endif %}">🏦 Entidades</a>
+
     <a href="{% url 'lista-limites' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-limites' %}active-config{% endif %}">🪙 Limite de monedas</a>
   </div>
 </main>
