@@ -58,7 +58,6 @@ def tipo_entidad_create(request):
             entidad = form.save(commit=False)
             entidad.estado = True 
             entidad.save()
-            messages.success(request, 'Entidad financiera creada correctamente.')
             return redirect('tipo_entidad_list')
         else:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -107,7 +106,6 @@ def tipo_entidad_update(request, pk):
         form = TipoEntidadFinancieraForm(request.POST, instance=entidad)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Entidad financiera actualizada correctamente.')
             return redirect('tipo_entidad_list')
         else:
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -133,7 +131,6 @@ def tipo_entidad_toggle(request, pk):
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=pk)
     entidad.estado = not entidad.estado
     entidad.save()
-    messages.success(request, f'Entidad {"activada" if entidad.estado else "desactivada"}.')
     return redirect('tipo_entidad_list')
 
 def medio_acreditacion_list(request):
@@ -218,7 +215,6 @@ def medio_acreditacion_create(request):
             medio_acred = form.save(commit=False)
             medio_acred.estado = True
             medio_acred.save()
-            messages.success(request, 'Medio de acreditación creado correctamente.')
             if cliente:
                 return redirect(f"{reverse('medio_acreditacion_list')}?cliente_id={cliente.id}")
             return redirect('medio_acreditacion_list')
@@ -250,7 +246,6 @@ def medio_acreditacion_update(request, pk):
             medio_edit = form.save(commit=False)
             medio_edit.estado = medio.estado  
             medio_edit.save()
-            messages.success(request, 'Medio de acreditación actualizado correctamente.')
             if cliente:
                 return redirect(f"{reverse('medio_acreditacion_list')}?cliente_id={cliente.id}")
             return redirect('medio_acreditacion_list')
@@ -272,7 +267,6 @@ def medio_acreditacion_toggle(request, pk):
     medio = get_object_or_404(MedioAcreditacion, pk=pk)
     medio.estado = not medio.estado
     medio.save()
-    messages.success(request, f'Medio {"activado" if medio.estado else "desactivado"}.')
     cliente_id = request.GET.get('cliente_id') or medio.cliente_id
     if cliente_id:
         from django.urls import reverse
@@ -323,7 +317,6 @@ def cliente_create(request):
             medio = medio_form.save(commit=False)
             medio.cliente = cliente
             medio.save()
-            messages.success(request, 'Cliente y medio de acreditación creados correctamente.')
             return redirect('clientes_list')
     else:
         cliente_form = ClienteForm()
