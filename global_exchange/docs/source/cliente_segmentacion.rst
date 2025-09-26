@@ -9,9 +9,6 @@ comerciales diferenciadas y generar reportes por tipo de cliente.
 Modelos
 -------
 .. autoclass:: cliente_segmentacion.models.Segmentacion
-   :members: __str__
-   :undoc-members:
-   :show-inheritance:
 
 Vistas
 ------
