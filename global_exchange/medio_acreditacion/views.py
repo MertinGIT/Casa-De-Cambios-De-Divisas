@@ -6,18 +6,34 @@ from .models import TipoEntidadFinanciera, MedioAcreditacion
 from .forms import TipoEntidadFinancieraForm, MedioAcreditacionForm
 from clientes.forms import ClienteForm
 
-# Listar entidades financieras
 def tipo_entidad_list(request):
+    """
+    Lista todas las entidades financieras.
+
+    Renderiza la plantilla `tipo_entidad_list.html` con todas las entidades y un formulario vacío
+    para el modal de creación.
+
+    :param request: HttpRequest
+    :return: HttpResponse
+    """
     entidades = TipoEntidadFinanciera.objects.all().order_by('-estado')
-    # Crear formulario vacío para el modal
     form = TipoEntidadFinancieraForm()
     return render(request, 'medio_acreditacion/tipo_entidad_list.html', {
         'entidades': entidades,
         'form': form
     })
 
-# Crear entidad financiera
 def tipo_entidad_create(request):
+    """
+    Crea una nueva entidad financiera.
+
+    - Si la solicitud es POST y el formulario es válido, guarda la entidad y redirige a la lista.
+    - Si el formulario no es válido y es una solicitud AJAX, devuelve errores en JSON.
+    - Si la solicitud no es POST, renderiza el formulario vacío.
+
+    :param request: HttpRequest
+    :return: HttpResponse o JsonResponse
+    """
     if request.method == 'POST':
         form = TipoEntidadFinancieraForm(request.POST)
         if form.is_valid():
@@ -27,7 +43,6 @@ def tipo_entidad_create(request):
             messages.success(request, 'Entidad financiera creada correctamente.')
             return redirect('tipo_entidad_list')
         else:
-            # Si hay errores, devolver JSON para el modal
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 errors = {}
                 for field, error_list in form.errors.items():
@@ -38,8 +53,16 @@ def tipo_entidad_create(request):
     
     return render(request, 'medio_acreditacion/tipo_entidad_form.html', {'form': form})
 
-# Vista para obtener detalles de una entidad (para edición)
 def tipo_entidad_detail(request, pk):
+    """
+    Obtiene los detalles de una entidad financiera para edición.
+
+    Devuelve un JsonResponse con los datos de la entidad y un título para el modal de edición.
+
+    :param request: HttpRequest
+    :param pk: Primary key de la entidad
+    :return: JsonResponse
+    """
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=pk)
     data = {
         'nombre': entidad.nombre,
@@ -48,8 +71,18 @@ def tipo_entidad_detail(request, pk):
     }
     return JsonResponse(data)
 
-# Editar entidad financiera
 def tipo_entidad_update(request, pk):
+    """
+    Edita una entidad financiera existente.
+
+    - Si POST y el formulario es válido, actualiza la entidad y redirige a la lista.
+    - Si el formulario no es válido y es AJAX, devuelve errores en JSON.
+    - Si no es POST, renderiza el formulario con los datos actuales.
+
+    :param request: HttpRequest
+    :param pk: Primary key de la entidad
+    :return: HttpResponse o JsonResponse
+    """
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=pk)
     print("Entidad: ", entidad.estado, flush=True)
     if request.method == 'POST':
@@ -59,7 +92,6 @@ def tipo_entidad_update(request, pk):
             messages.success(request, 'Entidad financiera actualizada correctamente.')
             return redirect('tipo_entidad_list')
         else:
-            # Si hay errores, devolver JSON para el modal
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 errors = {}
                 for field, error_list in form.errors.items():
@@ -70,16 +102,31 @@ def tipo_entidad_update(request, pk):
     
     return render(request, 'medio_acreditacion/tipo_entidad_form.html', {'form': form, 'entidad': entidad})
 
-# Activar/desactivar entidad financiera
 def tipo_entidad_toggle(request, pk):
+    """
+    Activa o desactiva una entidad financiera.
+
+    Cambia el estado de la entidad y muestra un mensaje de éxito.
+
+    :param request: HttpRequest
+    :param pk: Primary key de la entidad
+    :return: HttpResponseRedirect a la lista de entidades
+    """
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=pk)
     entidad.estado = not entidad.estado
     entidad.save()
     messages.success(request, f'Entidad {"activada" if entidad.estado else "desactivada"}.')
     return redirect('tipo_entidad_list')
 
-# Listar medios de acreditación
 def medio_acreditacion_list(request):
+    """
+    Lista todos los medios de acreditación, opcionalmente filtrando por cliente.
+
+    Renderiza la plantilla `medio_acreditacion_list.html` con los medios, clientes y formulario.
+
+    :param request: HttpRequest
+    :return: HttpResponse
+    """
     from clientes.models import Cliente
     cliente_id = request.GET.get('cliente_id')
     cliente = None
@@ -92,8 +139,16 @@ def medio_acreditacion_list(request):
     form = MedioAcreditacionForm()
     return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {'medios': medios, 'form': form, 'cliente': cliente, 'clientes': clientes})
 
-# Crear medio de acreditación
 def medio_acreditacion_create(request):
+    """
+    Crea un nuevo medio de acreditación.
+
+    - Asocia el medio al cliente si se proporciona `cliente_id`.
+    - Muestra mensajes de éxito y redirige a la lista correspondiente.
+
+    :param request: HttpRequest
+    :return: HttpResponse
+    """
     cliente_id = request.GET.get('cliente_id') or request.POST.get('cliente_id')
     cliente = None
     if cliente_id:
@@ -116,8 +171,18 @@ def medio_acreditacion_create(request):
         form = MedioAcreditacionForm()
     return render(request, 'medio_acreditacion/medio_acreditacion_form.html', {'form': form, 'cliente': cliente})
 
-# Editar medio de acreditación
 def medio_acreditacion_update(request, pk):
+    """
+    Edita un medio de acreditación existente.
+
+    - Mantiene el estado original del medio.
+    - Redirige a la lista filtrada por cliente si corresponde.
+    - Renderiza el formulario con datos actuales si no es POST.
+
+    :param request: HttpRequest
+    :param pk: Primary key del medio de acreditación
+    :return: HttpResponse
+    """
     medio = get_object_or_404(MedioAcreditacion, pk=pk)
     cliente = medio.cliente
     if request.method == 'POST':
@@ -138,8 +203,17 @@ def medio_acreditacion_update(request, pk):
         form = MedioAcreditacionForm(instance=medio)
     return render(request, 'medio_acreditacion/medio_acreditacion_form.html', {'form': form, 'medio': medio})
 
-# Activar/desactivar medio de acreditación
 def medio_acreditacion_toggle(request, pk):
+    """
+    Activa o desactiva un medio de acreditación.
+
+    - Cambia el estado del medio.
+    - Redirige a la lista de medios, filtrada por cliente si aplica.
+
+    :param request: HttpRequest
+    :param pk: Primary key del medio
+    :return: HttpResponseRedirect
+    """
     medio = get_object_or_404(MedioAcreditacion, pk=pk)
     medio.estado = not medio.estado
     medio.save()
@@ -151,6 +225,15 @@ def medio_acreditacion_toggle(request, pk):
     return redirect('medio_acreditacion_list')
 
 def medio_acreditacion_detail(request, pk):
+    """
+    Obtiene los detalles de un medio de acreditación para edición.
+
+    Devuelve un JsonResponse con los datos del medio y título para modal.
+
+    :param request: HttpRequest
+    :param pk: Primary key del medio
+    :return: JsonResponse
+    """
     medio = get_object_or_404(MedioAcreditacion, pk=pk)
     print("Medio: ", medio.moneda, flush=True)
     data = {
@@ -165,8 +248,18 @@ def medio_acreditacion_detail(request, pk):
         'modal_title': 'Editar Medio'
     }
     return JsonResponse(data)
-# Crear cliente y medio de acreditación
+
 def cliente_create(request):
+    """
+    Crea un nuevo cliente y su medio de acreditación asociado.
+
+    - Valida ambos formularios antes de guardar.
+    - Muestra mensajes de éxito y redirige a la lista de clientes.
+    - Si no es POST, renderiza formularios vacíos.
+
+    :param request: HttpRequest
+    :return: HttpResponse
+    """
     if request.method == 'POST':
         cliente_form = ClienteForm(request.POST)
         medio_form = MedioAcreditacionForm(request.POST)
