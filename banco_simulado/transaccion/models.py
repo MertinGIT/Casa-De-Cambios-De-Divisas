@@ -126,7 +126,7 @@ class Transaccion(models.Model):
         Cuenta, on_delete=models.SET_NULL, null=True, blank=True, related_name="transferencias_recibidas"
     )
     cedula = models.CharField(max_length=15)
-    monto = models.DecimalField(max_digits=15, decimal_places=2)
+    monto = models.DecimalField(max_digits=23, decimal_places=8)
     tipo = models.CharField(max_length=20)
     estado = models.CharField(max_length=20, default="pendiente")
     fecha = models.DateTimeField(auto_now_add=True)

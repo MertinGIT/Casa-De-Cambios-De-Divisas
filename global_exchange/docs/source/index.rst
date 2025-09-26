@@ -6,14 +6,12 @@
 Global Exchange - Backend documentation
 =======================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+El sistema backend de Global Exchange centraliza la gestión de operaciones de cambio de divisas y los procesos relacionados con usuarios, clientes y entidades financieras. Incluye módulos para administrar usuarios, roles y permisos, segmentación de clientes, monedas y sus tasas de cotización.
 
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contenidos:
    
    usuarios
    admin_dashboard
@@ -25,3 +23,7 @@ documentation for details.
    cotizaciones
    cliente_usuario
    metodos_pagos
+   operaciones
+   limite_moneda
+   historial_transacciones
+   medio_acreditacion

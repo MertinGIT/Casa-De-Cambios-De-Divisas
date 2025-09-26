@@ -6,18 +6,10 @@ Esta aplicación gestiona los roles y permisos de los usuarios en el sistema.
 Modelos
 -------
 .. autoclass:: roles_permisos.models.GroupProfile
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :noindex: 
 
 Formularios
 -----------
 .. autoclass:: roles_permisos.forms.RolForm
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :exclude-members: base_fields, declared_fields, Meta  
 
 Vistas
 ------

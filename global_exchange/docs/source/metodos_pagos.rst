@@ -2,9 +2,7 @@ Métodos de Pago
 ===============
 
 .. automodule:: metodos_pagos
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
 
 Descripción General
 -------------------
@@ -28,14 +26,10 @@ MetodoPago
 ^^^^^^^^^^
 
 .. automodule:: metodos_pagos.models
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
 
 .. autoclass:: metodos_pagos.models.MetodoPago
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
    
    **Campos del modelo:**
    
@@ -59,14 +53,8 @@ MetodoPagoForm
 ^^^^^^^^^^^^^^
 
 .. automodule:: metodos_pagos.forms
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 .. autoclass:: metodos_pagos.forms.MetodoPagoForm
-   :members:
-   :undoc-members:
-   :show-inheritance:
    
    **Validaciones implementadas:**
    
@@ -88,9 +76,6 @@ Vistas
 ------
 
 .. automodule:: metodos_pagos.views
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Decoradores
 ^^^^^^^^^^^
@@ -103,8 +88,6 @@ Vistas Basadas en Clases
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: metodos_pagos.views.MetodoPagoListView
-   :members:
-   :undoc-members:
    
    **Funcionalidades:**
    
@@ -114,26 +97,18 @@ Vistas Basadas en Clases
    * Mantenimiento de estado de búsqueda
 
 .. autoclass:: metodos_pagos.views.MetodoPagoCreateView
-   :members:
-   :undoc-members:
    
    Vista para crear nuevos métodos de pago con validación completa.
 
 .. autoclass:: metodos_pagos.views.MetodoPagoUpdateView
-   :members:
-   :undoc-members:
    
    Vista para editar métodos existentes manteniendo validaciones.
 
 .. autoclass:: metodos_pagos.views.MetodoPagoDesactivateView
-   :members:
-   :undoc-members:
    
    Vista para desactivar métodos (soft delete) sin eliminar registros.
 
 .. autoclass:: metodos_pagos.views.MetodoPagoActivateView
-   :members:
-   :undoc-members:
    
    Vista para reactivar métodos previamente desactivados.
 

@@ -4,13 +4,43 @@ from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 
 class TransaccionQuerySet(models.QuerySet):
+    """
+    Conjunto de consultas personalizadas para el modelo Transaccion.
+
+    Métodos
+    -------
+    recientes(limite=5, usuario=None)
+        Devuelve las transacciones más recientes, opcionalmente filtradas por usuario.
+    """
     def recientes(self, limite=5, usuario=None):
+        """
+        Obtiene las transacciones más recientes.
+
+        Parameters
+        ----------
+        limite : int, opcional
+            Número máximo de transacciones a devolver (por defecto 5).
+        usuario : User, opcional
+            Usuario para filtrar las transacciones. Si no se especifica,
+            devuelve las transacciones de todos los usuarios.
+
+        Returns
+        -------
+        QuerySet
+            Conjunto de transacciones ordenadas por fecha descendente.
+        """
         qs = self.order_by('-fecha')
         if usuario is not None:
             qs = qs.filter(usuario=usuario)
         return qs[:limite]
 
 class TransaccionManager(models.Manager):
+    """
+    Administrador personalizado para el modelo Transaccion.
+
+    Sobrescribe el queryset por defecto para utilizar TransaccionQuerySet
+    y expone métodos de consulta especializados.
+    """
     def get_queryset(self):
         return TransaccionQuerySet(self.model, using=self._db)
     def recientes(self, limite=5, usuario=None):

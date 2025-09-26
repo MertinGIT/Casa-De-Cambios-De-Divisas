@@ -119,7 +119,7 @@
     </div>
 
     <input type="text" id="resultado-compra" name="resultado" class="input-text readonly"
-        placeholder="Resultado" readonly value="{{ resultado|floatformat:2|intcomma }}" />
+        placeholder="Resultado" readonly value="{{ resultado }}" />
 </div>
 
 <!-- ==== VENTA ==== -->
@@ -169,7 +169,7 @@
     </div>
 
     <input type="text" id="resultado-venta" name="resultado" class="input-text readonly"
-        placeholder="Resultado" readonly value="{{ resultado|floatformat:2|intcomma }}" />
+        placeholder="Resultado" readonly value="{{ resultado }}" />
 </div>
 
 
@@ -351,10 +351,10 @@
             return;
           }
           // formateador
-          const formatter = new Intl.NumberFormat("es-ES", {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2
-          });
+           //const formatter = new Intl.NumberFormat("es-ES", {
+           //  minimumFractionDigits: 2,
+           //  maximumFractionDigits: 2
+           //});
           // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
           $.ajax({
             url: "{% url 'operaciones' %}",
@@ -369,7 +369,7 @@
             success: function (resp) {
               if (resp && resp.resultado !== undefined) {
                 const resultadoNumero = parseFloat(resp.resultado);
-                const resultadoFormateado = formatter.format(resultadoNumero);
+                const resultadoFormateado = (resultadoNumero);
                 campos.$resultado.val(resultadoFormateado);
                 campos.$resultado.data("tasa", resp.tasa);
                 campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
@@ -377,7 +377,7 @@
                 let resultadoCalc = campos.op === "venta"
                   ? (monto / tasaVta).toFixed(2)
                   : (monto * tasaCmp).toFixed(2);
-                  const resultadoFormateado = formatter.format(parseFloat(resultadoCalc));
+                  const resultadoFormateado = (parseFloat(resultadoCalc));
           campos.$resultado.val(resultadoFormateado);
 
               }
@@ -387,7 +387,7 @@
               let resultadoCalc = campos.op === "venta"
                 ? (monto / tasaVta).toFixed(2)
                 : (monto * tasaCmp).toFixed(2);
-                const resultadoFormateado = formatter.format(parseFloat(resultadoCalc));
+                const resultadoFormateado = (parseFloat(resultadoCalc));
         campos.$resultado.val(resultadoFormateado);
             }
           });
@@ -395,7 +395,7 @@
           let resultadoCalc = campos.op === "venta"
             ? (monto / tasaVta).toFixed(2)
             : (monto * tasaCmp).toFixed(2);
-            const resultadoFormateado = formatter.format(parseFloat(resultadoCalc));
+            const resultadoFormateado = (parseFloat(resultadoCalc));
     console.log("resultadoCalc formateado:", resultadoFormateado);
     campos.$resultado.val(resultadoFormateado);
         }
@@ -421,7 +421,30 @@
         }
 
         
+          function validarMonto(monto) {
+            // Convertir a string
+            const montoStr = monto.toString();
 
+            // Separar parte entera y decimal
+            const partes = montoStr.split(".");
+            const enteros = partes[0] || "";
+            const decimales = partes[1] || "";
+            console.log("partes", partes);
+            console.log("enteros", enteros);
+            console.log("decimales", decimales);
+
+            if (enteros.length > 15) {
+                mostrarMensaje("⚠️ Error", "El monto no puede tener más de 15 dígitos antes del punto decimal.");
+                return false;
+            }
+
+            if (decimales.length > 8) {
+                mostrarMensaje("⚠️ Error", "El monto no puede tener más de 8 decimales.");
+                return false;
+            }
+
+            return true;
+          }
         // Declaración global
         var fechaNavegador = null;
         var advertenciaMostrada = false; // 🔑 Flag para controlar el mensaje
@@ -442,8 +465,9 @@
             obtenerHoraServidor(function (fechaServidor) {
               fechaNavegador = fechaServidor;
               console.log("Hora servidor usada:", fechaNavegador);
-            });
+            })
           });
+            
 
           // Botón para continuar a pesar de cambio de tasa
           $("#btn-continuar-tasa").click(function () {
@@ -587,6 +611,7 @@
       $(".pin-digit").val("");
       });
 
+
   // Función separada para procesar la transacción
   function procesarTransaccion() {
     console.log("Procesando transacción...");
@@ -608,7 +633,13 @@
 
     const email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
     if (email_cliente_operativo != "") {
-
+      // Tomar el monto desde el input
+      
+      // CORRECCIÓN: Obtener la tasa calculada correctamente
+        const tasaCalculada = campos.$resultado.data("tasa") || 
+                             (campos.op === "venta" ? 
+                              parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) : 
+                              parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
       // PASO 1: Guardar en BD como PENDIENTE
       const payloadLocal = {
         usuario_id: "{{ request.user.id }}",
@@ -617,7 +648,7 @@
         estado: "pendiente",
         moneda_origen_id: moneda_origen_id,
         moneda_destino_id: moneda_destino_id,
-        tasa_usada: parseFloat(tasa_recibida),
+        tasa_usada: tasaCalculada,
         tasa_ref_id: TASA_REF_ID,
       };
 
@@ -641,15 +672,19 @@
 
           // PASO 2: Enviar al banco
           const transaccionData = {
-            email: "{{ email_cliente_operativo}}",
-            
-            monto: campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val(),
+            email: "{{ email_cliente_operativo }}",
+            monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
             moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
             tipo: campos.op === "venta" ? "compra" : "venta",
             estado: "aceptada",
             referencia: "TX-" + Date.now(),
-            motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`
-
+            motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`,
+            cedula: "{{cliente_operativo.cedula}}",
+            nro_cuenta: window.datosAcreditacion.numero_cuenta,
+            cliente_id:parseInt("{{ cliente_operativo.id }}", 10),
+            entidad_id:1,
+            usuario_ejecutor: parseInt("{{ user.id }}",10),
+            fecha: new Date().toISOString()
           };
 
           console.log("Enviando al banco:", transaccionData);
