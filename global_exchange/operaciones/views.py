@@ -1,3 +1,16 @@
+"""
+Views (operaciones):
+- simulador_operaciones: Pantalla principal de conversión y creación preliminar de transacciones.
+- obtener_clientes_usuario / set_cliente_operativo: Gestión de cliente operativo (segmentación / descuento).
+- verificar_tasa / hora_servidor: Utilidades AJAX.
+- enviar_transaccion_al_banco: Ejemplo de integración externa.
+- obtener_metodos_pago / guardar_metodo_pago: Gestión simple de métodos de pago.
+- guardar_transaccion / actualizar_estado_transaccion: Endpoints JSON CRUD básicos para Transaccion.
+
+Nota:
+Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
+"""
+
 from decimal import Decimal
 from django.shortcuts import render
 from django.http import JsonResponse
@@ -21,6 +34,26 @@ from django.contrib.auth.decorators import login_required
 
 @login_required
 def simulador_operaciones(request):
+    """
+    Página principal del simulador / conversor.
+
+    Flujo:
+    1. Obtiene últimas 5 transacciones del usuario (para tabla y gráfico).
+    2. Construye estructura data_por_moneda con histórico de tasas activas.
+    3. Aplica segmentación (descuento) según cliente operativo.
+    4. Si POST: procesa cálculo (venta o compra) y devuelve JSON (AJAX) o recarga con resultado.
+    5. Devuelve contexto con tasas, transacciones, métricas y parámetros para front.
+
+    Respuesta AJAX (cuando header x-requested-with = XMLHttpRequest):
+        {
+          resultado, ganancia_total, segmento, descuento, tasa, fecha_tasa
+        }
+
+    Campos clave en context:
+        - data_por_moneda: dict[abreviacion] -> lista cronológica de tasas (más antiguo al final).
+        - transacciones: queryset últimas 5.
+        - data_transacciones_json: JSON para Chart.js.
+    """
     # === Transacciones dinámicas: últimas 5 del usuario ===
     transacciones_qs = Transaccion.ultimas(limite=5, usuario=request.user)\
         .select_related("moneda_origen", "moneda_destino")
@@ -34,37 +67,35 @@ def simulador_operaciones(request):
         }
         for t in reversed(list(transacciones_qs))
     ]
+
     # === Monedas activas desde la BD ===
-    monedas = list(Moneda.objects.filter(estado=True).values("id","abreviacion", "nombre"))
-    print("monedas: ",monedas,flush=True)
-    # === Tasas de cambio activas ordenadas por vigencia más reciente ===
+    monedas = list(Moneda.objects.filter(estado=True).values("id", "abreviacion", "nombre"))
+
+    # === Tasas de cambio activas (ordenadas: agrupadas por destino y descendente por vigencia) ===
     tasas = (
         TasaDeCambio.objects
         .filter(estado=True)
         .select_related("moneda_origen", "moneda_destino")
         .order_by("moneda_destino", "-vigencia")
     )
-    
-    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion"))
-    print("metodos_pago: ",metodos_pago,flush=True)
-    
-    print("tasas 30: ",tasas,flush=True)
 
-    # Reorganizar tasas en dict similar a tu data_por_moneda
+    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion"))
+
+    # Reorganizar tasas
     data_por_moneda = {}
     for tasa in tasas:
         abrev = tasa.moneda_destino.abreviacion
         if abrev not in data_por_moneda:
             data_por_moneda[abrev] = []
+        # Insertar al inicio para mantener el más reciente al final (coherente con uso registros[-1])
         data_por_moneda[abrev].insert(0, {
-            "id": tasa.id,  # <-- guardamos el ID
+            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
             "compra": float(tasa.monto_compra),
             "venta": float(tasa.monto_venta)
         })
-    print("data_por_moneda 43: ",data_por_moneda,flush=True)
 
-    # Comisiones y variables
+    # Parámetros fijos / comisiones
     COMISION_VTA = 100
     COMISION_COM = 50
 
@@ -77,135 +108,97 @@ def simulador_operaciones(request):
         descuento = float(cliente_operativo.segmentacion.descuento or 0)
         segmento_nombre = cliente_operativo.segmentacion.nombre
 
-    # Variables iniciales
+    # Variables iniciales de operación
     resultado = ""
     ganancia_total = 0
     valor_input = ""
     moneda_seleccionada = ""
-    operacion = "venta"
+    operacion = "venta"  # default
     origen = ""
     destino = ""
     TC_VTA = 0
     TC_COMP = 0
-    PB_MONEDA=0
-    TASA_REF_ID=None
-    
-    
-    # === Determinar tasas por defecto para mostrar en GET ===
+    PB_MONEDA = 0
+    TASA_REF_ID = None
+
+    # === Determinar tasa por defecto (primer moneda != PYG que tenga registros) ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
         if abrev != "PYG" and registros:
-            # Tomar el registro más reciente
-            tasa_default = registros[-1]
-            print("tasa_default:",tasa_default,flush=True)
+            tasa_default = registros[-1]  # último = más reciente según construcción
             break
-            
+
     if tasa_default:
         PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
-        # Calculamos las tasas considerando las comisiones
         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
-        print("TC_VTA 88: ",TC_VTA,flush=True)
-        print("TC_COMP 88: ",TC_COMP,flush=True)
     else:
         TC_VTA = 0
         TC_COMP = 0
 
-
+    # Procesar cálculo (AJAX / POST)
     if request.method == "POST":
         valor_input = request.POST.get("valor", "").strip()
         operacion = request.POST.get("operacion")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
-        print("origen: ",origen,flush=True)
-        print("destino: ",operacion,flush=True)
 
-        print("operacion view 88: ",operacion,flush=True)
-
-        # Validar que no sea la misma moneda
+        # Validaciones básicas
         if origen == destino:
             return JsonResponse({"error": "La moneda de origen y destino no puede ser la misma."}, status=400)
-
-        # Validar que Guaraní solo esté donde corresponde
         if operacion == "venta" and destino == "PYG":
             return JsonResponse({"error": "No puedes Comprar hacia Guaraní."}, status=400)
         if operacion == "compra" and origen == "PYG":
             return JsonResponse({"error": "No puedes Vender usando Guaraní como moneda de origen."}, status=400)
 
-        # Determinar moneda relevante según operación
-        if operacion == "venta":
-            moneda_seleccionada = destino
-        else:
-            moneda_seleccionada = origen
-        
+        # Selección según tipo de operación
+        moneda_seleccionada = destino if operacion == "venta" else origen
 
         try:
             valor = float(valor_input)
-            print("entro try 105: ",operacion,flush=True)
             if valor <= 0:
                 resultado = "Monto inválido"
             else:
-                print("moneda_seleccionada 109: ",moneda_seleccionada,flush=True)
-                print("data_por_moneda 110: ",data_por_moneda,flush=True)
                 registros = data_por_moneda.get(moneda_seleccionada, [])
-                print("registros 112: ",registros,flush=True)
                 if not registros:
                     resultado = "No hay cotización disponible"
                     ganancia_total = 0
                 else:
-                    # Tomar el registro más reciente
                     ultimo = registros[-1]
                     PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
-                    # === Fórmula de tu home ===
-                    #Venta es cuando el cliente compra moneda extranjera (entrega PYG),pero yo como admin le vendo la moneda extranjera
-                    print("operacion: ", operacion, flush=True)
+
+                    # Cálculos:
                     if operacion == "venta":
-                        print("venta",flush=True)
-                        print("Descuento: ",descuento,flush=True)
-                        print("COMISION_VTA: ",COMISION_VTA,flush=True)
-                        print("PB_MONEDA: ",PB_MONEDA,flush=True)
-                        print("valor: ",valor,flush=True)
-                        
+                        # Cliente entrega PYG, convertimos a moneda extranjera
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-                        print("TC_VTA 138: ",TC_VTA,flush=True)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
-                        print("resultado 141: ",resultado,flush=True)
-                        print("ganancia_total 142: ",ganancia_total,flush=True)
                     else:
-                        print("PB_MONEDA16666666: ",PB_MONEDA,flush=True)
+                        # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
-                        print("TC_COMP 1: ",TC_COMP,flush=True)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
-                    print("resultado: ",resultado,flush=True)
         except ValueError:
             resultado = "Monto inválido"
-    tasa_usada = 0
-    
-    if(operacion == "venta"):
-        tasa_usada = TC_VTA
-    else:
-        tasa_usada = TC_COMP
-    print("resultado 111: ",resultado,flush=True)
-    # Respuesta AJAX
-    print("tasa_usada.headers: ",tasa_usada,flush=True)
+
+    # Determinar tasa usada para respuesta
+    tasa_usada = TC_VTA if operacion == "venta" else TC_COMP
+
+    # Respuesta AJAX (cálculo dinámico)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        # 'ultimo' puede no existir si nunca hubo registros
+        fecha_tasa = locals().get("ultimo", {}).get("fecha", "")
         return JsonResponse({
             "resultado": resultado,
             "ganancia_total": ganancia_total,
             "segmento": segmento_nombre,
             "descuento": descuento,
-            "tasa": tasa_usada,  
-            "fecha_tasa": ultimo["fecha"]  # viene de tu dict data_por_moneda
+            "tasa": tasa_usada,
+            "fecha_tasa": fecha_tasa
         })
-    print("TC_VTA: ", TC_VTA,flush=True)
-    print("clientes_asociados: ",clientes_asociados,flush=True)
-    print("cliente_operativo: ",cliente_operativo,flush=True)
-    print("TC_VTA 222: ",TC_VTA,flush=True)
-    print("TC_COMP222: ",TC_COMP,flush=True)
+
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -223,75 +216,62 @@ def simulador_operaciones(request):
         "cliente_operativo": cliente_operativo,
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
-        "transacciones": transacciones_qs,  # para la tabla
+        "transacciones": transacciones_qs,
         "email_cliente_operativo": email_cliente_operativo,
         'medios': metodos_pago,
         "PB_MONEDA": PB_MONEDA,
         "TASA_REF_ID": TASA_REF_ID,
-        "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
+        "data_transacciones_json": json.dumps(transacciones_chart),
     }
-
     return render(request, 'operaciones/conversorReal.html', context)
 
 
-
-
-def obtener_clientes_usuario(user,request):
+def obtener_clientes_usuario(user, request):
     """
-    Devuelve:
-        - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
-    """
+    Retorna (clientes_asociados, cliente_operativo, email_cliente_operativo).
 
-     # Solo clientes activos
+    Lógica:
+    - Busca asociaciones activas (Usuario_Cliente) con clientes activos.
+    - Cliente operativo: el guardado en sesión o el primero disponible.
+    """
     usuarios_clientes = (
         Usuario_Cliente.objects
         .select_related("id_cliente__segmentacion")
         .filter(id_usuario=user, id_cliente__estado="activo")
     )
-    
+
     clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
     cliente_operativo = None
-    print("usuarios_clientes: ",usuarios_clientes,flush=True)
-    # Tomar de la sesión si existe
+
     if request and request.session.get('cliente_operativo_id'):
         cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
-
-    # Si no hay sesión o ID no válido, tomar el primero
     if not cliente_operativo and clientes_asociados:
         cliente_operativo = clientes_asociados[0]
 
-    # Obtener el email del cliente operativo
     email_cliente_operativo = cliente_operativo.email if cliente_operativo else ""
-    print("email_operativo: ", email_cliente_operativo, flush=True)
-
-
     return clientes_asociados, cliente_operativo, email_cliente_operativo
+
 
 @login_required
 def set_cliente_operativo(request):
     """
-    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
-    con segmento y descuento para actualizar el front sin recargar.
+    POST:
+        cliente_id
+    Guarda en sesión el cliente operativo y devuelve datos de segmentación:
+        { success, segmento, descuento, cliente_nombre, cliente_email }
     """
     cliente_id = request.POST.get('cliente_id')
-
     if cliente_id:
         try:
             cliente = Cliente.objects.select_related("segmentacion").get(
                 pk=cliente_id, estado="activo"
             )
-            print("cliente:", cliente,flush=True)
-            # Guardar en sesión
             request.session['cliente_operativo_id'] = cliente.id
-
-            # Datos a devolver
             segmento_nombre = None
             descuento = 0
             if cliente.segmentacion and cliente.segmentacion.estado == "activo":
                 segmento_nombre = cliente.segmentacion.nombre
                 descuento = float(cliente.segmentacion.descuento or 0)
-
             return JsonResponse({
                 "success": True,
                 "segmento": segmento_nombre,
@@ -299,18 +279,16 @@ def set_cliente_operativo(request):
                 "cliente_nombre": cliente.nombre,
                 "cliente_email": cliente.email
             })
-
         except Cliente.DoesNotExist:
-            return JsonResponse(
-                {"success": False, "error": "Cliente no encontrado"}, status=404
-            )
-
+            return JsonResponse({"success": False, "error": "Cliente no encontrado"}, status=404)
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
 
 
-
-
 def verificar_tasa(request):
+    """
+    GET params: origen, destino
+    Devuelve fecha_tasa de la última tasa disponible o error 404.
+    """
     origen = request.GET.get("origen")
     destino = request.GET.get("destino")
     try:
@@ -318,44 +296,65 @@ def verificar_tasa(request):
             moneda_origen__abreviacion=origen,
             moneda_destino__abreviacion=destino
         ).latest("fecha_actualizacion")
-        # Aseguramos que esté en formato ISO para JS
-        fecha_iso = tasa.fecha_actualizacion.isoformat()
-        return JsonResponse({"fecha_tasa": fecha_iso})
+        return JsonResponse({"fecha_tasa": tasa.fecha_actualizacion.isoformat()})
     except TasaDeCambio.DoesNotExist:
         return JsonResponse({"error": "No hay tasa disponible"}, status=404)
-    
-def hora_servidor(request):
-    return JsonResponse({"hora": now().isoformat()})    
 
+
+def hora_servidor(request):
+    """
+    Devuelve hora actual del servidor (ISO 8601).
+    """
+    return JsonResponse({"hora": now().isoformat()})
 
 
 def enviar_transaccion_al_banco(cliente_id, monto, moneda):
+    """
+    Ejemplo de integración externa (POST simple).
+    Retorna JSON (o dict con 'error').
+    """
     url = "http://localhost:8001/api/banco/transaccion/"
-    data = {
-        "cliente_id": cliente_id,
-        "monto": monto,
-        "moneda": moneda
-    }
-    response = requests.post(url, json=data)
-    return response.json()
+    data = {"cliente_id": cliente_id, "monto": monto, "moneda": moneda}
+    try:
+        response = requests.post(url, json=data, timeout=5)
+        return response.json()
+    except Exception as e:
+        return {"error": str(e)}
+
 
 def obtener_metodos_pago(request):
+    """
+    GET: lista métodos de pago activos.
+    """
     if request.method == "GET":
         metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion")
         return JsonResponse(list(metodos), safe=False)
-    
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
 
 @csrf_exempt
 def guardar_metodo_pago(request):
+    """
+    POST: metodo, detalle
+    (Ejemplo de endpoint simple; no persiste detalle en DB en esta versión.)
+    """
     if request.method == "POST":
         metodo_id = request.POST.get("metodo")
         detalle = request.POST.get("detalle")
-        # acá podés enlazar con la transacción
-        print("Método elegido:", metodo_id, "Detalles:", detalle)
-        return JsonResponse({"status": "ok"})
+        return JsonResponse({"status": "ok", "metodo": metodo_id, "detalle": detalle})
     return JsonResponse({"error": "Método no válido"}, status=400)
 
+
 def guardar_transaccion(request):
+    """
+    POST (JSON):
+        {
+          monto, tipo, estado?, moneda_origen_id, moneda_destino_id,
+          tasa_usada, tasa_ref_id
+        }
+    Crea Transaccion y devuelve:
+        { success, id, estado, fecha } o errores.
+    """
     try:
         data = json.loads(request.body.decode("utf-8"))
     except Exception as e:
@@ -366,8 +365,6 @@ def guardar_transaccion(request):
         monto = Decimal(str(data.get("monto", "0")))
         tipo = data.get("tipo")
         estado = data.get("estado", "pendiente").lower()
-
-        # Recibir IDs directamente
         moneda_origen_id = data.get("moneda_origen_id")
         moneda_destino_id = data.get("moneda_destino_id")
         tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
@@ -376,12 +373,10 @@ def guardar_transaccion(request):
         if not (moneda_origen_id and moneda_destino_id and tasa_ref_id):
             return JsonResponse({"success": False, "error": "Faltan campos obligatorios"}, status=400)
 
-        # Buscar por ID directamente
         moneda_origen = Moneda.objects.get(id=moneda_origen_id)
         moneda_destino = Moneda.objects.get(id=moneda_destino_id)
         tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
 
-        # Guardar transacción
         transaccion = Transaccion.objects.create(
             usuario=usuario,
             monto=monto,
@@ -406,42 +401,36 @@ def guardar_transaccion(request):
         return JsonResponse({"success": False, "error": "Tasa de cambio no encontrada"}, status=404)
     except Exception as e:
         return JsonResponse({"success": False, "error": "Error al guardar", "detail": str(e)}, status=500)
-    
+
 
 def actualizar_estado_transaccion(request):
+    """
+    POST (JSON):
+        { transaccion_id, nuevo_estado }
+    Actualiza estado y devuelve datos básicos.
+    """
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))
             transaccion_id = data.get("transaccion_id")
             nuevo_estado = data.get("nuevo_estado")
-            
             if not transaccion_id or not nuevo_estado:
-                return JsonResponse({
-                    "success": False, 
-                    "error": "Se requiere transaccion_id y nuevo_estado"
-                }, status=400)
-            
+                return JsonResponse({"success": False, "error": "Se requiere transaccion_id y nuevo_estado"}, status=400)
+
             transaccion = Transaccion.objects.get(id=transaccion_id)
             transaccion.estado = nuevo_estado
             transaccion.save()
-            
+
             return JsonResponse({
                 "success": True,
                 "id": transaccion.id,
                 "nuevo_estado": transaccion.estado,
                 "fecha_actualizacion": transaccion.fecha.strftime("%d/%m/%Y %H:%M")
             })
-            
+
         except Transaccion.DoesNotExist:
-            return JsonResponse({
-                "success": False, 
-                "error": "Transacción no encontrada"
-            }, status=404)
+            return JsonResponse({"success": False, "error": "Transacción no encontrada"}, status=404)
         except Exception as e:
-            return JsonResponse({
-                "success": False, 
-                "error": "Error al actualizar", 
-                "detail": str(e)
-            }, status=500)
-    
+            return JsonResponse({"success": False, "error": "Error al actualizar", "detail": str(e)}, status=500)
+
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)

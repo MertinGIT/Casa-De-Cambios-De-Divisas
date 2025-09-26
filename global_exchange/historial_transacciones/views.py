@@ -11,60 +11,48 @@ def historial_usuario(request):
     from operaciones.models import Transaccion
     from monedas.models import Moneda
 
+    # Parámetros
     q = request.GET.get('q', '').strip()
-    campo = request.GET.get('campo', '').strip()          # '', 'id', 'estado', 'tipo'
-    moneda = request.GET.get('moneda', '').strip()        # abreviación
+    campo = request.GET.get('campo', '').strip()              # id / estado / tipo
+    moneda = (request.GET.get('moneda') or
+              request.GET.get('moneda_sel') or '').strip()    # soporta ambos nombres
     fecha_inicio = request.GET.get('fecha_inicio', '').strip()
     fecha_fin = request.GET.get('fecha_fin', '').strip()
 
-    transacciones = Transaccion.objects.filter(usuario=request.user).select_related(
-        'moneda_origen', 'moneda_destino'
-    )
+    qs = (Transaccion.objects
+          .filter(usuario=request.user)
+          .select_related('moneda_origen', 'moneda_destino')
+          .order_by('-fecha'))
 
-    # Filtro moneda (si aparece en origen o destino)
+    # Filtro texto / campo
+    if q and campo:
+        if campo == 'id' and q.isdigit():
+            qs = qs.filter(id=int(q))
+        elif campo == 'estado':
+            qs = qs.filter(estado__icontains=q)
+        elif campo == 'tipo':
+            qs = qs.filter(tipo__icontains=q)
+
+    # Fechas (YYYY-MM-DD)
+    if fecha_inicio:
+        d = parse_date(fecha_inicio)
+        if d:
+            qs = qs.filter(fecha__date__gte=d)
+    if fecha_fin:
+        d = parse_date(fecha_fin)
+        if d:
+            qs = qs.filter(fecha__date__lte=d)
+
+    # Filtro moneda: si aparece como origen o destino
     if moneda:
-        transacciones = transacciones.filter(
-            models.Q(moneda_origen__abreviacion=moneda) |
-            models.Q(moneda_destino__abreviacion=moneda)
+        qs = qs.filter(
+            Q(moneda_origen__abreviacion=moneda) |
+            Q(moneda_destino__abreviacion=moneda)
         )
 
-    # Filtro fechas (fecha__date)
-    if fecha_inicio:
-        fi = parse_date(fecha_inicio)
-        if fi:
-            transacciones = transacciones.filter(fecha__date__gte=fi)
-    if fecha_fin:
-        ff = parse_date(fecha_fin)
-        if ff:
-            transacciones = transacciones.filter(fecha__date__lte=ff)
-
-    # Búsqueda
-    if q:
-        if campo == 'id' or campo == '':
-            if q.isdigit():
-                transacciones = transacciones.filter(id=int(q))
-            else:
-                # fallback a búsqueda amplia si no es número
-                transacciones = transacciones.filter(
-                    models.Q(estado__icontains=q) |
-                    models.Q(tipo__icontains=q)
-                )
-        elif campo == 'estado':
-            transacciones = transacciones.filter(estado__icontains=q)
-        elif campo == 'tipo':
-            transacciones = transacciones.filter(tipo__icontains=q)
-        else:
-            transacciones = transacciones.filter(
-                models.Q(id__icontains=q) |
-                models.Q(estado__icontains=q) |
-                models.Q(tipo__icontains=q)
-            )
-
-    transacciones = transacciones.order_by('-fecha')
-
-    # Monedas disponibles (abreviaciones únicas presentes en las transacciones del usuario)
+    # Monedas disponibles desde transacciones del usuario (evita listar sin uso)
     monedas_set = set()
-    for t in Transaccion.objects.filter(usuario=request.user).select_related('moneda_origen', 'moneda_destino'):
+    for t in qs:
         if t.moneda_origen:
             monedas_set.add(t.moneda_origen.abreviacion)
         if t.moneda_destino:
@@ -72,13 +60,14 @@ def historial_usuario(request):
     monedas_disponibles = sorted(monedas_set)
 
     context = {
-        'transacciones': transacciones,
+        'transacciones': qs,
         'q': q,
         'campo': campo,
-        'moneda_sel': moneda,
+        'moneda_sel': moneda,          # mantener compatibilidad
+        'moneda': moneda,
+        'monedas_disponibles': monedas_disponibles,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
-        'monedas_disponibles': monedas_disponibles,
     }
     return render(request, 'historial_transacciones/historial_usuario.html', context)
 
