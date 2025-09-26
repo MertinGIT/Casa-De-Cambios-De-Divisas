@@ -113,7 +113,7 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
-    
+    limites_cliente = []
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
@@ -257,7 +257,7 @@ def simulador_operaciones(request):
                 "tiempo_acreditacion": "2-3 minutos"  # si lo querés fijo por ahora
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
-        limites_cliente = []
+        
         if cliente_operativo:
             limites_cliente = LimiteTransaccion.objects.filter(
             cliente=cliente_operativo,
