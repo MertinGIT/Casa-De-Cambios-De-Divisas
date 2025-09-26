@@ -2,13 +2,14 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
+from django.core.paginator import Paginator
 from .models import TipoEntidadFinanciera, MedioAcreditacion
 from .forms import TipoEntidadFinancieraForm, MedioAcreditacionForm
 from clientes.forms import ClienteForm
 
 def tipo_entidad_list(request):
     """
-    Lista todas las entidades financieras.
+    Lista todas las entidades financieras con paginación y búsqueda por nombre y tipo.
 
     Renderiza la plantilla `tipo_entidad_list.html` con todas las entidades y un formulario vacío
     para el modal de creación.
@@ -16,11 +17,28 @@ def tipo_entidad_list(request):
     :param request: HttpRequest
     :return: HttpResponse
     """
-    entidades = TipoEntidadFinanciera.objects.all().order_by('-estado')
+    search_nombre = request.GET.get('search_nombre', '').strip()
+    search_tipo = request.GET.get('search_tipo', '').strip()
+    entidades_qs = TipoEntidadFinanciera.objects.all().order_by('-estado')
+    if search_nombre:
+        entidades_qs = entidades_qs.filter(nombre__icontains=search_nombre)
+    if search_tipo:
+        entidades_qs = entidades_qs.filter(tipo__icontains=search_tipo)
+    paginator = Paginator(entidades_qs, 10)  # 10 por página
+    page_number = request.GET.get('page')
+    entidades = paginator.get_page(page_number)
     form = TipoEntidadFinancieraForm()
+    tipos = TipoEntidadFinanciera._meta.get_field('tipo').choices
+    # Para compatibilidad con paginador estilo clientes
+    page_obj = entidades
     return render(request, 'medio_acreditacion/tipo_entidad_list.html', {
         'entidades': entidades,
-        'form': form
+        'form': form,
+        'search_nombre': search_nombre,
+        'search_tipo': search_tipo,
+        'tipos': tipos,
+        'page_obj': page_obj,
+        'request': request,
     })
 
 def tipo_entidad_create(request):
@@ -120,7 +138,7 @@ def tipo_entidad_toggle(request, pk):
 
 def medio_acreditacion_list(request):
     """
-    Lista todos los medios de acreditación, opcionalmente filtrando por cliente.
+    Lista todos los medios de acreditación, opcionalmente filtrando por cliente, y permite búsqueda y paginación.
 
     Renderiza la plantilla `medio_acreditacion_list.html` con los medios, clientes y formulario.
 
@@ -129,15 +147,52 @@ def medio_acreditacion_list(request):
     """
     from clientes.models import Cliente
     cliente_id = request.GET.get('cliente_id')
+    search_field = request.GET.get('search_field', '').strip()
+    search_value = request.GET.get('search_value', '').strip()
     cliente = None
     clientes = Cliente.objects.all()
+    medios_qs = MedioAcreditacion.objects.select_related('cliente', 'entidad', 'moneda').all()
     if cliente_id:
         cliente = Cliente.objects.filter(pk=cliente_id).first()
-        medios = MedioAcreditacion.objects.select_related('cliente', 'entidad').filter(cliente_id=cliente_id)
-    else:
-        medios = MedioAcreditacion.objects.select_related('cliente', 'entidad').all()
+        medios_qs = medios_qs.filter(cliente_id=cliente_id)
+    # Buscador por campo
+    if search_field and search_value:
+        if search_field == 'titular':
+            medios_qs = medios_qs.filter(titular__icontains=search_value)
+        elif search_field == 'entidad':
+            medios_qs = medios_qs.filter(entidad__nombre__icontains=search_value)
+        elif search_field == 'numero_cuenta':
+            medios_qs = medios_qs.filter(numero_cuenta__icontains=search_value)
+        elif search_field == 'tipo_cuenta':
+            medios_qs = medios_qs.filter(tipo_cuenta__icontains=search_value)
+        elif search_field == 'moneda':
+            medios_qs = medios_qs.filter(moneda__nombre__icontains=search_value)
+    medios_qs = medios_qs.order_by('-estado', 'titular')
+    paginator = Paginator(medios_qs, 10)  # 10 por página
+    page_number = request.GET.get('page')
+    medios = paginator.get_page(page_number)
     form = MedioAcreditacionForm()
-    return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {'medios': medios, 'form': form, 'cliente': cliente, 'clientes': clientes})
+    # Para compatibilidad con paginador estilo clientes
+    page_obj = medios
+    # Campos disponibles para búsqueda
+    search_fields = [
+        ('titular', 'Titular'),
+        ('entidad', 'Entidad'),
+        ('numero_cuenta', 'Número de Cuenta'),
+        ('tipo_cuenta', 'Tipo de Cuenta'),
+        ('moneda', 'Moneda'),
+    ]
+    return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {
+        'medios': medios,
+        'form': form,
+        'cliente': cliente,
+        'clientes': clientes,
+        'search_field': search_field,
+        'search_value': search_value,
+        'search_fields': search_fields,
+        'page_obj': page_obj,
+        'request': request,
+    })
 
 def medio_acreditacion_create(request):
     """

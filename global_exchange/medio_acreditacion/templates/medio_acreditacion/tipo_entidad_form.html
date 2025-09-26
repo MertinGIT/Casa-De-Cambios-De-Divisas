@@ -107,7 +107,7 @@
         maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres.")
     });
     function setupTipoEntidadValidation() {
-        const $form = $("#form-tipo-entidad");
+        const $form = $("#form-accion");
         if (!$form.length) return null;
         if (tipoEntidadValidator) { tipoEntidadValidator.destroy(); tipoEntidadValidator = null; }
         tipoEntidadValidator = $form.validate({
