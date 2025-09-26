@@ -217,16 +217,12 @@
           <tr>
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
-            <td>{{ t.monto|floatformat:0 }}Gs</td>
+            <td>{{ t.monto }}</td>
             <td>
               <span class="estado {{ t.estado|lower }}">{{ t.estado }}</span>
             </td>
             <td class="tipo-{{ t.tipo|lower }}">{{ t.tipo }}</td>
           </tr>
-          {% empty %}
-    <tr>
-      <td colspan="7" class="no-results">No existen transacciones.</td>
-    </tr>
           {% endfor %}
         </tbody>
       </table>
@@ -450,7 +446,7 @@
             return true;
           }
         // Declaración global
-        var fechaNavegador = null;
+        window.fechaNavegador = null;
         var advertenciaMostrada = false; // 🔑 Flag para controlar el mensaje
         $(document).ready(function () {
           // Botones modales
@@ -489,7 +485,8 @@
               //$("#modal-metodo").fadeIn().css("display", "flex");
               console.log("Tasa actualizada, procediendo a método de pago");
             }else{
-              mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+              $("#modal-exito").hide();
+              mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
               $("#modal-confirmacion").fadeOut();
             }
             });
@@ -503,7 +500,8 @@
               $("#modal-confirmacion").fadeOut();
               $("#modal-pin").fadeIn().css("display", "flex");
             }else{
-              mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+              $("#modal-exito").hide();
+              mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
               $("#modal-pin").fadeOut();
             }
             });
@@ -557,7 +555,7 @@
       function verificarTasaActualizada(callback) {
         const campos = getCampos();
         console.log("Verificando tasa para:", campos.$origen.val(), "->", campos.$destino.val());
-
+        
         $.ajax({
           url: "{% url 'verificar_tasa' %}",
           type: "GET",
@@ -571,17 +569,15 @@
             console.log("fechaBaseDatos:", fechaBaseDatos);
 
             if (fechaBaseDatos > fechaNavegador) {
-              // Mostrar mensaje de advertencia
-              $("#btn-continuar-tasa").show();
-              $("#btn-confirmar").fadeOut();
+              // ⚠️ La tasa ya cambió
+              $("#btn-continuar-tasa").show();   // mostrar botón de recalcular
+              $("#btn-confirmar").hide();        // ocultar botón de confirmar
               advertenciaMostrada = true;
 
-              // Ejecutar callback con false (tasa desactualizada)
-              if (callback) callback(false);
+              if (callback) callback(false); // avisar que NO puede continuar
               return;
             } else {
-              // Tasa actualizada, continuar
-              if (callback) callback(true);
+              if (callback) callback(true);  // tasa ok
             }
           },
           error: function() {
@@ -591,29 +587,41 @@
         });
       }
 
-      $("#btn-verificar-pin").click(function () {
-        let pinIngresado = "";
-        $(".pin-digit").each(function () { pinIngresado += $(this).val(); });
+$("#btn-verificar-pin").click(function () {
+  let pinIngresado = "";
+  $(".pin-digit").each(function () { pinIngresado += $(this).val(); });
 
-        if (pinIngresado === "1234") {
-          // Verificar tasa antes de proceder
-          verificarTasaActualizada(function(tasaActualizada) {
-            console.log("Tasa actualizada:", tasaActualizada);
-            if (tasaActualizada) {
-              // Proceder con la transacción
-              procesarTransaccion();
-            }else{
-              mostrarMensaje("Transacción rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
-              $("#modal-pin").fadeOut();
-            }
-          });
-        }else {
-          console.log("PIN incorrecto:", pinIngresado);
-          $("#mensaje-pin").fadeIn();
-          $(".pin-digit").val("").first().focus();
+  if (pinIngresado === "1234") {
+    // Verificar tasa antes de proceder
+    verificarTasaActualizada(function(tasaActualizada) {
+      console.log("Tasa actualizada:", tasaActualizada);
+      if (tasaActualizada) {
+        console.log("tiene que entrar")
+        // ✅ Proceder con la transacción
+        procesarTransaccion();
+      } else {
+        // ⚠️ Cortar flujo: mostrar mensaje y bloquear confirmar
+        console.log("acaaaaaaaaaaa:");
+        $("#modal-exito").css("display", "none");
+        mostrarMensaje(
+          "Transacción rechazada",
+          "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa."
+        ,"warning" ,true);
+        //$("#modal-exito").hide();
+        $("#modal-pin").fadeOut();
+        return; // 🚨 corte definitivo
       }
-      $(".pin-digit").val("");
-      });
+    });
+  } else {
+    console.log("PIN incorrecto:", pinIngresado);
+    $("#mensaje-pin").fadeIn();
+    $(".pin-digit").val("").first().focus();
+  }
+
+  // limpiar inputs del PIN
+  $(".pin-digit").val("");
+});
+
 
 
   // Función separada para procesar la transacción

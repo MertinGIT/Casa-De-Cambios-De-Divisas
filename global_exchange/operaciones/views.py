@@ -276,7 +276,6 @@ def simulador_operaciones(request):
 
 
 
-
 def obtener_clientes_usuario(user,request):
     """
     Obtiene los clientes asociados a un usuario y determina cuál es el cliente operativo.
