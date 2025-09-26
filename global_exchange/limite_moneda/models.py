@@ -34,12 +34,12 @@ class LimiteTransaccion(models.Model):
     )
     limite_diario = models.DecimalField(
         max_digits=20,
-        decimal_places=2,
+        decimal_places=8,
         help_text="Monto máximo permitido por día"
     )
     limite_mensual = models.DecimalField(
         max_digits=20,
-        decimal_places=2,
+        decimal_places=8,
         help_text="Monto máximo permitido por mes"
     )
     estado = models.CharField(
@@ -57,24 +57,4 @@ class LimiteTransaccion(models.Model):
         """Representación legible: 'Cliente - Moneda'"""
         return f"{self.cliente.nombre} - {self.moneda.nombre}"
 
-    def clean(self):
-        if self.limite_mensual < self.limite_diario:
-            raise ValidationError("El límite mensual no puede ser menor al límite diario.")
-
-        # Si este límite está activo, no puede haber otro activo para el mismo cliente/moneda
-        if self.estado == 'activo':
-            qs = LimiteTransaccion.objects.filter(
-                cliente=self.cliente,
-                moneda=self.moneda,
-                estado='activo'
-            )
-            if self.pk:
-                qs = qs.exclude(pk=self.pk)
-            if qs.exists():
-                raise ValidationError("Este cliente ya tiene un límite activo para esta moneda.")
-
-
-    def save(self, *args, **kwargs):
-        """Aplicar validaciones antes de guardar"""
-        self.clean()
-        super().save(*args, **kwargs)
+ 

@@ -18,7 +18,15 @@ def check_nombre_cliente(request):
         moneda_id = request.POST.get('moneda')
         obj_id = request.POST.get('obj_id')  # ID del límite actual si es edición
 
+        # Debug log para verificar parámetros recibidos
+        print(f"🔍 DEBUG - check_nombre_cliente:")
+        print(f"   - cliente_id: '{cliente_id}'")
+        print(f"   - moneda_id: '{moneda_id}'")
+        print(f"   - obj_id: '{obj_id}' (type: {type(obj_id)})")
+        print(f"   - POST data: {dict(request.POST)}")
+
         if not cliente_id or not moneda_id:
+            print("❌ Cliente ID o Moneda ID faltante, retornando False")
             return JsonResponse(False, safe=False)
 
         # Filtramos por cliente y moneda
@@ -27,13 +35,36 @@ def check_nombre_cliente(request):
             moneda_id=moneda_id,
             estado='activo'  # Solo consideramos los activos
         )
+        print(f"🔎 Query inicial encontró: {query.count()} registros activos")
+
         # Excluimos el propio registro si estamos editando
-        if obj_id:
-            query = query.exclude(pk=obj_id)
+        if obj_id and obj_id != 'null' and obj_id != '' and obj_id != 'None':
+            try:
+                obj_id_int = int(obj_id)
+                query_before = query.count()
+                query = query.exclude(pk=obj_id_int)
+                query_after = query.count()
+                print(f"✅ Excluyendo registro con ID: {obj_id_int}")
+                print(f"   - Registros antes de excluir: {query_before}")
+                print(f"   - Registros después de excluir: {query_after}")
+            except (ValueError, TypeError) as e:
+                print(f"❌ Error al convertir obj_id a int: {obj_id} - Error: {e}")
+        else:
+            print(f"⚠️  No se excluyó ningún registro (obj_id: {obj_id})")
 
         # Si existe al menos uno activo, no se puede asignar
-        return JsonResponse(not query.exists(), safe=False)
+        exists = query.exists()
+        can_assign = not exists
+        
+        print(f"📊 RESULTADO:")
+        print(f"   - Query exists: {exists}")
+        print(f"   - Can assign: {can_assign}")
+        print(f"   - Retornando: {can_assign}")
+        print("=" * 50)
 
+        return JsonResponse(can_assign, safe=False)
+
+    print("❌ Método no es POST")
     return JsonResponse(False, safe=False)
 
 
