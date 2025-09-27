@@ -172,9 +172,6 @@
         placeholder="Resultado" readonly value="{{ resultado }}" />
 </div>
 
-
-
-
           <button type="submit" id="btn-convertir" class="btn-convertir">
             Realizar transacción
           </button>
@@ -190,9 +187,10 @@
       <div class="filtro-transacciones">
         <select id="filtro-columna" class="input-select">
           <option value="fecha">Fecha</option>
-          <option value="tipo">Tipo</option>
           <option value="monto">Monto</option>
+          <option value="moneda">Moneda</option>
           <option value="estado">Estado</option>
+          <option value="tipo">Tipo</option>
         </select>
         <input
           type="text"
@@ -208,6 +206,7 @@
             <th>ID</th>
             <th>Fecha</th>
             <th>Monto</th>
+            <th>Moneda</th>
             <th>Estado</th>
             <th>Tipo</th>
           </tr>
@@ -218,6 +217,7 @@
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
             <td>{{ t.monto }}</td>
+            <td>{{ t.moneda_destino }}</td>
             <td>
               <span class="estado {{ t.estado|lower }}">{{ t.estado }}</span>
             </td>
@@ -226,12 +226,7 @@
           {% endfor %}
         </tbody>
       </table>
-
-      <canvas
-        id="grafico-transacciones"
-        height="200"
-        style="margin-top: 1rem"
-      ></canvas>
+      {% include 'operaciones/graficoTransaccion.html' with data_transacciones_json=data_transacciones_json monedas=monedas %}
     </section>
   </div>
 </div>
@@ -517,7 +512,7 @@
           });
         }
 
-        function getCookie(name) {
+        window.getCookie=function (name) {
           let cookieValue = null;
           if (document.cookie && document.cookie !== '') {
             const cookies = document.cookie.split(';');
@@ -537,7 +532,7 @@
 
         const PB_MONEDA = "{{ PB_MONEDA }}";
         const tasa_recibida = "{{ tasa }}";
-        const TASA_REF_ID = "{{ TASA_REF_ID }}";
+        window.TASA_REF_ID = "{{ TASA_REF_ID }}";
 
         const monedasMap = {};
         {% for moneda in monedas %}
@@ -547,9 +542,10 @@
       console.log("Mapa de monedas:", monedasMap);
 
       // Función para obtener ID por abreviación
-      function obtenerIdMoneda(abreviacion) {
+      window.obtenerIdMoneda = function(abreviacion) {
         return monedasMap[abreviacion] || null;
-      }
+      };
+
 
       // Función reutilizable para verificar tasas
       function verificarTasaActualizada(callback) {
@@ -587,213 +583,7 @@
         });
       }
 
-$("#btn-verificar-pin").click(function () {
-  let pinIngresado = "";
-  $(".pin-digit").each(function () { pinIngresado += $(this).val(); });
-
-  if (pinIngresado === "1234") {
-    // Verificar tasa antes de proceder
-    verificarTasaActualizada(function(tasaActualizada) {
-      console.log("Tasa actualizada:", tasaActualizada);
-      if (tasaActualizada) {
-        console.log("tiene que entrar")
-        // ✅ Proceder con la transacción
-        procesarTransaccion();
-      } else {
-        // ⚠️ Cortar flujo: mostrar mensaje y bloquear confirmar
-        console.log("acaaaaaaaaaaa:");
-        $("#modal-exito").css("display", "none");
-        mostrarMensaje(
-          "Transacción rechazada",
-          "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa."
-        ,"warning" ,true);
-        //$("#modal-exito").hide();
-        $("#modal-pin").fadeOut();
-        return; // 🚨 corte definitivo
-      }
-    });
-  } else {
-    console.log("PIN incorrecto:", pinIngresado);
-    $("#mensaje-pin").fadeIn();
-    $(".pin-digit").val("").first().focus();
-  }
-
-  // limpiar inputs del PIN
-  $(".pin-digit").val("");
-});
-
-
-
-  // Función separada para procesar la transacción
-  function procesarTransaccion() {
-    console.log("Procesando transacción...");
-
-    const campos = getCampos();
-    const origenAbrev = campos.$origen.val();
-    const destinoAbrev = campos.$destino.val();
-
-    const moneda_origen_id = obtenerIdMoneda(origenAbrev);
-    const moneda_destino_id = obtenerIdMoneda(destinoAbrev);
-
-    console.log("ID origen:", moneda_origen_id, "ID destino:", moneda_destino_id);
-
-    // Validar que se encontraron los IDs
-    if (!moneda_origen_id || !moneda_destino_id) {
-      mostrarMensaje("⚠️ Error", "No se pudieron encontrar los IDs de las monedas");
-      return;
-    }
-
-    const email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
-    if (email_cliente_operativo != "") {
-      // Tomar el monto desde el input
       
-      // CORRECCIÓN: Obtener la tasa calculada correctamente
-        const tasaCalculada = campos.$resultado.data("tasa") || 
-                             (campos.op === "venta" ? 
-                              parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) : 
-                              parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
-      // PASO 1: Guardar en BD como PENDIENTE
-      const payloadLocal = {
-        usuario_id: "{{ request.user.id }}",
-        monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
-        tipo: campos.op === "venta" ? "compra" : "venta",
-        estado: "pendiente",
-        moneda_origen_id: moneda_origen_id,
-        moneda_destino_id: moneda_destino_id,
-        tasa_usada: tasaCalculada,
-        tasa_ref_id: TASA_REF_ID,
-      };
-
-      console.log("Guardando en BD LOCAL:", payloadLocal);
-
-      fetch("{% url 'guardar_transaccion' %}", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify(payloadLocal),
-      })
-      .then(resp => resp.json())
-      .then(localResp => {
-        console.log("Guardada en BD:", localResp);
-
-        if (localResp.success) {
-          const transaccionId = localResp.id;
-
-          // PASO 2: Enviar al banco
-          const transaccionData = {
-            email: "{{ email_cliente_operativo }}",
-            monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
-            moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
-            tipo: campos.op === "venta" ? "compra" : "venta",
-            estado: "aceptada",
-            referencia: "TX-" + Date.now(),
-            motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`,
-            cedula: "{{cliente_operativo.cedula}}",
-            nro_cuenta: window.datosAcreditacion.numero_cuenta,
-            cliente_id:parseInt("{{ cliente_operativo.id }}", 10),
-            entidad_id:1,
-            usuario_ejecutor: parseInt("{{ user.id }}",10),
-            fecha: new Date().toISOString()
-          };
-
-          console.log("Enviando al banco:", transaccionData);
-
-          fetch("http://127.0.0.1:8001/transaccion/", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(transaccionData)
-          })
-          .then(resp => resp.json())
-          .then(data => {
-            console.log("Respuesta del banco:", data);
-
-            // PASO 3: Decidir estado final
-            let estadoFinal = "pendiente";
-            if (data.estado === "aceptada") {
-              estadoFinal = "completada";
-            } else if (data.estado === "rechazada") {
-              estadoFinal = "cancelada";
-            }
-
-            // PASO 4: Actualizar estado en BD
-            const payloadActualizacion = {
-              transaccion_id: transaccionId,
-              nuevo_estado: estadoFinal
-            };
-
-            fetch("{% url 'actualizar_estado_transaccion' %}", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie("csrftoken"),
-              },
-              body: JSON.stringify(payloadActualizacion),
-            })
-            .then(resp => resp.json())
-            .then(updateResp => {
-              console.log("Estado actualizado:", updateResp);
-
-              if (updateResp.success) {
-                if (estadoFinal === "completada") {
-                  $("#modal-pin").fadeOut();
-                  $("#modal-exito").fadeIn().css("display", "flex");
-                } else {
-                  mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco");
-                }
-              } else {
-                mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");
-              }
-            })
-            .catch(err => {
-              console.error("Error actualizando estado:", err);
-              mostrarMensaje("⚠️ Error", "Error al actualizar el estado de la transacción");
-            });
-          })
-          .catch(err => {
-            console.error("Error enviando transacción:", err);
-
-            // Si falla el banco, actualizar a "cancelada"
-            const payloadError = {
-              transaccion_id: transaccionId,
-              nuevo_estado: "cancelada"
-            };
-
-            fetch("{% url 'actualizar_estado_transaccion' %}", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie("csrftoken"),
-              },
-              body: JSON.stringify(payloadError),
-            });
-
-            mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
-          });
-
-        } else {
-          mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción inicial");
-        }
-      })
-      .catch(err => {
-        console.error("Error guardando en BD:", err);
-        mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción localmente");
-      });
-
-    } else {
-      console.log("No se encontró el email del cliente operativo.");
-      $("#modal-pin").fadeOut();
-      mostrarMensaje("⚠️ Error", "No se encontró el email del cliente operativo.");
-    }
-  }
-
-
       $("#btn-cerrar-exito").click(function () {
         $("#modal-exito").fadeOut();
         $(".input-text").val("");
@@ -807,36 +597,15 @@ $("#btn-verificar-pin").click(function () {
           switch (columna) {
             case 'fecha': valor = t.find('td:nth-child(2)').text().toLowerCase(); break;
             case 'monto': valor = t.find('td:nth-child(3)').text().toLowerCase(); break;
-            case 'estado': valor = t.find('td:nth-child(4)').text().toLowerCase(); break;
-            case 'tipo': valor = t.find('td:nth-child(5)').text().toLowerCase(); break;
+            case 'moneda': valor = t.find('td:nth-child(4)').text().toLowerCase(); break;
+            case 'estado': valor = t.find('td:nth-child(5)').text().toLowerCase(); break;
+            case 'tipo': valor = t.find('td:nth-child(6)').text().toLowerCase(); break;
           }
           t.toggle(valor.includes(query));
         });
       }
       $('#filtro-general, #filtro-columna').on('input change', aplicarFiltroUnico);
 
-      // Chart.js
-      const ctx = document.getElementById('grafico-transacciones').getContext('2d');
-      const dataTransacciones = JSON.parse('{{ data_transacciones_json|escapejs }}');
-      if (dataTransacciones.lenght != 0) {
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: dataTransacciones.map(d => d.dia),
-          datasets: [{
-            label: 'Monto de transacción',
-            data: dataTransacciones.map(d => d.monto),
-            backgroundColor: dataTransacciones.map(d => d.tipo === 'Compra' ? '#16a34a' : '#dc2626')
-          }]
-        },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-      });
-      } else {
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#555";
-        ctx.textAlign = "center";
-        ctx.fillText("No hay datos para mostrar", ctx.canvas.width / 2, ctx.canvas.height / 2);
-      }
     });
 </script>
 

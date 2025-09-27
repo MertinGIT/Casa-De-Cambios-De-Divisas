@@ -49,13 +49,10 @@ def simulador_operaciones(request):
     :return: Página renderizada con contexto de simulación o JsonResponse si es AJAX.
     :rtype: HttpResponse | JsonResponse
     """
-    # === Datos de transacciones de prueba (estáticos) ===
-    transacciones = [
-      {"id": 1, "fecha": datetime.now().strftime("%d/%m/%Y %H:%M"), "monto": 1500.0, "estado": "Pendiente", "tipo": "Venta"},
-      {"id": 2, "fecha": '18/07/2025 02:40' , "monto": 3200.0, "estado": "Completado", "tipo": "Compra"},
-      {"id": 3, "fecha": '19/08/2024 05:40', "monto": 500.0, "estado": "Cancelado", "tipo": "Venta"},
-  ]
 
+    # === Monedas activas desde la BD ===
+    monedas = list(Moneda.objects.filter(estado=True).values("id", "abreviacion", "nombre"))
+    
     # === Transacciones dinámicas: últimas 5 del usuario ===
     transacciones_qs = Transaccion.ultimas(limite=5, usuario=request.user)\
         .select_related("moneda_origen", "moneda_destino")
@@ -66,12 +63,12 @@ def simulador_operaciones(request):
             "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
             "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
             "monto": float(t.monto),
+            "moneda": t.moneda_origen.abreviacion if t.tipo == 'Compra' else t.moneda_destino.abreviacion
         }
         for t in reversed(list(transacciones_qs))
     ]
 
-    # === Monedas activas desde la BD ===
-    monedas = list(Moneda.objects.filter(estado=True).values("id", "abreviacion", "nombre"))
+    
 
     # === Tasas de cambio activas (ordenadas: agrupadas por destino y descendente por vigencia) ===
     tasas = (
