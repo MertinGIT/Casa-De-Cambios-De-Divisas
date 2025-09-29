@@ -58,7 +58,7 @@
             content.style.transform = 'scale(1) translateY(0)';
             content.style.opacity = '1';
         });
-
+        
         // Generar ID de transacción único
         const datos = window.transaccionActual;
         const transactionId = datos.referencia;
@@ -76,6 +76,8 @@
         setTimeout(() => {
             modal.style.display = 'none';
         }, 200);
+        console.log("recargando en modalexito:")
+        location.reload();
     }
 
     function getCampos() {

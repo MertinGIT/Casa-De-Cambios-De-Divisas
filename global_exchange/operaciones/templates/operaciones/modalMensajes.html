@@ -16,7 +16,7 @@
 
 <script>
 // FUNCIÓN GLOBAL para mostrar mensajes desde cualquier archivo
-window.mostrarMensajeModal = function(titulo, texto, tipo = 'warning') {
+window.mostrarMensajeModal = function(titulo, texto, tipo = 'warning', recargar = false) {
   console.log("Mostrando mensaje:", titulo, texto,"Tipo:", tipo);
   
   // Cerrar otros modales primero
@@ -72,6 +72,13 @@ window.mostrarMensajeModal = function(titulo, texto, tipo = 'warning') {
   setTimeout(() => {
     $("#modal-icon").removeClass('icon-bounce');
   }, 600);
+
+  $("#btn-cerrar-mensaje, #modal-mensaje .close").off('click').on('click', function() {
+    $("#modal-mensaje").fadeOut();
+    if (recargar) {
+      location.reload();
+    }
+  });
 };
 
 // Funciones específicas para cada tipo

@@ -1,7 +1,23 @@
+"""
+Modelo de operaciones (Transaccion):
+- QuerySet y Manager personalizados para obtener rápidamente las últimas transacciones.
+- Método de clase Transaccion.ultimas para consumo directo en vistas.
+Estructura:
+  TransaccionQuerySet.recientes(limite, usuario)
+  TransaccionManager.recientes(...)
+  Transaccion.ultimas(...)
+Campos clave:
+  tipo: 'compra' (cliente trae moneda extranjera y recibe PYG) / 'venta' (cliente entrega PYG y recibe extranjera)
+  estado: flujo de vida de la operación (pendiente, confirmada, cancelada_*).
+  tasa_usada: tasa congelada al iniciar (permite auditing).
+  tasa_ref: FK a la tabla de cotizaciones para trazabilidad.
+"""
+
 from django.db import models
 from usuarios.models import CustomUser
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
+
 
 class TransaccionQuerySet(models.QuerySet):
     """
@@ -34,6 +50,7 @@ class TransaccionQuerySet(models.QuerySet):
             qs = qs.filter(usuario=usuario)
         return qs[:limite]
 
+
 class TransaccionManager(models.Manager):
     """
     Administrador personalizado para el modelo Transaccion.
@@ -41,10 +58,16 @@ class TransaccionManager(models.Manager):
     Sobrescribe el queryset por defecto para utilizar TransaccionQuerySet
     y expone métodos de consulta especializados.
     """
+
     def get_queryset(self):
         return TransaccionQuerySet(self.model, using=self._db)
+
     def recientes(self, limite=5, usuario=None):
+        """
+        Delegación a QuerySet.recientes para mantener API uniforme.
+        """
         return self.get_queryset().recientes(limite=limite, usuario=usuario)
+
 
 class Transaccion(models.Model):
     """
@@ -70,6 +93,7 @@ class Transaccion(models.Model):
         tasa_usada (Decimal): Tasa de cambio congelada al iniciar la operación.
         tasa_ref (TasaDeCambio): Referencia a la tasa vigente utilizada.
     """
+
     ESTADOS = [
         ("pendiente", "Pendiente"),
         ("confirmada", "Confirmada"),
@@ -82,20 +106,61 @@ class Transaccion(models.Model):
         ("venta", "Venta"),
     ]
 
-    usuario = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="transacciones", null=True, blank=True)
+    usuario = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="transacciones",
+        null=True,
+        blank=True,
+        help_text="Usuario que originó la transacción (nullable para registros migrados)."
+    )
+
     id = models.AutoField(primary_key=True)
-    fecha = models.DateTimeField(auto_now_add=True)  # fecha de creación
-    monto = models.DecimalField(max_digits=23, decimal_places=8)
+    fecha = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp de creación (auto)."
+    )
+    monto = models.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        help_text="Monto base de la operación (interpretable según tipo)."
+    )
 
-    tipo = models.CharField(max_length=10, choices=TIPOS)  # compra o venta
-    estado = models.CharField(max_length=30, choices=ESTADOS, default="pendiente")
+    tipo = models.CharField(
+        max_length=10,
+        choices=TIPOS,
+        help_text="Compra o venta."
+    )
+    estado = models.CharField(
+        max_length=30,
+        choices=ESTADOS,
+        default="pendiente",
+        help_text="Estado del ciclo de vida."
+    )
 
-    # 🔑 info extra para control de cotización
-    moneda_origen = models.ForeignKey(Moneda, on_delete=models.CASCADE, related_name="transacciones_origen")
-    moneda_destino = models.ForeignKey(Moneda, on_delete=models.CASCADE, related_name="transacciones_destino")
-    
-    tasa_usada = models.DecimalField(max_digits=23, decimal_places=8)  # tasa congelada al iniciar la operación
-    tasa_ref = models.ForeignKey(TasaDeCambio, on_delete=models.PROTECT)  # referencia a la tasa vigente
+    moneda_origen = models.ForeignKey(
+        Moneda,
+        on_delete=models.CASCADE,
+        related_name="transacciones_origen",
+        help_text="Moneda que el usuario entrega."
+    )
+    moneda_destino = models.ForeignKey(
+        Moneda,
+        on_delete=models.CASCADE,
+        related_name="transacciones_destino",
+        help_text="Moneda que el usuario recibe."
+    )
+
+    tasa_usada = models.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        help_text="Tasa concreta aplicada (con margen/comisión)."
+    )
+    tasa_ref = models.ForeignKey(
+        TasaDeCambio,
+        on_delete=models.PROTECT,
+        help_text="Referencia a la cotización base vigente al iniciar."
+    )
 
 
     
@@ -118,10 +183,19 @@ class Transaccion(models.Model):
             models.Index(fields=["-fecha"]),
             models.Index(fields=["estado"]),
         ]
+        verbose_name = "Transacción"
+        verbose_name_plural = "Transacciones"
 
     @classmethod
     def ultimas(cls, limite=5, usuario=None):
+        """
+        Shortcut público: retorna últimas 'limite' transacciones.
+        Opcionalmente filtradas por usuario.
+        """
         return cls.objects.recientes(limite=limite, usuario=usuario)
 
     def __str__(self):
-        return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
+        return (
+            f"Transacción {self.id} - {self.tipo.upper()} "
+            f"{self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
+        )

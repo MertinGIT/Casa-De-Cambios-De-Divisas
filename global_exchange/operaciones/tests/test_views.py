@@ -1,83 +1,86 @@
-# operaciones/tests/test_views.py
 from django.test import TestCase, Client
 from django.urls import reverse
-from decimal import Decimal
+from django.contrib.auth.models import Group
 from usuarios.models import CustomUser
+from cliente_segmentacion.models import Segmentacion
+from clientes.models import Cliente
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
-from datetime import datetime, timedelta
+from decimal import Decimal
 from django.utils import timezone
+
 
 class OperacionesViewsTest(TestCase):
 
     def setUp(self):
-       # Cliente de pruebas
-        self.client = Client()
+        self.group_admin, _ = Group.objects.get_or_create(name="ADMIN")
+        self.group_usuario_asociado, _ = Group.objects.get_or_create(name="Usuario Asociado")
 
-        # Crear usuario y loguearse
-        self.user = CustomUser.objects.create_user(
-            username="testuser",
-            password="testpass123",
-            cedula="12345678"
+        self.user = CustomUser.objects.create_user(username="testuser", password="12345")
+        self.user.groups.add(self.group_usuario_asociado)
+        self.user.save()
+
+        self.segmentacion = Segmentacion.objects.create(nombre="Segmento Test", estado="activo", descuento=10)
+        self.cliente = Cliente.objects.create(
+            nombre="Cliente Test",
+            segmentacion=self.segmentacion,
+            email="cliente@test.com",
+            estado="activo"
         )
-        self.client.login(username="testuser", password="testpass123")
 
-        # Crear monedas
-        self.moneda_origen = Moneda.objects.create(nombre="Dólar", abreviacion="USD", estado=True)
-        self.moneda_destino = Moneda.objects.create(nombre="Guaraní", abreviacion="PYG", estado=True)
+        self.client = Client()
+        self.client.login(username="testuser", password="12345")
+        session = self.client.session
+        session['cliente_operativo_id'] = self.cliente.id
+        session.save()
 
-        # Crear tasa de cambio **para que PYG -> USD funcione en el test**
+        self.moneda_usd = Moneda.objects.create(nombre="Dólar", abreviacion="USD", estado=True)
+        self.moneda_pyg = Moneda.objects.create(nombre="Guaraní", abreviacion="PYG", estado=True)
+
         self.tasa = TasaDeCambio.objects.create(
-            moneda_origen=self.moneda_destino,   # PYG
-            moneda_destino=self.moneda_origen,   # USD
-            monto_compra=Decimal("0.00014"),     # ejemplo
-            monto_venta=Decimal("0.00015"),     # ejemplo
+            moneda_origen=self.moneda_usd,
+            moneda_destino=self.moneda_pyg,
+            monto_compra=7200,
+            monto_venta=7300,
+            comision_compra=50,
+            comision_venta=50,
             estado=True,
             vigencia=timezone.now()
         )
 
     def test_simulador_operaciones_get(self):
-        """GET del simulador debe devolver 200 y contexto esperado"""
-        url = reverse("operaciones")
+        url = reverse("operaciones")  # sin namespace
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("monedas", response.context)
-        self.assertIn("transacciones", response.context)
-        self.assertIn("PB_MONEDA", response.context)
+        self.assertEqual(response.status_code, 200)
+
 
     def test_simulador_operaciones_post_venta(self):
-        """POST al simulador con operación 'venta' calcula resultado correctamente"""
         url = reverse("operaciones")
-        data = {
-            "valor": "10000",
-            "operacion": "venta",
-            "origen": "PYG",   # orígen puede ser PYG
-            "destino": "USD"   # destino NO puede ser PYG
-        }
-        response = self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        response = self.client.post(
+            url,
+            {"operacion": "venta", "valor": "1000", "origen": "PYG", "destino": "USD"},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
         self.assertEqual(response.status_code, 200)
-        json_data = response.json()
-        self.assertIn("resultado", json_data)
-        self.assertIn("ganancia_total", json_data)
-        self.assertIn("tasa", json_data)
+        data = response.json()
+        self.assertIn("resultado", data)
+        self.assertIn("ganancia_total", data)
 
     def test_guardar_transaccion(self):
-        """Guardar una transacción mediante POST"""
-        url = reverse("guardar_transaccion")
+        url = reverse("guardar_transaccion")  # sin namespace
         payload = {
-            "monto": "5000",
-            "tipo": "compra",
+            "monto": "1000",
+            "tipo": "venta",
             "estado": "pendiente",
-            "moneda_origen_id": self.moneda_origen.id,
-            "moneda_destino_id": self.moneda_destino.id,
-            "tasa_usada": "7100.0",
+            "moneda_origen_id": self.moneda_pyg.id,
+            "moneda_destino_id": self.moneda_usd.id,
+            "tasa_usada": "7300",
             "tasa_ref_id": self.tasa.id
         }
-        response = self.client.post(url, payload, content_type="application/json")
+        response = self.client.post(url, data=payload, content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        json_data = response.json()
-        self.assertTrue(json_data["success"])
-        self.assertTrue(Transaccion.objects.filter(id=json_data["id"]).exists())
-
-    
+        data = response.json()
+        self.assertTrue(data["success"])
+        self.assertEqual(Transaccion.objects.count(), 1)

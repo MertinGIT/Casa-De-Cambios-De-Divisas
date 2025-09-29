@@ -14,4 +14,4 @@ docker compose -f docker-compose.prod.yml exec web python manage.py collectstati
 # Recargar nginx por si hay cambios en static
 docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 
-echo "✅ Producción lista en http://10.112.84.207:8000"
+echo "✅ Producción lista en http://192.168.100.159"
