@@ -39,6 +39,9 @@ urlpatterns = [
     path('signup/', usuarios_views.signup, name='signup'),
     path('logout/', usuarios_views.signout, name='signout'),
     path('login/', usuarios_views.signin, name='login'),
+    path("mfa/setup/", usuarios_views.mfa_setup, name="mfa_setup"),
+    path("mfa/verify/", usuarios_views.mfa_verify, name="mfa_verify"),
+    path("verify-backup/", usuarios_views.verify_backup_code, name="verify_backup_code"),
     path('editarperfil/', usuarios_views.editarPerfil, name='editarperfil'),
     path('activate/<uidb64>/<token>/', usuarios_views.activate, name='activate'),
     path('set_cliente_operativo/', usuarios_views.set_cliente_operativo, name='set_cliente_operativo'),
@@ -55,14 +58,14 @@ urlpatterns = [
     path('admin/configuracion/', configuracion_views.configuracion_view, name='configuracion'),
     path('admin/configuracion/cotizaciones/', include('cotizaciones.urls'), name='cotizacion'),
     path('admin/configuracion/monedas/', include('monedas.urls'), name='moneda'),
-    path('admin/configuracion/seguridad/usuarios/', include(usuarios_urls)),
+    path('admin/configuracion/seguridad/', include(usuarios_urls)),
     path('admin/configuracion/seguridad/roles/', include('roles_permisos.urls'), name='roles'),
     path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
     path('admin/clientes/', include('medio_acreditacion.urls')),
     path('admin/clientes/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
     path('admin/clientes/limites/', include('limite_moneda.urls')),
-    path('usuarios/', include('usuarios.urls')),
+    #path('usuarios/', include('usuarios.urls')),
 
 ]
 

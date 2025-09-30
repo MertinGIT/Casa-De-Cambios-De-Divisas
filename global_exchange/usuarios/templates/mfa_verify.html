@@ -1,0 +1,930 @@
+{% include "loader.html" %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}" />
+
+<div>
+  <div class="verify-container">
+    <div class="verify-card">
+      <!-- Header -->
+      <div class="verify-header">
+        <div class="lock-icon">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none">
+            <rect
+              x="5"
+              y="11"
+              width="14"
+              height="10"
+              rx="2"
+              fill="url(#lockGradient)"
+              stroke="#5d5fef"
+              stroke-width="2"
+            />
+            <path
+              d="M8 11V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V11"
+              stroke="#5d5fef"
+              stroke-width="2"
+            />
+            <circle cx="12" cy="16" r="1.5" fill="white" />
+            <defs>
+              <linearGradient id="lockGradient" x1="5" y1="11" x2="19" y2="21">
+                <stop offset="0%" stop-color="#5d5fef" />
+                <stop offset="100%" stop-color="#4a4cd9" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="title">Verificación de Seguridad</h1>
+        <p class="subtitle">
+          Ingresa el código de 6 dígitos de Google Authenticator
+        </p>
+      </div>
+
+      <!-- Content -->
+      <div class="verify-content">
+        <form method="POST" id="verify-form" data-csrf="{{ csrf_token }}">
+          {% csrf_token %}
+
+          <!-- Código PIN -->
+          <div class="pin-section">
+            <label class="pin-label">Código de verificación</label>
+            <div class="pin-inputs">
+              <input
+                type="text"
+                maxlength="1"
+                class="pin-digit"
+                data-index="0"
+                autocomplete="off"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <input
+                type="text"
+                maxlength="1"
+                class="pin-digit"
+                data-index="1"
+                autocomplete="off"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <input
+                type="text"
+                maxlength="1"
+                class="pin-digit"
+                data-index="2"
+                autocomplete="off"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <div class="pin-separator"></div>
+              <input
+                type="text"
+                maxlength="1"
+                class="pin-digit"
+                data-index="3"
+                autocomplete="off"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <input
+                type="text"
+                maxlength="1"
+                class="pin-digit"
+                data-index="4"
+                autocomplete="off"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+              <input
+                type="text"
+                maxlength="1"
+                class="pin-digit"
+                data-index="5"
+                autocomplete="off"
+                inputmode="numeric"
+                pattern="[0-9]*"
+              />
+            </div>
+            <input type="hidden" name="code" id="code-input" />
+          </div>
+
+          <!-- Timer de código -->
+          <div class="timer-section">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <span>Código válido por <span id="countdown">30</span>s</span>
+          </div>
+
+          <!-- Mensaje de error/éxito -->
+          {% if message %}
+          <div
+            class="message-box {% if '✅' in message %}success{% else %}error{% endif %}"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              {% if '✅' in message %}
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              {% else %}
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="15" y1="9" x2="9" y2="15"></line>
+              <line x1="9" y1="9" x2="15" y2="15"></line>
+              {% endif %}
+            </svg>
+            <p>{{ message }}</p>
+          </div>
+          {% endif %}
+
+          <!-- Botón de verificar -->
+          <button type="submit" class="btn-verify" id="btn-verify" disabled>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Verificar Código
+          </button>
+        </form>
+
+        <!-- Opciones adicionales -->
+        <div class="additional-options">
+          <div class="divider">
+            <span>¿Tienes problemas?</span>
+          </div>
+
+          <div class="help-options">
+            <button type="button" class="help-btn" onclick="showBackupCode()">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
+              </svg>
+              Usar código de respaldo
+            </button>
+            <button type="button" class="help-btn" onclick="contactSupport()">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+              >
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              Contactar soporte
+            </button>
+          </div>
+        </div>
+
+        <!-- Info de seguridad -->
+        <div class="security-info">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <path
+              d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z"
+            />
+          </svg>
+          <p>
+            Tu cuenta está protegida con autenticación de dos factores. Este
+            código adicional asegura que solo tú puedas acceder.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de ayuda -->
+<div id="help-modal" class="help-modal">
+  <div class="help-modal-content">
+    <h3>Ayuda</h3>
+    <p>
+      Si necesitas ayuda, contacta a
+      <a href="mailto:soporte@globalexchange.com">soporte@globalexchange.com</a>
+      o visita nuestra sección de ayuda.
+    </p>
+    <button class="btn btn-secondary" onclick="closeHelpModal()">Cerrar</button>
+  </div>
+</div>
+
+<!-- Modal de código de respaldo -->
+<div id="backup-modal" class="modal-backup" style="display: none">
+  <div class="modal-content">
+    <h3>Usar código de respaldo</h3>
+    <p>Ingresa tu código de respaldo:</p>
+    <input
+      type="text"
+      id="backup-input"
+      maxlength="9"
+      placeholder="XXXX-XXXX"
+    />
+    <div class="modal-buttons">
+      <button type="button" id="backup-submit" class="btn btn-primary">
+        Verificar
+      </button>
+      <button type="button" id="backup-cancel" class="btn btn-secondary">
+        Cancelar
+      </button>
+    </div>
+    <p id="backup-message" style="margin-top: 10px; font-weight: 500"></p>
+  </div>
+</div>
+
+<script>
+  const pinInputs = document.querySelectorAll(".pin-digit");
+  const codeInput = document.getElementById("code-input");
+  const btnVerify = document.getElementById("btn-verify");
+  const verifyForm = document.getElementById("verify-form");
+
+  // Funcionalidad de inputs PIN
+  pinInputs.forEach((input, index) => {
+    input.addEventListener("input", (e) => {
+      const value = e.target.value;
+
+      // Solo permitir números
+      if (!/^\d*$/.test(value)) {
+        e.target.value = "";
+        return;
+      }
+
+      // Mover al siguiente input
+      if (value && index < pinInputs.length - 1) {
+        pinInputs[index + 1].focus();
+      }
+
+      // Actualizar el código completo
+      updateCode();
+    });
+
+    input.addEventListener("keydown", (e) => {
+      // Backspace: volver al anterior si está vacío
+      if (e.key === "Backspace" && !input.value && index > 0) {
+        pinInputs[index - 1].focus();
+      }
+
+      // Flechas de navegación
+      if (e.key === "ArrowLeft" && index > 0) {
+        pinInputs[index - 1].focus();
+      }
+      if (e.key === "ArrowRight" && index < pinInputs.length - 1) {
+        pinInputs[index + 1].focus();
+      }
+    });
+
+    input.addEventListener("paste", (e) => {
+      e.preventDefault();
+      const pastedData = e.clipboardData.getData("text").trim();
+
+      // Solo permitir números de 6 dígitos
+      if (/^\d{6}$/.test(pastedData)) {
+        pastedData.split("").forEach((digit, i) => {
+          if (pinInputs[i]) {
+            pinInputs[i].value = digit;
+          }
+        });
+        updateCode();
+        pinInputs[pinInputs.length - 1].focus();
+      }
+    });
+  });
+
+  function updateCode() {
+    let code = "";
+    pinInputs.forEach((input) => (code += input.value));
+    codeInput.value = code;
+
+    // Habilitar botón si el código está completo
+    btnVerify.disabled = code.length !== 6;
+
+    // Auto-submit cuando se complete el código (opcional)
+    if (code.length === 6) {
+      btnVerify.classList.add("ready");
+    } else {
+      btnVerify.classList.remove("ready");
+    }
+  }
+
+  // Auto-focus en el primer input
+  pinInputs[0].focus();
+
+  // Countdown timer simulado
+  let seconds = 30;
+  const countdownElement = document.getElementById("countdown");
+
+  function updateCountdown() {
+    countdownElement.textContent = seconds;
+    if (seconds > 0) {
+      seconds--;
+      setTimeout(updateCountdown, 1000);
+    } else {
+      seconds = 30;
+      updateCountdown();
+    }
+  }
+  updateCountdown();
+
+  function showBackupCode() {
+    const modal = document.getElementById("backup-modal");
+    const input = document.getElementById("backup-input");
+    const message = document.getElementById("backup-message");
+    const submitBtn = document.getElementById("backup-submit");
+    const cancelBtn = document.getElementById("backup-cancel");
+
+    // Mostrar modal
+    modal.style.display = "grid";
+    input.value = "";
+    message.textContent = "";
+    input.focus();
+
+    // Cancelar
+    cancelBtn.onclick = () => {
+      modal.style.display = "none";
+    };
+
+    // Verificar código
+    submitBtn.onclick = () => {
+      const backupCode = input.value.trim();
+      if (!backupCode) {
+        message.textContent = "Ingresa un código de respaldo válido.";
+        message.style.color = "red";
+        return;
+      }
+
+      fetch("/verify-backup/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": verifyForm.dataset.csrf,
+        },
+        body: `backup_code=${backupCode}`,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.valid) {
+            window.location.href = "/home";
+          } else {
+            message.textContent = "❌ Código inválido o ya usado.";
+            message.style.color = "red";
+          }
+        })
+        .catch(() => {
+          message.textContent = "Error al verificar el código.";
+          message.style.color = "red";
+        });
+    };
+  }
+
+  function contactSupport() {
+    document.getElementById("help-modal").style.display = "grid";
+  }
+  function closeHelpModal() {
+    document.getElementById("help-modal").style.display = "none";
+  }
+
+  // Prevenir submit hasta que el código esté completo
+  verifyForm.addEventListener("submit", (e) => {
+    if (codeInput.value.length !== 6) {
+      e.preventDefault();
+      pinInputs[0].focus();
+    }
+  });
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    background-image: url("{% static 'img/login/RectanglePurple.svg' %}");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-attachment: fixed;
+  }
+
+  .verify-container {
+    width: 100%;
+    max-width: 480px;
+  }
+
+  .verify-card {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .verify-header {
+    background: linear-gradient(135deg, #5d5fef 0%, #4a4cd9 100%);
+    padding: 3rem 2rem;
+    text-align: center;
+    color: white;
+  }
+
+  .lock-icon {
+    margin-bottom: 1.5rem;
+    animation: lockBounce 2s ease-in-out infinite;
+  }
+
+  @keyframes lockBounce {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  .title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    opacity: 0.95;
+    font-weight: 400;
+  }
+
+  .verify-content {
+    padding: 2.5rem 2rem;
+  }
+
+  .pin-section {
+    margin-bottom: 2rem;
+  }
+
+  .pin-label {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e2d70;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
+  .pin-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .pin-digit {
+    width: 56px;
+    height: 64px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e2d70;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+  }
+
+  .pin-digit:focus {
+    outline: none;
+    border-color: #5d5fef;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(93, 95, 239, 0.1);
+    transform: scale(1.05);
+  }
+
+  .pin-digit:not(:placeholder-shown) {
+    border-color: #5d5fef;
+    background: white;
+  }
+
+  .pin-separator {
+    width: 8px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pin-separator::before {
+    content: "";
+    width: 4px;
+    height: 4px;
+    background: #cbd5e1;
+    border-radius: 50%;
+  }
+
+  .timer-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  .message-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .message-box.success {
+    background: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+  }
+
+  .message-box.error {
+    background: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+  }
+
+  .message-box svg {
+    flex-shrink: 0;
+  }
+
+  .message-box.success svg {
+    stroke: #16a34a;
+  }
+
+  .message-box.error svg {
+    stroke: #dc2626;
+  }
+
+  .message-box p {
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .btn-verify {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 1.1rem;
+    background: #e2e8f0;
+    color: #94a3b8;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: not-allowed;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-verify:not(:disabled) {
+    background: linear-gradient(135deg, #5d5fef 0%, #4a4cd9 100%);
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(93, 95, 239, 0.3);
+  }
+
+  .btn-verify:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(93, 95, 239, 0.4);
+  }
+
+  .btn-verify:not(:disabled):active {
+    transform: translateY(0);
+  }
+
+  .btn-verify.ready {
+    animation: readyPulse 0.5s ease-out;
+  }
+
+  @keyframes readyPulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .additional-options {
+    margin-top: 2rem;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 1.5rem 0;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  .divider span {
+    padding: 0 1rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .help-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .help-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+  }
+
+  .help-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #1e293b;
+  }
+
+  .security-info {
+    display: flex;
+    gap: 0.75rem;
+    background: #f0f9ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    color: #1e40af;
+  }
+
+  .security-info svg {
+    flex-shrink: 0;
+    stroke: #3b82f6;
+  }
+
+  .security-info p {
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  @media (max-width: 640px) {
+    body {
+      padding: 1rem;
+    }
+
+    .verify-header {
+      padding: 2.5rem 1.5rem;
+    }
+
+    .title {
+      font-size: 1.5rem;
+    }
+
+    .verify-content {
+      padding: 2rem 1.5rem;
+    }
+
+    .pin-digit {
+      width: 48px;
+      height: 56px;
+      font-size: 1.5rem;
+    }
+
+    .pin-inputs {
+      gap: 0.5rem;
+    }
+
+    .pin-separator {
+      width: 6px;
+      height: 56px;
+    }
+  }
+</style>
+
+<style>
+  .help-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none; /* oculto por defecto */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .help-modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: grid;
+    gap: 1rem;
+  }
+  .help-modal-content h3 {
+    margin-bottom: 0.5rem;
+    color: #1e2d70;
+  }
+  .help-modal-content p {
+    font-size: 0.9rem;
+    color: #475569;
+  }
+</style>
+
+<style>
+  /* Fondo del modal */
+.modal-backup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: none; /* oculto por defecto */
+  place-items: center;
+  z-index: 10000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Contenedor del modal */
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 16px;
+  width: 340px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: grid;
+  gap: 1rem;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Input de código */
+#backup-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  outline: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+#backup-input:focus {
+  border-color: #5d5fef;
+  box-shadow: 0 0 0 4px rgba(93, 95, 239, 0.1);
+}
+
+/* Botones del modal */
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+#backup-submit, #backup-cancel {
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Botón principal */
+#backup-submit {
+  background: linear-gradient(135deg, #5d5fef 0%, #4a4cd9 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(93, 95, 239, 0.3);
+}
+
+#backup-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(93, 95, 239, 0.4);
+}
+
+#backup-submit:active {
+  transform: translateY(0);
+}
+
+/* Botón secundario */
+#backup-cancel {
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+#backup-cancel:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+/* Mensaje de error o éxito */
+#backup-message {
+  font-weight: 500;
+  font-size: 0.9rem;
+  min-height: 1.2rem; /* para que no salte el layout */
+}
+
+</style>
