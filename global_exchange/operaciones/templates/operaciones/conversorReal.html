@@ -445,7 +445,10 @@
 
             return true;
           }
-        // Declaración global
+          
+
+        
+          // Declaración global
         window.fechaNavegador = null;
         var advertenciaMostrada = false; // 🔑 Flag para controlar el mensaje
         $(document).ready(function () {
@@ -625,173 +628,264 @@ $("#btn-verificar-pin").click(function () {
 
 
   // Función separada para procesar la transacción
-  function procesarTransaccion() {
-    console.log("Procesando transacción...");
+function procesarTransaccion() {
+  console.log("Procesando transacción...");
 
-    const campos = getCampos();
-    const origenAbrev = campos.$origen.val();
-    const destinoAbrev = campos.$destino.val();
+  const campos = getCampos();
+  const origenAbrev = campos.$origen.val();
+  const destinoAbrev = campos.$destino.val();
+  const montoTransaccion = parseFloat(campos.$valor.val());
 
-    const moneda_origen_id = obtenerIdMoneda(origenAbrev);
-    const moneda_destino_id = obtenerIdMoneda(destinoAbrev);
-
-    console.log("ID origen:", moneda_origen_id, "ID destino:", moneda_destino_id);
-
-    // Validar que se encontraron los IDs
-    if (!moneda_origen_id || !moneda_destino_id) {
-      mostrarMensaje("⚠️ Error", "No se pudieron encontrar los IDs de las monedas");
-      return;
+  // Determinar qué moneda y monto enviar según el tipo de operación
+  let monedaParaLimite, montoParaLimite;
+  
+  if (campos.op === "venta") {
+    // COMPRA: cliente entrega PYG
+    monedaParaLimite = "PYG";
+    montoParaLimite = montoTransaccion;
+  } else {
+    // VENTA: cliente entrega USD/ARS/etc
+    monedaParaLimite = origenAbrev;
+    montoParaLimite = montoTransaccion;
+  }
+  
+  console.log("Verificando límites:", montoParaLimite, monedaParaLimite, campos.op);
+  
+  verificarLimitesDisponibles(montoParaLimite, monedaParaLimite, campos.op, function(limiteOk) {
+    if (!limiteOk) {
+      // Si excede límites, detener el proceso completamente
+      $("#modal-pin").fadeOut();
+      $("#modal-exito").fadeOut(); // 🔴 ASEGURAR que el modal de éxito NO se muestre
+      return; // 🚨 Cortar ejecución aquí
     }
+    
+    // Si los límites están OK, continuar con el proceso normal
+    continuarProcesandoTransaccion();
+  });
+}
 
-    const email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
-    if (email_cliente_operativo != "") {
-      // Tomar el monto desde el input
-      
-      // CORRECCIÓN: Obtener la tasa calculada correctamente
-        const tasaCalculada = campos.$resultado.data("tasa") || 
-                             (campos.op === "venta" ? 
-                              parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) : 
-                              parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
-      // PASO 1: Guardar en BD como PENDIENTE
-      const payloadLocal = {
-        usuario_id: "{{ request.user.id }}",
-        monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
-        tipo: campos.op === "venta" ? "compra" : "venta",
-        estado: "pendiente",
-        moneda_origen_id: moneda_origen_id,
-        moneda_destino_id: moneda_destino_id,
-        tasa_usada: tasaCalculada,
-        tasa_ref_id: TASA_REF_ID,
-      };
+// Actualizar la función verificarLimitesDisponibles para aceptar el tipo de operación
+function verificarLimitesDisponibles(montoTransaccion, monedaAbrev, tipoOperacion, callback) {
+  $.ajax({
+    url: "{% url 'verificar_limites' %}",
+    type: "POST",
+    data: {
+      csrfmiddlewaretoken: "{{ csrf_token }}",
+      monto: montoTransaccion,
+      moneda: monedaAbrev,
+      tipo_operacion: tipoOperacion  // Enviar el tipo de operación
+    },
+    success: function(resp) {
+      if (resp.success) {
+        // Verificar si excede límite diario
+        if (resp.excede_diario) {
+          $("#modal-exito").fadeOut(); // 🔴 Ocultar modal de éxito
+          mostrarMensaje(
+            "Límite Diario Excedido",
+            `Esta transacción excede tu límite diario disponible.\n\n` +
+            `Monto solicitado: ${resp.moneda} ${resp.monto_solicitado}\n` +
+            `Disponible hoy: ${resp.moneda} ${resp.disponible_diario}\n` +
+            `Límite diario: ${resp.moneda} ${resp.limite_diario}\n` +
+            `Ya gastado: ${resp.moneda} ${resp.gastado_diario}\n\n` +
+            `El límite se renovará a las 00:00:00 hs.`,
+            "error"
+          );
+          callback(false);
+          return;
+        }
+        
+        // Verificar si excede límite mensual
+        if (resp.excede_mensual) {
+          $("#modal-exito").fadeOut(); // 🔴 Ocultar modal de éxito
+          mostrarMensaje(
+            "Límite Mensual Excedido",
+            `Esta transacción excede tu límite mensual disponible.\n\n` +
+            `Monto solicitado: ${resp.moneda} ${resp.monto_solicitado}\n` +
+            `Disponible este mes: ${resp.moneda} ${resp.disponible_mensual}\n` +
+            `Límite mensual: ${resp.moneda} ${resp.limite_mensual}\n` +
+            `Ya gastado: ${resp.moneda} ${resp.gastado_mensual}\n\n` +
+            `El límite se renovará el día 1 del próximo mes.`,
+            "error"
+          );
+          callback(false);
+          return;
+        }
+        
+        // Si pasa todas las verificaciones
+        callback(true);
+      } else {
+        $("#modal-exito").fadeOut(); // 🔴 Ocultar modal de éxito
+        mostrarMensaje("Error", resp.mensaje || "No se pudo verificar los límites", "error");
+        callback(false);
+      }
+    },
+    error: function() {
+      $("#modal-exito").fadeOut(); // 🔴 Ocultar modal de éxito
+      mostrarMensaje("Error", "Error al verificar límites de transacción", "error");
+      callback(false);
+    }
+  });
+}
 
-      console.log("Guardando en BD LOCAL:", payloadLocal);
+// Separar la lógica de procesamiento en una nueva función
+function continuarProcesandoTransaccion() {
+  const campos = getCampos();
+  const origenAbrev = campos.$origen.val();
+  const destinoAbrev = campos.$destino.val();
 
-      fetch("{% url 'guardar_transaccion' %}", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRFToken": getCookie("csrftoken"),
-        },
-        body: JSON.stringify(payloadLocal),
-      })
-      .then(resp => resp.json())
-      .then(localResp => {
-        console.log("Guardada en BD:", localResp);
+  const moneda_origen_id = obtenerIdMoneda(origenAbrev);
+  const moneda_destino_id = obtenerIdMoneda(destinoAbrev);
 
-        if (localResp.success) {
-          const transaccionId = localResp.id;
+  console.log("ID origen:", moneda_origen_id, "ID destino:", moneda_destino_id);
 
-          // PASO 2: Enviar al banco
-          const transaccionData = {
-            email: "{{ email_cliente_operativo }}",
-            monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
-            moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
-            tipo: campos.op === "venta" ? "compra" : "venta",
-            estado: "aceptada",
-            referencia: "TX-" + Date.now(),
-            motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`,
-            cedula: "{{cliente_operativo.cedula}}",
-            nro_cuenta: window.datosAcreditacion.numero_cuenta,
-            cliente_id:parseInt("{{ cliente_operativo.id }}", 10),
-            entidad_id:1,
-            usuario_ejecutor: parseInt("{{ user.id }}",10),
-            fecha: new Date().toISOString()
+  if (!moneda_origen_id || !moneda_destino_id) {
+    mostrarMensaje("⚠️ Error", "No se pudieron encontrar los IDs de las monedas");
+    return;
+  }
+
+  const email_cliente_operativo = "{{ email_cliente_operativo|default:'' }}";
+  if (email_cliente_operativo != "") {
+    const tasaCalculada = campos.$resultado.data("tasa") || 
+                         (campos.op === "venta" ? 
+                          parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) : 
+                          parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
+    
+    const payloadLocal = {
+      usuario_id: "{{ request.user.id }}",
+      monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
+      tipo: campos.op === "venta" ? "compra" : "venta",
+      estado: "pendiente",
+      moneda_origen_id: moneda_origen_id,
+      moneda_destino_id: moneda_destino_id,
+      tasa_usada: tasaCalculada,
+      tasa_ref_id: TASA_REF_ID,
+      cliente_id: parseInt("{{ cliente_operativo_id }}", 10),
+    };
+
+    console.log("Guardando en BD LOCAL:", payloadLocal);
+
+    fetch("{% url 'guardar_transaccion' %}", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": getCookie("csrftoken"),
+      },
+      body: JSON.stringify(payloadLocal),
+    })
+    .then(resp => resp.json())
+    .then(localResp => {
+      console.log("Guardada en BD:", localResp);
+
+      if (localResp.success) {
+        const transaccionId = localResp.id;
+
+        const transaccionData = {
+          email: "{{ email_cliente_operativo }}",
+          monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
+          moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
+          tipo: campos.op === "venta" ? "compra" : "venta",
+          estado: "aceptada",
+          referencia: "TX-" + Date.now(),
+          motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`,
+          cedula: "{{cliente_operativo.cedula}}",
+          nro_cuenta: window.datosAcreditacion.numero_cuenta,
+          cliente_id: parseInt("{{ cliente_operativo.id }}", 10),
+          entidad_id: 1,
+          usuario_ejecutor: parseInt("{{ user.id }}", 10),
+          fecha: new Date().toISOString()
+        };
+
+        console.log("Enviando al banco:", transaccionData);
+
+        fetch("http://127.0.0.1:8001/transaccion/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(transaccionData)
+        })
+        .then(resp => resp.json())
+        .then(data => {
+          console.log("Respuesta del banco:", data);
+
+          let estadoFinal = "pendiente";
+          if (data.estado === "aceptada") {
+            estadoFinal = "completada";
+          } else if (data.estado === "rechazada") {
+            estadoFinal = "cancelada";
+          }
+
+          const payloadActualizacion = {
+            transaccion_id: transaccionId,
+            nuevo_estado: estadoFinal
           };
 
-          console.log("Enviando al banco:", transaccionData);
-
-          fetch("http://127.0.0.1:8001/transaccion/", {
+          fetch("{% url 'actualizar_estado_transaccion' %}", {
             method: "POST",
+            credentials: "same-origin",
             headers: {
               "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"),
             },
-            body: JSON.stringify(transaccionData)
+            body: JSON.stringify(payloadActualizacion),
           })
           .then(resp => resp.json())
-          .then(data => {
-            console.log("Respuesta del banco:", data);
+          .then(updateResp => {
+            console.log("Estado actualizado:", updateResp);
 
-            // PASO 3: Decidir estado final
-            let estadoFinal = "pendiente";
-            if (data.estado === "aceptada") {
-              estadoFinal = "completada";
-            } else if (data.estado === "rechazada") {
-              estadoFinal = "cancelada";
-            }
-
-            // PASO 4: Actualizar estado en BD
-            const payloadActualizacion = {
-              transaccion_id: transaccionId,
-              nuevo_estado: estadoFinal
-            };
-
-            fetch("{% url 'actualizar_estado_transaccion' %}", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie("csrftoken"),
-              },
-              body: JSON.stringify(payloadActualizacion),
-            })
-            .then(resp => resp.json())
-            .then(updateResp => {
-              console.log("Estado actualizado:", updateResp);
-
-              if (updateResp.success) {
-                if (estadoFinal === "completada") {
-                  $("#modal-pin").fadeOut();
-                  $("#modal-exito").fadeIn().css("display", "flex");
-                } else {
-                  mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco");
-                }
+            if (updateResp.success) {
+              if (estadoFinal === "completada") {
+                $("#modal-pin").fadeOut();
+                $("#modal-exito").fadeIn().css("display", "flex");
               } else {
-                mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");
+                mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco");
               }
-            })
-            .catch(err => {
-              console.error("Error actualizando estado:", err);
-              mostrarMensaje("⚠️ Error", "Error al actualizar el estado de la transacción");
-            });
+            } else {
+              mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");
+            }
           })
           .catch(err => {
-            console.error("Error enviando transacción:", err);
+            console.error("Error actualizando estado:", err);
+            mostrarMensaje("⚠️ Error", "Error al actualizar el estado de la transacción");
+          });
+        })
+        .catch(err => {
+          console.error("Error enviando transacción:", err);
 
-            // Si falla el banco, actualizar a "cancelada"
-            const payloadError = {
-              transaccion_id: transaccionId,
-              nuevo_estado: "cancelada"
-            };
+          const payloadError = {
+            transaccion_id: transaccionId,
+            nuevo_estado: "cancelada"
+          };
 
-            fetch("{% url 'actualizar_estado_transaccion' %}", {
-              method: "POST",
-              credentials: "same-origin",
-              headers: {
-                "Content-Type": "application/json",
-                "X-CSRFToken": getCookie("csrftoken"),
-              },
-              body: JSON.stringify(payloadError),
-            });
-
-            mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+          fetch("{% url 'actualizar_estado_transaccion' %}", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify(payloadError),
           });
 
-        } else {
-          mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción inicial");
-        }
-      })
-      .catch(err => {
-        console.error("Error guardando en BD:", err);
-        mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción localmente");
-      });
+          mostrarMensaje("⚠️ Error", "Error al conectar con el banco");
+        });
 
-    } else {
-      console.log("No se encontró el email del cliente operativo.");
-      $("#modal-pin").fadeOut();
-      mostrarMensaje("⚠️ Error", "No se encontró el email del cliente operativo.");
-    }
+      } else {
+        mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción inicial");
+      }
+    })
+    .catch(err => {
+      console.error("Error guardando en BD:", err);
+      mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción localmente");
+    });
+
+  } else {
+    console.log("No se encontró el email del cliente operativo.");
+    $("#modal-pin").fadeOut();
+    mostrarMensaje("⚠️ Error", "No se encontró el email del cliente operativo.");
   }
+}
 
 
       $("#btn-cerrar-exito").click(function () {
@@ -1142,5 +1236,6 @@ $("#btn-verificar-pin").click(function () {
     }
   }
 </style>
+
 
 {% endblock %}
