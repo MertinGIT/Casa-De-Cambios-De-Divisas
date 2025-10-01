@@ -15,3 +15,7 @@ django-cors-headers==4.9.0
 djangorestframework-simplejwt
 openpyxl
 reportlab
+channels
+channels_redis
+daphne
+redis

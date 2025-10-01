@@ -1,0 +1,221 @@
+
+<body>
+    <script>
+        // === notificaciones.js ===
+        class SistemaNotificaciones {
+            constructor() {
+                this.ws = null;
+                this.intentosReconexion = 0;
+                this.maxIntentos = 5;
+                this.notificacionesActivas = [];
+                this.inicializar();
+            }
+
+            inicializar() {
+                this.conectarWebSocket();
+                this.configurarEventos();
+            }
+
+            conectarWebSocket() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://')
+                            + window.location.host
+                            + '/ws/notificaciones/';
+                console.log("wsUrl:", wsUrl)
+                try {
+                    this.ws = new WebSocket(wsUrl);
+                    this.ws.onopen = () => {
+                        console.log('✅ Conectado a notificaciones de tasas');
+                        this.intentosReconexion = 0;
+                        this.mostrarEstadoConexion(true);
+                    };
+                    this.ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        this.manejarMensaje(data);
+                    };
+                    this.ws.onerror = (error) => { console.error('❌ Error en WebSocket:', error); };
+                    this.ws.onclose = () => {
+                        console.log('🔌 Desconectado de notificaciones');
+                        this.mostrarEstadoConexion(false);
+                        this.intentarReconexion();
+                    };
+                } catch (error) {
+                    console.error('Error al crear WebSocket:', error);
+                    this.intentarReconexion();
+                }
+            }
+
+            intentarReconexion() {
+                if (this.intentosReconexion < this.maxIntentos) {
+                    this.intentosReconexion++;
+                    const delay = Math.min(1000 * Math.pow(2, this.intentosReconexion), 30000);
+                    console.log(`🔄 Reintentando conexión en ${delay/1000}s (intento ${this.intentosReconexion}/${this.maxIntentos})`);
+                    setTimeout(() => { this.conectarWebSocket(); }, delay);
+                } else {
+                    console.error('❌ Máximo de intentos de reconexión alcanzado');
+                    this.mostrarErrorConexion();
+                }
+            }
+            
+            manejarMensaje(data) {
+                switch(data.type) {
+                    case 'conexion': console.log('📡', data.mensaje); break;
+                    case 'notificar_cambio_tasa': this.notificarCambioTasa(data); break;
+                    default: console.log('Mensaje desconocido:', data);
+                }
+            }
+
+            notificarCambioTasa(data) {
+    const { moneda, precio_anterior, precio_nuevo, porcentaje_cambio } = data;
+    const subio = precio_nuevo > precio_anterior;
+    const notificacion = this.crearNotificacionDOM({
+        moneda,
+        compra_anterior: precio_anterior,
+        compra_nueva: precio_nuevo,
+        venta_anterior: precio_anterior,
+        venta_nueva: precio_nuevo,
+        porcentaje_cambio,
+        subioCompra: subio,
+        subioVenta: subio
+    });
+    this.mostrarNotificacion(notificacion);
+    this.reproducirSonido();
+    this.notificacionNavegador(moneda, porcentaje_cambio, subio);
+    this.actualizarIndicadorCambio(moneda);
+}
+
+            crearNotificacionDOM(datos) {
+                const div = document.createElement('div');
+                div.className = `notificacion-tasa ${datos.subioCompra ? 'subida' : 'bajada'}`;
+                const iconoFlecha = datos.subioCompra ? '📈' : '📉';
+                const colorFlecha = datos.subioCompra ? '#16a34a' : '#dc2626';
+                div.innerHTML = `
+                    <div class="notificacion-header">
+                        <span class="notificacion-icono">${iconoFlecha}</span>
+                        <strong>${datos.moneda}</strong>
+                        <button class="notificacion-cerrar">&times;</button>
+                    </div>
+                    <div class="notificacion-body">
+                        <p class="notificacion-mensaje">
+                            ¡Cambio de tasa detectado! (${datos.porcentaje_cambio.toFixed(2)}%)
+                        </p>
+                        <div class="notificacion-detalles">
+                            <div class="detalle-item">
+                                <span class="detalle-label">Compra:</span>
+                                <span class="detalle-valor">
+                                    ${datos.compra_anterior} <span style="color: ${colorFlecha}">→</span> ${datos.compra_nueva}
+                                </span>
+                            </div>
+                            <div class="detalle-item">
+                                <span class="detalle-label">Venta:</span>
+                                <span class="detalle-valor">
+                                    ${datos.venta_anterior} <span style="color: ${colorFlecha}">→</span> ${datos.venta_nueva}
+                                </span>
+                            </div>
+                        </div>
+                    </div>`;
+                div.querySelector('.notificacion-cerrar').addEventListener('click', () => { this.cerrarNotificacion(div); });
+                setTimeout(() => { this.cerrarNotificacion(div); }, 10000);
+                return div;
+            }
+
+            mostrarNotificacion(elemento) {
+                let contenedor = document.getElementById('contenedor-notificaciones');
+                if (!contenedor) {
+                    contenedor = document.createElement('div');
+                    contenedor.id = 'contenedor-notificaciones';
+                    document.body.appendChild(contenedor);
+                }
+                contenedor.appendChild(elemento);
+                this.notificacionesActivas.push(elemento);
+                setTimeout(() => { elemento.classList.add('mostrar'); }, 10);
+            }
+
+            cerrarNotificacion(elemento) {
+                elemento.classList.remove('mostrar');
+                elemento.classList.add('ocultar');
+                setTimeout(() => {
+                    if (elemento.parentNode) elemento.parentNode.removeChild(elemento);
+                    this.notificacionesActivas = this.notificacionesActivas.filter(n => n !== elemento);
+                }, 300);
+            }
+
+            notificacionNavegador(moneda, porcentaje, subio) {
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    const icono = subio ? '📈' : '📉';
+                    new Notification(`${icono} Cambio en ${moneda}`, {
+                        body: `La tasa cambió un ${porcentaje.toFixed(2)}%`,
+                        icon: '/static/img/logoMoneda/' + moneda + '.png',
+                        tag: 'cambio-tasa-' + moneda
+                    });
+                }
+            }
+
+            reproducirSonido() {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode); gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 800; oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.1);
+            }
+
+            actualizarIndicadorCambio(moneda) {
+                const elementos = document.querySelectorAll(`.cotizaciones-divisa`);
+                elementos.forEach(el => {
+                    const simbolo = el.querySelector('.simboloTitle');
+                    if (simbolo && simbolo.textContent.trim() === moneda) {
+                        el.classList.add('cambio-reciente');
+                        setTimeout(() => { el.classList.remove('cambio-reciente'); }, 3000);
+                    }
+                });
+            }
+
+            mostrarEstadoConexion(conectado) {
+                let indicador = document.getElementById('indicador-conexion');
+                if (!indicador) {
+                    indicador = document.createElement('div');
+                    indicador.id = 'indicador-conexion';
+                    document.body.appendChild(indicador);
+                }
+                indicador.className = `indicador-conexion ${conectado ? 'conectado' : 'desconectado'}`;
+                indicador.innerHTML = `<span class="indicador-punto"></span>
+                    <span class="indicador-texto">${conectado ? 'En línea' : 'Desconectado'}</span>`;
+            }
+
+            mostrarErrorConexion() {
+                const mensaje = document.createElement('div');
+                mensaje.className = 'error-conexion';
+                mensaje.innerHTML = `<p>⚠️ No se pudo conectar al servicio de notificaciones</p>
+                    <button onclick="location.reload()">Recargar página</button>`;
+                document.body.appendChild(mensaje);
+            }
+
+            configurarEventos() {
+                if ('Notification' in window && Notification.permission === 'default') {
+                    Notification.requestPermission();
+                }
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden && (!this.ws || this.ws.readyState !== WebSocket.OPEN)) {
+                        console.log('Página visible, reconectando...');
+                        this.conectarWebSocket();
+                    }
+                });
+            }
+
+            desconectar() { if (this.ws) this.ws.close(); }
+        }
+
+        let sistemaNotificaciones;
+        document.addEventListener('DOMContentLoaded', () => { sistemaNotificaciones = new SistemaNotificaciones(); });
+        window.addEventListener('beforeunload', () => { if (sistemaNotificaciones) sistemaNotificaciones.desconectar(); });
+    document.addEventListener('DOMContentLoaded', () => {
+    // Forzar una notificación de prueba¡Cambio de tasa detectado!
+    
+});
+    </script>
+</body>
+</html>

@@ -89,7 +89,6 @@ def simulador_operaciones(request):
         # Insertar al inicio para mantener el más reciente al final (coherente con uso registros[-1])
         data_por_moneda[abrev].insert(0, {
             "id": tasa.id,
-            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
             "comision_compra": float(tasa.comision_compra),
             "comision_venta": float(tasa.comision_venta),
