@@ -58,7 +58,7 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
             group_name,
             {
                 'type': 'notificar_cambio_tasa',
-                'moneda': instance.moneda_origen.abreviacion,
+                'moneda': instance.moneda_destino.abreviacion,
                 'precio_anterior': float(tasa_anterior.precio_base),
                 'precio_nuevo': float(instance.precio_base),
                 'porcentaje_cambio': float(cambio_precio),

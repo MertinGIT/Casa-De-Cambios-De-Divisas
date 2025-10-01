@@ -1,5 +1,6 @@
 {% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
 {% block dashboard_content %}
+{% include 'notificaciones/modalNotificacion.html' %}
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 <div class="dashboard-grid">
@@ -182,6 +183,7 @@
 
   <!-- COLUMNA DERECHA -->
   <div class="col-right">
+    {% include 'notificaciones/modalNotificacion.html' %}
     <section class="transacciones-container">
       <h2 class="title">🧾 Transacciones Recientes</h2>
       <div class="filtro-transacciones">

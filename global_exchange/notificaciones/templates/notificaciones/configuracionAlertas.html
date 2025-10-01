@@ -1,5 +1,6 @@
 {% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
 {% block dashboard_content %}
+{% include 'notificaciones/modalNotificacion.html' %}
 
 <div class="panel-container">
     <div class="panel-header">
@@ -33,17 +34,6 @@
             </div>
             <label class="switch">
                 <input type="checkbox" id="navegador" checked>
-                <span class="slider"></span>
-            </label>
-        </div>
-
-        <div class="switch-container">
-            <div class="switch-label">
-                <span>📧</span>
-                <span>Notificaciones por email</span>
-            </div>
-            <label class="switch">
-                <input type="checkbox" id="email">
                 <span class="slider"></span>
             </label>
         </div>
@@ -97,9 +87,6 @@
         💾 Guardar Configuración
     </button>
 </div>
-
-<!-- Contenedor para notificaciones -->
-<div id="contenedor-notificaciones"></div>
 
 <script>
     // Toggle de monedas
@@ -191,8 +178,12 @@
                 console.log('📨 Mensaje recibido:', data);
                 
                 if (data.type === 'notificar_cambio_tasa') {
+                    console.log("entra aca y su data es: ",data)
+                    
                     mostrarNotificacion(data);
+                    
                 }
+               
             };
             
             ws.onerror = (error) => {
@@ -250,87 +241,7 @@
         }
     }
 
-    function mostrarNotificacion(data) {
-        const { moneda, precio_anterior, precio_nuevo, porcentaje_cambio } = data;
-        const subio = precio_nuevo > precio_anterior;
-        
-        const notif = document.createElement('div');
-        notif.className = 'notificacion-flotante';
-        notif.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            border: 2px solid ${subio ? '#16a34a' : '#dc2626'};
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-            z-index: 9999;
-            min-width: 320px;
-            animation: slideIn 0.3s ease-out;
-        `;
-        
-        notif.innerHTML = `
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 2rem;">${subio ? '📈' : '📉'}</span>
-                    <strong style="font-size: 1.3rem; color: #1e2d70;">${moneda}</strong>
-                </div>
-                <button onclick="this.parentElement.parentElement.remove()" 
-                        style="border: none; background: none; font-size: 1.8rem; cursor: pointer; color: #666; line-height: 1;">
-                    ×
-                </button>
-            </div>
-            <p style="margin: 10px 0; color: #666; font-weight: 500;">
-                ¡Cambio de tasa detectado! (${porcentaje_cambio.toFixed(2)}%)
-            </p>
-            <div style="background: #f8f9fa; padding: 12px; border-radius: 8px;">
-                <div style="margin-bottom: 8px;">
-                    <strong style="color: #555;">Anterior:</strong> 
-                    <span style="color: #333;">${precio_anterior.toFixed(2)}</span>
-                </div>
-                <div>
-                    <strong style="color: #555;">Nuevo:</strong> 
-                    <span style="color: ${subio ? '#16a34a' : '#dc2626'}; font-weight: 600;">
-                        ${precio_nuevo.toFixed(2)}
-                    </span>
-                </div>
-            </div>
-        `;
-        
-        document.getElementById('contenedor-notificaciones').appendChild(notif);
-        
-        // Auto cerrar después de 10 segundos
-        setTimeout(() => {
-            notif.style.animation = 'slideOut 0.3s ease-in';
-            setTimeout(() => notif.remove(), 300);
-        }, 10000);
-        
-        // Reproducir sonido
-        reproducirSonido();
-    }
 
-    function reproducirSonido() {
-        try {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.value = 800;
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.1);
-        } catch (e) {
-            console.log('No se pudo reproducir el sonido:', e);
-        }
-    }
 
     // Conectar al cargar la página
     document.addEventListener('DOMContentLoaded', () => {
@@ -599,7 +510,7 @@
         position: fixed;
         top: 0;
         right: 0;
-        z-index: 9999;
+        z-index: 999999;
         pointer-events: none;
     }
 
@@ -638,12 +549,6 @@
             flex-direction: column;
             align-items: flex-start;
             gap: 10px;
-        }
-
-        .notificacion-flotante {
-            right: 10px !important;
-            left: 10px !important;
-            min-width: auto !important;
         }
     }
 </style>

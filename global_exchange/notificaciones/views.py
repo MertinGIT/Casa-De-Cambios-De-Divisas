@@ -17,6 +17,7 @@ def panel_alertas(request):
         "monedas_activas": monedas_activas
     })
 
+
 def guardar_configuracion(request):
     if request.method == "POST":
         try:
@@ -42,6 +43,7 @@ def guardar_configuracion(request):
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
     return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
+
 
 def test_notificaciones(request):
     return render(request, "notificaciones/test_notificaciones.html")
