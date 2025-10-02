@@ -490,8 +490,7 @@ body {
         <thead>
           <tr>
             <th style="min-width: 160px; text-align: center;">Moneda Destino</th>
-            <th style="min-width: 120px; text-align: center;">Compra</th>
-            <th style="min-width: 120px; text-align: center;">Venta</th>
+            <th style="min-width: 120px; text-align: center;">Precio Base</th>
             <th style="min-width: 120px; text-align: center;">Vigencia Desde:</th>
             <th style="min-width: 160px; text-align: center;">Estado</th>
             <th style="min-width: 160px; text-align: center;">Acciones</th>
@@ -501,8 +500,7 @@ body {
           {% for t in tasas %}
             <tr class="filas-responsive">
               <td data-label="Moneda Destino">{{ t.moneda_destino }}</td>
-              <td data-label="Compra" style="text-align: middle; min-width: 160px;">{{ t.monto_compra|floatformat:2 }}</td>
-              <td data-label="Venta" style="text-align: middle; min-width: 160px;">{{ t.monto_venta|floatformat:2 }}</td>
+              <td data-label="Precio Base" style="text-align: middle; min-width: 160px;">{{ t.precio_base|floatformat:2 }}</td>
               <td data-label="Vigencia Desde:" style="text-align: middle; min-width: 160px;">{{ t.vigencia|date:"d/m/Y H:i" }}</td>
               <td data-label="Estado" style="text-align: middle; min-width: 160px;">{% if t.estado %}
                   <span class="status-badge status-activo">Activo</span>

@@ -44,6 +44,7 @@ urlpatterns = [
     path('set_cliente_operativo/', usuarios_views.set_cliente_operativo, name='set_cliente_operativo'),
     path('operaciones/', include(operaciones_urls)),
     path('historial/', include('historial_transacciones.urls'), name='historial_usuario'),
+    path('notificaciones/', include('notificaciones.urls'), name='notificaciones'),
 
     
     

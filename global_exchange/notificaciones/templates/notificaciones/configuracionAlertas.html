@@ -1,0 +1,556 @@
+{% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
+{% block dashboard_content %}
+{% include 'notificaciones/modalNotificacion.html' %}
+
+<div class="panel-container">
+    <div class="panel-header">
+        <span style="font-size: 2rem;">🔔</span>
+        <h1>Configuración de Alertas</h1>
+    </div>
+
+    <div class="mensaje-exito" id="mensajeExito">
+        <span>✅</span>
+        <span>Configuración guardada correctamente</span>
+    </div>
+
+    <div class="estado-notificaciones">
+        <div class="estado-info">
+            <div class="estado-punto" id="estadoPunto"></div>
+            <span style="font-weight: 600; color: #1e2d70;" id="estadoTexto">
+                Conectando al sistema de notificaciones...
+            </span>
+        </div>
+        <span class="badge" id="estadoBadge">Conectando</span>
+    </div>
+
+    <!-- Configuración General -->
+    <div class="seccion">
+        <h2 class="seccion-titulo">⚙️ Configuración General</h2>
+
+        <div class="switch-container">
+            <div class="switch-label">
+                <span>🖥️</span>
+                <span>Notificaciones del navegador</span>
+            </div>
+            <label class="switch">
+                <input type="checkbox" id="navegador" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Alertas por Moneda -->
+    <div class="seccion">
+        <h2 class="seccion-titulo">💱 Alertas por Moneda</h2>
+        <p style="color: #666; margin-bottom: 20px; font-size: 0.9rem;">
+            Configura las monedas que quieres recibir notificaciones
+        </p>
+
+        <div id="contenedorMonedas">
+        {% for moneda in monedas %}
+            <div class="moneda-card" data-moneda="{{ moneda.abreviacion }}">
+                <div class="moneda-header">
+                    <div class="moneda-info">
+                        <div class="moneda-logo">
+                            <img src="{% static 'img/logoMoneda/'|add:moneda.abreviacion|add:'.png' %}"
+                                onerror="
+                                    this.onerror=null;
+                                    this.src='{% static 'img/logoMoneda/'|add:moneda.abreviacion|add:'.svg' %}';
+                                    this.onerror=function(){
+                                        this.onerror=null;
+                                        this.src='{% static 'img/logoMoneda/default-logo.webp' %}';
+                                    }
+                                "
+                                alt="Logo {{ moneda.abreviacion }}"
+                                style="width:40px; height:40px; border-radius:50%; object-fit:cover;" />
+                        </div>
+                        <div>
+                            <div class="moneda-nombre">
+                                {{ moneda.abreviacion }} - {{ moneda.nombre }}
+                            </div>
+                            <small style="color: #666;">{{ moneda.nombre }}</small>
+                        </div>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" class="moneda-toggle" {% if moneda.abreviacion in monedas_activas %} checked {% endif %}>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        {% empty %}
+            <p style="color: #999;">⚠️ No hay monedas activas configuradas en el sistema.</p>
+        {% endfor %}
+        </div>
+    </div>
+
+    <button class="btn-guardar" onclick="guardarConfiguracion()">
+        💾 Guardar Configuración
+    </button>
+</div>
+
+<script>
+    // Toggle de monedas
+    document.querySelectorAll('.moneda-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const card = this.closest('.moneda-card');
+            if (this.checked) {
+                card.classList.add('activa');
+            } else {
+                card.classList.remove('activa');
+            }
+        });
+    });
+
+    // Guardar configuración
+    function guardarConfiguracion() {
+        const config = {
+            monedas: []
+        };
+
+        document.querySelectorAll('.moneda-card').forEach(card => {
+            const moneda = card.dataset.moneda;
+            const activa = card.querySelector('.moneda-toggle').checked;
+            config.monedas.push({ moneda, activa });
+        });
+
+        fetch("{% url 'guardar_configuracion' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: JSON.stringify(config)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === "ok") {
+                const mensaje = document.getElementById('mensajeExito');
+                mensaje.classList.add('mostrar');
+                setTimeout(() => {
+                    mensaje.classList.remove('mostrar');
+                }, 3000);
+            } else {
+                alert("Error: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Error:", err);
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // ====== SISTEMA DE NOTIFICACIONES WEBSOCKET ======
+    let ws = null;
+    let intentosReconexion = 0;
+    const maxIntentos = 5;
+
+    function conectarWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/notificaciones/`;
+        
+        console.log('Conectando a:', wsUrl);
+        
+        try {
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                console.log('✅ Conectado al sistema de notificaciones');
+                intentosReconexion = 0;
+                actualizarEstadoConexion(true);
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                console.log('📨 Mensaje recibido:', data);
+                
+                if (data.type === 'notificar_cambio_tasa') {
+                    console.log("entra aca y su data es: ",data)
+                    
+                    mostrarNotificacion(data);
+                    
+                }
+               
+            };
+            
+            ws.onerror = (error) => {
+                console.error('❌ Error en WebSocket:', error);
+            };
+            
+            ws.onclose = () => {
+                console.log('🔌 Desconectado');
+                actualizarEstadoConexion(false);
+                intentarReconexion();
+            };
+        } catch (error) {
+            console.error('Error al crear WebSocket:', error);
+            intentarReconexion();
+        }
+    }
+
+    function intentarReconexion() {
+        if (intentosReconexion < maxIntentos) {
+            intentosReconexion++;
+            const delay = Math.min(1000 * Math.pow(2, intentosReconexion), 30000);
+            console.log(`🔄 Reintentando en ${delay/1000}s...`);
+            setTimeout(conectarWebSocket, delay);
+        } else {
+            console.error('❌ Máximo de intentos alcanzado');
+            actualizarEstadoConexion(false, true);
+        }
+    }
+
+    function actualizarEstadoConexion(conectado, error = false) {
+        const punto = document.getElementById('estadoPunto');
+        const texto = document.getElementById('estadoTexto');
+        const badge = document.getElementById('estadoBadge');
+        
+        if (conectado) {
+            punto.style.background = '#16a34a';
+            punto.style.animation = 'pulso 2s infinite';
+            texto.textContent = 'Sistema de notificaciones activo';
+            badge.textContent = 'En línea';
+            badge.className = 'badge activo';
+        } else if (error) {
+            punto.style.background = '#dc2626';
+            punto.style.animation = 'none';
+            texto.textContent = 'Error de conexión';
+            badge.textContent = 'Error';
+            badge.className = 'badge inactivo';
+        } else {
+            punto.style.background = '#f59e0b';
+            punto.style.animation = 'pulso 2s infinite';
+            texto.textContent = 'Reconectando...';
+            badge.textContent = 'Reconectando';
+            badge.className = 'badge';
+            badge.style.background = '#fef3c7';
+            badge.style.color = '#92400e';
+        }
+    }
+
+
+
+    // Conectar al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        conectarWebSocket();
+        
+        // Solicitar permisos de notificación del navegador
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    });
+
+    // Reconectar si la página vuelve a estar visible
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
+            console.log('Página visible, reconectando...');
+            conectarWebSocket();
+        }
+    });
+
+    // Desconectar al salir
+    window.addEventListener('beforeunload', () => {
+        if (ws) ws.close();
+    });
+</script>
+
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .panel-container {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .panel-header h1 {
+        color: #1e2d70;
+        font-size: 1.8rem;
+    }
+
+    .seccion {
+        margin-bottom: 30px;
+    }
+
+    .seccion-titulo {
+        font-size: 1.2rem;
+        color: #333;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .switch-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 12px;
+        margin-bottom: 12px;
+    }
+
+    .switch-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+        color: #555;
+    }
+
+    .switch {
+        position: relative;
+        width: 50px;
+        height: 26px;
+    }
+
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 26px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #5d5fef;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(24px);
+    }
+
+    .moneda-card {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: all 0.3s;
+    }
+
+    .moneda-card:hover {
+        border-color: #5d5fef;
+        box-shadow: 0 4px 12px rgba(93, 95, 239, 0.1);
+    }
+
+    .moneda-card.activa {
+        border-color: #5d5fef;
+        background: #f8f9ff;
+    }
+
+    .moneda-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .moneda-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .moneda-logo {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .moneda-nombre {
+        font-weight: 600;
+        color: #1e2d70;
+        font-size: 1.1rem;
+    }
+
+    .btn-guardar {
+        background: linear-gradient(135deg, #5d5fef, #4a4cd9);
+        color: white;
+        border: none;
+        padding: 14px 32px;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+    .btn-guardar:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(93, 95, 239, 0.3);
+    }
+
+    .btn-guardar:active {
+        transform: translateY(0);
+    }
+
+    .mensaje-exito {
+        background: #d1fae5;
+        color: #065f46;
+        padding: 12px 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: none;
+        align-items: center;
+        gap: 10px;
+        font-weight: 500;
+    }
+
+    .mensaje-exito.mostrar {
+        display: flex;
+    }
+
+    .estado-notificaciones {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border-radius: 12px;
+        margin-bottom: 20px;
+    }
+
+    .estado-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .estado-punto {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #f59e0b;
+    }
+
+    @keyframes pulso {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .badge.activo {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge.inactivo {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    #contenedor-notificaciones {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 999999;
+        pointer-events: none;
+    }
+
+    #contenedor-notificaciones > * {
+        pointer-events: auto;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(400px);
+            opacity: 0;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .panel-container {
+            padding: 20px;
+        }
+
+        .moneda-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+    }
+</style>
+
+{% endblock %}
