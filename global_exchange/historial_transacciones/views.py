@@ -80,6 +80,7 @@ def historial_usuario(request):
         'monedas_disponibles': monedas_disponibles,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
+        "segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
         "cliente_operativo": cliente_operativo,'descuento': descuento
     }
