@@ -32,7 +32,6 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.utils import timezone
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
 from limite_moneda.models import LimiteTransaccion
 from django.db.models import Sum
 import random

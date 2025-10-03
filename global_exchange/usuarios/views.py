@@ -500,7 +500,7 @@ def signin(request):
                     return redirect('mfa_verify')
                 else:
                     # Primera vez, configurar MFA
-                    messages.info(request, "Configura la autenticación de dos factores.")
+                    #messages.info(request, "Configura la autenticación de dos factores.")
                     return redirect('mfa_setup')
       
 def pagina_aterrizaje(request):
