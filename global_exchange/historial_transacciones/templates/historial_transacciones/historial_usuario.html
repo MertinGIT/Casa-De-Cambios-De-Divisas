@@ -185,8 +185,8 @@ body{font-family:'Inter',sans-serif!important;}
         {{ t.tasa_usada|floatformat:0 }}Gs
       </td>
       <td data-label="Estado">
-        {% if t.estado == 'completado' %}
-          <span class="status-badge status-confirmado">Completado</span>
+        {% if t.estado == 'completada' %}
+          <span class="status-badge status-confirmado">Completada</span>
         {% elif t.estado == 'pendiente' %}
           <span class="status-badge status-pendiente">Pendiente</span>
         {% elif 'cancelada' in t.estado %}

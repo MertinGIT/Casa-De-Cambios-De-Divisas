@@ -1073,7 +1073,7 @@ def mfa_verify(request):
                 request.session['mfa_verified'] = True
                 request.session['mfa_verified_user_id'] = user.id
                 
-                messages.success(request, "✅ Verificación exitosa.")
+                #messages.success(request, "✅ Verificación exitosa.")
                 
                 # Redirigir al dashboard o página principal
                 return redirect('home')

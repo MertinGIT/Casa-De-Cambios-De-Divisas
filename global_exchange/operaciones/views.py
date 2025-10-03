@@ -63,6 +63,7 @@ def simulador_operaciones(request):
             "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
             "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
             "monto": float(t.monto),
+            "estado":t.estado,
             "moneda": t.moneda_origen.abreviacion if t.tipo == 'Compra' else t.moneda_destino.abreviacion
         }
         for t in reversed(list(transacciones_qs))
