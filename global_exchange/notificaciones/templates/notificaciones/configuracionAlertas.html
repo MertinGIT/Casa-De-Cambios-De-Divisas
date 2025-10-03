@@ -1,6 +1,7 @@
 {% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
 {% block dashboard_content %}
 {% include 'notificaciones/modalNotificacion.html' %}
+{% include 'configuracion_usuario/base_configuracion_usuario.html' %}
 
 <div class="panel-container">
     <div class="panel-header">
@@ -30,10 +31,10 @@
         <div class="switch-container">
             <div class="switch-label">
                 <span>🖥️</span>
-                <span>Notificaciones del navegador</span>
+                <span id ="textoSwitch">Activar todas las notificaciones</span>
             </div>
             <label class="switch">
-                <input type="checkbox" id="navegador" checked>
+                <input type="checkbox" id="navegador">
                 <span class="slider"></span>
             </label>
         </div>
@@ -48,6 +49,7 @@
 
         <div id="contenedorMonedas">
         {% for moneda in monedas %}
+          {% if moneda.abreviacion != 'PYG' %}
             <div class="moneda-card" data-moneda="{{ moneda.abreviacion }}">
                 <div class="moneda-header">
                     <div class="moneda-info">
@@ -77,6 +79,7 @@
                     </label>
                 </div>
             </div>
+            {% endif %}
         {% empty %}
             <p style="color: #999;">⚠️ No hay monedas activas configuradas en el sistema.</p>
         {% endfor %}
@@ -89,7 +92,7 @@
 </div>
 
 <script>
-    // Toggle de monedas
+    // Toggle de monedas individuales
     document.querySelectorAll('.moneda-toggle').forEach(toggle => {
         toggle.addEventListener('change', function() {
             const card = this.closest('.moneda-card');
@@ -98,13 +101,16 @@
             } else {
                 card.classList.remove('activa');
             }
+            // Guardar automáticamente
+            guardarConfiguracion(true);
         });
     });
 
     // Guardar configuración
-    function guardarConfiguracion() {
+    function guardarConfiguracion(silencioso = false) {
         const config = {
-            monedas: []
+            monedas: [],
+            notificaciones: document.getElementById("navegador").checked
         };
 
         document.querySelectorAll('.moneda-card').forEach(card => {
@@ -124,11 +130,13 @@
         .then(response => response.json())
         .then(data => {
             if (data.status === "ok") {
-                const mensaje = document.getElementById('mensajeExito');
-                mensaje.classList.add('mostrar');
-                setTimeout(() => {
-                    mensaje.classList.remove('mostrar');
-                }, 3000);
+                if (!silencioso) {
+                    const mensaje = document.getElementById('mensajeExito');
+                    mensaje.classList.add('mostrar');
+                    setTimeout(() => {
+                        mensaje.classList.remove('mostrar');
+                    }, 3000);
+                }
             } else {
                 alert("Error: " + data.message);
             }
@@ -179,11 +187,8 @@
                 
                 if (data.type === 'notificar_cambio_tasa') {
                     console.log("entra aca y su data es: ",data)
-                    
-                    mostrarNotificacion(data);
-                    
+                    //mostrarNotificacion(data);
                 }
-               
             };
             
             ws.onerror = (error) => {
@@ -240,20 +245,39 @@
             badge.style.color = '#92400e';
         }
     }
+    function actualizarTextoSwitch() {
+    textoSwitch.textContent = notificacionesSwitch.checked ? "Desactivar todas las notificaciones" : "Activar  todas las notificaciones";
+}
+    const textoSwitch = document.getElementById("textoSwitch");
+    const notificacionesSwitch = document.getElementById("navegador");
 
-
+    notificacionesSwitch.addEventListener("change", function () {
+        actualizarTextoSwitch();
+        if (!this.checked) {
+            document.querySelectorAll(".moneda-toggle").forEach(sw => {
+                sw.checked = false;
+                sw.closest(".moneda-card").classList.remove('activa');
+            });
+          
+            
+        } else {
+            document.querySelectorAll(".moneda-toggle").forEach(sw => {
+                sw.checked = true;
+                sw.closest(".moneda-card").classList.add('activa');
+            });
+           
+        }
+    });
 
     // Conectar al cargar la página
     document.addEventListener('DOMContentLoaded', () => {
         conectarWebSocket();
         
-        // Solicitar permisos de notificación del navegador
         if ('Notification' in window && Notification.permission === 'default') {
             Notification.requestPermission();
         }
     });
 
-    // Reconectar si la página vuelve a estar visible
     document.addEventListener('visibilitychange', () => {
         if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
             console.log('Página visible, reconectando...');
@@ -261,7 +285,6 @@
         }
     });
 
-    // Desconectar al salir
     window.addEventListener('beforeunload', () => {
         if (ws) ws.close();
     });
@@ -376,13 +399,21 @@
         transform: translateX(24px);
     }
 
+    /* CONTENEDOR DE MONEDAS CON FLEXBOX */
+    #contenedorMonedas {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr); /* 3 columnas fijas */
+        gap: 6px;
+    }
+
     .moneda-card {
         background: white;
         border: 2px solid #e5e7eb;
         border-radius: 12px;
         padding: 20px;
-        margin-bottom: 15px;
         transition: all 0.3s;
+        /*flex: 1 1 calc(33.333% - 15px);  3 columnas en desktop */
+        min-width: 250px; /* Ancho mínimo para mantener legibilidad */
     }
 
     .moneda-card:hover {
@@ -399,20 +430,21 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
     }
 
     .moneda-info {
         display: flex;
         align-items: center;
         gap: 12px;
+        flex: 1;
+        min-width: 0;
     }
 
     .moneda-logo {
         width: 40px;
         height: 40px;
         border-radius: 50%;
-        object-fit: cover;
+        flex-shrink: 0;
     }
 
     .moneda-nombre {
@@ -540,17 +572,78 @@
         }
     }
 
-    @media (max-width: 768px) {
-        .panel-container {
-            padding: 20px;
-        }
-
-        .moneda-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 10px;
+    /* RESPONSIVE - Tablets y pantallas medianas */
+    @media (max-width: 1024px) {
+        .moneda-card {
+            flex: 1 1 calc(50% - 8px); /* 2 columnas en tablets */
+            min-width: 200px;
         }
     }
+
+    @media (max-width: 968px) {
+    #contenedorMonedas {
+        grid-template-columns: repeat(2, 1fr); /* 🔹 siempre 2 columnas */
+        gap: 12px;
+    }
+
+    .moneda-card {
+        padding: 18px;
+        min-width: auto;
+    }
+
+    .moneda-nombre {
+        font-size: 1rem;
+    }
+
+    .btn-guardar {
+        font-size: 0.95rem;
+        padding: 12px 24px;
+    }
+    /* RESPONSIVE - Mobile */
+    @media (max-width: 768px) {
+        .panel-container {
+        padding: 15px;
+        border-radius: 12px;
+    }
+
+    .panel-header h1 {
+        font-size: 1.4rem;
+    }
+
+    #contenedorMonedas {
+        grid-template-columns: 1fr; /* 🔹 siempre 1 columna en mobile */
+    }
+
+    .moneda-card {
+        width: 100%;
+        min-width: auto;
+        padding: 15px;
+    }
+
+    .moneda-nombre {
+        font-size: 1rem;
+    }
+
+    .btn-guardar {
+        font-size: 0.9rem;
+        padding: 12px;
+    }
+    }
+
+    /* RESPONSIVE - Pantallas muy grandes */
+    @media (min-width: 1400px) {
+        .panel-container {
+            max-width: 1200px;
+        }
+
+        .moneda-card {
+            flex: 1 1 calc(25% - 12px); /* 4 columnas en pantallas grandes */
+        }
+    }
+    
+}
+
+
 </style>
 
 {% endblock %}

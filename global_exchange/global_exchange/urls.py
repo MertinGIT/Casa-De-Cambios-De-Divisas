@@ -27,6 +27,7 @@ from django.views.generic import TemplateView
 from configuracion import views as configuracion_views
 from operaciones import urls as operaciones_urls
 from medio_acreditacion import urls as medio_acreditacion
+from configuracion_usuario import views as configuracion_view_usuario
 
 
 urlpatterns = [
@@ -47,7 +48,8 @@ urlpatterns = [
     path('set_cliente_operativo/', usuarios_views.set_cliente_operativo, name='set_cliente_operativo'),
     path('operaciones/', include(operaciones_urls)),
     path('historial/', include('historial_transacciones.urls'), name='historial_usuario'),
-    path('notificaciones/', include('notificaciones.urls'), name='notificaciones'),
+    path('notificaciones/', include('notificaciones.urls')),
+    path('configuracion/', configuracion_view_usuario.configuracion_view_usuario, name='configuracion_usuario'),
 
     
     

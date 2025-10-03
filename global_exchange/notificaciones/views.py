@@ -23,27 +23,36 @@ def guardar_configuracion(request):
         try:
             data = json.loads(request.body)
             monedas_config = data.get("monedas", [])
-            NotificacionMoneda.objects.filter(user=request.user).delete()
+            notificaciones_activas = data.get("notificaciones", True)
 
+            # SIEMPRE procesar el array de monedas individualmente
             for m in monedas_config:
                 abreviacion = m.get("moneda")
                 activa = m.get("activa", False)
+                
                 try:
                     moneda = Moneda.objects.get(abreviacion=abreviacion)
-                    NotificacionMoneda.objects.create(
+                    NotificacionMoneda.objects.update_or_create(
                         user=request.user,
                         moneda=moneda,
-                        activa=activa
+                        defaults={'activa': activa}
                     )
                 except Moneda.DoesNotExist:
                     continue
 
+            # Siempre asegurar que PYG esté activa
+            try:
+                guarani = Moneda.objects.get(abreviacion="PYG")
+                NotificacionMoneda.objects.update_or_create(
+                    user=request.user,
+                    moneda=guarani,
+                    defaults={'activa': True}
+                )
+            except Moneda.DoesNotExist:
+                pass
+                
             return JsonResponse({"status": "ok", "message": "Configuración guardada"})
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
 
     return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
-
-
-def test_notificaciones(request):
-    return render(request, "notificaciones/test_notificaciones.html")
