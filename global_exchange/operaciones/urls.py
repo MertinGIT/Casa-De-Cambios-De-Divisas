@@ -11,4 +11,5 @@ urlpatterns = [
     path('actualizar-estado-transaccion/', views.actualizar_estado_transaccion, name='actualizar_estado_transaccion'),
     path("enviar-pin/", views.enviar_pin, name="enviar_pin"),
     path("validar-pin/", views.validar_pin, name="validar_pin"),
+    path('verificar-limites/', views.verificar_limites, name='verificar_limites'),
 ]

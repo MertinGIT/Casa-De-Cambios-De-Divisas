@@ -1,5 +1,7 @@
+from decimal import Decimal
 from django.db import models
 from django.core.exceptions import ValidationError
+from monedas.models import Moneda  
 
 class LimiteTransaccion(models.Model):
     """
@@ -20,41 +22,34 @@ class LimiteTransaccion(models.Model):
         - unique_together: Un cliente no puede tener más de un límite para la misma moneda.
         - Validation: limite_mensual >= limite_diario.
     """
-    cliente = models.ForeignKey(
-        'clientes.Cliente',
-        on_delete=models.CASCADE,
-        related_name='limites_transaccion',
-        help_text="Cliente al que se le asigna este límite de transacción"
-    )
-    moneda = models.ForeignKey(
-        'monedas.Moneda',
-        on_delete=models.CASCADE,
-        related_name='limites_transaccion',
-        help_text="Moneda para la cual se establece el límite"
-    )
     limite_diario = models.DecimalField(
-        max_digits=20,
-        decimal_places=8,
-        help_text="Monto máximo permitido por día"
+        max_digits=20, decimal_places=8, default=Decimal('0'),
+        help_text="Límite máximo por día (en moneda base)."
     )
     limite_mensual = models.DecimalField(
-        max_digits=20,
-        decimal_places=8,
-        help_text="Monto máximo permitido por mes"
+        max_digits=20, decimal_places=8, default=Decimal('0'),
+        help_text="Límite máximo por mes (en moneda base)."
     )
-    estado = models.CharField(
-        max_length=10,
-        default='activo',
-        choices=[('activo', 'Activo'), ('inactivo', 'Inactivo')],
-        help_text="Estado del límite de transacción"
+    estado = models.CharField(max_length=10, default='activo')
+    def get_moneda_default():
+        return Moneda.objects.get(abreviacion="PYG").id
+    
+    moneda = models.ForeignKey(
+        'monedas.Moneda',
+        null=True, blank=True,
+        on_delete=models.PROTECT,
+        help_text="Moneda base para los límites. Si es None, se buscará la moneda por defecto.",
+        default=get_moneda_default
     )
+
+
+    def __str__(self):
+        """Representación legible: 'Cliente - Moneda'"""
+        return f"Límites (Diario: {self.limite_diario}, Mensual: {self.limite_mensual})"
 
     class Meta:
         verbose_name = "Límite de Transacción"
         verbose_name_plural = "Límites de Transacción"
 
-    def __str__(self):
-        """Representación legible: 'Cliente - Moneda'"""
-        return f"{self.cliente.nombre} - {self.moneda.nombre}"
 
  

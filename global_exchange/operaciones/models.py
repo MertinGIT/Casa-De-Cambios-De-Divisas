@@ -17,7 +17,7 @@ from django.db import models
 from usuarios.models import CustomUser
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
-
+from clientes.models import Cliente
 
 class TransaccionQuerySet(models.QuerySet):
     """
@@ -161,7 +161,12 @@ class Transaccion(models.Model):
         on_delete=models.PROTECT,
         help_text="Referencia a la cotización base vigente al iniciar."
     )
-
+    cliente = models.ForeignKey(   # 👈 nuevo campo
+        Cliente,
+        on_delete=models.CASCADE,
+        related_name="transacciones",
+        help_text="Cliente al que pertenece esta transacción."
+    )
 
     
     def __str__(self):
