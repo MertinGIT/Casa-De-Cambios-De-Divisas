@@ -2,74 +2,94 @@
   <label for="select-moneda">Moneda:</label>
   <select id="select-moneda" class="input-select">
     {% for m in monedas %}
-      <option value="{{ m.abreviacion }}">{{ m.abreviacion }}</option>
+    <option value="{{ m.abreviacion }}">{{ m.abreviacion }}</option>
     {% endfor %}
   </select>
 </div>
 
-<canvas id="grafico-transacciones" style="width:100%; height:300px; margin-top:1rem;"></canvas>
+<canvas
+  id="grafico-transacciones"
+  style="width: 100%; height: 300px; margin-top: 1rem"
+></canvas>
 
-<div id="grafico-vacio" style="display:none; text-align:center; color:#555; margin-top:1rem;">
+<div
+  id="grafico-vacio"
+  style="display: none; text-align: center; color: #555; margin-top: 1rem"
+>
   No hay transacciones para esta moneda
 </div>
 <canvas id="grafico-transacciones" height="200"></canvas>
 
-
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  const dataTransacciones = JSON.parse('{{ data_transacciones_json|escapejs }}');
-  console.log("Datos de transacciones:", dataTransacciones);
-  
-  const ctx = document.getElementById('grafico-transacciones').getContext('2d');
-  let chartInstance = null;
+  document.addEventListener("DOMContentLoaded", function () {
+    const dataTransacciones = JSON.parse(
+      "{{ data_transacciones_json|escapejs }}"
+    );
+    console.log("Datos de transacciones:", dataTransacciones);
 
-  function actualizarGrafico(monedaSeleccionada) {
-    const datosFiltrados = dataTransacciones.filter(d => d.moneda === monedaSeleccionada);
+    const ctx = document
+      .getElementById("grafico-transacciones")
+      .getContext("2d");
+    let chartInstance = null;
 
-    if (datosFiltrados.length === 0) {
-  document.getElementById("grafico-transacciones").style.display = "none";
-  document.getElementById("grafico-vacio").style.display = "block";
-  if (chartInstance) chartInstance.destroy();
-  return;
-} else {
-  document.getElementById("grafico-transacciones").style.display = "block";
-  document.getElementById("grafico-vacio").style.display = "none";
-}
+    function actualizarGrafico(monedaSeleccionada) {
+      const datosFiltrados = dataTransacciones.filter(
+        (d) => d.moneda === monedaSeleccionada
+      );
 
+      if (datosFiltrados.length === 0) {
+        document.getElementById("grafico-transacciones").style.display = "none";
+        document.getElementById("grafico-vacio").style.display = "block";
+        if (chartInstance) chartInstance.destroy();
+        return;
+      } else {
+        document.getElementById("grafico-transacciones").style.display =
+          "block";
+        document.getElementById("grafico-vacio").style.display = "none";
+      }
 
-    const dias = [...new Set(datosFiltrados.map(d => d.dia))];
-    const compraData = dias.map(d => {
-      const c = datosFiltrados.find(x => x.dia === d && x.tipo === "Compra");
-      return c ? c.monto : 0;
+      const dias = [...new Set(datosFiltrados.map((d) => d.dia))];
+      const compraData = dias.map((d) => {
+        return datosFiltrados
+          .filter((x) => x.dia === d && x.tipo === "Compra" && x.estado === "completada")
+          .reduce((sum, x) => sum + x.monto, 0);
+      });
+
+      const ventaData = dias.map((d) => {
+        return datosFiltrados
+          .filter((x) => x.dia === d && x.tipo === "Venta" && x.estado === "completada")
+          .reduce((sum, x) => sum + x.monto, 0);
+      });
+
+      console.log("compraData:", compraData);
+      console.log("ventaData:", ventaData);
+      const chartData = {
+        labels: dias,
+        datasets: [
+          { label: "Compra", data: compraData, backgroundColor: "#16a34a" },
+          { label: "Venta", data: ventaData, backgroundColor: "#dc2626" },
+        ],
+      };
+
+      if (chartInstance) chartInstance.destroy();
+      chartInstance = new Chart(ctx, {
+        type: "bar",
+        data: chartData,
+        options: {
+          responsive: true,
+          plugins: { legend: { display: true } },
+          scales: { y: { beginAtZero: true } },
+        },
+      });
+    }
+
+    const selectMoneda = document.getElementById("select-moneda");
+    if (selectMoneda.options.length > 0) {
+      actualizarGrafico(selectMoneda.value);
+    }
+
+    selectMoneda.addEventListener("change", function () {
+      actualizarGrafico(this.value);
     });
-    const ventaData = dias.map(d => {
-      const v = datosFiltrados.find(x => x.dia === d && x.tipo === "Venta");
-      return v ? v.monto : 0;
-    });
-
-    const chartData = {
-      labels: dias,
-      datasets: [
-        { label: "Compra", data: compraData, backgroundColor: "#16a34a" },
-        { label: "Venta", data: ventaData, backgroundColor: "#dc2626" }
-      ]
-    };
-
-    if (chartInstance) chartInstance.destroy();
-    chartInstance = new Chart(ctx, {
-      type: "bar",
-      data: chartData,
-      options: { responsive: true, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
-    });
-  }
-
-  const selectMoneda = document.getElementById("select-moneda");
-  if (selectMoneda.options.length > 0) {
-    actualizarGrafico(selectMoneda.value);
-  }
-
-  selectMoneda.addEventListener("change", function() {
-    actualizarGrafico(this.value);
   });
-});
 </script>

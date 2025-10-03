@@ -32,7 +32,7 @@ from django.utils.timezone import now
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from datetime import datetime
-from .models import CustomUser
+from .models import CustomUser,BackupCode
 from .forms import UserRolePermissionForm
 import sys
 from clientes.models import Cliente, Segmentacion
@@ -446,13 +446,23 @@ def signin(request):
     - **Parámetros**:
         - request: objeto HttpRequest.
     """
+    print("Entra en signin", flush=True)
+    print("User:", request.user, flush=True)
+    # Si ya tiene sesión activa, redirigir según rol
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
         if request.user.groups.filter(name='ADMIN').exists():
             print("PRIMER IF:", flush=True)
             return redirect('admin_dashboard')
         else:
-            return redirect('home')
+            if request.user.mfa_secret:
+                print("verificar MFA:", flush=True)
+                return redirect('mfa_verify')
+            else:
+                # Primera vez: configurar MFA
+                print("configurar MFA:", flush=True)
+                messages.info(request, "Configura la autenticación de dos factores para proteger tu cuenta.")
+                return redirect('mfa_setup')
 
     eslogan_lines = ["Tu éxito", "comienza", "aqui."]
     eslogan_spans = ["¡Accede", "ahora!"]
@@ -467,6 +477,7 @@ def signin(request):
             'submit_text': "Acceder",
             'active_tab': "login"
         })
+    # POST: intentar autenticar
     else:
         user = authenticate(
             username=request.POST['username'], password=request.POST['password'])
@@ -481,10 +492,16 @@ def signin(request):
             })
         else:
             login(request, user)
+            # MFA: si ya tiene secret
             if request.user.groups.filter(name='ADMIN').exists():
                 return redirect('admin_dashboard')
             else:
-                return redirect('home')
+                if user.mfa_secret:
+                    return redirect('mfa_verify')
+                else:
+                    # Primera vez, configurar MFA
+                    messages.info(request, "Configura la autenticación de dos factores.")
+                    return redirect('mfa_setup')
       
 def pagina_aterrizaje(request):
     """
@@ -995,3 +1012,115 @@ def login_api(request):
             "success": False,
             "error": "Credenciales inválidas"
         }, status=400)
+        
+
+import pyotp
+import qrcode
+import io
+import base64
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
+
+@login_required
+def mfa_setup(request):
+    """
+    Vista de configuración MFA con Google Authenticator.
+    Genera secreto y códigos de respaldo SOLO una vez.
+    Si ya están configurados, solo muestra los datos.
+    """
+    user = request.user
+
+    # Si ya tiene mfa_secret, redirigir directamente a verificación
+    if user.mfa_secret:
+        backup_codes = BackupCode.objects.filter(user=user).values_list("code", flat=True)
+        #messages.info(request, "Ya tienes configurada la autenticación de dos factores.")
+        messages.add_message(request, messages.INFO, "Ya tienes configurada la autenticación de dos factores.", extra_tags='mfa')
+
+        return redirect('mfa_verify')
+
+    # Generar secreto TOTP y guardar
+    secret = CustomUser.generate_mfa_secret(user)
+
+    # Generar códigos de respaldo solo si no existen
+    backup_codes_qs = BackupCode.objects.filter(user=user)
+    if not backup_codes_qs.exists():
+        codes = BackupCode.generate_codes(user)  # Esta función crea y guarda los códigos
+    backup_codes = BackupCode.objects.filter(user=user).values_list("code", flat=True)
+
+    return render(request, "mfa_setup.html", {
+        "qr_code": generate_qr(secret, user),
+        "secret_key": secret,
+        "backup_codes": backup_codes
+    })
+
+
+@login_required
+def mfa_verify(request):
+    """
+    Vista de verificación MFA.
+    El usuario debe ingresar el código de 6 dígitos de Google Authenticator.
+    """
+    user = request.user
+    message = ""
+    
+    # Si no tiene mfa_secret, redirigir a configuración
+    if not user.mfa_secret:
+        #messages.warning(request, "Primero debes configurar la autenticación de dos factores.")
+        messages.add_message(request, messages.INFO, "Primero debes configurar la autenticación de dos factores.", extra_tags='mfa')
+        return redirect('mfa_setup')
+    
+    if request.method == "POST":
+        code = request.POST.get("code", "").strip()
+        
+        # Validar formato del código
+        if not code or len(code) != 6 or not code.isdigit():
+            message = "❌ Por favor ingresa un código de 6 dígitos válido."
+        else:
+            # Verificar código con TOTP
+            totp = pyotp.TOTP(user.mfa_secret)
+            
+            # valid_window=1 permite códigos de ±30 segundos (tolerancia)
+            if totp.verify(code, valid_window=1):
+                # Código válido - marcar sesión como verificada
+                request.session['mfa_verified'] = True
+                request.session['mfa_verified_user_id'] = user.id
+                
+                #messages.success(request, "✅ Verificación exitosa.")
+                message="✅ Verificación exitosa."
+                
+                # Redirigir al dashboard o página principal
+                return redirect('home')
+            else:
+                message = "❌ Código inválido. Verifica que estés usando el código actual de Google Authenticator."
+    
+    return render(request, "mfa_verify.html", {
+        "message": message
+    })
+
+
+@csrf_exempt
+def verify_backup_code(request):
+    if request.method == "POST":
+        code = request.POST.get("backup_code")
+        try:
+            backup = BackupCode.objects.get(user=request.user, code=code, used=False)
+            backup.used = True
+            backup.save()
+            return JsonResponse({"valid": True})
+        except BackupCode.DoesNotExist:
+            return JsonResponse({"valid": False})
+
+def generate_qr(secret, user):
+    """Genera QR en base64 para Google Authenticator."""
+    totp = pyotp.TOTP(secret)
+    usuario_nombre = user.email if user.email else user.username
+    uri = totp.provisioning_uri(
+        name=usuario_nombre,
+        issuer_name="Global Exchange"
+    )
+    qr = qrcode.make(uri)
+    buf = io.BytesIO()
+    qr.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("utf-8")
