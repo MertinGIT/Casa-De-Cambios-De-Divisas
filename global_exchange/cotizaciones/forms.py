@@ -28,9 +28,15 @@ class TasaDeCambioForm(forms.ModelForm):
         - clean_monto_venta(): valida y redondea monto_venta.
         - clean(): valida que moneda_origen y moneda_destino sean distintas.
     """
-
-    monto_compra = forms.DecimalField(
+    
+    precio_base = forms.DecimalField(
         max_digits=23,
+        decimal_places=8,
+        required=True,
+        widget=forms.NumberInput(attrs={"step": "any", "class": "custom-input"})
+    )
+    """
+    monto_compra = forms.DecimalField(max_digits=23,
         decimal_places=8,
         required=True,
         widget=forms.NumberInput(attrs={"step":  "any"})  # <-- importante
@@ -41,6 +47,7 @@ class TasaDeCambioForm(forms.ModelForm):
         required=True,
         widget=forms.NumberInput(attrs={"step":  "any"})  # <-- importante
     )
+    """
     comision_compra = forms.DecimalField(
         max_digits=23,
         decimal_places=8,
@@ -65,16 +72,16 @@ class TasaDeCambioForm(forms.ModelForm):
             }
         )
     )
-
+    """
     def clean_monto_compra(self):
-        """
+        ""
         Valida y redondea el monto de compra.
 
         - Verifica que la parte entera tenga máximo 15 dígitos.
         - Verifica que la parte decimal tenga máximo 8 dígitos significativos.
         - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
 
-        """
+        ""
         monto = self.cleaned_data["monto_compra"]
         if monto is not None:
             # Validar dígitos antes y después de la coma
@@ -90,14 +97,14 @@ class TasaDeCambioForm(forms.ModelForm):
         return monto
 
     def clean_monto_venta(self):
-        """
+        ""
         Valida y redondea el monto de venta.
 
         - Verifica que la parte entera tenga máximo 15 dígitos.
         - Verifica que la parte decimal tenga máximo 8 dígitos significativos.
         - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
 
-        """
+        ""
         monto = self.cleaned_data["monto_venta"]
         if monto is not None:
             str_monto = f"{monto:.2f}"
@@ -109,15 +116,16 @@ class TasaDeCambioForm(forms.ModelForm):
                 raise forms.ValidationError("Máximo 8 decimales.")
             monto = monto.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return monto
-
+    """
+    """
     def clean_comision_compra(self):
-        """
+        ""
         Valida y redondea la comisión de compra.
 
         - Verifica que la comisión no sea negativa.
         - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
 
-        """
+        ""
         comision = self.cleaned_data.get("comision_compra")
         if comision is not None:
             if comision < 0:
@@ -126,20 +134,20 @@ class TasaDeCambioForm(forms.ModelForm):
         return comision
 
     def clean_comision_venta(self):
-        """
+        ""
         Valida y redondea la comisión de venta.
 
         - Verifica que la comisión no sea negativa.
         - Redondea el valor a 2 decimales usando ROUND_HALF_UP.
 
-        """
+        ""
         comision = self.cleaned_data.get("comision_venta")
         if comision is not None:
             if comision < 0:
                 raise forms.ValidationError("La comisión de venta no puede ser negativa.")
             comision = comision.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         return comision
-
+    """
     def clean(self):
         """
         Valida que la moneda de origen y destino no sean iguales.
@@ -160,12 +168,13 @@ class TasaDeCambioForm(forms.ModelForm):
 
     class Meta:
         model = TasaDeCambio
-        fields = ['moneda_origen', 'moneda_destino', 'monto_compra', 'monto_venta', 'comision_compra', 'comision_venta', 'vigencia', 'estado']
+        fields = ['moneda_origen', 'moneda_destino', 'precio_base', 'comision_compra', 'comision_venta', 'vigencia', 'estado']
         labels = {
             "moneda_origen": "Moneda Origen",
             "moneda_destino": "Moneda Destino",
-            "monto_compra": "Compra",
-            "monto_venta": "Venta",
+            "precio_base": "Precio Base",
+            #"monto_compra": "Compra",
+            #"monto_venta": "Venta",
             "comision_compra": "Comisión Compra",
             "comision_venta": "Comisión Venta",
             "vigencia": "Vigencia",

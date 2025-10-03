@@ -260,7 +260,8 @@ function procesarTransaccion() {
     moneda_origen_id: moneda_origen_id,
     moneda_destino_id: moneda_destino_id,
     tasa_usada: tasaCalculada,
-    tasa_ref_id: TASA_REF_ID
+    tasa_ref_id: TASA_REF_ID,
+    cliente_id:  parseInt("{{ cliente_operativo.id }}", 10)
   };
 
   console.log("Guardando en BD LOCAL:", payloadLocal);

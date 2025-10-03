@@ -94,8 +94,8 @@ def home(request):
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta),
+            #"compra": float(tasa.monto_compra),
+            #"venta": float(tasa.monto_venta),
             "comision_compra": float(tasa.comision_compra),
             "comision_venta": float(tasa.comision_venta)
         })
@@ -143,20 +143,30 @@ def home(request):
             data_por_moneda[abrev] = []
             
         # PB_MONEDA según operación
-        PB_MONEDA_VTA = float(tasa.monto_venta)
-        PB_MONEDA_COMP = float(tasa.monto_compra)
+        #PB_MONEDA_VTA = float(tasa.monto_venta)
+        #PB_MONEDA_COMP = float(tasa.monto_compra)
         
         # Calculamos tasas según fórmula
         #TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
         #TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
         
+        # PB_MONEDA según operación
+        PB_MONEDA = float(tasa.precio_base)
+        print("PB_MONEDA en pagina_Aterrizaje", PB_MONEDA, flush=True)
+        # Calculamos tasas según fórmula
+        COMISION_VTA = float(tasa.comision_venta or 0)
+        COMISION_COM = float(tasa.comision_compra or 0)
+        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta),
+            "compra": round(TC_VTA, 2),
+            "venta": round(TC_COMP, 2),
             "comision_compra": float(tasa.comision_compra),
-            "comision_venta": float(tasa.comision_venta)
+            "comision_venta": float(tasa.comision_venta),
+            "precio_base": float(tasa.precio_base)
         })
 
     print("data_por_moneda:", data_por_moneda, flush=True)
@@ -199,9 +209,12 @@ def home(request):
                         print(f"Registros ordenados: {registros_ordenados}", flush=True)
                         print(f"Ultimo {ultimo}", flush=True)
                         print("registrohome:", registros_ordenados, flush=True)
-                        PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
+                        PB_MONEDA = ultimo.get("precio_base", 0)  # siempre usar precio_base
                         COMISION_VTA = ultimo["comision_venta"]
                         COMISION_COM = ultimo["comision_compra"]
+                        print("PB_MONEDA en if registros:", PB_MONEDA, flush=True)
+                        print("COMISION_VTA en if registros:", COMISION_VTA, flush=True)
+                        print("COMISION_COM en if registros:", COMISION_COM, flush=True)
                     else:
                         PB_MONEDA = 0
                         COMISION_VTA = 0
@@ -541,13 +554,15 @@ def pagina_aterrizaje(request):
             data_por_moneda[abrev] = []
             
         # PB_MONEDA según operación
-        PB_MONEDA_VTA = float(tasa.monto_venta)
-        PB_MONEDA_COMP = float(tasa.monto_compra)
-        
+        PB_MONEDA = float(tasa.precio_base)
+        print("PB_MONEDA en pagina_Aterrizaje", PB_MONEDA, flush=True)
         # Calculamos tasas según fórmula
-        TC_VTA = PB_MONEDA_VTA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-        TC_COMP = PB_MONEDA_COMP - (COMISION_COM - (COMISION_COM * descuento / 100))
-        
+        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+        TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+
+        print("TC_VTA en pagina_Aterrizaje", TC_VTA, flush=True)
+        print("TC_COMP en pagina_Aterrizaje", TC_COMP, flush=True)
+
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia.strftime("%d %b"),

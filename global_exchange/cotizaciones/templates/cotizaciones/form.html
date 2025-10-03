@@ -26,20 +26,22 @@
 </div>
 
 <div class="form-group">
-  <label for="{{ form.monto_compra.id_for_label }}">Compra</label>
+  <label for="{{ form.precio_base.id_for_label }}">Precio Base</label>
   <div class="input-icon">
     <span class="icon">➡️</span>
-    {{ form.monto_compra|add_class:"custom-input" }}
+    {{ form.precio_base|add_class:"custom-input" }}
   </div>
-  {% if form.monto_compra.errors %}
+  {% if form.precio_base.errors %}
     <div class="error-messages">
-      {% for error in form.monto_compra.errors %}
+      {% for error in form.precio_base.errors %}
         <span class="error-text">{{ error }}</span>
       {% endfor %}
     </div>
   {% endif %}
 </div>
 
+
+<!--
 <div class="form-group">
   <label for="{{ form.monto_venta.id_for_label }}">Venta</label>
   <div class="input-icon">
@@ -54,6 +56,7 @@
   </div>
   {% endif %}
 </div>
+-->
 
 <div class="form-group">
   <label for="{{ form.comision_compra.id_for_label }}">Comisión Compra</label>
@@ -143,8 +146,9 @@ function setupTasaValidation() {
         rules: {
             moneda_origen: { required: true },
             moneda_destino: { required: true },
-            monto_compra: { required: true, number: true, min: 0 },
-            monto_venta: { required: true, number: true, min: 0 },
+            precio_base: { required: true, number: true, min: 0},
+            //monto_compra: { required: true, number: true, min: 0 },
+            //monto_venta: { required: true, number: true, min: 0 },
             comision_compra: { required: true, number: true },
             comision_venta: { required: true, number: true },
             vigencia: { required: true }
@@ -152,6 +156,12 @@ function setupTasaValidation() {
         messages: {
             moneda_origen: { required: "Debes seleccionar una moneda de origen." },
             moneda_destino: { required: "Debes seleccionar una moneda de destino." },
+            precio_base: {
+              required: "Debes ingresar el precio base.",
+              number: "Ingrese un número válido",
+              min: "El valor no puede ser negativo."
+            },
+            /*
             monto_compra: {
                 required: "Debes ingresar el monto de compra.",
                 number: "Ingrese un número válido",
@@ -162,6 +172,7 @@ function setupTasaValidation() {
                 number: "Ingrese un número válido",
                 min: "El valor no puede ser negativo."
             },
+            */
             comision_compra: {
                 required: "Debes ingresar la comisión de compra.",
                 number: "Ingrese un número válido."
