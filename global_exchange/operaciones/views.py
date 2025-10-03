@@ -32,7 +32,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from limite_moneda.models import LimiteTransaccion
-
+import random
+from django.core.mail import send_mail
 
 
 @login_required
@@ -529,3 +530,35 @@ def actualizar_estado_transaccion(request):
             return JsonResponse({"success": False, "error": "Error al actualizar", "detail": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
+
+
+def enviar_pin(request):
+    if request.user.is_authenticated:
+        # Generar un PIN aleatorio de 4 dígitos
+        pin = str(random.randint(1000, 9999))
+
+        # Guardar PIN en la sesión (válido por una transacción)
+        request.session['pin_seguridad'] = pin
+
+        # Enviar el PIN al email del usuario
+        asunto = "Tu código PIN de verificación"
+        mensaje = f"Hola {request.user.username},\n\nTu código de verificación es: {pin}\n\nEste código vence en unos minutos."
+        remitente = None  # Usará EMAIL_HOST_USER por defecto
+        destinatarios = [request.user.email]
+
+        send_mail(asunto, mensaje, remitente, destinatarios)
+
+        return JsonResponse({"success": True, "message": "Se envió un PIN a tu correo"})
+    return JsonResponse({"success": False, "message": "Usuario no autenticado"})
+
+def validar_pin(request):
+    if request.method == "POST":
+        pin_ingresado = request.POST.get("pin")
+        pin_guardado = request.session.get("pin_seguridad")
+
+        if pin_guardado and pin_ingresado == pin_guardado:
+            # PIN válido, eliminarlo de la sesión para que no se reutilice
+            del request.session['pin_seguridad']
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "message": "PIN incorrecto"})

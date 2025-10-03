@@ -1020,12 +1020,10 @@ def mfa_setup(request):
     # Si ya tiene mfa_secret, redirigir directamente a verificación
     if user.mfa_secret:
         backup_codes = BackupCode.objects.filter(user=user).values_list("code", flat=True)
-        messages.info(request, "Ya tienes configurada la autenticación de dos factores.")
-        return render(request, "mfa_setup.html", {
-            "qr_code": generate_qr(user.mfa_secret, user),
-            "secret_key": user.mfa_secret,
-            "backup_codes": backup_codes
-        })
+        #messages.info(request, "Ya tienes configurada la autenticación de dos factores.")
+        messages.add_message(request, messages.INFO, "Ya tienes configurada la autenticación de dos factores.", extra_tags='mfa')
+
+        return redirect('mfa_verify')
 
     # Generar secreto TOTP y guardar
     secret = CustomUser.generate_mfa_secret(user)
@@ -1054,7 +1052,8 @@ def mfa_verify(request):
     
     # Si no tiene mfa_secret, redirigir a configuración
     if not user.mfa_secret:
-        messages.warning(request, "Primero debes configurar la autenticación de dos factores.")
+        #messages.warning(request, "Primero debes configurar la autenticación de dos factores.")
+        messages.add_message(request, messages.INFO, "Primero debes configurar la autenticación de dos factores.", extra_tags='mfa')
         return redirect('mfa_setup')
     
     if request.method == "POST":
@@ -1074,6 +1073,7 @@ def mfa_verify(request):
                 request.session['mfa_verified_user_id'] = user.id
                 
                 #messages.success(request, "✅ Verificación exitosa.")
+                message="✅ Verificación exitosa."
                 
                 # Redirigir al dashboard o página principal
                 return redirect('home')

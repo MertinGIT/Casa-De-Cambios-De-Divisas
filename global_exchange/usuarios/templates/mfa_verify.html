@@ -435,10 +435,12 @@
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background-image: url("{% static 'img/login/RectanglePurple.svg' %}");
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+    /*background-image: url("{% static 'img/login/RectanglePurple.svg' %}");
     background-repeat: no-repeat;
     background-size: cover;
-    background-attachment: fixed;
+    background-attachment: fixed;*/
   }
 
   .verify-container {
@@ -643,6 +645,20 @@
     transition: all 0.3s ease;
     font-family: inherit;
     margin-bottom: 1.5rem;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
   }
 
   .btn-verify:not(:disabled) {
