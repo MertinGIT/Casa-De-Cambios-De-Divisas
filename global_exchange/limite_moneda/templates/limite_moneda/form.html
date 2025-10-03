@@ -1,590 +1,223 @@
-{% extends "base_forms.html" %} 
+{% extends "base_forms.html" %}
 {% load widget_tweaks %}
 
-{% block form_title %}Agregar Límite de Transacción{% endblock %}
+{% block form_title %}Configurar Límite Global de Transacciones{% endblock %}
 
 {% block form_fields %}
 
-<div class="form-group">
-  <label for="{{ form.cliente.id_for_label }}">Cliente *</label>
-  <div class="input-icon">
-    <span class="icon">👤</span>
-    <select name="cliente" id="id_cliente" class="custom-input">
-      <option value="">Seleccione un cliente...</option>
-    </select>
-  </div>
-  <div class="error-messages"></div>
-</div>
-
-<div class="form-group">
-  <label for="{{ form.moneda.id_for_label }}">Moneda *</label>
-  <div class="input-icon">
-    <span class="icon">💰</span>
-    <select name="moneda" id="id_moneda" class="custom-input">
-      <option value="">Seleccione una moneda...</option>
-    </select>
-  </div>
-  <div class="error-messages"></div>
-</div>
-
+<!-- Límite Diario -->
 <div class="form-group">
   <label for="{{ form.limite_diario.id_for_label }}">Límite Diario *</label>
-  <div class="input-icon">
+  <div class="input-wrapper">
     <span class="icon">📅</span>
-    {{ form.limite_diario|add_class:"custom-input monto-field" }}
+    {{ form.limite_diario|add_class:"custom-input" }}
   </div>
-  <div class="error-messages"></div>
+  <span class="error-msg" id="error-diario"></span>
 </div>
 
+<!-- Límite Mensual -->
 <div class="form-group">
   <label for="{{ form.limite_mensual.id_for_label }}">Límite Mensual *</label>
-  <div class="input-icon">
+  <div class="input-wrapper">
     <span class="icon">🗓️</span>
-    {{ form.limite_mensual|add_class:"custom-input monto-field" }}
+    {{ form.limite_mensual|add_class:"custom-input" }}
   </div>
-  <div class="error-messages"></div>
+  <span class="error-msg" id="error-mensual"></span>
 </div>
+
+<!-- Moneda (solo lectura) -->
+<div class="form-group">
+  <label>Moneda Base</label>
+  <div class="input-wrapper">
+    <span class="icon">💱</span>
+    <input type="text" class="custom-input" value="{{ form.instance.moneda.nombre }}" readonly>
+    <!-- Hidden input para enviar el ID de la moneda -->
+    <input type="hidden" name="moneda" value="{{ form.instance.moneda.id }}">
+  </div>
+</div>
+
 
 <input type="hidden" id="obj_id" name="obj_id" value="{{ obj_id|default:'' }}">
 
 <style>
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group:last-of-type {
+  margin-bottom: 0;
+}
+
+.input-wrapper {
+  position: relative;
+  display: block;
+}
+
+.input-wrapper .icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #5d5fef;
+}
+
 .custom-input {
   width: 100%;
-  padding: 8px 12px 8px 36px;
+  padding: 10px 10px 10px 40px;
   border-radius: 6px;
   border: 1px solid #d1d5db;
   background-color: #f0edff;
   font-size: 14px;
+  box-sizing: border-box;
+}
+
+.custom-input:focus {
+  border-color: #5d5fef;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.custom-input::placeholder { color: #6b7280; }
-.custom-input:focus { border-color: #5d5fef; box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1); }
-.custom-input.error { border-color: #ef4444 !important; background-color: #fef2f2; }
-.custom-input.valid { border-color: #10b981; background-color: #f0fdf4; }
-.input-icon { position: relative; margin-bottom: 4px; }
-.input-icon .icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 16px; color: #5d5fef; z-index: 1; }
-.error-messages { min-height: 18px; margin-bottom: 8px; display: block; }
-.error-messages .error-message { color: #ef4444; font-size: 12px; margin: 2px 0; display: block; line-height: 1.4; animation: slideDown 0.3s ease-out; }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-.custom-input.loading {
-  background-color: #f3f4f6;
-  color: #6b7280;
+.custom-input.error {
+  border-color: #ef4444;
+  background-color: #fef2f2;
 }
-.custom-input:disabled {
+
+.custom-input.valid {
+  border-color: #10b981;
+  background-color: #f0fdf4;
+}
+
+.custom-input[readonly] {
+  background-color: #f9fafb;
   cursor: not-allowed;
-  opacity: 0.6;
 }
 
-select.custom-input.error { box-shadow: none; }
-
-/* Resaltar el campo cuando se está aplicando redondeo */
-.custom-input.rounding {
-  background-color: #fef3c7;
-  border-color: #f59e0b;
+.error-msg {
+  display: block;
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
+  min-height: 16px;
 }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
 
 <script>
-let limiteValidator = null;
-let clientesLoaded = false;
-let monedasLoaded = false;
-
-jQuery.extend(jQuery.validator.messages, {
-    required: "Este campo es obligatorio.",
-    number: "Ingrese un número válido.",
-    min: jQuery.validator.format("El valor no puede ser menor a {0}."),
-    minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
-    maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres.")
-});
-
-// Función para validar y formatear montos
-function validarYFormatearMonto(valor) {
-    // Remover caracteres no numéricos excepto punto decimal
-return  valor.replace(/[^0-9.]/g, '');
-}
-
-
-// Función para manejar el formato en tiempo real
-function setupMontoFormatting() {
-    $('.monto-field').on('input', function() {
-        const $this = $(this);
-        const valorOriginal = $this.val();
-        const valorFormateado = validarYFormatearMonto(valorOriginal);
-        
-        if (valorFormateado === null) {
-            // Error: demasiados dígitos enteros
-            $this.addClass('error');
-            const errorMsg = 'El monto no puede tener más de 15 dígitos enteros';
-            const $errorContainer = $this.closest('.form-group').find('.error-messages');
-            $errorContainer.html('<div class="error-message">' + errorMsg + '</div>');
-        } else if (valorFormateado !== valorOriginal) {
-            // Aplicar redondeo visual
-            $this.addClass('rounding');
-            setTimeout(() => {
-                $this.val(valorFormateado);
-                $this.removeClass('rounding');
-            }, 200);
-        }
-    });
-
-    $('.monto-field').on('blur', function() {
-        const $this = $(this);
-        const valor = $this.val();
-        const valorFormateado = validarYFormatearMonto(valor);
-        
-        if (valorFormateado !== null && valorFormateado !== valor) {
-            $this.val(valorFormateado);
-        }
-        
-        // Limpiar clases visuales
-        $this.removeClass('rounding');
-    });
-}
-
-// Método personalizado de validación para montos
-jQuery.validator.addMethod("validMonto", function(value, element) {
-    if (!value) return true; // Lo maneja required
-    
-    const valorFormateado = validarYFormatearMonto(value);
-    
-    if (valorFormateado === null) {
-        return false; // Demasiados dígitos enteros
-    }
-    
-    // Verificar formato final
-    const numero = parseFloat(valorFormateado);
-    if (isNaN(numero) || numero < 0) {
-        return false;
-    }
-    
-    // Validar estructura: máximo 15 enteros y 8 decimales
-    const partes = valorFormateado.split('.');
-    const parteEntera = partes[0] || '0';
-    const parteDecimal = partes[1] || '';
-    
-    return parteEntera.length <= 15 && parteDecimal.length <= 8;
-}, "El monto debe tener máximo 15 dígitos enteros y 8 decimales");
-
-// Método personalizado para validar que límite mensual sea mayor o igual al diario
-jQuery.validator.addMethod("limiteMensualMayor", function(value, element) {
-    if (!value) return true; // Lo maneja required
-    
-    const limiteDiario = parseFloat($('#id_limite_diario').val()) || 0;
-    const limiteMensual = parseFloat(value) || 0;
-    
-    // El límite mensual debe ser mayor o igual al límite diario
-    return limiteMensual >= limiteDiario;
-}, "El límite mensual debe ser mayor o igual al límite diario");
-
-// Cargar clientes y mantener selección si existe
-function loadClientes(selectedId = null) {
-    if (clientesLoaded && !selectedId) {
-        console.log("Clientes ya cargados, saltando...");
-        return Promise.resolve();
-    }
-    
-    const $clienteSelect = $('#id_cliente');
-    $clienteSelect.prop('disabled', true).addClass('loading');
-
-    return $.ajax({
-        url: '{% url "get_clientes" %}',
-        method: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            console.log("Cargando clientes, selectedId:", selectedId);
-            $clienteSelect.empty().append('<option value="">Seleccione un cliente...</option>');
-            
-            $.each(data, function(i, cliente) {
-                const option = $('<option></option>')
-                    .val(cliente.id)
-                    .text(cliente.nombre + (cliente.cedula ? ' (' + cliente.cedula + ')' : ''));
-                
-                // Marcar como seleccionado si coincide
-                if (selectedId && cliente.id == selectedId) {
-                    option.prop('selected', true);
-                    console.log("Cliente seleccionado:", cliente.nombre);
-                }
-                
-                $clienteSelect.append(option);
-            });
-            clientesLoaded = true;
-        },
-        error: function() {
-            $clienteSelect.empty().append('<option value="">Error cargando clientes</option>');
-        },
-        complete: function() {
-            $clienteSelect.prop('disabled', false).removeClass('loading');
-        }
-    });
-}
-
-// Cargar monedas y mantener selección si existe  
-function loadMonedas(selectedId = null) {
-    if (monedasLoaded && !selectedId) {
-        console.log("Monedas ya cargadas, saltando...");
-        return Promise.resolve();
-    }
-    
-    const $monedaSelect = $('#id_moneda');
-    $monedaSelect.prop('disabled', true).addClass('loading');
-
-    return $.ajax({
-        url: '{% url "get_monedas" %}',
-        method: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            console.log("Cargando monedas, selectedId:", selectedId);
-            $monedaSelect.empty().append('<option value="">Seleccione una moneda...</option>');
-            
-            $.each(data, function(i, moneda) {
-                const option = $('<option></option>')
-                    .val(moneda.id)
-                    .text(moneda.nombre + ' (' + moneda.abreviacion + ')');
-                
-                // Marcar como seleccionado si coincide
-                if (selectedId && moneda.id == selectedId) {
-                    option.prop('selected', true);
-                    console.log("Moneda seleccionada:", moneda.nombre);
-                }
-                
-                $monedaSelect.append(option);
-            });
-            monedasLoaded = true;
-        },
-        error: function() {
-            $monedaSelect.empty().append('<option value="">Error cargando monedas</option>');
-        },
-        complete: function() {
-            $monedaSelect.prop('disabled', false).removeClass('loading');
-        }
-    });
-}
-
-// Capturar valores actuales antes de recargar
-function getCurrentValues() {
-    return {
-        cliente: $('#id_cliente').val(),
-        moneda: $('#id_moneda').val(),
-        limite_diario: $('#id_limite_diario').val(),
-        limite_mensual: $('#id_limite_mensual').val()
-    };
-}
-
-// Restaurar valores después de recargar selects
-function restoreValues(values) {
-    console.log("Restaurando valores:", values);
-    if (values.cliente) $('#id_cliente').val(values.cliente);
-    if (values.moneda) $('#id_moneda').val(values.moneda);
-    if (values.limite_diario) $('#id_limite_diario').val(values.limite_diario);
-    if (values.limite_mensual) $('#id_limite_mensual').val(values.limite_mensual);
-}
-
-// Función para revalidar límites cuando cambien
-function revalidarLimites() {
-    if (limiteValidator) {
-        $('#id_limite_diario').valid();
-        $('#id_limite_mensual').valid();
-    }
-}
-
-// Validación de formulario
-function setupLimiteValidation() {
-    const $form = $("#form-accion");
-    if (!$form.length) {
-        console.log("Formulario no encontrado");
-        return null;
-    }
-
-    if (limiteValidator) { 
-        limiteValidator.destroy(); 
-        limiteValidator = null; 
-    }
-
-    console.log("Configurando validación del formulario límites");
-
-    limiteValidator = $form.validate({
-        rules: {
-            cliente: { required: true },
-            moneda: { 
-                required: true,
-                remote: {
-                    url: '{% url "check-nombre-cliente" %}',
-                    type: "post",
-                    data: {
-                        cliente: function() {
-                            return $("#id_cliente").val();
-                        },
-                        moneda: function() {
-                            return $("#id_moneda").val();
-                        },
-                        obj_id: function() {
-                            // Buscar en múltiples ubicaciones posibles
-                            let objId = $("#obj_id").val() || 
-                                       $("input[name='obj_id']").val() || 
-                                       $("#form-accion").attr('data-obj-id') ||
-                                       $("#form-accion").data('obj-id');
-                            
-                            console.log("🔍 Verificando modo edición - obj_id:", objId, "tipo:", typeof objId);
-                            
-                            // Verificar si es string vacío
-                            if (objId === '' || objId === 'undefined' || objId === 'null') {
-                                console.log("⚠️ obj_id vacío o inválido, modo CREACIÓN");
-                                return null;
-                            }
-                            
-                            if (objId && objId !== '') {
-                                console.log("✅ Modo EDICIÓN - obj_id:", objId);
-                                return objId;
-                            }
-                            
-                            console.log("❌ obj_id no encontrado, modo CREACIÓN por defecto");
-                            return null;
-                        },
-                        csrfmiddlewaretoken: function() {
-                            return $("input[name='csrfmiddlewaretoken']").val();
-                        }
-                    },
-                    beforeSend: function(xhr, settings) {
-                        console.log("Enviando validación remota:", settings.data);
-                    }
-                }
-            },
-            limite_diario: { 
-                required: true, 
-                validMonto: true,
-                min: 0 
-            },
-            limite_mensual: { 
-                required: true, 
-                validMonto: true,
-                min: 0,
-                limiteMensualMayor: true
-            }
-        },
-        messages: {
-            cliente: { required: "Seleccione un cliente" },
-            moneda: { 
-                required: "Seleccione una moneda",
-                remote: "Este cliente ya tiene un límite activo para esta moneda."
-            },
-            limite_diario: { 
-                required: "Ingrese límite diario", 
-                validMonto: "Máximo 15 dígitos enteros y 8 decimales",
-                min: "No puede ser negativo" 
-            },
-            limite_mensual: { 
-                required: "Ingrese límite mensual", 
-                validMonto: "Máximo 15 dígitos enteros y 8 decimales",
-                min: "No puede ser negativo",
-                limiteMensualMayor: "El límite mensual debe ser mayor o igual al límite diario"
-            }
-        },
-        errorElement: 'div',
-        errorClass: 'error-message',
-        validClass: 'valid',
-        errorPlacement: function(error, element) {
-            console.log("Colocando error:", error.text(), "para elemento:", element.attr('name'));
-            let formGroup = element.closest('.form-group');
-            let errorContainer = formGroup.find('.error-messages');
-            if (!errorContainer.length) {
-                errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
-            }
-            errorContainer.html(error);
-        },
-        highlight: function(element) { 
-            $(element).addClass('error').removeClass('valid');
-            console.log("Marcando campo con error:", $(element).attr('name'));
-        },
-        unhighlight: function(element) { 
-            $(element).removeClass('error').addClass('valid');
-            console.log("Limpiando error de campo:", $(element).attr('name'));
-        },
-        success: function(label, element) {
-            console.log("Campo válido:", $(element).attr('name'));
-            $(element).closest('.form-group').find('.error-messages').empty();
-        },
-        submitHandler: function(form) {
-            console.log("🚀 SubmitHandler ejecutado");
-            
-            // Formatear montos antes del envío final
-            const limitesDiario = $('#id_limite_diario').val();
-            const limitesMensual = $('#id_limite_mensual').val();
-            
-            if (limitesDiario) {
-                const diarioFormateado = validarYFormatearMonto(limitesDiario);
-                if (diarioFormateado !== null) {
-                    $('#id_limite_diario').val(diarioFormateado);
-                }
-            }
-            
-            if (limitesMensual) {
-                const mensualFormateado = validarYFormatearMonto(limitesMensual);
-                if (mensualFormateado !== null) {
-                    $('#id_limite_mensual').val(mensualFormateado);
-                }
-            }
-            
-            // Verificar obj_id antes del envío
-            const objId = $("#obj_id").val();
-            console.log("📝 SubmitHandler - obj_id:", objId, "tipo:", typeof objId);
-            
-            if (objId && objId !== '' && objId !== 'undefined' && objId !== 'null') {
-                console.log("✏️ Modo EDICIÓN - obj_id:", objId);
-            } else {
-                console.log("➕ Modo CREACIÓN - validando duplicados antes del envío");
-            }
-            
-            // Proceder con el envío
-            console.log("📤 Enviando formulario...");
-            form.submit();
-        },
-        invalidHandler: function(event, validator) {
-            console.log("Formulario inválido, errores:", validator.numberOfInvalids());
-        }
-    });
-
-    // Configurar eventos para revalidación en tiempo real
-    $('#id_limite_diario, #id_limite_mensual').on('blur keyup', function() {
-        // Pequeño delay para permitir que el formateo termine
-        setTimeout(revalidarLimites, 100);
-    });
-
-    return limiteValidator;
-}
-
-// Sobrescribir funciones del modal
 $(document).ready(function() {
-    // Configurar formato de montos
-    setupMontoFormatting();
-    
-    // Cargar datos iniciales
-    loadClientes();
-    loadMonedas();
-    setupLimiteValidation();
+    const diarioInput = $('#id_limite_diario');
+    const mensualInput = $('#id_limite_mensual');
+    const errorDiario = $('#error-diario');
+    const errorMensual = $('#error-mensual');
 
-    // Guardar funciones originales
-    const originalOpenCreateModal = window.openCreateModal;
-    const originalOpenEditModal = window.openEditModal;
-    const originalCloseModal = window.closeModal;
-
-    // Nueva función para crear modal
-    window.openCreateModal = function(createUrl, title) {
-        console.log("Abriendo modal crear límite");
-        
-        if (originalOpenCreateModal) {
-            originalOpenCreateModal(createUrl, title);
+    function validarMonto(value) {
+        // Validar obligatorio
+        if (!value || value.trim() === '') {
+            return 'Este campo es obligatorio';
         }
         
-        setTimeout(function() {
-            // Para crear, solo necesitamos asegurar que los selects estén cargados
-            Promise.all([
-                loadClientes(),
-                loadMonedas()
-            ]).then(() => {
-                setupLimiteValidation();
-                setupMontoFormatting();
-            });
-        }, 200);
-    };
+        // Limpiar el valor
+        const valorLimpio = value.trim().replace(',', '.');
+        
+        // Validar que sea un número
+        const num = parseFloat(valorLimpio);
+        if (isNaN(num)) {
+            return 'Debe ingresar un número válido';
+        }
+        
+        // Validar que no sea negativo
+        if (num < 0) {
+            return 'El valor no puede ser negativo';
+        }
+        
+        // Validar formato: máximo 15 enteros y 8 decimales
+        const partes = valorLimpio.split('.');
+        const enteros = partes[0].replace('-', ''); // Quitar signo si existe
+        
+        if (enteros.length > 15) {
+            return 'Máximo 15 dígitos enteros permitidos';
+        }
+        
+        if (partes.length > 1 && partes[1].length > 8) {
+            return 'Máximo 8 decimales permitidos';
+        }
+        
+        return null; // Sin errores
+    }
 
-    // Nueva función para editar modal - CON MANEJO CORRECTO
-    window.openEditModal = function(id, editUrl, detalle, title) {
-        console.log("🚀 Abriendo modal editar límite, ID recibido:", id, "tipo:", typeof id);
-        
-        if (originalOpenEditModal) {
-            originalOpenEditModal(id, editUrl, detalle, title);
+    function validarDiario() {
+        const error = validarMonto(diarioInput.val());
+        if (error) {
+            diarioInput.addClass('error').removeClass('valid');
+            errorDiario.text(error);
+            return false;
+        } else {
+            diarioInput.addClass('valid').removeClass('error');
+            errorDiario.text('');
+            return true;
         }
-        
-        // Función para verificar y configurar el modal
-        function configurarModalEdicion() {
-            console.log("⚙️ Configurando modal de edición...");
-            
-            // 1. FORZAR actualización del obj_id inmediatamente
-            const objIdField = $("#obj_id");
-            objIdField.val(id);
-            console.log("📝 obj_id forzado a:", objIdField.val(), "campo existe:", objIdField.length);
-            
-            // 2. Verificar que el campo tenga el valor correcto
-            const objIdValue = objIdField.val();
-            console.log("🔍 Verificando obj_id final:", objIdValue, "tipo:", typeof objIdValue);
-            
-            if (!objIdValue || objIdValue === '') {
-                console.error("❌ ERROR: obj_id sigue vacío después de asignación");
-                // Intentar otra vez con diferentes métodos
-                $("input[name='obj_id']").val(id);
-                $("#form-accion").attr('data-obj-id', id);
-                console.log("🔄 Reintento - obj_id:", $("#obj_id").val());
-            }
-            
-            // 3. Capturar valores actuales
-            const currentValues = getCurrentValues();
-            console.log("📊 Valores actuales capturados:", currentValues);
-            
-            // 4. Recargar selects manteniendo la selección
-            Promise.all([
-                loadClientes(currentValues.cliente),
-                loadMonedas(currentValues.moneda)
-            ]).then(() => {
-                // 5. Restaurar valores por si se perdieron
-                restoreValues(currentValues);
-                
-                // 6. VERIFICAR NUEVAMENTE obj_id antes de configurar validación
-                const finalObjId = $("#obj_id").val();
-                console.log("🎯 obj_id antes de configurar validación:", finalObjId);
-                
-                if (!finalObjId || finalObjId === '') {
-                    console.error("⚠️ ADVERTENCIA: Configurando validación sin obj_id válido");
-                }
-                
-                // 7. Configurar validación y formato
-                setupLimiteValidation();
-                setupMontoFormatting();
-                
-                console.log("✅ Modal de edición configurado correctamente");
-            }).catch((error) => {
-                console.error("❌ Error configurando modal:", error);
-            });
-        }
-        
-        // Intentar múltiples veces con diferentes timeouts
-        setTimeout(configurarModalEdicion, 800);
-        setTimeout(configurarModalEdicion, 1500);
-    };
+    }
 
-    // Nueva función para cerrar modal
-    window.closeModal = function() {
-        console.log("Cerrando modal límite");
-        
-        // Limpiar validación
-        if (limiteValidator) {
-            limiteValidator.destroy();
-            limiteValidator = null;
+    function validarMensual() {
+        const error = validarMonto(mensualInput.val());
+        if (error) {
+            mensualInput.addClass('error').removeClass('valid');
+            errorMensual.text(error);
+            return false;
         }
         
-        // Limpiar clases y mensajes
-        $("#form-accion .error").removeClass('error');
-        $("#form-accion .valid").removeClass('valid');
-        $("#form-accion .rounding").removeClass('rounding');
-        $(".error-messages").empty();
+        const diario = parseFloat(diarioInput.val().replace(',', '.')) || 0;
+        const mensual = parseFloat(mensualInput.val().replace(',', '.')) || 0;
         
-        // Reset flags para permitir recarga en próxima apertura
-        clientesLoaded = false;
-        monedasLoaded = false;
-        
-        if (originalCloseModal) {
-            originalCloseModal();
+        if (mensual < diario) {
+            mensualInput.addClass('error').removeClass('valid');
+            errorMensual.text('Debe ser mayor o igual al límite diario');
+            return false;
         }
-    };
+        
+        mensualInput.addClass('valid').removeClass('error');
+        errorMensual.text('');
+        return true;
+    }
 
-    console.log("Sistema de validación de límites inicializado");
+    // Validar al salir del campo
+    diarioInput.on('blur', function() {
+        validarDiario();
+        if (mensualInput.val()) validarMensual();
+    });
+
+    mensualInput.on('blur', validarMensual);
+
+    // Validación al enviar el formulario
+    $('#form-accion').on('submit', function(e) {
+        const validoDiario = validarDiario();
+        const validoMensual = validarMensual();
+            
+        console.log('Validación submit:', {
+            diario: validoDiario,
+            mensual: validoMensual,
+            valorDiario: diarioInput.val(),
+            valorMensual: mensualInput.val()
+        });
+        
+        if (!validoDiario || !validoMensual) {
+            e.preventDefault();
+            console.log('Formulario inválido - submit bloqueado');
+            return false;
+        }
+        
+        // Normalizar valores antes de enviar
+        if (diarioInput.val()) {
+            diarioInput.val(diarioInput.val().replace(',', '.'));
+        }
+        if (mensualInput.val()) {
+            mensualInput.val(mensualInput.val().replace(',', '.'));
+        }
+        
+        console.log('Formulario válido - enviando...');
+        return true; // Permitir submit normal
+    });
 });
-
-
 </script>
 
 {% endblock %}

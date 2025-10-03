@@ -10,6 +10,7 @@ Views (operaciones):
 Nota:
 Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
 """
+from django.views.decorators.http import require_POST
 
 from decimal import Decimal
 from django.shortcuts import render
@@ -23,7 +24,8 @@ from cotizaciones.models import TasaDeCambio
 from clientes.models import Cliente
 from cliente_usuario.models import Usuario_Cliente
 from django.utils.dateparse import parse_datetime
-from django.utils.timezone import now
+from django.utils.timezone import now, localtime
+from datetime import timedelta
 import requests
 from metodos_pagos.models import MetodoPago
 from django.views.decorators.csrf import csrf_exempt
@@ -32,6 +34,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from limite_moneda.models import LimiteTransaccion
+from django.db.models import Sum
 
 
 
@@ -121,7 +124,38 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
-    limites_cliente = []
+    limites = LimiteTransaccion.objects.all()  # tus límites generales por moneda
+
+    hoy = localtime(now()).date()
+    inicio_mes = hoy.replace(day=1)
+
+    limites_disponibles = []
+
+    for limite in limites:
+        # Filtrar transacciones confirmadas y no canceladas
+        transacciones_validas = Transaccion.objects.filter(
+            estado__in=["completada"]  # solo considerar transacciones activas
+        )
+
+        # Gastado hoy
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(total=Sum("monto"))["total"] or 0
+
+        # Gastado en el mes
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(total=Sum("monto"))["total"] or 0
+
+        limites_disponibles.append({
+            "limite": limite,
+            "gasto_diario": gasto_diario,
+            "disponible_diario": max(limite.limite_diario - gasto_diario, 0),
+            "gasto_mensual": gasto_mensual,
+            "disponible_mensual": max(limite.limite_mensual - gasto_mensual, 0),
+        })
+
+        
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
@@ -253,12 +287,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-        if cliente_operativo:
-            limites_cliente = LimiteTransaccion.objects.filter(
-            cliente=cliente_operativo,
-            estado='activo'
-        ).select_related('moneda')
-    
+
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -274,6 +303,7 @@ def simulador_operaciones(request):
         "descuento": descuento,
         "clientes_asociados": clientes_asociados,
         "cliente_operativo": cliente_operativo,
+        "cliente_operativo_id": cliente_operativo.id if cliente_operativo else None,
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
         "transacciones": transacciones_qs,
@@ -283,11 +313,96 @@ def simulador_operaciones(request):
         "TASA_REF_ID": TASA_REF_ID,
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
         "medios_acreditacion": json.dumps(medios_acreditacion),
-        "limites_cliente": limites_cliente,
+        "limites_cliente": limites_disponibles,
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
 
+
+@require_POST
+def verificar_limites(request):
+    """
+    Verifica si el monto de la transacción excede los límites diarios o mensuales
+    """
+    try:
+        monto = Decimal(request.POST.get('monto', 0))
+        moneda_abrev = request.POST.get('moneda')
+        
+        # Obtener la moneda
+        moneda = Moneda.objects.get(abreviacion=moneda_abrev)
+        
+        # Obtener el límite general para esta moneda
+        limite = LimiteTransaccion.objects.filter(moneda_id=1).first()
+        
+        if not limite:
+            return JsonResponse({
+                'success': False,
+                'mensaje': f'No se encontró límite configurado para {moneda_abrev}'
+            })
+        
+        # Obtener límites configurados
+        limite_diario = limite.limite_diario
+        limite_mensual = limite.limite_mensual
+        
+        # Calcular fechas
+        hoy = localtime(now()).date()
+        inicio_mes = hoy.replace(day=1)
+        
+        # Filtrar solo transacciones completadas
+        transacciones_validas = Transaccion.objects.filter(
+            estado__in=["completada"]  # solo considerar transacciones completadas
+        )
+        
+        # Calcular gasto diario
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        
+        # Calcular gasto mensual
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        
+        # Calcular disponibles
+        disponible_diario = limite_diario - gasto_diario
+        disponible_mensual = limite_mensual - gasto_mensual
+        
+        # Verificar si excede límites
+        excede_diario = monto > disponible_diario
+        excede_mensual = monto > disponible_mensual
+        
+        # Formatear números para mostrar (formato paraguayo: 1.234.567,89)
+        def format_number(num):
+            num_str = f"{float(num):,.2f}"
+            # Cambiar formato americano a paraguayo
+            num_str = num_str.replace(',', 'X').replace('.', ',').replace('X', '.')
+            return num_str
+        
+        return JsonResponse({
+            'success': True,
+            'excede_diario': excede_diario,
+            'excede_mensual': excede_mensual,
+            'moneda': moneda_abrev,
+            'monto_solicitado': format_number(monto),
+            'limite_diario': format_number(limite_diario),
+            'gastado_diario': format_number(gasto_diario),
+            'disponible_diario': format_number(disponible_diario),
+            'limite_mensual': format_number(limite_mensual),
+            'gastado_mensual': format_number(gasto_mensual),
+            'disponible_mensual': format_number(disponible_mensual)
+        })
+        
+    except Moneda.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'mensaje': f'Moneda {moneda_abrev} no encontrada'
+        })
+    except Exception as e:
+        print(f"Error en verificar_limites: {str(e)}", flush=True)
+        return JsonResponse({
+            'success': False,
+            'mensaje': f'Error al verificar límites: {str(e)}'
+        })
 
 def obtener_clientes_usuario(user,request):
     """
@@ -451,8 +566,8 @@ def guardar_transaccion(request):
     """
     Guarda una transacción en la base de datos.
 
-    Recibe los datos en JSON: monto, tipo, monedas, tasa y estado.
-    Asocia la transacción con el usuario autenticado si lo hay.
+    Recibe los datos en JSON: monto, tipo, monedas, tasa, estado y cliente.
+    Asocia la transacción con el usuario autenticado y el cliente operativo.
 
     :param request: Objeto HTTP con los datos de la transacción.
     :type request: HttpRequest
@@ -473,14 +588,31 @@ def guardar_transaccion(request):
         moneda_destino_id = data.get("moneda_destino_id")
         tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
         tasa_ref_id = data.get("tasa_ref_id")
+        cliente_id = data.get("cliente_id")
 
-        if not (moneda_origen_id and moneda_destino_id and tasa_ref_id):
-            return JsonResponse({"success": False, "error": "Faltan campos obligatorios"}, status=400)
+        # Validación de campos obligatorios
+        if not (moneda_origen_id and moneda_destino_id and tasa_ref_id and cliente_id):
+            return JsonResponse({"success": False, "error": "Faltan campos obligatorios (incluye cliente_id)"}, status=400)
 
+        # Obtener instancias de los modelos
         moneda_origen = Moneda.objects.get(id=moneda_origen_id)
         moneda_destino = Moneda.objects.get(id=moneda_destino_id)
         tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
+        cliente = Cliente.objects.get(id=cliente_id, estado="activo")
 
+        # Validar que el cliente pertenece al usuario
+        if usuario:
+            relacion = Usuario_Cliente.objects.filter(
+                id_usuario=usuario, 
+                id_cliente=cliente
+            ).exists()
+            if not relacion:
+                return JsonResponse({
+                    "success": False, 
+                    "error": "El cliente no está asociado al usuario"
+                }, status=403)
+
+        # Crear la transacción
         transaccion = Transaccion.objects.create(
             usuario=usuario,
             monto=monto,
@@ -490,6 +622,7 @@ def guardar_transaccion(request):
             moneda_destino=moneda_destino,
             tasa_usada=tasa_usada,
             tasa_ref=tasa_ref,
+            cliente=cliente,
         )
 
         return JsonResponse({
@@ -497,17 +630,22 @@ def guardar_transaccion(request):
             "id": transaccion.id,
             "estado": transaccion.estado,
             "fecha": transaccion.fecha.strftime("%d/%m/%Y %H:%M"),
+            "cliente_nombre": cliente.nombre,
         })
 
     except Moneda.DoesNotExist:
         return JsonResponse({"success": False, "error": "Moneda no encontrada"}, status=404)
     except TasaDeCambio.DoesNotExist:
         return JsonResponse({"success": False, "error": "Tasa de cambio no encontrada"}, status=404)
+    except Cliente.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Cliente no encontrado o inactivo"}, status=404)
     except Exception as e:
         return JsonResponse({"success": False, "error": "Error al guardar", "detail": str(e)}, status=500)
 
 
 def actualizar_estado_transaccion(request):
+
+
     """
     Actualiza el estado de una transacción existente.
 

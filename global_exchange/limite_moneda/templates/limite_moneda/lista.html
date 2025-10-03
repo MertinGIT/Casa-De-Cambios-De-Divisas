@@ -450,34 +450,22 @@ body {
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
-      <h1 class="page-title">Límites por de Transaccion</h1>
-      <div class="header-right">
-        <form method="get" style="display: flex; align-items: center; gap: 12px;">
-          <input name="q" value="{{ q }}" class="search-input" type="search" placeholder="Buscar por cliente o perfil...">
-          <span class="buscar-por-text">Buscar por</span>
-          <select name="campo" class="search-field-selector">
-            <option value="">Seleccione campo</option>
-            <option value="nombre">Nombre del Cliente</option>
-          </select>
-        </form>
-      </div>
+      <h1 class="page-title">Límites Globales de Transacciones</h1>
     </div>
 
-    <button 
+  <button 
         class="btn-add rounded border-0 my-2" 
         data-url="{% url 'limite-crear' %}" 
         data-title="Agregar Límite por Cliente"
         onclick="openCreateModal(this.dataset.url, this.dataset.title)">
         + Agregar Límite
-    </button>
+    </button> 
 
     <!-- Tabla de límites -->
     <div class="table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Cedula</th>
             <th>Moneda Base</th>
             <th>Límite Diario</th>
             <th>Límite Mensual</th>
@@ -488,11 +476,9 @@ body {
         <tbody style="text-align: center;">
           {% for l in limites %}
             <tr>
-              <td data-label="Nombre">{{ l.cliente.nombre }}</td>
-              <td data-label="Nombre">{{ l.cliente.cedula }}</td>
-              <td data-label="Moneda Base">{{ l.moneda.nombre }}</td>
-              <td data-label="Límite Diario">{{ l.limite_diario|floatformat:2 }}</td>
-              <td data-label="Límite Mensual">{{ l.limite_mensual|floatformat:2 }}</td>
+              <td data-label="Moneda Base">{{ l.moneda.nombre|default:"(Por defecto)" }}</td>
+              <td data-label="Límite Diario">{{ l.limite_diario|floatformat:0}}</td>
+              <td data-label="Límite Mensual">{{ l.limite_mensual|floatformat:0 }}</td>
               <td data-label="Estado">
                 {% if l.estado == 'activo' %}
                   <span class="status-badge status-activo">Activo</span>
@@ -501,6 +487,7 @@ body {
                 {% endif %}
               </td>
               <td data-label="Acciones">
+                <!-- Botón Editar -->
                 <button class="btn-edit btn btn-sm btn-primary"
                         data-id="{{ l.id }}"
                         data-detalle="{% url 'limite-detalle' l.id %}"
@@ -509,6 +496,7 @@ body {
                   Editar
                 </button>
 
+                <!-- Botón Activar/Desactivar -->
                 {% if l.estado == 'activo' %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-danger"
@@ -526,79 +514,17 @@ body {
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" class="no-results">Sin resultados encontrados.</td>
+              <td colspan="5" class="no-results">No se configuró ningún límite global.</td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
-
-    <!-- Paginación -->
-    {% if page_obj %}
-      <div class="pagination-wrapper">
-        <p class="pagination-info">
-          Mostrando datos {{ page_obj.start_index|default:1 }} a {{ page_obj.end_index|default:1 }} de {{ page_obj.paginator.count|default:0 }} entradas
-        </p>
-        <nav>
-          <ul class="custom-pagination">
-            {% if page_obj.has_previous %}
-              <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&lsaquo;</a>
-              </li>
-            {% else %}
-              <li class="page-item disabled"><span class="page-link">&lsaquo;</span></li>
-            {% endif %}
-
-            {% for i in page_obj.paginator.page_range %}
-              {% if i == page_obj.number %}
-                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
-              {% else %}
-                {% with current_minus_2=page_obj.number|add:"-2" current_plus_2=page_obj.number|add:"2" %}
-                  {% if i <= 2 or i > page_obj.paginator.num_pages|add:"-2" or i >= current_minus_2 and i <= current_plus_2 %}
-                    <li class="page-item">
-                      <a class="page-link" href="?page={{ i }}&{{ request.GET.urlencode|cut:'page=' }}">{{ i }}</a>
-                    </li>
-                  {% elif i == 3 and page_obj.number > 5 %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                  {% elif i == page_obj.paginator.num_pages|add:"-2" and page_obj.number < page_obj.paginator.num_pages|add:"-4" %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                  {% endif %}
-                {% endwith %}
-              {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-              <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode|cut:'page=' }}">&rsaquo;</a></li>
-            {% else %}
-              <li class="page-item disabled"><span class="page-link">&rsaquo;</span></li>
-            {% endif %}
-          </ul>
-        </nav>
-      </div>
-    {% endif %}
-
   </div>
 </div>
 
-
+<!-- Incluye tu modal heredado de base_admin -->
 {% include "limite_moneda/form.html" with modal_type=modal_type obj_id=obj_id %}
-<!-- Modal de error -->
-<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title">Error</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p id="errorMessage"></p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <script>
 function getCookie(name) {
@@ -616,34 +542,6 @@ function getCookie(name) {
     return cookieValue;
 }
 
-function cambiarEstadoLimite(limiteId, url) {
-  fetch(url, {
-    method: "POST",
-    headers: {
-      "X-CSRFToken": getCookie("csrftoken"),
-      "X-Requested-With": "XMLHttpRequest"
-    }
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      // Actualizar la fila visualmente o recargar la tabla si querés
-      location.reload(); 
-    } else {
-      // Mostrar modal de error
-      document.getElementById("errorMessage").innerText = data.errors.join("\n");
-      let modal = new bootstrap.Modal(document.getElementById("errorModal"));
-      modal.show();
-    }
-  })
-  .catch(err => {
-    console.error("Error en la petición:", err);
-    document.getElementById("errorMessage").innerText = "Error inesperado en la petición.";
-    let modal = new bootstrap.Modal(document.getElementById("errorModal"));
-    modal.show();
-  });
-}
 </script>
-
 
 {% endblock %}
