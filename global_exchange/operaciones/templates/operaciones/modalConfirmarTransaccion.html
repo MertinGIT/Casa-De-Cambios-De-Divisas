@@ -282,7 +282,13 @@
         };
 
         window.datos = datos;
-        mostrarModalConfirmacion(datos);
+        console.log("modal confirmación:");
+        console.log("limite",window.limite);
+        if (window.limite){
+          console.log("verificando limites")
+          mostrarModalConfirmacion(datos);
+          return;
+        }
       },
       error: function (xhr) {
         mostrarMensaje("Error", "Error al realizar la transacción");

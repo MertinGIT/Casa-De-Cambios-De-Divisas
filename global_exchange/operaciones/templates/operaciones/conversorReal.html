@@ -625,45 +625,15 @@
         });
       }
 
-$("#btn-verificar-pin").click(function () {
-  let pinIngresado = "";
-  $(".pin-digit").each(function () { pinIngresado += $(this).val(); });
-
-  if (pinIngresado === "1234") {
-    // Verificar tasa antes de proceder
-    verificarTasaActualizada(function(tasaActualizada) {
-      console.log("Tasa actualizada:", tasaActualizada);
-      if (tasaActualizada) {
-        console.log("tiene que entrar")
-        // ✅ Proceder con la transacción
-        procesarTransaccion();
-      } else {
-        // ⚠️ Cortar flujo: mostrar mensaje y bloquear confirmar
-        console.log("acaaaaaaaaaaa:");
-        $("#modal-exito").css("display", "none");
-        mostrarMensaje(
-          "Transacción rechazada",
-          "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa."
-        ,"warning" ,true);
-        //$("#modal-exito").hide();
-        $("#modal-pin").fadeOut();
-        return; // 🚨 corte definitivo
-      }
-    });
-  } else {
-    console.log("PIN incorrecto:", pinIngresado);
-    $("#mensaje-pin").fadeIn();
-    $(".pin-digit").val("").first().focus();
-  }
-
-  // limpiar inputs del PIN
-  $(".pin-digit").val("");
+$("#btn-convertir").click(function () {
+  console.log("Iniciando proceso de transacción...");
+  verificarLimites();
 });
 
 
 
   // Función separada para procesar la transacción
-function procesarTransaccion() {
+verificarLimites =function() {
   console.log("Procesando transacción...");
 
   const campos = getCampos();
@@ -673,7 +643,8 @@ function procesarTransaccion() {
 
   // Determinar qué moneda y monto enviar según el tipo de operación
   let monedaParaLimite, montoParaLimite;
-  
+  console.log("Tipo de operación:", campos.op);
+  console.log("Monto transacción:", montoTransaccion);
   if (campos.op === "venta") {
     // COMPRA: cliente entrega PYG
     monedaParaLimite = "PYG";
@@ -683,24 +654,24 @@ function procesarTransaccion() {
     monedaParaLimite = origenAbrev;
     montoParaLimite = montoTransaccion;
   }
-  
+  console.log("Monto transacción:");
   console.log("Verificando límites:", montoParaLimite, monedaParaLimite, campos.op);
   
   verificarLimitesDisponibles(montoParaLimite, monedaParaLimite, campos.op, function(limiteOk) {
+    window.limite=limiteOk;
     if (!limiteOk) {
       // Si excede límites, detener el proceso completamente
       $("#modal-pin").fadeOut();
+      cerrarModalConfirmacion();
       $("#modal-exito").fadeOut(); // 🔴 ASEGURAR que el modal de éxito NO se muestre
       return; // 🚨 Cortar ejecución aquí
     }
-    
-    // Si los límites están OK, continuar con el proceso normal
-    continuarProcesandoTransaccion();
   });
 }
 
 // Actualizar la función verificarLimitesDisponibles para aceptar el tipo de operación
 function verificarLimitesDisponibles(montoTransaccion, monedaAbrev, tipoOperacion, callback) {
+  
   $.ajax({
     url: "{% url 'verificar_limites' %}",
     type: "POST",
@@ -713,6 +684,8 @@ function verificarLimitesDisponibles(montoTransaccion, monedaAbrev, tipoOperacio
     success: function(resp) {
       if (resp.success) {
         // Verificar si excede límite diario
+        console.log("Respuesta límites:", resp);
+         // Verificar si excede límite diario
         if (resp.excede_diario) {
           $("#modal-exito").fadeOut(); // 🔴 Ocultar modal de éxito
           mostrarMensaje(
