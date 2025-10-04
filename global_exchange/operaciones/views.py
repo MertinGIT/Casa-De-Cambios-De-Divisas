@@ -10,6 +10,7 @@ Views (operaciones):
 Nota:
 Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
 """
+import os
 from django.views.decorators.http import require_POST
 
 from decimal import Decimal
@@ -664,3 +665,25 @@ def actualizar_estado_transaccion(request):
             return JsonResponse({"success": False, "error": "Error al actualizar", "detail": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
+
+import stripe
+
+os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = "TU_STRIPE_SECRET_KEY"
+
+@csrf_exempt
+def crear_pago_stripe(request):
+
+    if request.method == "POST":
+        try:
+            total = int(request.POST.get("total"))
+            moneda = "pyg"  # Guaraníes
+            
+            payment_intent = stripe.PaymentIntent.create(
+                amount=total,
+                currency=moneda
+            )
+
+            return JsonResponse({"client_secret": payment_intent.client_secret})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
