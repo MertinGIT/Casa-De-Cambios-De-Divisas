@@ -27,19 +27,7 @@ def transaccion_banco_view(request):
             print("Cuenta obtenida o creada:", cuenta, "Creada:", created)
             transaccion = serializer.save(cuenta=cuenta)
 
-            if tipo == "compra":
-                if cuenta.saldo >= monto:
-                    cuenta.saldo -= monto
-                    cuenta.save()
-                    transaccion = serializer.save(estado="aceptada")
-                else:
-                    transaccion = serializer.save(estado="rechazada", motivo="Saldo insuficiente")
-                    return Response({
-                        "mensaje": "Saldo insuficiente para la transacción",
-                        "estado": transaccion.estado,
-                        "datos": TransaccionBancoSerializer(transaccion).data
-                    }, status=status.HTTP_201_CREATED)
-            elif tipo == "venta":
+            if tipo == "compra" or tipo == "venta":
                 cuenta.saldo += monto
                 cuenta.save()
                 transaccion = serializer.save(estado="aceptada")
