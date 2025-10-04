@@ -100,6 +100,7 @@ INSTALLED_APPS = [
     'historial_transacciones',
     'channels',
     'notificaciones',
+    'configuracion_usuario'
 ]
 
 

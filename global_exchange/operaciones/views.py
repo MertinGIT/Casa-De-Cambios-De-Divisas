@@ -10,6 +10,7 @@ Views (operaciones):
 Nota:
 Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
 """
+import os
 from django.views.decorators.http import require_POST
 
 from decimal import Decimal
@@ -32,10 +33,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.utils import timezone
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
 from limite_moneda.models import LimiteTransaccion
 from django.db.models import Sum
-
+import random
+from django.core.mail import send_mail
 
 
 @login_required
@@ -66,6 +67,7 @@ def simulador_operaciones(request):
             "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
             "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
             "monto": float(t.monto),
+            "estado":t.estado,
             "moneda": t.moneda_origen.abreviacion if t.tipo == 'Compra' else t.moneda_destino.abreviacion
         }
         for t in reversed(list(transacciones_qs))
@@ -124,6 +126,7 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
+    resultado_sin_desc=0
     limites = LimiteTransaccion.objects.all()  # tus límites generales por moneda
 
     hoy = localtime(now()).date()
@@ -287,7 +290,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-
+    print("context resultado",resultado)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -318,6 +321,91 @@ def simulador_operaciones(request):
 
     return render(request, 'operaciones/conversorReal.html', context)
 
+
+@require_POST
+def verificar_limites(request):
+    """
+    Verifica si el monto de la transacción excede los límites diarios o mensuales
+    """
+    try:
+        monto = Decimal(request.POST.get('monto', 0))
+        moneda_abrev = request.POST.get('moneda')
+        
+        # Obtener la moneda
+        moneda = Moneda.objects.get(abreviacion=moneda_abrev)
+        
+        # Obtener el límite general para esta moneda
+        limite = LimiteTransaccion.objects.filter(moneda_id=1).first()
+        
+        if not limite:
+            return JsonResponse({
+                'success': False,
+                'mensaje': f'No se encontró límite configurado para {moneda_abrev}'
+            })
+        
+        # Obtener límites configurados
+        limite_diario = limite.limite_diario
+        limite_mensual = limite.limite_mensual
+        
+        # Calcular fechas
+        hoy = localtime(now()).date()
+        inicio_mes = hoy.replace(day=1)
+        
+        # Filtrar solo transacciones completadas
+        transacciones_validas = Transaccion.objects.filter(
+            estado__in=["completada"]  # solo considerar transacciones completadas
+        )
+        
+        # Calcular gasto diario
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        
+        # Calcular gasto mensual
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        
+        # Calcular disponibles
+        disponible_diario = limite_diario - gasto_diario
+        disponible_mensual = limite_mensual - gasto_mensual
+        
+        # Verificar si excede límites
+        excede_diario = monto > disponible_diario
+        excede_mensual = monto > disponible_mensual
+        
+        # Formatear números para mostrar (formato paraguayo: 1.234.567,89)
+        def format_number(num):
+            num_str = f"{float(num):,.2f}"
+            # Cambiar formato americano a paraguayo
+            num_str = num_str.replace(',', 'X').replace('.', ',').replace('X', '.')
+            return num_str
+        
+        return JsonResponse({
+            'success': True,
+            'excede_diario': excede_diario,
+            'excede_mensual': excede_mensual,
+            'moneda': moneda_abrev,
+            'monto_solicitado': format_number(monto),
+            'limite_diario': format_number(limite_diario),
+            'gastado_diario': format_number(gasto_diario),
+            'disponible_diario': format_number(disponible_diario),
+            'limite_mensual': format_number(limite_mensual),
+            'gastado_mensual': format_number(gasto_mensual),
+            'disponible_mensual': format_number(disponible_mensual)
+        })
+        
+    except Moneda.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'mensaje': f'Moneda {moneda_abrev} no encontrada'
+        })
+    except Exception as e:
+        print(f"Error en verificar_limites: {str(e)}", flush=True)
+        return JsonResponse({
+            'success': False,
+            'mensaje': f'Error al verificar límites: {str(e)}'
+        })
 
 def obtener_clientes_usuario(user,request):
     """
@@ -597,4 +685,58 @@ def actualizar_estado_transaccion(request):
             return JsonResponse({"success": False, "error": "Error al actualizar", "detail": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
+
+import stripe
+
+os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
+@csrf_exempt
+def crear_pago_stripe(request):
+    if request.method == "POST":
+        try:
+            total = int(request.POST.get("total", 0))
+            moneda = "pyg"
+
+            payment_intent = stripe.PaymentIntent.create(
+                amount=total,
+                currency=moneda,
+                automatic_payment_methods={"enabled": True}
+            )
+
+            return JsonResponse({"client_secret": payment_intent.client_secret})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse({"error": "Método no permitido"}, status=405)
+
+def enviar_pin(request):
+    if request.user.is_authenticated:
+        # Generar un PIN aleatorio de 4 dígitos
+        pin = str(random.randint(1000, 9999))
+
+        # Guardar PIN en la sesión (válido por una transacción)
+        request.session['pin_seguridad'] = pin
+
+        # Enviar el PIN al email del usuario
+        asunto = "Tu código PIN de verificación"
+        mensaje = f"Hola {request.user.username},\n\nTu código de verificación es: {pin}\n\nEste código vence en unos minutos."
+        remitente = None  # Usará EMAIL_HOST_USER por defecto
+        destinatarios = [request.user.email]
+
+        send_mail(asunto, mensaje, remitente, destinatarios)
+
+        return JsonResponse({"success": True, "message": "Se envió un PIN a tu correo"})
+    return JsonResponse({"success": False, "message": "Usuario no autenticado"})
+
+def validar_pin(request):
+    if request.method == "POST":
+        pin_ingresado = request.POST.get("pin")
+        pin_guardado = request.session.get("pin_seguridad")
+
+        if pin_guardado and pin_ingresado == pin_guardado:
+            # PIN válido, eliminarlo de la sesión para que no se reutilice
+            del request.session['pin_seguridad']
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "message": "PIN incorrecto"})
 

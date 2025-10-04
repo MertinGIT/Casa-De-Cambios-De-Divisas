@@ -9,91 +9,97 @@
         </div>
 
         <div class="modal-body-exito">
-            <form id="form-metodo-pago"  autocomplete="off">
+            <form id="form-metodo-pago" autocomplete="off">
                 <!-- Métodos de pago -->
                 <div class="metodos-container">
-    {% for medio in medios %}
-        {% if "efectivo" not in medio.nombre|lower %}
-            {% if "tarjeta" in medio.nombre|lower %}
-                <div class="metodo-item">
-                    <input type="radio" id="tarjeta" name="metodo" value="tarjeta" class="metodo-radio">
-                    <label for="tarjeta" class="metodo-label">
-                        <div class="metodo-icon">💳</div>
-                        <div class="metodo-info">
-                            <span class="metodo-nombre">Tarjeta de crédito/débito</span>
-                            <span class="metodo-desc">Visa, Mastercard, American Express</span>
-                        </div>
-                        <div class="metodo-check">✓</div>
-                    </label>
-                </div>
-            {% elif "billetera" in medio.nombre|lower %}
-                <div class="metodo-item">
-                    <input type="radio" id="billetera" name="metodo" value="billetera" class="metodo-radio">
-                    <label for="billetera" class="metodo-label">
-                        <div class="metodo-icon">📱</div>
-                        <div class="metodo-info">
-                            <span class="metodo-nombre">Billetera digital</span>
-                            <span class="metodo-desc">PayPal, Tigo Money, Personal Pay</span>
-                        </div>
-                        <div class="metodo-check">✓</div>
-                    </label>
-                </div>
-            {% elif "banco" in medio.nombre|lower %}
-                <div class="metodo-item">
-                    <input type="radio" id="transferencia" name="metodo" value="transferencia" class="metodo-radio">
-                    <label for="transferencia" class="metodo-label">
-                        <div class="metodo-icon">🏦</div>
-                        <div class="metodo-info">
-                            <span class="metodo-nombre">Transferencia bancaria</span>
-                            <span class="metodo-desc">Banco Itaú, Banco Continental</span>
-                        </div>
-                        <div class="metodo-check">✓</div>
-                    </label>
-                </div>
-            {% endif %}
-        {% endif %}
-    {% endfor %}
+                    {% for medio in medios %}
+                        {% if "efectivo" not in medio.nombre|lower %}
+                            {% if "tarjeta" in medio.nombre|lower %}
+                                <div class="metodo-item">
+                                    <input type="radio" id="tarjeta" name="metodo" value="tarjeta" class="metodo-radio">
+                                    <label for="tarjeta" class="metodo-label">
+                                        <div class="metodo-icon">💳</div>
+                                        <div class="metodo-info">
+                                            <span class="metodo-nombre">Tarjeta de crédito/débito</span>
+                                            <span class="metodo-desc">Visa, Mastercard, American Express</span>
+                                        </div>
+                                        <div class="metodo-check">✓</div>
+                                    </label>
+                                </div>
+                            {% elif "billetera" in medio.nombre|lower %}
+                                <div class="metodo-item">
+                                    <input type="radio" id="billetera" name="metodo" value="billetera" class="metodo-radio">
+                                    <label for="billetera" class="metodo-label">
+                                        <div class="metodo-icon">📱</div>
+                                        <div class="metodo-info">
+                                            <span class="metodo-nombre">Billetera digital</span>
+                                            <span class="metodo-desc">PayPal, Tigo Money, Personal Pay</span>
+                                        </div>
+                                        <div class="metodo-check">✓</div>
+                                    </label>
+                                </div>
+                            {% elif "banco" in medio.nombre|lower %}
+                                <div class="metodo-item">
+                                    <input type="radio" id="transferencia" name="metodo" value="transferencia" class="metodo-radio">
+                                    <label for="transferencia" class="metodo-label">
+                                        <div class="metodo-icon">🏦</div>
+                                        <div class="metodo-info">
+                                            <span class="metodo-nombre">Transferencia bancaria</span>
+                                            <span class="metodo-desc">Banco Itaú, Banco Continental</span>
+                                        </div>
+                                        <div class="metodo-check">✓</div>
+                                    </label>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
 
-    {# Finalmente, agregamos el efectivo al final #}
-    <div class="metodo-item">
-        <input type="radio" id="efectivo" name="metodo" value="efectivo" class="metodo-radio">
-        <label for="efectivo" class="metodo-label">
-            <div class="metodo-icon">💵</div>
-            <div class="metodo-info">
-                <span class="metodo-nombre">Pago en efectivo</span>
-                <span class="metodo-desc">Pago contra entrega</span>
-            </div>
-            <div class="metodo-check">✓</div>
-        </label>
-    </div>
-</div>
-
+                    {# Efectivo al final #}
+                    <div class="metodo-item">
+                        <input type="radio" id="efectivo" name="metodo" value="efectivo" class="metodo-radio">
+                        <label for="efectivo" class="metodo-label">
+                            <div class="metodo-icon">💵</div>
+                            <div class="metodo-info">
+                                <span class="metodo-nombre">Pago en efectivo</span>
+                                <span class="metodo-desc">Pago contra entrega</span>
+                            </div>
+                            <div class="metodo-check">✓</div>
+                        </label>
+                    </div>
+                </div>
 
                 <!-- Información del método seleccionado -->
                 <div id="info-pago" class="info-pago" style="display: none;">
                     
-                    <!-- Formulario para tarjeta -->
-                    <div id="form-tarjeta" class="form-metodo" style="display: none;">
-                        <h4 class="form-title">Información de la tarjeta</h4>
-                        <div class="form-group">
-                            <label for="numero-tarjeta">Número de tarjeta</label>
-                            <input type="text" id="numero-tarjeta" placeholder="1234 5678 9012 3456" maxlength="19">
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="fecha-exp">Fecha de expiración</label>
-                                <input type="text" id="fecha-exp" placeholder="MM/AA" maxlength="5">
-                            </div>
-                            <div class="form-group">
-                                <label for="cvv">CVV</label>
-                                <input type="text" id="cvv" placeholder="123" maxlength="4">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label for="nombre-tarjeta">Nombre del titular</label>
-                            <input type="text" id="nombre-tarjeta" placeholder="Como aparece en la tarjeta">
-                        </div>
-                    </div>
+                    <!-- Formulario para tarjeta con Stripe -->
+<!-- Formulario para tarjeta con Stripe -->
+<div id="form-tarjeta" class="form-metodo" style="display: none;">
+    <h4 class="form-title">Información de la tarjeta</h4>
+    
+    <div class="form-group" style="margin-bottom: 16px;">
+        <label for="card-number-element">Número de tarjeta</label>
+        <div id="card-number-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="card-expiry-element">Fecha de expiración</label>
+            <div id="card-expiry-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+        </div>
+
+<div class="form-group" style="display: block; position: relative; top: 22px; margin-bottom: 0;">
+    <label for="card-cvc-element">CVC</label>
+    <div id="card-cvc-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+</div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="card-postal-element">Código postal</label>
+            <div id="card-postal-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+        </div>
+    </div>
+
+    <div id="card-errors" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
+</div>
 
                     <!-- Formulario para billetera digital -->
                     <div id="form-billetera" class="form-metodo" style="display: none;">
@@ -156,11 +162,66 @@
     </div>
 </div>
 
+<script src="https://js.stripe.com/v3/"></script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     initModalMetodoPago();
 });
+
+let stripe = Stripe("pk_test_51SEA4sPPA3ZGnjFU4SnVSmEAuaC9giCmVeEIawSL8hGh5EiGP3QD5ZRMFMlKPjiYTB4kZtCNyVFEfrXRJM0U941B00kgUDAcDI");
+let elements = stripe.elements();
+let cardElement = null;
+
+let cardNumberElement = null;
+let cardExpiryElement = null;
+let cardCvcElement = null;
+let postalCodeElement = null; // Nuevo
+
+function inicializarTarjeta() {
+    if (!cardNumberElement) {
+        console.log("Inicializando Stripe Card Elements individuales");
+        
+        const style = {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#e74c3c',
+                iconColor: '#e74c3c'
+            }
+        };
+
+        cardNumberElement = elements.create('cardNumber', { style, showIcon: true });
+        cardExpiryElement = elements.create('cardExpiry', { style });
+        cardCvcElement = elements.create('cardCvc', { style });
+        postalCodeElement = elements.create('postalCode', { style }); // Nuevo
+        
+        cardNumberElement.mount('#card-number-element');
+        cardExpiryElement.mount('#card-expiry-element');
+        cardCvcElement.mount('#card-cvc-element');
+        postalCodeElement.mount('#card-postal-element'); // Nuevo
+        
+        console.log("✅ Stripe Card Elements montados correctamente");
+        
+        const displayError = document.getElementById('card-errors');
+        
+        [cardNumberElement, cardExpiryElement, cardCvcElement, postalCodeElement].forEach(element => {
+            element.on('change', function(event) {
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                } else {
+                    displayError.textContent = '';
+                }
+            });
+        });
+    }
+}
 
 function initModalMetodoPago() {
     console.log("Inicializando modal método de pago");
@@ -170,17 +231,6 @@ function initModalMetodoPago() {
         if (e.target.matches('input[name="metodo"]')) {
             console.log("Método seleccionado:", e.target.value);
             handleMetodoChange(e.target.value);
-        }
-    });
-
-    // Event delegation para formateo de inputs
-    document.addEventListener('input', function(e) {
-        if (e.target.id === 'numero-tarjeta') {
-            formatearNumeroTarjeta(e.target);
-        } else if (e.target.id === 'fecha-exp') {
-            formatearFechaExpiracion(e.target);
-        } else if (e.target.id === 'cvv') {
-            soloNumeros(e.target);
         }
     });
 
@@ -214,7 +264,6 @@ $("#btn-cerrar-mensaje-pago").click(function () {
     $("#modal-mensaje-pago").fadeOut();
 });
 
-
 function handleMetodoChange(metodSeleccionado) {
     const infoPago = document.getElementById('info-pago');
     const btnConfirmar = document.getElementById('btn-confirmar-pago');
@@ -236,8 +285,9 @@ function handleMetodoChange(metodSeleccionado) {
         form.style.display = 'none';
     });
     
-    // Mostrar el formulario correspondiente con animación
+    // Mostrar formulario correspondiente
     const targetForm = document.getElementById(`form-${metodSeleccionado}`);
+    
     if (targetForm) {
         setTimeout(() => {
             targetForm.style.display = 'block';
@@ -252,26 +302,15 @@ function handleMetodoChange(metodSeleccionado) {
         }, 150);
     }
     
+    // Inicializar Stripe solo si es tarjeta
+    if (metodSeleccionado === 'tarjeta') {
+        setTimeout(() => {
+            inicializarTarjeta();
+        }, 200);
+    }
+    
     // Habilitar botón de confirmar
     btnConfirmar.disabled = false;
-}
-
-function formatearNumeroTarjeta(input) {
-    let value = input.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
-    input.value = formattedValue;
-}
-
-function formatearFechaExpiracion(input) {
-    let value = input.value.replace(/\D/g, '');
-    if (value.length >= 2) {
-        value = value.slice(0,2) + '/' + value.slice(2,4);
-    }
-    input.value = value;
-}
-
-function soloNumeros(input) {
-    input.value = input.value.replace(/[^0-9]/g, '');
 }
 
 function mostrarModalPago() {
@@ -286,16 +325,16 @@ function mostrarModalPago() {
     modal.style.display = 'flex';
 
     const campos = getCampos();
-
     let total = "";
     let moneda_a_pagar = "";
 
     if (campos.op === "compra") {
-        total = campos.$valor.val();       // monto que ingresa el usuario
-        moneda_a_pagar = campos.$origen.val(); // ej: PYG
+        total = campos.$valor.val();
+        moneda_a_pagar = campos.$origen.val();
     } else if (campos.op === "venta") {
-        total = campos.$valor.val();       // monto que ingresa el usuario
-        moneda_a_pagar = campos.$origen.val(); // ej: USD
+        total = campos.$valor.val();
+        moneda_a_pagar = campos.$origen.val();
+        console.log("monto a pagar (venta):", total, moneda_a_pagar);
     }
     $("#precio_a_pagar").text(total + " " + moneda_a_pagar);
     
@@ -313,9 +352,180 @@ function mostrarModalPago() {
     }
 }
 
+window.procesarPagoStripe = async function() {
+    console.log("🔄 Iniciando procesarPagoStripe...");
+    
+    // Verificar que tenemos el payment method
+    if (!window.stripePaymentMethod) {
+        console.error("❌ No hay payment method guardado");
+        mostrarMensaje(
+            "Error de Pago",
+            "No se encontraron los datos de la tarjeta. Por favor intente nuevamente.",
+            "error"
+        );
+        return;
+    }
+
+    try {
+        let montoEnGuaranies;
+        
+        // Verificar si tenemos los datos de la transacción con descuento aplicado
+        if (window.datos) {
+            const tipo = window.datos.tipo; // "Compra" o "Venta"
+            let montoTexto = '';
+            
+            // Determinar qué campo usar según el tipo de operación
+            if (tipo === 'Compra') {
+                // En COMPRA: el cliente ENTREGA PYG
+                montoTexto = window.datos.entregar;
+                console.log("💰 Operación COMPRA - usando 'entregar':", montoTexto);
+            } else if (tipo === 'Venta') {
+                // En VENTA: el cliente RECIBE PYG
+                montoTexto = window.datos.recibir;
+                console.log("💰 Operación VENTA - usando 'recibir':", montoTexto);
+            }
+            
+            // Extraer el monto (ej: "20000 PYG" -> 20000)
+            if (montoTexto) {
+                const montoMatch = montoTexto.trim().match(/^([\d,\.]+)/);
+                
+                if (montoMatch) {
+                    montoEnGuaranies = Math.round(parseFloat(montoMatch[1].replace(/,/g, '')));
+                    console.log("✅ Monto en guaraníes con descuento aplicado:", montoEnGuaranies);
+                }
+            }
+        }
+        
+        // Fallback: calcular desde los campos si no tenemos window.datos
+        if (!montoEnGuaranies) {
+            const campos = getCampos();
+            
+            // Obtener el texto completo del precio (ej: "1000 USD")
+            let precioTexto = document.getElementById('precio_a_pagar').textContent.trim();
+            
+            // Extraer monto y moneda
+            let partes = precioTexto.split(' ');
+            let montoOriginal = parseFloat(partes[0].replace(/[^0-9.]/g, ''));
+            let monedaPago = partes[1] || '';
+            
+            console.log("⚠️ Fallback - Monto original:", montoOriginal, monedaPago);
+            
+            // Si la moneda NO es PYG, necesitamos convertir
+            if (monedaPago !== 'PYG') {
+                // Obtener el resultado calculado (que está en la moneda destino)
+                let resultado = parseFloat(campos.$resultado.val());
+                
+                if (campos.op === "compra") {
+                    // COMPRA: cliente entrega USD/EUR/etc, recibe PYG
+                    // El resultado YA está en PYG
+                    montoEnGuaranies = Math.round(resultado);
+                } else {
+                    // VENTA: cliente entrega PYG, recibe USD/EUR/etc
+                    // El monto original YA está en PYG
+                    montoEnGuaranies = Math.round(montoOriginal);
+                }
+                
+                console.log("💱 Conversión realizada a PYG:", montoEnGuaranies);
+            } else {
+                // Si ya es PYG, usar el monto directamente
+                montoEnGuaranies = Math.round(montoOriginal);
+                console.log("✅ Ya está en PYG:", montoEnGuaranies);
+            }
+        }
+        
+        if (!montoEnGuaranies || montoEnGuaranies <= 0) {
+            console.error("❌ Monto inválido:", montoEnGuaranies);
+            mostrarMensaje("Error", "El monto a pagar no es válido", "error");
+            return;
+        }
+
+        console.log("💰 Total final a cobrar en guaraníes:", montoEnGuaranies);
+
+        // Obtener CSRF token
+        const csrftoken = getCookie('csrftoken');
+
+        // Crear el PaymentIntent en el servidor
+        console.log("📡 Creando PaymentIntent en el servidor...");
+        let response = await fetch("/operaciones/crear_pago_stripe/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": csrftoken
+            },
+            body: `total=${montoEnGuaranies}&tipo_operacion=cambio_moneda`
+        });
+
+        let data = await response.json();
+        
+        if (data.error) {
+            console.error("❌ Error del servidor:", data.error);
+            mostrarMensaje(
+                "Error de Pago",
+                "No se pudo procesar el pago: " + data.error,
+                "error"
+            );
+            return;
+        }
+
+        console.log("✅ PaymentIntent creado:", data.payment_intent_id);
+
+        // Confirmar el pago usando el payment method que guardamos
+        console.log("🔐 Confirmando pago con Stripe...");
+        const result = await stripe.confirmCardPayment(data.client_secret, {
+            payment_method: window.stripePaymentMethod.id
+        });
+
+        if (result.error) {
+            console.error("❌ Error confirmando pago:", result.error);
+            mostrarMensaje(
+                "Error de Pago", 
+                result.error.message, 
+                "error"
+            );
+            
+            $("#modal-pin").fadeOut();
+            
+        } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
+            console.log("✅ ¡PAGO EXITOSO! PaymentIntent ID:", result.paymentIntent.id);
+            
+            // Guardar el ID del pago en la transacción
+            if (window.transaccionActual) {
+                window.transaccionActual.stripe_payment_id = result.paymentIntent.id;
+            }
+            
+            // Limpiar el payment method después de usarlo
+            window.stripePaymentMethod = null;
+            
+            // Mostrar modal de éxito
+            console.log("🎉 Mostrando modal de éxito");
+            $("#modal-pin").fadeOut();
+            $("#modal-exito").fadeIn().css("display", "flex");
+            
+        } else {
+            console.warn("⚠️ Estado del pago inesperado:", result.paymentIntent?.status);
+            mostrarMensaje(
+                "Pago Pendiente", 
+                "El pago está en proceso de verificación", 
+                "warning"
+            );
+        }
+        
+    } catch (err) {
+        console.error("❌ Error procesando pago Stripe:", err);
+        mostrarMensaje(
+            "Error", 
+            "Hubo un problema al procesar el pago. Por favor intenta nuevamente.", 
+            "error"
+        );
+        
+        window.stripePaymentMethod = null;
+    }
+};
+
+
 function getCampos() {
     const op = $("input[name='operacion']:checked").val();
-    if(op === "venta"){ // compra inputs activos
+    if(op === "venta"){
       return {
         $origen: $("#origen-compra"),
         $destino: $("#destino-compra"),
@@ -323,7 +533,7 @@ function getCampos() {
         $resultado: $("#resultado-compra"),
         op
       };
-    } else { // venta inputs activos
+    } else {
       return {
         $origen: $("#origen-venta"),
         $destino: $("#destino-venta"),
@@ -378,64 +588,79 @@ function resetearFormularioMetodo() {
     // Limpiar campos
     const inputs = document.querySelectorAll('#modal-metodo input[type="text"], #modal-metodo select');
     inputs.forEach(input => input.value = '');
+    
+    // Limpiar Stripe Card Element si existe
+    if (cardElement) {
+        cardElement.clear();
+    }
 }
 
 function mostrarMensaje(titulo, texto) {
-  if (window.mostrarMensajeModal) {
-    
-    window.mostrarMensajeModal(titulo, texto);
-  } else {
-    alert(titulo + ": " + texto);
-  }
+    if (window.mostrarMensajeModal) {
+        window.mostrarMensajeModal(titulo, texto);
+    } else {
+        alert(titulo + ": " + texto);
+    }
 }
 
-function confirmarMetodoPago() {
+async function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
     
-    const metodoSeleccionado = document.querySelector('input[name="metodo"]:checked');
-    
-    if (!metodoSeleccionado) {
+    const metodoRadio = document.querySelector('input[name="metodo"]:checked');
+    if (!metodoRadio) {
         alert('Por favor seleccione un método de pago');
         return;
     }
 
-    // Validar campos según el método seleccionado
+    window.metodoSeleccionado = metodoRadio.value;
     let esValido = true;
     let mensajeError = '';
 
-    switch (metodoSeleccionado.value) {
+    const btnConfirmar = document.getElementById('btn-confirmar-pago');
+
+    switch (window.metodoSeleccionado) {
         case 'tarjeta':
-            const numeroTarjeta = document.getElementById('numero-tarjeta').value.trim();
-            const fechaExp = document.getElementById('fecha-exp').value.trim();
-            const titular = document.getElementById('nombre-tarjeta').value.trim();
-            const cvv = document.getElementById('cvv').value.trim();
+            // CRÍTICO: Crear el Payment Method ANTES de cerrar el modal
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<span>Validando tarjeta...</span>';
             
-            if (!numeroTarjeta || numeroTarjeta.length < 16) {
-                esValido = false;
-                mensajeError = 'Por favor ingrese un número de tarjeta válido';
-            } else if (!fechaExp || fechaExp.length < 5 || !fechaExp.includes('/')) {
-                esValido = false;
-                mensajeError = 'Por favor ingrese una fecha de expiración válida (MM/AA)';
-            } else if (!cvv || cvv.length < 3) {
-                esValido = false;
-                mensajeError = 'Por favor ingrese un CVV válido';
-            } else if (!titular || titular.length < 2) {
-                esValido = false;
-                mensajeError = 'Por favor ingrese el nombre del titular';
-            }
-            
-            // Validar que la fecha no esté vencida
-            if (esValido && fechaExp) {
-                const [mes, año] = fechaExp.split('/');
-                const fechaActual = new Date();
-                const añoCompleto = 2000 + parseInt(año);
-                const fechaTarjeta = new Date(añoCompleto, parseInt(mes) - 1);
-                
-                if (fechaTarjeta < fechaActual) {
-                    esValido = false;
-                    mensajeError = 'La tarjeta ha expirado';
+            try {
+                // Verificar que los elementos de Stripe estén inicializados
+                if (!cardNumberElement || !cardExpiryElement || !cardCvcElement || !postalCodeElement) {
+                    throw new Error("Los elementos de Stripe no están inicializados");
                 }
+
+                // Crear el payment method con los elementos individuales
+                const { error, paymentMethod } = await stripe.createPaymentMethod({
+                    type: 'card',
+                    card: cardNumberElement,
+                    billing_details: {
+                        // El código postal se captura automáticamente del postalCodeElement
+                    }
+                });
+
+                if (error) {
+                    console.error("Error creando payment method:", error);
+                    mostrarError("Error de Tarjeta", error.message);
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = '<span>Confirmar pago</span>';
+                    return;
+                }
+
+                // Guardar el payment method globalmente
+                window.stripePaymentMethod = paymentMethod;
+                console.log("✅ Payment Method creado:", paymentMethod.id);
+                
+            } catch (err) {
+                console.error("Error al crear payment method:", err);
+                mostrarError("Error", err.message || "No se pudo procesar la tarjeta");
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = '<span>Confirmar pago</span>';
+                return;
             }
+            
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerHTML = '<span>Confirmar pago</span>';
             break;
             
         case 'billetera':
@@ -448,12 +673,6 @@ function confirmarMetodoPago() {
             } else if (!emailBilletera) {
                 esValido = false;
                 mensajeError = 'Por favor ingrese su email o número de celular';
-            } else if (emailBilletera.includes('@') && !validateEmail(emailBilletera)) {
-                esValido = false;
-                mensajeError = 'Por favor ingrese un email válido';
-            } else if (!emailBilletera.includes('@') && emailBilletera.length < 8) {
-                esValido = false;
-                mensajeError = 'Por favor ingrese un número de celular válido';
             }
             break;
             
@@ -471,65 +690,30 @@ function confirmarMetodoPago() {
             break;
             
         case 'efectivo':
+            // No requiere validación adicional
             break;
     }
-    console.log("Validación de formulario:", !esValido, mensajeError);
 
     if (!esValido) {
         console.log("Error de validación:", mensajeError);
-        mostrarError("Transacción rechazada:",mensajeError);
-        //alert(mensajeError);
+        mostrarError("Transacción rechazada", mensajeError);
         return;
     }
-
-    // Recopilar datos del formulario según el método
-    const datosTransaccion = {
-        metodo: metodoSeleccionado.value,
-        timestamp: new Date().toISOString(),
-        total: document.querySelector('.precio-total')?.textContent || '$0.00'
-    };
-
-    switch (metodoSeleccionado.value) {
-        case 'tarjeta':
-            datosTransaccion.numeroTarjeta = document.getElementById('numero-tarjeta').value;
-            datosTransaccion.fechaExp = document.getElementById('fecha-exp').value;
-            datosTransaccion.titular = document.getElementById('nombre-tarjeta').value;
-            datosTransaccion.cvv = document.getElementById('cvv').value;
-            break;
-            
-        case 'billetera':
-            datosTransaccion.tipoBilletera = document.getElementById('tipo-billetera').value;
-            datosTransaccion.email = document.getElementById('email-billetera').value;
-            break;
-            
-        case 'transferencia':
-            datosTransaccion.banco = document.getElementById('banco').value;
-            datosTransaccion.cuenta = document.getElementById('cuenta-numero').value;
-            break;
-            
-        case 'efectivo':
-            datosTransaccion.observaciones = "Pago contra entrega";
-            break;
-    }
-
-    console.log('Datos de transacción:', datosTransaccion);
     
     // Cerrar modal de pago
     cerrarModalPago();
     
-    // Llamar a la función que continúa el flujo (modal PIN)
+    // Continuar con el flujo (modal acreditación o PIN)
     if (typeof mostrarModalAcreditacion === 'function') {
-        //mostrarModalPin();
         mostrarModalAcreditacion();
     } else {
-        // Si no existe la función, mostrar modal PIN directamente
         const modalPin = document.getElementById('modal-pin');
         if (modalPin) {
             modalPin.style.display = 'flex';
         }
     }
 }
-// Función auxiliar para validar email
+
 function validateEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);

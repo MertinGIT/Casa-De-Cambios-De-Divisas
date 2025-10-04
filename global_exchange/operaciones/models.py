@@ -162,6 +162,25 @@ class Transaccion(models.Model):
         help_text="Referencia a la cotización base vigente al iniciar."
     )
 
+    cliente = models.ForeignKey(   # 👈 nuevo campo
+        Cliente,
+        on_delete=models.CASCADE,
+        related_name="transacciones",
+        help_text="Cliente al que pertenece esta transacción."
+    )
+
+    
+    def __str__(self):
+        """
+        Devuelve una representación legible de la transacción.
+
+        :return: String con la información de la transacción.
+        :rtype: str
+        :example: "Transacción 1 - COMPRA 1000 Dólar -> Guaraní [pendiente]"
+        """
+        return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
+
+
     objects = TransaccionManager()
 
 

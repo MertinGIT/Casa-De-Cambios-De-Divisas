@@ -16,27 +16,6 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
     Detecta cambios en las tasas de cambio y notifica SOLO a los usuarios
     que tienen activa la notificación para esa moneda específica.
     """
-    if created:
-        return
-
-    # Buscar la tasa anterior
-    tasa_anterior = (
-        TasaDeCambio.objects
-        .filter(moneda_origen=instance.moneda_origen, moneda_destino=instance.moneda_destino)
-        .exclude(pk=instance.pk)
-        .order_by('-fecha_actualizacion')
-        .first()
-    )
-    
-    if not tasa_anterior:
-        return
-
-    # Calcular el porcentaje de cambio
-    cambio_precio = abs((instance.precio_base - tasa_anterior.precio_base) / tasa_anterior.precio_base * 100)
-    
-    if cambio_precio < UMBRAL_CAMBIO:
-        return
-
     # Obtener SOLO los usuarios que tienen activa la notificación para esta moneda
     usuarios_activos = NotificacionMoneda.objects.filter(
         moneda=instance.moneda_origen,
@@ -45,6 +24,26 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
 
     if not usuarios_activos.exists():
         print(f"⚠️ No hay usuarios con notificaciones activas para {instance.moneda_origen.abreviacion}")
+        return
+
+    # Buscar la tasa con vigencia más reciente (excluyendo la actual)
+    # Ordena por vigencia (fecha real de la cotización)
+    tasa_anterior = (
+        TasaDeCambio.objects
+        .filter(moneda_origen=instance.moneda_origen, moneda_destino=instance.moneda_destino)
+        .exclude(pk=instance.pk)
+        .order_by('-vigencia')  # Ordena por fecha de vigencia más reciente
+        .first()
+    )
+    
+    # Si no hay tasa anterior, no hay nada que comparar
+    if not tasa_anterior:
+        return
+
+    # Calcular el porcentaje de cambio
+    cambio_precio = abs((instance.precio_base - tasa_anterior.precio_base) / tasa_anterior.precio_base * 100)
+    
+    if cambio_precio < UMBRAL_CAMBIO:
         return
 
     channel_layer = get_channel_layer()
@@ -62,8 +61,10 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
                 'precio_anterior': float(tasa_anterior.precio_base),
                 'precio_nuevo': float(instance.precio_base),
                 'porcentaje_cambio': float(cambio_precio),
+                'es_nueva': created,  # True si es nueva, False si es editada
                 'timestamp': datetime.now().isoformat()
             }
         )
 
-    print(f"✅ Notificación enviada a {usuarios_activos.count()} usuario(s) para {instance.moneda_origen.abreviacion} ({cambio_precio:.2f}%)")
+    tipo = "NUEVA tasa" if created else f"cambio ({cambio_precio:.2f}%)"
+    print(f"✅ Notificación de {tipo} enviada a {usuarios_activos.count()} usuario(s) para {instance.moneda_origen.abreviacion}")

@@ -6,15 +6,30 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from monedas.models import Moneda
 from notificaciones.models import NotificacionMoneda
+from cliente_usuario.models import Usuario_Cliente
+from clientes.models import Cliente
+from django.contrib.auth.decorators import login_required
 
 def panel_alertas(request):
     monedas = Moneda.objects.filter(estado=True)
     notificaciones_usuario = NotificacionMoneda.objects.filter(user=request.user, activa=True)
     monedas_activas = [n.moneda.abreviacion for n in notificaciones_usuario]
+    
+    segmento_nombre = "Sin Segmentación"
+    descuento=0
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+        if cliente_operativo.segmentacion.descuento:
+            descuento = float(cliente_operativo.segmentacion.descuento)
 
     return render(request, "notificaciones/configuracionAlertas.html", {
         "monedas": monedas,
-        "monedas_activas": monedas_activas
+        "monedas_activas": monedas_activas,
+        "segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,'descuento': descuento
     })
 
 
@@ -23,21 +38,34 @@ def guardar_configuracion(request):
         try:
             data = json.loads(request.body)
             monedas_config = data.get("monedas", [])
-            NotificacionMoneda.objects.filter(user=request.user).delete()
+            notificaciones_activas = data.get("notificaciones", True)
 
+            # SIEMPRE procesar el array de monedas individualmente
             for m in monedas_config:
                 abreviacion = m.get("moneda")
                 activa = m.get("activa", False)
+                
                 try:
                     moneda = Moneda.objects.get(abreviacion=abreviacion)
-                    NotificacionMoneda.objects.create(
+                    NotificacionMoneda.objects.update_or_create(
                         user=request.user,
                         moneda=moneda,
-                        activa=activa
+                        defaults={'activa': activa}
                     )
                 except Moneda.DoesNotExist:
                     continue
 
+            # Siempre asegurar que PYG esté activa
+            try:
+                guarani = Moneda.objects.get(abreviacion="PYG")
+                NotificacionMoneda.objects.update_or_create(
+                    user=request.user,
+                    moneda=guarani,
+                    defaults={'activa': True}
+                )
+            except Moneda.DoesNotExist:
+                pass
+                
             return JsonResponse({"status": "ok", "message": "Configuración guardada"})
         except Exception as e:
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
@@ -45,5 +73,68 @@ def guardar_configuracion(request):
     return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
 
 
-def test_notificaciones(request):
-    return render(request, "notificaciones/test_notificaciones.html")
+def obtener_clientes_usuario(user,request):
+    """
+    Devuelve:
+        - clientes_asociados: lista de todos los clientes asociados al usuario
+        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    """
+
+     # Solo clientes activos
+    usuarios_clientes = (
+        Usuario_Cliente.objects
+        .select_related("id_cliente__segmentacion")
+        .filter(id_usuario=user, id_cliente__estado="activo")
+    )
+    
+    clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
+    cliente_operativo = None
+
+    # Tomar de la sesión si existe
+    if request and request.session.get('cliente_operativo_id'):
+        cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
+
+    # Si no hay sesión o ID no válido, tomar el primero
+    if not cliente_operativo and clientes_asociados:
+        cliente_operativo = clientes_asociados[0]
+
+    return clientes_asociados, cliente_operativo
+
+
+@login_required
+def set_cliente_operativo(request):
+    """
+    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
+    con segmento y descuento para actualizar el front sin recargar.
+    """
+    cliente_id = request.POST.get('cliente_id')
+
+    if cliente_id:
+        try:
+            cliente = Cliente.objects.select_related("segmentacion").get(
+                pk=cliente_id, estado="activo"
+            )
+            # Guardar en sesión
+            request.session['cliente_operativo_id'] = cliente.id
+
+            # Datos a devolver
+            segmento_nombre = None
+            descuento = 0
+            if cliente.segmentacion and cliente.segmentacion.estado == "activo":
+                segmento_nombre = cliente.segmentacion.nombre
+                descuento = float(cliente.segmentacion.descuento or 0)
+
+            return JsonResponse({
+                "success": True,
+                "segmento": segmento_nombre,
+                "descuento": descuento,
+                "cliente_nombre": cliente.nombre
+            })
+
+        except Cliente.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "Cliente no encontrado"}, status=404
+            )
+
+    return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+	
