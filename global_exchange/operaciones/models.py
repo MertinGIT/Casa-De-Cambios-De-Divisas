@@ -161,6 +161,7 @@ class Transaccion(models.Model):
         on_delete=models.PROTECT,
         help_text="Referencia a la cotización base vigente al iniciar."
     )
+
     cliente = models.ForeignKey(   # 👈 nuevo campo
         Cliente,
         on_delete=models.CASCADE,
@@ -178,6 +179,7 @@ class Transaccion(models.Model):
         :example: "Transacción 1 - COMPRA 1000 Dólar -> Guaraní [pendiente]"
         """
         return f"Transacción {self.id} - {self.tipo.upper()} {self.monto} {self.moneda_origen} -> {self.moneda_destino} [{self.estado}]"
+
 
     objects = TransaccionManager()
 

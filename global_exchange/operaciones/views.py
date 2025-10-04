@@ -33,10 +33,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from django.utils import timezone
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
 from limite_moneda.models import LimiteTransaccion
 from django.db.models import Sum
-
+import random
+from django.core.mail import send_mail
 
 
 @login_required
@@ -67,6 +67,7 @@ def simulador_operaciones(request):
             "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
             "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
             "monto": float(t.monto),
+            "estado":t.estado,
             "moneda": t.moneda_origen.abreviacion if t.tipo == 'Compra' else t.moneda_destino.abreviacion
         }
         for t in reversed(list(transacciones_qs))
@@ -93,14 +94,13 @@ def simulador_operaciones(request):
         # Insertar al inicio para mantener el más reciente al final (coherente con uso registros[-1])
         data_por_moneda[abrev].insert(0, {
             "id": tasa.id,
-            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta),
             "comision_compra": float(tasa.comision_compra),
-            "comision_venta": float(tasa.comision_venta)
+            "comision_venta": float(tasa.comision_venta),
+            "precio_base": float(tasa.precio_base)
         })
-
+        
+    print("data_por_monedaaaaaaaaaa:", data_por_moneda,flush=True)
     # Comisiones y variables
     COMISION_VTA = 0
     COMISION_COM = 0
@@ -164,17 +164,30 @@ def simulador_operaciones(request):
         if abrev != "PYG" and registros:
             tasa_default = registros[-1]  # último = más reciente según construcción
             break
+    
+    print("tasa_default:", tasa_default,flush=True)
 
     if tasa_default:
         COMISION_VTA = tasa_default.get("comision_venta", 0)
         COMISION_COM = tasa_default.get("comision_compra", 0)
-        PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
+        # antes usabas venta/compra según operacion, ahora usamos precio_base siempre
+        PB_MONEDA = tasa_default.get("precio_base", 0)
+        #PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
+
         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+        print("PB_MONEDA de if tasa_default:",PB_MONEDA, flush=True)
+        print("TC_VTA de if tasa_default:",TC_VTA, flush=True)
+        print("TC_COMP de if tasa_default:",TC_COMP, flush=True)
+        print("COMISION_VTA de if tasa_default:",COMISION_VTA, flush=True)
+        print("COMISION_COM de if tasa_default:",COMISION_COM, flush=True)
     else:
         TC_VTA = 0
         TC_COMP = 0
+
+    print("TC_VTA de simulacion de operaciones:",TC_VTA, flush=True)
+    print("TC_COMP de simulacion de operaciones:",TC_COMP ,flush=True)   
 
     # Procesar cálculo (AJAX / POST)
     if request.method == "POST":
@@ -207,18 +220,25 @@ def simulador_operaciones(request):
                     ultimo = registros[-1]
                     COMISION_VTA = ultimo.get("comision_venta", 0)
                     COMISION_COM = ultimo.get("comision_compra", 0)
-                    PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
+                    # ahora leemos precio_base directamente
+                    PB_MONEDA = tasa_default.get("precio_base", 0)
+                    #PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
-
+                    print("entra en el else de simulacion de operaciones:", flush=True)
+                    print("PB_MONEDA del else:",PB_MONEDA, flush=True)
                     # Cálculos:
                     if operacion == "venta":
                         # Cliente entrega PYG, convertimos a moneda extranjera
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                        TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                        resultado_sin_desc = round(valor / TC_VTA_SIN_DESC, 2)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+                        TC_COMP_SIN_DESC = PB_MONEDA - COMISION_COM  # sin beneficio
+                        resultado_sin_desc = round(valor * TC_COMP_SIN_DESC, 2)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
         except ValueError:
@@ -226,13 +246,13 @@ def simulador_operaciones(request):
 
     # Determinar tasa usada para respuesta
     tasa_usada = TC_VTA if operacion == "venta" else TC_COMP
-
     # Respuesta AJAX (cálculo dinámico)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         # 'ultimo' puede no existir si nunca hubo registros
         fecha_tasa = locals().get("ultimo", {}).get("fecha", "")
         return JsonResponse({
             "resultado": resultado,
+            "resultado_sin_desc": resultado_sin_desc,  # sin descuento
             "ganancia_total": ganancia_total,
             "segmento": segmento_nombre,
             "descuento": descuento,
@@ -297,8 +317,6 @@ def simulador_operaciones(request):
         "medios_acreditacion": json.dumps(medios_acreditacion),
         "limites_cliente": limites_disponibles,
     }
-
-
 
     return render(request, 'operaciones/conversorReal.html', context)
 
@@ -387,6 +405,7 @@ def verificar_limites(request):
             'success': False,
             'mensaje': f'Error al verificar límites: {str(e)}'
         })
+
 def obtener_clientes_usuario(user,request):
     """
     Obtiene los clientes asociados a un usuario y determina cuál es el cliente operativo.
@@ -399,7 +418,7 @@ def obtener_clientes_usuario(user,request):
     :rtype: tuple[list[Cliente], Cliente | None, str]
     """
 
-     # Solo clientes activos
+    # Solo clientes activos
     usuarios_clientes = (
         Usuario_Cliente.objects
         .select_related("id_cliente__segmentacion")
@@ -687,3 +706,36 @@ def crear_pago_stripe(request):
             return JsonResponse({"client_secret": payment_intent.client_secret})
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
+
+
+def enviar_pin(request):
+    if request.user.is_authenticated:
+        # Generar un PIN aleatorio de 4 dígitos
+        pin = str(random.randint(1000, 9999))
+
+        # Guardar PIN en la sesión (válido por una transacción)
+        request.session['pin_seguridad'] = pin
+
+        # Enviar el PIN al email del usuario
+        asunto = "Tu código PIN de verificación"
+        mensaje = f"Hola {request.user.username},\n\nTu código de verificación es: {pin}\n\nEste código vence en unos minutos."
+        remitente = None  # Usará EMAIL_HOST_USER por defecto
+        destinatarios = [request.user.email]
+
+        send_mail(asunto, mensaje, remitente, destinatarios)
+
+        return JsonResponse({"success": True, "message": "Se envió un PIN a tu correo"})
+    return JsonResponse({"success": False, "message": "Usuario no autenticado"})
+
+def validar_pin(request):
+    if request.method == "POST":
+        pin_ingresado = request.POST.get("pin")
+        pin_guardado = request.session.get("pin_seguridad")
+
+        if pin_guardado and pin_ingresado == pin_guardado:
+            # PIN válido, eliminarlo de la sesión para que no se reutilice
+            del request.session['pin_seguridad']
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "message": "PIN incorrecto"})
+
