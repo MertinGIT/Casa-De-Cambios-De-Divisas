@@ -126,6 +126,7 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
+    resultado_sin_desc=0
     limites = LimiteTransaccion.objects.all()  # tus límites generales por moneda
 
     hoy = localtime(now()).date()
@@ -289,7 +290,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-
+    print("context resultado",resultado)
     context = {
         'monedas': monedas,
         'resultado': resultado,

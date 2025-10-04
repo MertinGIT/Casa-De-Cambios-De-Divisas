@@ -364,20 +364,40 @@
               destino: destinoVal
             },
             success: function (resp) {
-              if (resp && resp.resultado !== undefined) {
+              if (resp && resp.resultado !== undefined && !isNaN(parseFloat(resp.resultado))) {
+                // Caso válido: backend devolvió un número
                 const resultadoNumero = parseFloat(resp.resultado);
-                const resultadoFormateado = (resultadoNumero);
+                const resultadoFormateado = resultadoNumero; 
                 campos.$resultado.val(resultadoFormateado);
                 campos.$resultado.data("tasa", resp.tasa);
                 campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
-              } else {
-                let resultadoCalc = campos.op === "venta"
-                  ? (monto / tasaVta).toFixed(2)
-                  : (monto * tasaCmp).toFixed(2);
-                  const resultadoFormateado = (parseFloat(resultadoCalc));
-          campos.$resultado.val(resultadoFormateado);
 
+              } else {
+                // Fallback: calculo local inmediato
+                let resultadoCalc = null;
+
+                if (campos.op === "venta") {
+                  if (!tasaVta || tasaVta === 0) {
+                    resultadoCalc = null;
+                  } else {
+                    resultadoCalc = (monto / tasaVta).toFixed(2);
+                  }
+                } else {
+                  if (!tasaCmp || tasaCmp === 0) {
+                    resultadoCalc = null;
+                  } else {
+                    resultadoCalc = (monto * tasaCmp).toFixed(2);
+                  }
+                }
+
+                if (resultadoCalc !== null) {
+                  const resultadoFormateado = parseFloat(resultadoCalc);
+                  campos.$resultado.val(resultadoFormateado);
+                } else {
+                  campos.$resultado.val("No hay cotizacion disponible");
+                }
               }
+
               console.log("resp", resp);
             },
             error: function () {
@@ -389,12 +409,29 @@
             }
           });
           // cálculo local inmediato
-          let resultadoCalc = campos.op === "venta"
-            ? (monto / tasaVta).toFixed(2)
-            : (monto * tasaCmp).toFixed(2);
-            const resultadoFormateado = (parseFloat(resultadoCalc));
-    console.log("resultadoCalc formateado:", resultadoFormateado);
-    campos.$resultado.val(resultadoFormateado);
+            let resultadoCalc;
+
+          if (campos.op === "venta") {
+            if (!tasaVta || tasaVta === 0) {
+              resultadoCalc = null; // no hay cotización
+            } else {
+              resultadoCalc = (monto / tasaVta).toFixed(2);
+            }
+          } else {
+            if (!tasaCmp || tasaCmp === 0) {
+              resultadoCalc = null; // no hay cotización
+            } else {
+              resultadoCalc = (monto * tasaCmp).toFixed(2);
+            }
+          }
+
+          if (resultadoCalc !== null) {
+            const resultadoFormateado = parseFloat(resultadoCalc);
+            console.log("resultadoCalc formateado:", resultadoFormateado);
+            campos.$resultado.val(resultadoFormateado);
+          } else {
+            campos.$resultado.val("No hay cotizacion disponible");
+          }
         }
         // Init y eventos
         actualizarCamposPorOperacion();
