@@ -334,6 +334,7 @@ function mostrarModalPago() {
     } else if (campos.op === "venta") {
         total = campos.$valor.val();
         moneda_a_pagar = campos.$origen.val();
+        console.log("monto a pagar (venta):", total, moneda_a_pagar);
     }
     $("#precio_a_pagar").text(total + " " + moneda_a_pagar);
     
@@ -366,17 +367,79 @@ window.procesarPagoStripe = async function() {
     }
 
     try {
-        // Obtener el monto
-        let totalStr = document.getElementById('precio_a_pagar').textContent.replace(/[^0-9]/g,'');
-        let total = parseInt(totalStr, 10);
-
-        if (!total || total <= 0) {
-            console.error("❌ Monto inválido:", total);
+        let montoEnGuaranies;
+        
+        // Verificar si tenemos los datos de la transacción con descuento aplicado
+        if (window.datos) {
+            const tipo = window.datos.tipo; // "Compra" o "Venta"
+            let montoTexto = '';
+            
+            // Determinar qué campo usar según el tipo de operación
+            if (tipo === 'Compra') {
+                // En COMPRA: el cliente ENTREGA PYG
+                montoTexto = window.datos.entregar;
+                console.log("💰 Operación COMPRA - usando 'entregar':", montoTexto);
+            } else if (tipo === 'Venta') {
+                // En VENTA: el cliente RECIBE PYG
+                montoTexto = window.datos.recibir;
+                console.log("💰 Operación VENTA - usando 'recibir':", montoTexto);
+            }
+            
+            // Extraer el monto (ej: "20000 PYG" -> 20000)
+            if (montoTexto) {
+                const montoMatch = montoTexto.trim().match(/^([\d,\.]+)/);
+                
+                if (montoMatch) {
+                    montoEnGuaranies = Math.round(parseFloat(montoMatch[1].replace(/,/g, '')));
+                    console.log("✅ Monto en guaraníes con descuento aplicado:", montoEnGuaranies);
+                }
+            }
+        }
+        
+        // Fallback: calcular desde los campos si no tenemos window.datos
+        if (!montoEnGuaranies) {
+            const campos = getCampos();
+            
+            // Obtener el texto completo del precio (ej: "1000 USD")
+            let precioTexto = document.getElementById('precio_a_pagar').textContent.trim();
+            
+            // Extraer monto y moneda
+            let partes = precioTexto.split(' ');
+            let montoOriginal = parseFloat(partes[0].replace(/[^0-9.]/g, ''));
+            let monedaPago = partes[1] || '';
+            
+            console.log("⚠️ Fallback - Monto original:", montoOriginal, monedaPago);
+            
+            // Si la moneda NO es PYG, necesitamos convertir
+            if (monedaPago !== 'PYG') {
+                // Obtener el resultado calculado (que está en la moneda destino)
+                let resultado = parseFloat(campos.$resultado.val());
+                
+                if (campos.op === "compra") {
+                    // COMPRA: cliente entrega USD/EUR/etc, recibe PYG
+                    // El resultado YA está en PYG
+                    montoEnGuaranies = Math.round(resultado);
+                } else {
+                    // VENTA: cliente entrega PYG, recibe USD/EUR/etc
+                    // El monto original YA está en PYG
+                    montoEnGuaranies = Math.round(montoOriginal);
+                }
+                
+                console.log("💱 Conversión realizada a PYG:", montoEnGuaranies);
+            } else {
+                // Si ya es PYG, usar el monto directamente
+                montoEnGuaranies = Math.round(montoOriginal);
+                console.log("✅ Ya está en PYG:", montoEnGuaranies);
+            }
+        }
+        
+        if (!montoEnGuaranies || montoEnGuaranies <= 0) {
+            console.error("❌ Monto inválido:", montoEnGuaranies);
             mostrarMensaje("Error", "El monto a pagar no es válido", "error");
             return;
         }
 
-        console.log("💰 Total a cobrar:", total);
+        console.log("💰 Total final a cobrar en guaraníes:", montoEnGuaranies);
 
         // Obtener CSRF token
         const csrftoken = getCookie('csrftoken');
@@ -389,7 +452,7 @@ window.procesarPagoStripe = async function() {
                 "Content-Type": "application/x-www-form-urlencoded",
                 "X-CSRFToken": csrftoken
             },
-            body: `total=${total}&tipo_operacion=cambio_moneda`
+            body: `total=${montoEnGuaranies}&tipo_operacion=cambio_moneda`
         });
 
         let data = await response.json();

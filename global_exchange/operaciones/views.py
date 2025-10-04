@@ -689,7 +689,6 @@ import stripe
 
 os.getenv("STRIPE_SECRET_KEY")
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
-
 @csrf_exempt
 def crear_pago_stripe(request):
     if request.method == "POST":
