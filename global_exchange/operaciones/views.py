@@ -688,7 +688,7 @@ def actualizar_estado_transaccion(request):
 import stripe
 
 os.getenv("STRIPE_SECRET_KEY")
-stripe.api_key = "sk_test_51SEA4sPPA3ZGnjFU3wxBTnzxOQ0aTSrfwj4dmiPOvmHEGfB23V2o7PQicRcik5bhGwHBGoYO6RKhYtkBfPFLTVxr00YmgrD9dE"
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 @csrf_exempt
 def crear_pago_stripe(request):

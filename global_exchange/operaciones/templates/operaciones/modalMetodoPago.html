@@ -72,14 +72,34 @@
                 <div id="info-pago" class="info-pago" style="display: none;">
                     
                     <!-- Formulario para tarjeta con Stripe -->
-                    <div id="form-tarjeta" class="form-metodo" style="display: none;">
-                        <h4 class="form-title">Información de la tarjeta</h4>
-                        <div class="form-group">
-                            <label>Datos de la tarjeta</label>
-                            <div id="card-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
-                            <div id="card-errors" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
-                        </div>
-                    </div>
+<!-- Formulario para tarjeta con Stripe -->
+<div id="form-tarjeta" class="form-metodo" style="display: none;">
+    <h4 class="form-title">Información de la tarjeta</h4>
+    
+    <div class="form-group" style="margin-bottom: 16px;">
+        <label for="card-number-element">Número de tarjeta</label>
+        <div id="card-number-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="card-expiry-element">Fecha de expiración</label>
+            <div id="card-expiry-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+        </div>
+
+<div class="form-group" style="display: block; position: relative; top: 22px; margin-bottom: 0;">
+    <label for="card-cvc-element">CVC</label>
+    <div id="card-cvc-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+</div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="card-postal-element">Código postal</label>
+            <div id="card-postal-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+        </div>
+    </div>
+
+    <div id="card-errors" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
+</div>
 
                     <!-- Formulario para billetera digital -->
                     <div id="form-billetera" class="form-metodo" style="display: none;">
@@ -153,40 +173,52 @@ let stripe = Stripe("pk_test_51SEA4sPPA3ZGnjFU4SnVSmEAuaC9giCmVeEIawSL8hGh5EiGP3
 let elements = stripe.elements();
 let cardElement = null;
 
+let cardNumberElement = null;
+let cardExpiryElement = null;
+let cardCvcElement = null;
+let postalCodeElement = null; // Nuevo
+
 function inicializarTarjeta() {
-    if (!cardElement) {
-        console.log("Inicializando Stripe Card Element");
+    if (!cardNumberElement) {
+        console.log("Inicializando Stripe Card Elements individuales");
         
-        // Crear elemento de tarjeta con estilos personalizados
-        cardElement = elements.create('card', {
-            style: {
-                base: {
-                    fontSize: '16px',
-                    color: '#32325d',
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                    '::placeholder': {
-                        color: '#aab7c4'
-                    }
-                },
-                invalid: {
-                    color: '#e74c3c',
-                    iconColor: '#e74c3c'
+        const style = {
+            base: {
+                fontSize: '16px',
+                color: '#32325d',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                '::placeholder': {
+                    color: '#aab7c4'
                 }
+            },
+            invalid: {
+                color: '#e74c3c',
+                iconColor: '#e74c3c'
             }
-        });
+        };
+
+        cardNumberElement = elements.create('cardNumber', { style, showIcon: true });
+        cardExpiryElement = elements.create('cardExpiry', { style });
+        cardCvcElement = elements.create('cardCvc', { style });
+        postalCodeElement = elements.create('postalCode', { style }); // Nuevo
         
-        // Montar en el div
-        cardElement.mount('#card-element');
-        console.log("Stripe Card Element montado");
+        cardNumberElement.mount('#card-number-element');
+        cardExpiryElement.mount('#card-expiry-element');
+        cardCvcElement.mount('#card-cvc-element');
+        postalCodeElement.mount('#card-postal-element'); // Nuevo
         
-        // Escuchar cambios para mostrar errores
-        cardElement.on('change', function(event) {
-            const displayError = document.getElementById('card-errors');
-            if (event.error) {
-                displayError.textContent = event.error.message;
-            } else {
-                displayError.textContent = '';
-            }
+        console.log("✅ Stripe Card Elements montados correctamente");
+        
+        const displayError = document.getElementById('card-errors');
+        
+        [cardNumberElement, cardExpiryElement, cardCvcElement, postalCodeElement].forEach(element => {
+            element.on('change', function(event) {
+                if (event.error) {
+                    displayError.textContent = event.error.message;
+                } else {
+                    displayError.textContent = '';
+                }
+            });
         });
     }
 }
@@ -388,7 +420,6 @@ window.procesarPagoStripe = async function() {
                 "error"
             );
             
-            // Cerrar modal de PIN si está abierto
             $("#modal-pin").fadeOut();
             
         } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
@@ -424,10 +455,10 @@ window.procesarPagoStripe = async function() {
             "error"
         );
         
-        // Limpiar el payment method en caso de error
         window.stripePaymentMethod = null;
     }
 };
+
 
 function getCampos() {
     const op = $("input[name='operacion']:checked").val();
@@ -522,12 +553,6 @@ async function confirmarMetodoPago() {
     let esValido = true;
     let mensajeError = '';
 
-    const datosTransaccion = {
-        metodo: window.metodoSeleccionado,
-        timestamp: new Date().toISOString(),
-        total: document.getElementById('precio_a_pagar')?.textContent || '$0.00'
-    };
-
     const btnConfirmar = document.getElementById('btn-confirmar-pago');
 
     switch (window.metodoSeleccionado) {
@@ -537,10 +562,18 @@ async function confirmarMetodoPago() {
             btnConfirmar.innerHTML = '<span>Validando tarjeta...</span>';
             
             try {
-                // Crear el payment method con los datos de la tarjeta
+                // Verificar que los elementos de Stripe estén inicializados
+                if (!cardNumberElement || !cardExpiryElement || !cardCvcElement || !postalCodeElement) {
+                    throw new Error("Los elementos de Stripe no están inicializados");
+                }
+
+                // Crear el payment method con los elementos individuales
                 const { error, paymentMethod } = await stripe.createPaymentMethod({
                     type: 'card',
-                    card: cardElement,
+                    card: cardNumberElement,
+                    billing_details: {
+                        // El código postal se captura automáticamente del postalCodeElement
+                    }
                 });
 
                 if (error) {
@@ -557,7 +590,7 @@ async function confirmarMetodoPago() {
                 
             } catch (err) {
                 console.error("Error al crear payment method:", err);
-                mostrarError("Error", "No se pudo procesar la tarjeta");
+                mostrarError("Error", err.message || "No se pudo procesar la tarjeta");
                 btnConfirmar.disabled = false;
                 btnConfirmar.innerHTML = '<span>Confirmar pago</span>';
                 return;
@@ -577,9 +610,6 @@ async function confirmarMetodoPago() {
             } else if (!emailBilletera) {
                 esValido = false;
                 mensajeError = 'Por favor ingrese su email o número de celular';
-            } else {
-                datosTransaccion.tipoBilletera = tipoBilletera;
-                datosTransaccion.email = emailBilletera;
             }
             break;
             
@@ -593,14 +623,11 @@ async function confirmarMetodoPago() {
             } else if (!cuenta || cuenta.length < 8) {
                 esValido = false;
                 mensajeError = 'Por favor ingrese un número de cuenta válido';
-            } else {
-                datosTransaccion.banco = banco;
-                datosTransaccion.cuenta = cuenta;
             }
             break;
             
         case 'efectivo':
-            datosTransaccion.observaciones = "Pago contra entrega";
+            // No requiere validación adicional
             break;
     }
 
@@ -609,8 +636,6 @@ async function confirmarMetodoPago() {
         mostrarError("Transacción rechazada", mensajeError);
         return;
     }
-
-    console.log('Datos de transacción:', datosTransaccion);
     
     // Cerrar modal de pago
     cerrarModalPago();
