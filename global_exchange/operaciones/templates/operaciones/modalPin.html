@@ -185,7 +185,12 @@ function verificarPin() {
       verificarTasaActualizada(function(tasaActualizada) {
         if (tasaActualizada) {
           console.log("PIN correcto y tasa actualizada, procesando transacción...");
-          procesarTransaccion(); // Llamamos a la función separada
+              procesarTransaccion()
+
+              if (window.metodoSeleccionado === "tarjeta") {
+              procesarPagoStripe();
+              }
+
         } else {
           // Cortar flujo si la tasa no está actualizada
           $("#modal-exito").css("display", "none");

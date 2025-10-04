@@ -688,25 +688,26 @@ def actualizar_estado_transaccion(request):
 import stripe
 
 os.getenv("STRIPE_SECRET_KEY")
-stripe.api_key = "TU_STRIPE_SECRET_KEY"
+stripe.api_key = "sk_test_51SEA4sPPA3ZGnjFU3wxBTnzxOQ0aTSrfwj4dmiPOvmHEGfB23V2o7PQicRcik5bhGwHBGoYO6RKhYtkBfPFLTVxr00YmgrD9dE"
 
 @csrf_exempt
 def crear_pago_stripe(request):
-
     if request.method == "POST":
         try:
-            total = int(request.POST.get("total"))
-            moneda = "pyg"  # Guaraníes
-            
+            total = int(request.POST.get("total", 0))
+            moneda = "pyg"
+
             payment_intent = stripe.PaymentIntent.create(
                 amount=total,
-                currency=moneda
+                currency=moneda,
+                automatic_payment_methods={"enabled": True}
             )
 
             return JsonResponse({"client_secret": payment_intent.client_secret})
+
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
-
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 def enviar_pin(request):
     if request.user.is_authenticated:
