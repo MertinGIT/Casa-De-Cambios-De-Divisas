@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from functools import wraps
 from django.urls import reverse
+
+from operaciones.views import obtener_clientes_usuario
 from .models import TasaDeCambio, Moneda
 from .forms import TasaDeCambioForm
 from django.db.models import Q
@@ -66,7 +68,7 @@ def cotizacion_nuevo(request):
         - Para no-AJAX → renderiza la lista mostrando el modal con errores.
     - Si no es POST → redirige a ``cotizacion``.
     """
-    print("Entró en cotizacion_editar con pk =")
+    print("Entró en cotizacion_nuevo", flush=True)
     if request.method == "POST":
         form = TasaDeCambioForm(request.POST)
         if form.is_valid():
@@ -83,8 +85,7 @@ def cotizacion_nuevo(request):
                         "id": cotizacion.id,
                         "origen": cotizacion.moneda_origen.abreviacion,
                         "destino": cotizacion.moneda_destino.abreviacion,
-                        "compra": str(cotizacion.monto_compra),
-                        "venta": str(cotizacion.monto_venta),
+                        "precio_base": str(cotizacion.precio_base),
                         "vigencia": cotizacion.vigencia.strftime("%d/%m/%Y %H:%M")
                     }
                 })
@@ -96,6 +97,7 @@ def cotizacion_nuevo(request):
                 return JsonResponse({"success": False, "errors": errors})
             
             cotizaciones = TasaDeCambio.objects.all().order_by('-id')
+            print("cotizaciones:", flush=True)
             return render(request, "cotizaciones/lista.html", {
                 "tasas": cotizaciones,
                 "form": form,
@@ -117,14 +119,12 @@ def cotizacion_editar(request, pk):
     """
     
     cotizacion = get_object_or_404(TasaDeCambio, pk=pk)
-
     if request.method == "POST":
         form = TasaDeCambioForm(request.POST, instance=cotizacion)
         if form.is_valid():
             cotizacion = form.save(commit=False)
             cotizacion.estado = TasaDeCambio.objects.get(pk=cotizacion.pk).estado
             cotizacion.save()
-            
             if request.headers.get("x-requested-with") == "XMLHttpRequest":
                 return JsonResponse({
                     "success": True,
@@ -132,9 +132,8 @@ def cotizacion_editar(request, pk):
                         "id": cotizacion.id,
                         "moneda_origen": cotizacion.moneda_origen.nombre,
                         "moneda_destino": cotizacion.moneda_destino.nombre,
-                        "compra": str(cotizacion.monto_compra),
-                        "venta": str(cotizacion.monto_venta),
                         "estado": cotizacion.estado,
+                        "precio_base": str(cotizacion.precio_base),
                     }
                 })
             else:
@@ -200,8 +199,7 @@ def cotizacion_detalle(request, pk):
         "id": cotizacion.id,
         "moneda_origen": cotizacion.moneda_origen.id if cotizacion.moneda_origen else None,
         "moneda_destino": cotizacion.moneda_destino.id if cotizacion.moneda_destino else None,
-        "monto_compra": float(cotizacion.monto_compra),
-        "monto_venta": float(cotizacion.monto_venta),
+        "precio_base": float(cotizacion.precio_base),
         "comision_compra": float(cotizacion.comision_compra),
         "comision_venta": float(cotizacion.comision_venta),
         "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M") if cotizacion.vigencia else None,

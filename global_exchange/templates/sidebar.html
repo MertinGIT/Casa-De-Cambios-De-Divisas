@@ -39,7 +39,7 @@
       </a>
     </li>
     <li>
-      <a href="#"><span class="icon">&#9881;</span>
+      <a href="{% url 'configuracion_usuario' %}"><span class="icon">&#9881;</span>
         <span class="label">Configuracion</span></a>
     </li>
   </ul>
@@ -115,7 +115,7 @@
       </a>
     </li>
       <li>
-        <a href="#"><span class="icon">&#9881;</span> Configuracion</a>
+        <a href="{% url 'configuracion_usuario' %}"><span class="icon">&#9881;</span> Configuracion</a>
       </li>
       <hr />
       <li>
@@ -124,6 +124,7 @@
       <li>
         <a href="{% url 'signout' %}" class="logout-mobile"><span class="icon">&#x1F6AA;</span> Cerrar sesión</a>
       </li>
+
     </ul>
   </div>
 </nav>

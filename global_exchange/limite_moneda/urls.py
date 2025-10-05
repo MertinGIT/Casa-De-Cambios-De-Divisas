@@ -5,9 +5,6 @@ urlpatterns = [
     # Lista de límites
     path('', views.lista_limites, name='lista-limites'),
 
-    # Validación de nombre de cliente
-    path('check-nombre-cliente/', views.check_nombre_cliente, name='check-nombre-cliente'),
-
     # Crear límite
     path('crear/', views.crear_limite, name='limite-crear'),
 
@@ -19,6 +16,4 @@ urlpatterns = [
 
     # Detalle para modal
     path('detalle/<int:pk>/', views.limite_detalle, name='limite-detalle'),
-    path('ajax/clientes/', views.get_clientes, name='get_clientes'),
-    path('ajax/monedas/', views.get_monedas, name='get_monedas'),
 ]

@@ -1,0 +1,118 @@
+{% extends 'baseDashboardUsuario.html' %}
+{% block dashboard_content %}
+{% load static %}
+{% include 'notificaciones/modalNotificacion.html' %}
+<main class="main-container-grid flex items-center justify-center min-h-screen bg-gray-50">
+
+  <div class="w-full max-w-7xl px-4">
+    <h1 class="text-center my-8 text-4xl font-bold text-gray-800">⚙️ Configuración</h1>
+
+    <div class="modules-grid">
+      <a href="{% url 'notificaciones' %}" class="module-card">
+        <div class="icon">🔔</div>
+        <div class="title">Notificación</div>
+        <p class="desc">Elige monedas a notificar.</p>
+      </a>
+
+    </div>
+  </div>
+</main>
+
+<style>
+  .main-container-grid{
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .modules-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 cards por fila por defecto */
+    gap: 2rem;
+    padding: 2rem;
+    justify-items: center;
+  }
+
+  .module-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 1.25rem;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    transition: all 0.35s cubic-bezier(.25,.8,.25,1);
+    border: 2px solid transparent;
+    width: 100%;
+    max-width: 300px; /* un poco más grande */
+  }
+
+  .module-card .icon {
+    font-size: 3.5rem;
+    margin-bottom: 1.2rem;
+    transition: transform 0.35s ease;
+  }
+
+  .module-card .title {
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    color: #333;
+  }
+
+  .module-card .desc {
+    font-size: 1rem;
+    color: #555;
+  }
+
+  /* Hover efecto más moderno con color del proyecto */
+  .module-card:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 20px 40px rgba(93, 95, 239, 0.35);
+    border-color: #5d5fef;
+    background: linear-gradient(145deg, #5d5fef20, #ffffff);
+  }
+
+  .module-card:hover .icon {
+    transform: scale(1.2) rotate(12deg);
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .modules-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .module-card {
+      max-width: 280px;
+      padding: 2rem 1.2rem;
+    }
+    .module-card .icon {
+      font-size: 3rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .modules-grid {
+      grid-template-columns: 1fr;
+    }
+    .module-card {
+      max-width: 100%;
+      padding: 1.8rem 1rem;
+    }
+    .module-card .icon {
+      font-size: 2.8rem;
+    }
+    .module-card .title {
+      font-size: 1.2rem;
+    }
+    .module-card .desc {
+      font-size: 0.95rem;
+    }
+  }
+</style>
+{% endblock %}

@@ -41,8 +41,24 @@
           <div class="summary-item highlight">
             <div class="item-icon">💰</div>
             <div class="item-content">
-              <span class="item-label">Monto a recibir</span>
+              <span class="item-label">Monto a recibir(con descuento)</span>
               <span class="item-value" id="modal-recibir"></span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="item-icon">💳</div>
+            <div class="item-content">
+              <span class="item-label">Monto a recibir(sin descuento)</span>
+              <span class="item-value" id="modal-sin-descuento"></span>
+            </div>
+          </div>
+
+          <div class="summary-item">
+            <div class="item-icon">⚡</div>
+            <div class="item-content">
+              <span class="item-label">Descuento</span>
+              <span class="item-value" id="modal-comision"></span>
             </div>
           </div>
 
@@ -54,13 +70,6 @@
             </div>
           </div>
 
-          <div class="summary-item">
-            <div class="item-icon">⚡</div>
-            <div class="item-content">
-              <span class="item-label">Descuento</span>
-              <span class="item-value" id="modal-comision"></span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -110,11 +119,13 @@
 
   function mostrarModalConfirmacion(datos) {
     // Datos recibidos del conversor
+    console.log("datos de la tasa: ", datos)
     document.getElementById("modal-tipo").textContent = datos.tipo;
     document.getElementById("modal-entregar").textContent = datos.entregar;
     document.getElementById("modal-recibir").textContent = datos.recibir;
     document.getElementById("modal-tasa").textContent = datos.tasa;
     document.getElementById("modal-comision").textContent = datos.descuento;
+    document.getElementById("modal-sin-descuento").textContent = datos.sin_descuento;
 
     // Mostrar modal
     const modal = document.getElementById("modal-confirmacion");
@@ -267,6 +278,7 @@
           recibir: response.resultado + " " + campos.$destino.val(),
           tasa: response.tasa + " (" + response.fecha_tasa + ")",
           descuento: response.descuento + "%",
+          sin_descuento: response.resultado_sin_desc + " " + campos.$destino.val(),
         };
 
         window.datos = datos;
@@ -330,7 +342,7 @@
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     position: relative;
     z-index: 1;
-    max-width: 450px;
+    max-width: 500px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;

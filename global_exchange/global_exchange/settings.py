@@ -74,6 +74,7 @@ PASSWORD_RESET_TIMEOUT = 14400  # 4 horas
 # ============================================================================
 
 INSTALLED_APPS = [
+    'daphne',
     #'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -92,12 +93,29 @@ INSTALLED_APPS = [
     'monedas',
     'metodos_pagos',
     'cliente_usuario',
-    'operaciones',
+    'operaciones',  
     'medio_acreditacion',
     'corsheaders',
     'limite_moneda',
-    'historial_transacciones'
+    'historial_transacciones',
+    'channels',
+    'notificaciones',
+    'configuracion_usuario'
 ]
+
+
+# Configuración ASGI (reemplaza WSGI para WebSockets)
+ASGI_APPLICATION = 'global_exchange.asgi.application'
+# Configuración de Channels con Redis
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
+}
 # ============================================================================
 # Middleware
 # ============================================================================
@@ -180,7 +198,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # ⚠️ Si querés permitir todos (solo en desarrollo):
 # CORS_ALLOW_ALL_ORIGINS = True
 
-
+CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
 # ============================================================================
 # Validación de contraseñas
 # ============================================================================
