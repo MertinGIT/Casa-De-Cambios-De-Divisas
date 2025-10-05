@@ -37,6 +37,7 @@ from limite_moneda.models import LimiteTransaccion
 from django.db.models import Sum
 import random
 from django.core.mail import send_mail
+import datetime
 
 
 @login_required
@@ -126,9 +127,11 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
+    resultado_sin_desc=0
     limites = LimiteTransaccion.objects.all()  # tus límites generales por moneda
 
     hoy = localtime(now()).date()
+    #hoy=datetime.date(2025, 10, 5)
     inicio_mes = hoy.replace(day=1)
 
     limites_disponibles = []
@@ -289,7 +292,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-
+    print("context resultado",resultado)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -348,7 +351,10 @@ def verificar_limites(request):
         
         # Calcular fechas
         hoy = localtime(now()).date()
+        #hoy=datetime.date(2025, 10, 7)
         inicio_mes = hoy.replace(day=1)
+        print("hoy:",hoy,flush=True)
+        print("inicio_mes:",inicio_mes,flush=True)
         
         # Filtrar solo transacciones completadas
         transacciones_validas = Transaccion.objects.filter(

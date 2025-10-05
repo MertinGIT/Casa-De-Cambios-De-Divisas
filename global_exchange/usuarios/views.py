@@ -93,7 +93,7 @@ def home(request):
             data_por_moneda[abrev] = []
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
+            "fecha": tasa.vigencia,
             #"compra": float(tasa.monto_compra),
             #"venta": float(tasa.monto_venta),
             "comision_compra": float(tasa.comision_compra),
@@ -161,7 +161,7 @@ def home(request):
 
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
+            "fecha": tasa.vigencia,
             "compra": round(TC_VTA, 2),
             "venta": round(TC_COMP, 2),
             "comision_compra": float(tasa.comision_compra),
@@ -192,17 +192,19 @@ def home(request):
             else:
                 # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
                 registros = data_por_moneda.get(moneda_seleccionada, [])
+                print("registros sin ordenar:", registros, flush=True)
                 if not registros:
                     resultado = "No hay cotización disponible" # no hay cotización, no mostrar nada
                     ganancia_total = 0
                     COMISION_VTA = 0
                     COMISION_COM = 0
                 else:
+                    
                     if registros:
                         print("entro",registros, flush=True)
                         registros_ordenados = sorted(
                             registros,
-                            key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
+                            key=lambda x: x["fecha"],
                             reverse=True
                         )
                         ultimo = registros_ordenados[0]
@@ -565,7 +567,7 @@ def pagina_aterrizaje(request):
 
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
+            "fecha": tasa.vigencia,
             "compra": round(TC_COMP, 2),
             "venta": round(TC_VTA, 2)
         })
