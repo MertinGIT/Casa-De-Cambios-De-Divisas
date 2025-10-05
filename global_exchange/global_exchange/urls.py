@@ -20,7 +20,7 @@ from usuarios import views as usuarios_views, urls as usuarios_urls
 from cliente_usuario import urls as cliente_usuario_urls
 from admin_dashboard import views as admin_views
 from django.conf.urls import handler404
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
@@ -58,10 +58,10 @@ urlpatterns = [
     path('admin/configuracion/seguridad/usuarios/', include(usuarios_urls)),
     path('admin/configuracion/seguridad/roles/', include('roles_permisos.urls'), name='roles'),
     path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
-    path('admin/clientes/', include('medio_acreditacion.urls')),
-    path('admin/clientes/', include(cliente_usuario_urls), name='cliente_usuario'),
-    path('admin/clientes/', include('clientes.urls'), name = 'clientes'), 
-    path('admin/clientes/limites/', include('limite_moneda.urls')),
+    path('clientes/', include('medio_acreditacion.urls')),
+    path('clientes/', include(cliente_usuario_urls), name='cliente_usuario'),
+    path('clientes/', include('clientes.urls'), name = 'clientes'), 
+    path('clientes/limites/', include('limite_moneda.urls')),
     path('usuarios/', include('usuarios.urls')),
 
 ]
@@ -69,9 +69,18 @@ urlpatterns = [
 
 def custom_404_view(request, exception):
     return render(request, "404.html", status=404)
-
+def error_403_view(request, exception=None):
+    user = request.user
+    if user.is_authenticated:
+        if user.groups.filter(name='ADMIN').exists() or user.groups.filter(name='Analista').exists():
+            return redirect('admin_dashboard')
+        else:
+            return redirect('home')
+    return render(request, '403.html', status=403)
 
 handler404 = custom_404_view
+
+handler403 = error_403_view
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL,

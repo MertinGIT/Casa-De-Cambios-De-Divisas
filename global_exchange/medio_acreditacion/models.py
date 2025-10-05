@@ -105,3 +105,39 @@ class MedioAcreditacion(models.Model):
         :return: String con formato "codigoEntidad_numeroCuenta".
         """
         return f"{self.entidad.codigo}_{self.numero_cuenta}"
+
+
+class CampoEntidadFinanciera(models.Model):
+    """
+    Define los campos requeridos por cada entidad financiera para el alta de un medio de acreditación.
+    """
+    entidad = models.ForeignKey(TipoEntidadFinanciera, on_delete=models.CASCADE, related_name='campos')
+    nombre = models.CharField(max_length=100)  # Ej: "cedula", "telefono"
+    etiqueta = models.CharField(max_length=100)  # Ej: "Cédula de Identidad"
+    tipo = models.CharField(max_length=20, choices=[
+        ('texto', 'Texto'),
+        ('numero', 'Número'),
+        ('fecha', 'Fecha'),
+        ('email', 'Email'),
+    ])
+    requerido = models.BooleanField(default=True)
+    orden = models.PositiveIntegerField(default=0)
+    regex_validacion = models.CharField(max_length=255, blank=True)
+    mensaje_error = models.CharField(max_length=255, blank=True)
+    placeholder = models.CharField(max_length=100, blank=True)
+    ayuda = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.entidad.nombre} - {self.etiqueta}"
+
+
+class ValorCampoMedioAcreditacion(models.Model):
+    """
+    Almacena el valor ingresado por el usuario para cada campo dinámico de un medio de acreditación.
+    """
+    medio = models.ForeignKey(MedioAcreditacion, on_delete=models.CASCADE, related_name='valores_campos')
+    campo = models.ForeignKey(CampoEntidadFinanciera, on_delete=models.CASCADE)
+    valor = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.medio} - {self.campo.etiqueta}: {self.valor}"

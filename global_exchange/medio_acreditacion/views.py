@@ -3,9 +3,12 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
 from django.core.paginator import Paginator
-from .models import TipoEntidadFinanciera, MedioAcreditacion
+from .models import TipoEntidadFinanciera, MedioAcreditacion, CampoEntidadFinanciera, ValorCampoMedioAcreditacion
 from .forms import TipoEntidadFinancieraForm, MedioAcreditacionForm
 from clientes.forms import ClienteForm
+from clientes.models import Cliente
+from monedas.models import Moneda
+from django.template.loader import render_to_string
 
 def tipo_entidad_list(request):
     """
@@ -142,7 +145,6 @@ def medio_acreditacion_list(request):
     :param request: HttpRequest
     :return: HttpResponse
     """
-    from clientes.models import Cliente
     cliente_id = request.GET.get('cliente_id')
     search_field = request.GET.get('search_field', '').strip()
     search_value = request.GET.get('search_value', '').strip()
@@ -204,7 +206,6 @@ def medio_acreditacion_create(request):
     cliente_id = request.GET.get('cliente_id') or request.POST.get('cliente_id')
     cliente = None
     if cliente_id:
-        from clientes.models import Cliente
         cliente = Cliente.objects.filter(pk=cliente_id).first()
     if request.method == 'POST':
         data = request.POST.copy()
@@ -325,3 +326,234 @@ def cliente_create(request):
         'form': cliente_form,
         'medio_form': medio_form,
     })
+
+# Vista para que el analista gestione los campos de una entidad financiera
+
+def campos_entidad_list(request, entidad_id):
+    entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
+    campos = entidad.campos.all().order_by('orden')
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        etiqueta = request.POST.get('etiqueta')
+        tipo = request.POST.get('tipo')
+        requerido = bool(request.POST.get('requerido'))
+        orden = int(request.POST.get('orden', 0))
+        CampoEntidadFinanciera.objects.create(
+            entidad=entidad, nombre=nombre, etiqueta=etiqueta, tipo=tipo, requerido=requerido, orden=orden
+        )
+        messages.success(request, "Campo agregado correctamente.")
+        return redirect('campos_entidad_list', entidad_id=entidad.id)
+    return render(request, 'medio_acreditacion/campos_entidad_list.html', {
+        'entidad': entidad,
+        'campos': campos,
+    })
+
+# Vista para mostrar y guardar formulario dinámico de medio de acreditación (solo creación)
+def medio_acreditacion_dinamico(request, entidad_id, cliente_id):
+    entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
+    cliente = get_object_or_404(Cliente, pk=cliente_id)
+    campos = entidad.campos.order_by('orden')
+    errores = {}
+    valores = {}
+    if request.method == 'POST':
+        # Validación dinámica
+        for campo in campos:
+            valor = request.POST.get(f'campo_{campo.id}', '').strip()
+            valores[campo.id] = valor
+            if campo.requerido and not valor:
+                errores[campo.id] = 'Este campo es obligatorio.'
+            if campo.regex_validacion and valor:
+                import re
+                if not re.match(campo.regex_validacion, valor):
+                    errores[campo.id] = campo.mensaje_error or 'Formato inválido.'
+        if not errores:
+            medio = MedioAcreditacion.objects.create(
+                cliente=cliente,
+                entidad=entidad,
+                numero_cuenta=request.POST.get('numero_cuenta', ''),
+                tipo_cuenta=request.POST.get('tipo_cuenta', ''),
+                titular=request.POST.get('titular', ''),
+                documento_titular=request.POST.get('documento_titular', ''),
+                moneda=Moneda.objects.get(pk=request.POST.get('moneda')),
+                estado=True
+            )
+            for campo in campos:
+                valor = request.POST.get(f'campo_{campo.id}', '')
+                ValorCampoMedioAcreditacion.objects.create(
+                    medio=medio,
+                    campo=campo,
+                    valor=valor
+                )
+            return redirect('medio_acreditacion_list')
+    return render(request, 'medio_acreditacion/medio_acreditacion_dinamico.html', {
+        'entidad': entidad,
+        'campos': campos,
+        'cliente': cliente,
+        'errores': errores,
+        'valores': valores,
+    })
+
+def campo_entidad_create(request, entidad_id):
+    entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        etiqueta = request.POST.get('etiqueta', '').strip()
+        tipo = request.POST.get('tipo', '').strip()
+        requerido = bool(request.POST.get('requerido'))
+        orden = int(request.POST.get('orden', 0))
+        regex_validacion = request.POST.get('regex_validacion', '').strip()
+        mensaje_error = request.POST.get('mensaje_error', '').strip()
+        placeholder = request.POST.get('placeholder', '').strip()
+        ayuda = request.POST.get('ayuda', '').strip()
+        
+        # Validación
+        errores = {}
+        if not nombre:
+            errores['nombre'] = 'El nombre interno es obligatorio.'
+        if not etiqueta:
+            errores['etiqueta'] = 'La etiqueta visible es obligatoria.'
+        if not tipo:
+            errores['tipo'] = 'El tipo de campo es obligatorio.'
+        
+        # Verificar que el nombre no exista ya para esta entidad
+        if nombre and CampoEntidadFinanciera.objects.filter(entidad=entidad, nombre=nombre).exists():
+            errores['nombre'] = 'Ya existe un campo con este nombre para esta entidad.'
+        
+        if errores:
+            campo = CampoEntidadFinanciera(
+                entidad=entidad, nombre=nombre, etiqueta=etiqueta, tipo=tipo, 
+                requerido=requerido, orden=orden, regex_validacion=regex_validacion, 
+                mensaje_error=mensaje_error, placeholder=placeholder, ayuda=ayuda
+            )
+            html = render_to_string('medio_acreditacion/campo_entidad_form.html', 
+                                  {'entidad': entidad, 'campo': campo, 'errores': errores}, 
+                                  request=request)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'html': html})
+            return render(request, 'medio_acreditacion/campo_entidad_form.html', 
+                        {'entidad': entidad, 'campo': campo, 'errores': errores})
+        
+        # Crear el campo
+        campo = CampoEntidadFinanciera.objects.create(
+            entidad=entidad, nombre=nombre, etiqueta=etiqueta, tipo=tipo, 
+            requerido=requerido, orden=orden, regex_validacion=regex_validacion, 
+            mensaje_error=mensaje_error, placeholder=placeholder, ayuda=ayuda
+        )
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            campos = entidad.campos.all().order_by('orden')
+            html = render_to_string('medio_acreditacion/partials/campos_entidad_table.html', 
+                                  {'campos': campos, 'entidad': entidad}, 
+                                  request=request)
+            return JsonResponse({'success': True, 'html': html})
+        
+        messages.success(request, 'Campo agregado correctamente.')
+        return redirect('campos_entidad_list', entidad_id=entidad.id)
+    
+    # GET request
+    html = render_to_string('medio_acreditacion/campo_entidad_form.html', 
+                          {'entidad': entidad, 'campo': None, 'errores': {}}, 
+                          request=request)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'html': html})
+    return render(request, 'medio_acreditacion/campo_entidad_form.html', 
+                {'entidad': entidad, 'campo': None, 'errores': {}})
+
+
+def campo_entidad_edit(request, campo_id):
+    campo = get_object_or_404(CampoEntidadFinanciera, pk=campo_id)
+    entidad = campo.entidad
+    
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        etiqueta = request.POST.get('etiqueta', '').strip()
+        tipo = request.POST.get('tipo', '').strip()
+        requerido = bool(request.POST.get('requerido'))
+        orden = int(request.POST.get('orden', 0))
+        regex_validacion = request.POST.get('regex_validacion', '').strip()
+        mensaje_error = request.POST.get('mensaje_error', '').strip()
+        placeholder = request.POST.get('placeholder', '').strip()
+        ayuda = request.POST.get('ayuda', '').strip()
+        
+        # Validación
+        errores = {}
+        if not nombre:
+            errores['nombre'] = 'El nombre interno es obligatorio.'
+        if not etiqueta:
+            errores['etiqueta'] = 'La etiqueta visible es obligatoria.'
+        if not tipo:
+            errores['tipo'] = 'El tipo de campo es obligatorio.'
+        
+        # Verificar que el nombre no exista ya para esta entidad (excepto este mismo campo)
+        if nombre and CampoEntidadFinanciera.objects.filter(
+            entidad=entidad, nombre=nombre
+        ).exclude(pk=campo.id).exists():
+            errores['nombre'] = 'Ya existe otro campo con este nombre para esta entidad.'
+        
+        if errores:
+            campo_temp = CampoEntidadFinanciera(
+                id=campo.id, entidad=entidad, nombre=nombre, etiqueta=etiqueta, 
+                tipo=tipo, requerido=requerido, orden=orden, 
+                regex_validacion=regex_validacion, mensaje_error=mensaje_error, 
+                placeholder=placeholder, ayuda=ayuda
+            )
+            html = render_to_string('medio_acreditacion/campo_entidad_form.html', 
+                                  {'campo': campo_temp, 'entidad': entidad, 'errores': errores}, 
+                                  request=request)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'html': html})
+            return render(request, 'medio_acreditacion/campo_entidad_form.html', 
+                        {'campo': campo_temp, 'entidad': entidad, 'errores': errores})
+        
+        # Actualizar el campo
+        campo.nombre = nombre
+        campo.etiqueta = etiqueta
+        campo.tipo = tipo
+        campo.requerido = requerido
+        campo.orden = orden
+        campo.regex_validacion = regex_validacion
+        campo.mensaje_error = mensaje_error
+        campo.placeholder = placeholder
+        campo.ayuda = ayuda
+        campo.save()
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            campos = entidad.campos.all().order_by('orden')
+            html = render_to_string('medio_acreditacion/partials/campos_entidad_table.html', 
+                                  {'campos': campos, 'entidad': entidad}, 
+                                  request=request)
+            return JsonResponse({'success': True, 'html': html})
+        
+        messages.success(request, 'Campo actualizado correctamente.')
+        return redirect('campos_entidad_list', entidad_id=entidad.id)
+    
+    # GET request
+    html = render_to_string('medio_acreditacion/campo_entidad_form.html', 
+                          {'campo': campo, 'entidad': entidad, 'errores': {}}, 
+                          request=request)
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'html': html})
+    return render(request, 'medio_acreditacion/campo_entidad_form.html', 
+                {'campo': campo, 'entidad': entidad, 'errores': {}})
+
+
+def campo_entidad_delete(request, campo_id):
+    campo = get_object_or_404(CampoEntidadFinanciera, pk=campo_id)
+    entidad = campo.entidad
+    
+    if request.method == 'POST':
+        campo.delete()
+        
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            campos = entidad.campos.all().order_by('orden')
+            html = render_to_string('medio_acreditacion/partials/campos_entidad_table.html', 
+                                  {'campos': campos, 'entidad': entidad}, 
+                                  request=request)
+            return JsonResponse({'success': True, 'html': html})
+        
+        messages.success(request, 'Campo eliminado correctamente.')
+        return redirect('campos_entidad_list', entidad_id=entidad.id)
+    
+    # Para peticiones GET (no debería llegar aquí normalmente)
+    return redirect('campos_entidad_list', entidad_id=entidad.id)

@@ -1,0 +1,39 @@
+{% extends "base_forms.html" %}
+{% load dict_get %}
+{% block form_fields %}
+<h2>Completar datos para {{ entidad.nombre }}</h2>
+<form method="post" id="form-accion">
+  {% csrf_token %}
+  {% for campo in campos %}
+    <div class="form-group">
+      <label>{{ campo.etiqueta }}{% if campo.requerido %}*{% endif %}</label>
+      <div class="input-icon">
+        {% if campo.tipo == 'numero' %}
+          <span class="icon">🔢</span>
+        {% elif campo.tipo == 'fecha' %}
+          <span class="icon">📅</span>
+        {% elif campo.tipo == 'email' %}
+          <span class="icon">✉️</span>
+        {% else %}
+          <span class="icon">📝</span>
+        {% endif %}
+        <input
+          type="{% if campo.tipo == 'numero' %}number{% elif campo.tipo == 'fecha' %}date{% elif campo.tipo == 'email' %}email{% else %}text{% endif %}"
+          name="campo_{{ campo.id }}"
+          class="form-control custom-input"
+          placeholder="{{ campo.placeholder }}"
+          {% if campo.requerido %}required{% endif %}
+          {% if campo.regex_validacion %}pattern="{{ campo.regex_validacion }}"{% endif %}
+          title="{{ campo.mensaje_error|default:campo.ayuda }}"
+          value="{{ valores|dict_get:campo.id }}"
+        >
+      </div>
+      {% if campo.ayuda %}<small>{{ campo.ayuda }}</small>{% endif %}
+      <div class="error-messages">
+        {% if errores and errores|dict_get:campo.id %}<div class="error-message">{{ errores|dict_get:campo.id }}</div>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+  <button type="submit" class="btn-add rounded border-0 my-2">Guardar</button>
+</form>
+{% endblock %}
