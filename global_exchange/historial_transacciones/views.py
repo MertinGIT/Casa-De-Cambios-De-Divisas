@@ -6,6 +6,9 @@ from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 
+from cliente_usuario.models import Usuario_Cliente
+from clientes.models import Cliente
+
 @login_required
 def historial_usuario(request):
     from operaciones.models import Transaccion
@@ -58,6 +61,15 @@ def historial_usuario(request):
         if t.moneda_destino:
             monedas_set.add(t.moneda_destino.abreviacion)
     monedas_disponibles = sorted(monedas_set)
+    
+    segmento_nombre = "Sin Segmentación"
+    descuento=0
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+        if cliente_operativo.segmentacion.descuento:
+            descuento = float(cliente_operativo.segmentacion.descuento)
 
     context = {
         'transacciones': qs,
@@ -68,6 +80,9 @@ def historial_usuario(request):
         'monedas_disponibles': monedas_disponibles,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
+        "segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,'descuento': descuento
     }
     return render(request, 'historial_transacciones/historial_usuario.html', context)
 
@@ -77,7 +92,7 @@ def detalle_transaccion(request, transaccion_id):
     transaccion = get_object_or_404(Transaccion, id=transaccion_id, usuario=request.user)
     return render(request, 'historial_transacciones/detalle_transaccion.html', {
         'transaccion': transaccion
-    })
+        })
 
 @login_required
 def exportar_historial_excel(request):
@@ -189,3 +204,69 @@ def exportar_historial_pdf(request):
     p.showPage()
     p.save()
     return response
+
+def obtener_clientes_usuario(user,request):
+    """
+    Devuelve:
+        - clientes_asociados: lista de todos los clientes asociados al usuario
+        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    """
+
+     # Solo clientes activos
+    usuarios_clientes = (
+        Usuario_Cliente.objects
+        .select_related("id_cliente__segmentacion")
+        .filter(id_usuario=user, id_cliente__estado="activo")
+    )
+    
+    clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
+    cliente_operativo = None
+
+    # Tomar de la sesión si existe
+    if request and request.session.get('cliente_operativo_id'):
+        cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
+
+    # Si no hay sesión o ID no válido, tomar el primero
+    if not cliente_operativo and clientes_asociados:
+        cliente_operativo = clientes_asociados[0]
+
+    return clientes_asociados, cliente_operativo
+
+
+@login_required
+def set_cliente_operativo(request):
+    """
+    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
+    con segmento y descuento para actualizar el front sin recargar.
+    """
+    cliente_id = request.POST.get('cliente_id')
+
+    if cliente_id:
+        try:
+            cliente = Cliente.objects.select_related("segmentacion").get(
+                pk=cliente_id, estado="activo"
+            )
+            # Guardar en sesión
+            request.session['cliente_operativo_id'] = cliente.id
+
+            # Datos a devolver
+            segmento_nombre = None
+            descuento = 0
+            if cliente.segmentacion and cliente.segmentacion.estado == "activo":
+                segmento_nombre = cliente.segmentacion.nombre
+                descuento = float(cliente.segmentacion.descuento or 0)
+
+            return JsonResponse({
+                "success": True,
+                "segmento": segmento_nombre,
+                "descuento": descuento,
+                "cliente_nombre": cliente.nombre
+            })
+
+        except Cliente.DoesNotExist:
+            return JsonResponse(
+                {"success": False, "error": "Cliente no encontrado"}, status=404
+            )
+
+    return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+	

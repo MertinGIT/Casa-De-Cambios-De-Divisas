@@ -1,0 +1,679 @@
+{% include "loader.html" %}
+<div
+  class="mfa-container-bg"
+  style="display: flex; justify-content: center; align-items: center"
+>
+  <div class="mfa-container">
+    <div class="mfa-card">
+      <!-- Header -->
+      <div class="mfa-header">
+        <div class="security-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 2L3 7V11C3 16.55 6.84 21.74 12 23C17.16 21.74 21 16.55 21 11V7L12 2Z"
+              fill="url(#gradient)"
+              stroke="#5d5fef"
+              stroke-width="2"
+            />
+            <path
+              d="M9 12L11 14L15 10"
+              stroke="white"
+              stroke-width="2"
+              stroke-linecap="round"
+            />
+            <defs>
+              <linearGradient id="gradient" x1="3" y1="2" x2="21" y2="23">
+                <stop offset="0%" stop-color="#5d5fef" />
+                <stop offset="100%" stop-color="#4a4cd9" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="title">Protege tu Cuenta</h1>
+        <p class="subtitle">
+          Configura la autenticación de dos factores para mayor seguridad
+        </p>
+      </div>
+
+      <!-- Progress Steps -->
+      <div class="progress-steps">
+        <div class="step active completed">
+          <div class="step-number">1</div>
+          <span class="step-label">Descargar App</span>
+        </div>
+        <div class="step-line active"></div>
+        <div class="step active">
+          <div class="step-number">2</div>
+          <span class="step-label">Escanear QR</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <span class="step-label">Verificar</span>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="mfa-content">
+        <!-- Instrucciones -->
+        <div class="instructions-box">
+          <h3>Instrucciones</h3>
+          <ol class="instructions-list">
+            <li>
+              <span class="instruction-icon">📱</span>
+              <div>
+                <strong>Descarga Google Authenticator</strong>
+                <p>Disponible en App Store y Google Play</p>
+              </div>
+            </li>
+            <li>
+              <span class="instruction-icon">📷</span>
+              <div>
+                <strong>Escanea el código QR</strong>
+                <p>Abre la app y escanea este código</p>
+              </div>
+            </li>
+            <li>
+              <span class="instruction-icon">🔢</span>
+              <div>
+                <strong>Guarda el código de respaldo</strong>
+                <p>Por si pierdes acceso a tu teléfono</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- QR Code Section -->
+        <div class="qr-section">
+          <div class="qr-wrapper">
+            <div class="qr-frame">
+              <img
+                src="data:image/png;base64,{{ qr_code }}"
+                alt="Código QR"
+                class="qr-image"
+              />
+            </div>
+            <div class="qr-label">Escanea con Google Authenticator</div>
+          </div>
+
+          <!-- Código de respaldo -->
+          <div class="backup-code">
+            <label class="backup-label"
+              >Código de respaldo (guárdalo en un lugar seguro)</label
+            >
+
+            <div class="backup-code-box">
+              <code id="backup-code">
+                <ul class="backup-list">
+                  {% for code in backup_codes %}
+                  <li class="backup-code-item backup-code">{{ code }}</li>
+                  {% endfor %}
+                </ul>
+              </code>
+              <div class="button-contain-code">
+                <button
+                  type="button"
+                  class="btn-copy"
+                  onclick="copyBackupCode()"
+                >
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                  >
+                    <rect
+                      x="9"
+                      y="9"
+                      width="13"
+                      height="13"
+                      rx="2"
+                      ry="2"
+                    ></rect>
+                    <path
+                      d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"
+                    ></path>
+                  </svg>
+                  Copiar
+                </button>
+                <button
+                  class="btn-copy"
+                  type="button"
+                  class="btn-secondary"
+                  onclick="downloadBackupCodes()"
+                >
+                  Descargar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alerta de seguridad -->
+        <div class="security-alert">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <p>
+            <strong>Importante:</strong> Nunca compartas este código QR ni tu
+            código de respaldo con nadie. Global Exchange nunca te lo pedirá.
+          </p>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="action-buttons">
+          <button type="button" class="btn btn-secondary" onclick="showHelp()">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            ¿Necesitas ayuda?
+          </button>
+          <a href="/mfa/verify/" class="btn btn-primary">
+            Continuar a Verificación
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de ayuda -->
+<div id="help-modal" class="help-modal">
+  <div class="help-modal-content">
+    <h3>Ayuda</h3>
+    <p>
+      Si necesitas ayuda, contacta a
+      <a href="mailto:soporte@globalexchange.com">soporte@globalexchange.com</a>
+      o visita nuestra sección de ayuda.
+    </p>
+    <button class="btn btn-secondary" onclick="closeHelpModal()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+  function copyBackupCode() {
+    const code = document.getElementById("backup-code").textContent;
+    navigator.clipboard.writeText(code).then(() => {
+      const btn = document.querySelector(".btn-copy");
+      const originalText = btn.innerHTML;
+      btn.innerHTML =
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"></polyline></svg> Copiado';
+      btn.style.background = "#16a34a";
+      setTimeout(() => {
+        btn.innerHTML = originalText;
+        btn.style.background = "";
+      }, 2000);
+    });
+  }
+
+  function downloadBackupCodes() {
+    const codes = document.querySelectorAll(".backup-code");
+    let text = "Tus códigos de respaldo:\n\n";
+    codes.forEach((c) => (text += c.textContent + "\n"));
+
+    const blob = new Blob([text], { type: "text/plain" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "backup_codes.txt";
+    link.click();
+  }
+
+  function showHelp() {
+    document.getElementById("help-modal").style.display = "grid";
+  }
+  function closeHelpModal() {
+    document.getElementById("help-modal").style.display = "none";
+  }
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .mfa-container {
+    width: 100%;
+    max-width: 600px; /* móvil */
+  }
+
+  .mfa-card {
+    background: white;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .mfa-header {
+    background: linear-gradient(135deg, #5d5fef 0%, #4a4cd9 100%);
+    padding: 2.5rem 2rem;
+    text-align: center;
+    color: white;
+    display: grid;
+    grid-template-rows: auto auto auto;
+    justify-items: center;
+    gap: 1rem;
+  }
+
+  .btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .btn-secondary:hover {
+    background: #e2e8f0;
+  }
+  
+  .security-icon {
+    margin-bottom: 0;
+  }
+
+  .title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: 0.95rem;
+    opacity: 0.95;
+    font-weight: 400;
+  }
+
+  /* Progress Steps */
+  .progress-steps {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* números y líneas intercaladas */
+    align-items: center;
+    padding: 2rem;
+    background: #f8fafc;
+    gap: 0.5rem;
+  }
+
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .step.active .step-number {
+    background: #5d5fef;
+    color: white;
+  }
+
+  .step.completed .step-number {
+    background: #16a34a;
+    color: white;
+  }
+
+  .step-label {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .step-line {
+    height: 2px;
+    background: #e2e8f0;
+  }
+
+  .step-line.active {
+    background: #5d5fef;
+  }
+
+  /* Contenido principal */
+  .mfa-content {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 2rem;
+  }
+
+  /* Instrucciones */
+  .instructions-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.5rem;
+  }
+
+  .instructions-box h3 {
+    color: #1e2d70;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .instructions-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .instructions-list li {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .instruction-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .instructions-list strong {
+    display: block;
+    color: #1e2d70;
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .instructions-list p {
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  /* QR + Backup */
+  .qr-section {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .qr-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .qr-frame {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 20px;
+    border: 3px solid #5d5fef;
+    box-shadow: 0 8px 24px rgba(93, 95, 239, 0.2);
+  }
+
+  .qr-image {
+    width: 200px;
+    height: 200px;
+    border-radius: 12px;
+  }
+
+  .qr-label {
+    font-size: 0.9rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+
+  .backup-code {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    align-items: center;
+  }
+
+  .backup-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #1e2d70;
+  }
+
+  .backup-code-box {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+  }
+
+  .backup-code-box code {
+    flex: 1;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+    color: #1e2d70;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-copy {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #5d5fef;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-copy:hover {
+    background: #4a4cd9;
+    transform: translateY(-1px);
+  }
+
+  /* Botones acción */
+  .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  .button-contain-code {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  .btn-primary {
+    background: #5d5fef;
+    color: white;
+    box-shadow: 0 4px 12px rgba(93, 95, 239, 0.3);
+  }
+
+  .btn-primary:hover {
+    background: #4a4cd9;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(93, 95, 239, 0.4);
+  }
+
+  .btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+  }
+
+  .btn-secondary:hover {
+    background: #e2e8f0;
+  }
+
+  .security-alert {
+    display: flex;
+    gap: 0.75rem;
+    background: #fef3c7;
+    border: 1px solid #fde047;
+    border-radius: 12px;
+    padding: 1rem;
+    color: #854d0e;
+  }
+
+  .security-alert svg {
+    flex-shrink: 0;
+    stroke: #ca8a04;
+  }
+
+  .security-alert p {
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+
+  /* MOBILE */
+  @media (max-width: 1023px) {
+    .instructions-box {
+      display: none;
+    }
+    .button-contain-code {
+      flex-direction: column;
+    }
+    .backup-code-box {
+      width: 70%;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .mfa-content {
+      grid-template-columns: 1fr;
+    }
+    .instructions-list {
+      grid-template-columns: 1fr;
+    }
+    .qr-section {
+      grid-template-columns: 1fr;
+    }
+    .action-buttons {
+      grid-template-columns: 1fr;
+    }
+    .qr-image {
+      width: 180px;
+      height: 180px;
+    }
+    .btn-copy {
+      width: 100%;
+    }
+  }
+
+  /* DESKTOP */
+  @media (min-width: 1024px) {
+    .mfa-container {
+      max-width: 1200px;
+    }
+    .mfa-content {
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+    .instructions-list {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+    .qr-section {
+      grid-template-columns: 1fr 1fr;
+    }
+    .action-buttons {
+      grid-template-columns: auto auto;
+      justify-content: start;
+      gap: 1.5rem;
+    }
+    .qr-image {
+      width: 280px;
+      height: 280px;
+    }
+    .backup-code-box {
+      flex-direction: column;
+    }
+  }
+</style>
+
+<style>
+  .help-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none; /* oculto por defecto */
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .help-modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: grid;
+    gap: 1rem;
+  }
+  .help-modal-content h3 {
+    margin-bottom: 0.5rem;
+    color: #1e2d70;
+  }
+  .help-modal-content p {
+    font-size: 0.9rem;
+    color: #475569;
+  }
+</style>

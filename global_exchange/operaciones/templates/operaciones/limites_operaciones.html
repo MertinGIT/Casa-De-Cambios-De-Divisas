@@ -11,37 +11,46 @@
 
     <!-- Vista Diaria -->
     <div class="tab-content active" id="tab-diario">
-        {% for limite in limites_cliente %}
+        {% for item in limites_cliente %}
         <div class="limite-display">
             <div class="limite-main">
                 <div class="limite-amount">
-                    <span class="amount-total">₲ {{ limite.limite_diario|floatformat:0 }}</span>
+                    <span class="amount-label">{{ item.limite.moneda.abreviacion }}</span>
+                    <span class="amount-total">₲ {{ item.limite.limite_diario|floatformat:0 }}</span>
                 </div>
             </div>
             <div class="limite-info">
-                <span class="info-disponible">Disponible: ₲ {{ limite.limite_diario|floatformat:0 }}</span>
-                <span class="info-renovacion">Renueva: {{ limite.renovacion_diaria|default:"00:00" }}</span>
+                <span class="info-gastado">Gastado: ₲ {{ item.gasto_diario|floatformat:0 }}</span>
+                <span class="info-disponible">Disponible: ₲ {{ item.disponible_diario|floatformat:0 }}</span>
+                  <span class="info-renovacion">00:00:00 hs</span>
             </div>
         </div>
+        {% empty %}
+        <p class="no-limites">No hay límites configurados</p>
         {% endfor %}
     </div>
 
-    <!-- Vista Mensual -->
-    <div class="tab-content" id="tab-mensual">
-        {% for limite in limites_cliente %}
-        <div class="limite-display">
-            <div class="limite-main">
-                <div class="limite-amount">
-                    <span class="amount-total">₲ {{ limite.limite_mensual|floatformat:0 }}</span>
-                </div>
-            </div>
-            <div class="limite-info">
-                <span class="info-disponible">Disponible: ₲ {{ limite.limite_mensual|floatformat:0 }}</span>
-                <span class="info-renovacion">Día 1 próximo mes</span>
+<!-- Vista Mensual -->
+<div class="tab-content" id="tab-mensual">
+    {% for item in limites_cliente %}
+    <div class="limite-display">
+        <div class="limite-main">
+            <div class="limite-amount">
+                <span class="amount-label">{{ item.limite.moneda.abreviacion }}</span>
+                <span class="amount-total">₲ {{ item.limite.limite_mensual|floatformat:0 }}</span>
+              
             </div>
         </div>
-        {% endfor %}
+        <div class="limite-info">
+            <span class="info-gastado">Gastado: ₲ {{ item.gasto_mensual|floatformat:0 }}</span>
+            <span class="info-disponible">Disponible: ₲ {{ item.disponible_mensual|floatformat:0 }}</span>
+            <span class="info-renovacion">Día 1 próximo mes</span>
+        </div>
     </div>
+    {% empty %}
+    <p class="no-limites">No hay límites configurados</p>
+    {% endfor %}
+</div>
 
     <!-- Vista Monedas -->
     <div class="tab-content" id="tab-monedas">

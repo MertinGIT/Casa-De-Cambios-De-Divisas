@@ -1,6 +1,7 @@
 {% extends 'baseDashboardUsuario.html' %}
 {% load humanize %}
 {% block dashboard_content %}
+{% include 'notificaciones/modalNotificacion.html' %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <style>
@@ -185,8 +186,8 @@ body{font-family:'Inter',sans-serif!important;}
         {{ t.tasa_usada|floatformat:0 }}Gs
       </td>
       <td data-label="Estado">
-        {% if t.estado == 'completado' %}
-          <span class="status-badge status-confirmado">Completado</span>
+        {% if t.estado == 'completada' %}
+          <span class="status-badge status-confirmado">Completada</span>
         {% elif t.estado == 'pendiente' %}
           <span class="status-badge status-pendiente">Pendiente</span>
         {% elif 'cancelada' in t.estado %}

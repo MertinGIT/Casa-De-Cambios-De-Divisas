@@ -44,6 +44,7 @@
 <script>
   function mostrarModalPin() {
     console.log("mostrarModalPinnnnnnnnnnnnnnnnn");
+    enviarPin();
     const modal = document.getElementById("modal-pin");
     modal.style.display = "flex";
 
@@ -166,26 +167,37 @@ function verificarPin() {
   let pin = "";
   pinInputs.forEach((input) => pin += input.value);
 
-  if (pin === "1234") {
-    cerrarModalPin();
-
-    // Antes de procesar la transacción, verificamos la tasa
-    verificarTasaActualizada(function(tasaActualizada) {
-      if (tasaActualizada) {
-        console.log("PIN correcto y tasa actualizada, procesando transacción...");
-        procesarTransaccion(); // Llamamos a la función separada
-      } else {
-        // Cortar flujo si la tasa no está actualizada
-        $("#modal-exito").css("display", "none");
-        mostrarMensaje(
-          "Transacción Rechazada",
-          "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.",
-          "warning",
-          true
-        );
-        $("#modal-pin").fadeOut();
-      }
-    });
+  fetch("{% url 'validar_pin' %}", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: new URLSearchParams({ pin: pin })
+    })
+    .then(resp => resp.json())
+    .then(data => {
+      if (data.success) {
+      cerrarModalPin();
+      //if (pin === "1234") {
+      // Antes de procesar la transacción, verificamos la tasa
+      verificarTasaActualizada(function(tasaActualizada) {
+        if (tasaActualizada) {
+          console.log("PIN correcto y tasa actualizada, procesando transacción...");
+          procesarTransaccion(); // Llamamos a la función separada
+        } else {
+          // Cortar flujo si la tasa no está actualizada
+          $("#modal-exito").css("display", "none");
+          mostrarMensaje(
+            "Transacción Rechazada",
+            "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.",
+            "warning",
+            true
+          );
+          $("#modal-pin").fadeOut();
+        }
+      });
   } else {
     // PIN incorrecto
     console.log("PIN incorrecto:", pin);
@@ -200,7 +212,11 @@ function verificarPin() {
       pinInputs.forEach((input) => input.classList.remove("error"));
     }, 2000);
   }
-
+    })
+    .catch(err => {
+      console.error("Error verificando PIN:", err);
+      //mostrarMensaje("⚠️ Error", "Error al verificar el PIN. Intente nuevamente.");
+    });
   // Limpiar inputs del PIN
   pinInputs.forEach((input) => input.value = "");
 }
@@ -244,7 +260,8 @@ function procesarTransaccion() {
     moneda_origen_id: moneda_origen_id,
     moneda_destino_id: moneda_destino_id,
     tasa_usada: tasaCalculada,
-    tasa_ref_id: TASA_REF_ID
+    tasa_ref_id: TASA_REF_ID,
+    cliente_id:  parseInt("{{ cliente_operativo.id }}", 10)
   };
 
   console.log("Guardando en BD LOCAL:", payloadLocal);
@@ -296,7 +313,15 @@ function procesarTransaccion() {
       console.log("Respuesta del banco:", data);
 
       let estadoFinal = "pendiente";
-      if (data.estado === "aceptada") estadoFinal = "completada";
+      if (data.estado === "aceptada"){
+        estadoFinal = "completada";
+        // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
+        window.transaccionActual = {
+          ...window.datos, // datos del padre
+          ...window.datosAcreditacion,
+          ...transaccionData      
+        };
+      } 
       else if (data.estado === "rechazada") estadoFinal = "cancelada";
 
       // PASO 4: Actualizar estado en BD
@@ -357,7 +382,28 @@ function procesarTransaccion() {
   });
 }
 
-  
+function enviarPin() {
+  // 1. Llamar a la view que envía el PIN
+  fetch("{% url 'enviar_pin' %}", {
+    method: "GET",
+    credentials: "same-origin"
+  })
+  .then(resp => resp.json())
+  .then(data => {
+    if (data.success) {
+      console.log("PIN enviado al correo del usuario");
+      mostrarInfo("PIN Enviado", "Se ha enviado el PIN de verificación a su correo electrónico.");
+      // 2. Ahora sí abrir el modal
+      document.getElementById("modal-pin").style.display = "flex";
+    } else {
+      console.error("Error enviando PIN:", data.message);
+      alert("No se pudo enviar el PIN. Intente de nuevo.");
+    }
+  })
+  .catch(err => console.error("Error:", err));
+}
+
+
   // Funcionalidad PIN
   document.addEventListener("DOMContentLoaded", function () {
     const pinInputs = document.querySelectorAll(".pin-digit");

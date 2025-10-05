@@ -10,6 +10,7 @@ Views (operaciones):
 Nota:
 Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
 """
+from django.views.decorators.http import require_POST
 
 from decimal import Decimal
 from django.shortcuts import render
@@ -23,16 +24,18 @@ from cotizaciones.models import TasaDeCambio
 from clientes.models import Cliente
 from cliente_usuario.models import Usuario_Cliente
 from django.utils.dateparse import parse_datetime
-from django.utils.timezone import now
+from django.utils.timezone import now, localtime
+from datetime import timedelta
 import requests
 from metodos_pagos.models import MetodoPago
 from django.views.decorators.csrf import csrf_exempt
 import json
 from django.utils import timezone
 from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
 from limite_moneda.models import LimiteTransaccion
-
+from django.db.models import Sum
+import random
+from django.core.mail import send_mail
 
 
 @login_required
@@ -63,6 +66,7 @@ def simulador_operaciones(request):
             "dia": timezone.localtime(t.fecha).strftime("%d/%m"),
             "tipo": t.get_tipo_display(),  # "Compra"/"Venta"
             "monto": float(t.monto),
+            "estado":t.estado,
             "moneda": t.moneda_origen.abreviacion if t.tipo == 'Compra' else t.moneda_destino.abreviacion
         }
         for t in reversed(list(transacciones_qs))
@@ -89,14 +93,13 @@ def simulador_operaciones(request):
         # Insertar al inicio para mantener el más reciente al final (coherente con uso registros[-1])
         data_por_moneda[abrev].insert(0, {
             "id": tasa.id,
-            "id": tasa.id,
             "fecha": tasa.vigencia.strftime("%d %b"),
-            "compra": float(tasa.monto_compra),
-            "venta": float(tasa.monto_venta),
             "comision_compra": float(tasa.comision_compra),
-            "comision_venta": float(tasa.comision_venta)
+            "comision_venta": float(tasa.comision_venta),
+            "precio_base": float(tasa.precio_base)
         })
-
+        
+    print("data_por_monedaaaaaaaaaa:", data_por_moneda,flush=True)
     # Comisiones y variables
     COMISION_VTA = 0
     COMISION_COM = 0
@@ -122,24 +125,68 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
-    limites_cliente = []
+    limites = LimiteTransaccion.objects.all()  # tus límites generales por moneda
+
+    hoy = localtime(now()).date()
+    inicio_mes = hoy.replace(day=1)
+
+    limites_disponibles = []
+
+    for limite in limites:
+        # Filtrar transacciones confirmadas y no canceladas
+        transacciones_validas = Transaccion.objects.filter(
+            estado__in=["completada"]  # solo considerar transacciones activas
+        )
+
+        # Gastado hoy
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(total=Sum("monto"))["total"] or 0
+
+        # Gastado en el mes
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(total=Sum("monto"))["total"] or 0
+
+        limites_disponibles.append({
+            "limite": limite,
+            "gasto_diario": gasto_diario,
+            "disponible_diario": max(limite.limite_diario - gasto_diario, 0),
+            "gasto_mensual": gasto_mensual,
+            "disponible_mensual": max(limite.limite_mensual - gasto_mensual, 0),
+        })
+
+        
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
         if abrev != "PYG" and registros:
             tasa_default = registros[-1]  # último = más reciente según construcción
             break
+    
+    print("tasa_default:", tasa_default,flush=True)
 
     if tasa_default:
         COMISION_VTA = tasa_default.get("comision_venta", 0)
         COMISION_COM = tasa_default.get("comision_compra", 0)
-        PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
+        # antes usabas venta/compra según operacion, ahora usamos precio_base siempre
+        PB_MONEDA = tasa_default.get("precio_base", 0)
+        #PB_MONEDA = tasa_default["venta"] if operacion == "venta" else tasa_default["compra"]
         TASA_REF_ID = tasa_default["id"]
+
         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+        print("PB_MONEDA de if tasa_default:",PB_MONEDA, flush=True)
+        print("TC_VTA de if tasa_default:",TC_VTA, flush=True)
+        print("TC_COMP de if tasa_default:",TC_COMP, flush=True)
+        print("COMISION_VTA de if tasa_default:",COMISION_VTA, flush=True)
+        print("COMISION_COM de if tasa_default:",COMISION_COM, flush=True)
     else:
         TC_VTA = 0
         TC_COMP = 0
+
+    print("TC_VTA de simulacion de operaciones:",TC_VTA, flush=True)
+    print("TC_COMP de simulacion de operaciones:",TC_COMP ,flush=True)   
 
     # Procesar cálculo (AJAX / POST)
     if request.method == "POST":
@@ -172,18 +219,25 @@ def simulador_operaciones(request):
                     ultimo = registros[-1]
                     COMISION_VTA = ultimo.get("comision_venta", 0)
                     COMISION_COM = ultimo.get("comision_compra", 0)
-                    PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
+                    # ahora leemos precio_base directamente
+                    PB_MONEDA = tasa_default.get("precio_base", 0)
+                    #PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
-
+                    print("entra en el else de simulacion de operaciones:", flush=True)
+                    print("PB_MONEDA del else:",PB_MONEDA, flush=True)
                     # Cálculos:
                     if operacion == "venta":
                         # Cliente entrega PYG, convertimos a moneda extranjera
                         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                        TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                        resultado_sin_desc = round(valor / TC_VTA_SIN_DESC, 2)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
+                        TC_COMP_SIN_DESC = PB_MONEDA - COMISION_COM  # sin beneficio
+                        resultado_sin_desc = round(valor * TC_COMP_SIN_DESC, 2)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
         except ValueError:
@@ -191,13 +245,13 @@ def simulador_operaciones(request):
 
     # Determinar tasa usada para respuesta
     tasa_usada = TC_VTA if operacion == "venta" else TC_COMP
-
     # Respuesta AJAX (cálculo dinámico)
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         # 'ultimo' puede no existir si nunca hubo registros
         fecha_tasa = locals().get("ultimo", {}).get("fecha", "")
         return JsonResponse({
             "resultado": resultado,
+            "resultado_sin_desc": resultado_sin_desc,  # sin descuento
             "ganancia_total": ganancia_total,
             "segmento": segmento_nombre,
             "descuento": descuento,
@@ -234,12 +288,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-        if cliente_operativo:
-            limites_cliente = LimiteTransaccion.objects.filter(
-            cliente=cliente_operativo,
-            estado='activo'
-        ).select_related('moneda')
-    
+
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -255,6 +304,7 @@ def simulador_operaciones(request):
         "descuento": descuento,
         "clientes_asociados": clientes_asociados,
         "cliente_operativo": cliente_operativo,
+        "cliente_operativo_id": cliente_operativo.id if cliente_operativo else None,
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
         "transacciones": transacciones_qs,
@@ -264,14 +314,96 @@ def simulador_operaciones(request):
         "TASA_REF_ID": TASA_REF_ID,
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
         "medios_acreditacion": json.dumps(medios_acreditacion),
-        "limites_cliente": limites_cliente,
+        "limites_cliente": limites_disponibles,
     }
-
-
 
     return render(request, 'operaciones/conversorReal.html', context)
 
 
+@require_POST
+def verificar_limites(request):
+    """
+    Verifica si el monto de la transacción excede los límites diarios o mensuales
+    """
+    try:
+        monto = Decimal(request.POST.get('monto', 0))
+        moneda_abrev = request.POST.get('moneda')
+        
+        # Obtener la moneda
+        moneda = Moneda.objects.get(abreviacion=moneda_abrev)
+        
+        # Obtener el límite general para esta moneda
+        limite = LimiteTransaccion.objects.filter(moneda_id=1).first()
+        
+        if not limite:
+            return JsonResponse({
+                'success': False,
+                'mensaje': f'No se encontró límite configurado para {moneda_abrev}'
+            })
+        
+        # Obtener límites configurados
+        limite_diario = limite.limite_diario
+        limite_mensual = limite.limite_mensual
+        
+        # Calcular fechas
+        hoy = localtime(now()).date()
+        inicio_mes = hoy.replace(day=1)
+        
+        # Filtrar solo transacciones completadas
+        transacciones_validas = Transaccion.objects.filter(
+            estado__in=["completada"]  # solo considerar transacciones completadas
+        )
+        
+        # Calcular gasto diario
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        
+        # Calcular gasto mensual
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        
+        # Calcular disponibles
+        disponible_diario = limite_diario - gasto_diario
+        disponible_mensual = limite_mensual - gasto_mensual
+        
+        # Verificar si excede límites
+        excede_diario = monto > disponible_diario
+        excede_mensual = monto > disponible_mensual
+        
+        # Formatear números para mostrar (formato paraguayo: 1.234.567,89)
+        def format_number(num):
+            num_str = f"{float(num):,.2f}"
+            # Cambiar formato americano a paraguayo
+            num_str = num_str.replace(',', 'X').replace('.', ',').replace('X', '.')
+            return num_str
+        
+        return JsonResponse({
+            'success': True,
+            'excede_diario': excede_diario,
+            'excede_mensual': excede_mensual,
+            'moneda': moneda_abrev,
+            'monto_solicitado': format_number(monto),
+            'limite_diario': format_number(limite_diario),
+            'gastado_diario': format_number(gasto_diario),
+            'disponible_diario': format_number(disponible_diario),
+            'limite_mensual': format_number(limite_mensual),
+            'gastado_mensual': format_number(gasto_mensual),
+            'disponible_mensual': format_number(disponible_mensual)
+        })
+        
+    except Moneda.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'mensaje': f'Moneda {moneda_abrev} no encontrada'
+        })
+    except Exception as e:
+        print(f"Error en verificar_limites: {str(e)}", flush=True)
+        return JsonResponse({
+            'success': False,
+            'mensaje': f'Error al verificar límites: {str(e)}'
+        })
 
 def obtener_clientes_usuario(user,request):
     """
@@ -285,7 +417,7 @@ def obtener_clientes_usuario(user,request):
     :rtype: tuple[list[Cliente], Cliente | None, str]
     """
 
-     # Solo clientes activos
+    # Solo clientes activos
     usuarios_clientes = (
         Usuario_Cliente.objects
         .select_related("id_cliente__segmentacion")
@@ -435,8 +567,8 @@ def guardar_transaccion(request):
     """
     Guarda una transacción en la base de datos.
 
-    Recibe los datos en JSON: monto, tipo, monedas, tasa y estado.
-    Asocia la transacción con el usuario autenticado si lo hay.
+    Recibe los datos en JSON: monto, tipo, monedas, tasa, estado y cliente.
+    Asocia la transacción con el usuario autenticado y el cliente operativo.
 
     :param request: Objeto HTTP con los datos de la transacción.
     :type request: HttpRequest
@@ -457,14 +589,31 @@ def guardar_transaccion(request):
         moneda_destino_id = data.get("moneda_destino_id")
         tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
         tasa_ref_id = data.get("tasa_ref_id")
+        cliente_id = data.get("cliente_id")
 
-        if not (moneda_origen_id and moneda_destino_id and tasa_ref_id):
-            return JsonResponse({"success": False, "error": "Faltan campos obligatorios"}, status=400)
+        # Validación de campos obligatorios
+        if not (moneda_origen_id and moneda_destino_id and tasa_ref_id and cliente_id):
+            return JsonResponse({"success": False, "error": "Faltan campos obligatorios (incluye cliente_id)"}, status=400)
 
+        # Obtener instancias de los modelos
         moneda_origen = Moneda.objects.get(id=moneda_origen_id)
         moneda_destino = Moneda.objects.get(id=moneda_destino_id)
         tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
+        cliente = Cliente.objects.get(id=cliente_id, estado="activo")
 
+        # Validar que el cliente pertenece al usuario
+        if usuario:
+            relacion = Usuario_Cliente.objects.filter(
+                id_usuario=usuario, 
+                id_cliente=cliente
+            ).exists()
+            if not relacion:
+                return JsonResponse({
+                    "success": False, 
+                    "error": "El cliente no está asociado al usuario"
+                }, status=403)
+
+        # Crear la transacción
         transaccion = Transaccion.objects.create(
             usuario=usuario,
             monto=monto,
@@ -474,6 +623,7 @@ def guardar_transaccion(request):
             moneda_destino=moneda_destino,
             tasa_usada=tasa_usada,
             tasa_ref=tasa_ref,
+            cliente=cliente,
         )
 
         return JsonResponse({
@@ -481,17 +631,22 @@ def guardar_transaccion(request):
             "id": transaccion.id,
             "estado": transaccion.estado,
             "fecha": transaccion.fecha.strftime("%d/%m/%Y %H:%M"),
+            "cliente_nombre": cliente.nombre,
         })
 
     except Moneda.DoesNotExist:
         return JsonResponse({"success": False, "error": "Moneda no encontrada"}, status=404)
     except TasaDeCambio.DoesNotExist:
         return JsonResponse({"success": False, "error": "Tasa de cambio no encontrada"}, status=404)
+    except Cliente.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Cliente no encontrado o inactivo"}, status=404)
     except Exception as e:
         return JsonResponse({"success": False, "error": "Error al guardar", "detail": str(e)}, status=500)
 
 
 def actualizar_estado_transaccion(request):
+
+
     """
     Actualiza el estado de una transacción existente.
 
@@ -528,3 +683,35 @@ def actualizar_estado_transaccion(request):
             return JsonResponse({"success": False, "error": "Error al actualizar", "detail": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
+
+def enviar_pin(request):
+    if request.user.is_authenticated:
+        # Generar un PIN aleatorio de 4 dígitos
+        pin = str(random.randint(1000, 9999))
+
+        # Guardar PIN en la sesión (válido por una transacción)
+        request.session['pin_seguridad'] = pin
+
+        # Enviar el PIN al email del usuario
+        asunto = "Tu código PIN de verificación"
+        mensaje = f"Hola {request.user.username},\n\nTu código de verificación es: {pin}\n\nEste código vence en unos minutos."
+        remitente = None  # Usará EMAIL_HOST_USER por defecto
+        destinatarios = [request.user.email]
+
+        send_mail(asunto, mensaje, remitente, destinatarios)
+
+        return JsonResponse({"success": True, "message": "Se envió un PIN a tu correo"})
+    return JsonResponse({"success": False, "message": "Usuario no autenticado"})
+
+def validar_pin(request):
+    if request.method == "POST":
+        pin_ingresado = request.POST.get("pin")
+        pin_guardado = request.session.get("pin_seguridad")
+
+        if pin_guardado and pin_ingresado == pin_guardado:
+            # PIN válido, eliminarlo de la sesión para que no se reutilice
+            del request.session['pin_seguridad']
+            return JsonResponse({"success": True})
+        else:
+            return JsonResponse({"success": False, "message": "PIN incorrecto"})
+

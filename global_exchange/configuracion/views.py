@@ -7,7 +7,7 @@ from django.core.paginator import Paginator
 
 # Create your views here.
 def configuracion_view(request):
-    return render(request, 'configuracion_home.html')
+    return render(request, 'configuracion/configuracion_home.html')
 
 """
 def seguridad_hub(request):
