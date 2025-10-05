@@ -256,6 +256,83 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+
+  function validarMonto(monto) {
+            // Convertir a string
+            const montoStr = monto.toString();
+
+            // Separar parte entera y decimal
+            const partes = montoStr.split(".");
+            const enteros = partes[0] || "";
+            const decimales = partes[1] || "";
+            console.log("partes", partes);
+            console.log("enteros", enteros);
+            console.log("decimales", decimales);
+
+            if (enteros.length > 15) {
+                mostrarMensaje("⚠️ Error", "El monto no puede tener más de 15 dígitos antes del punto decimal.");
+                return false;
+            }
+
+            if (decimales.length > 8) {
+                mostrarMensaje("⚠️ Error", "El monto no puede tener más de 8 decimales.");
+                return false;
+            }
+
+            return true;
+          }
+          
+          function validarMontoMinimo() {
+            const campos = getCampos();
+            const monto = parseFloat(campos.$valor.val());
+            const resultado = parseFloat(campos.$resultado.val());
+            
+            // COMPRA (entrego PYG): validar que el resultado sea >= 0.5 en la moneda destino
+            if (campos.op === "venta") {
+              const monedaDestino = campos.$destino.val();
+              if (resultado < 0.5) {
+                mostrarMensaje("⚠️ Error", `El monto resultante debe ser mayor o igual a 0.5 ${monedaDestino}`);
+                return false;
+              }
+            }
+            // VENTA (recibo PYG): validar que el monto ingresado sea >= 0.5 en la moneda origen
+            else {
+              const monedaOrigen = campos.$origen.val();
+              if (monto < 0.5) {
+                mostrarMensaje("⚠️ Error", `El monto a vender debe ser mayor o igual a 0.5 ${monedaOrigen}`);
+                return false;
+              }
+            }
+            
+            return true;
+          }
+
+
+  $(document).ready(function () {
+    // Interceptamos el submit
+    $("#form-conversor").on("submit", function (e) {
+      const campos = getCampos();
+      const monto = campos.$valor.val();
+
+      // Validar formato/dígitos del monto
+      if (!validarMonto(monto)) {
+        cerrarModalConfirmacion()
+        e.preventDefault(); // cancela envío
+        return false;
+      }
+
+      // Validar monto mínimo
+      if (!validarMontoMinimo()) {
+        cerrarModalConfirmacion()
+        e.preventDefault(); // cancela envío
+        $("#modal-confirmacion").fadeOut();
+        return false;
+      }
+
+      // Si todo pasa, se envía normalmente
+      return true;
+    });
+  });
       $(document).ready(function () {
 
         const tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));

@@ -188,7 +188,7 @@ function verificarPin() {
               procesarTransaccion()
 
               if (window.metodoSeleccionado === "tarjeta") {
-              procesarPagoStripe();
+                procesarPagoStripe();
               }
 
         } else {
@@ -229,7 +229,7 @@ function verificarPin() {
 
 // Función separada para procesar y guardar la transacción
 function procesarTransaccion() {
-  console.log("Procesando transacción...");
+  console.log("Procesando transacción en modalPin");
 
   const campos = getCampos();
   const origenAbrev = campos.$origen.val();
