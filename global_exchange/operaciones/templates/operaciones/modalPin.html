@@ -256,7 +256,7 @@ function procesarTransaccion() {
     (campos.op === "venta" ? parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) :
                              parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
 
-  // PASO 1: Guardar en BD como PENDIENTE
+  // PASO 1: Guardar en BD como PENDIENTE (sin cambios)
   const payloadLocal = {
     usuario_id: "{{ request.user.id }}",
     monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
@@ -289,11 +289,23 @@ function procesarTransaccion() {
 
     const transaccionId = localResp.id;
 
-    // PASO 2: Enviar al banco
+    // 🔥 PASO 2: Enviar al banco - LO OPUESTO (lo que RECIBE el cliente)
+    let montoParaBanco, monedaParaBanco;
+    
+    if (campos.op === "venta") {
+      // COMPRA: Cliente entrega 7408 PYG → Banco debe guardar 1 USD (lo que recibe)
+      montoParaBanco = parseFloat($("#resultado-compra").val()); // 1 USD
+      monedaParaBanco = $("#destino-compra").val(); // "USD"
+    } else {
+      // VENTA: Cliente entrega 1 USD → Banco debe guardar 7408 PYG (lo que recibe)
+      montoParaBanco = parseFloat($("#resultado-venta").val()); // 7408 PYG
+      monedaParaBanco = "PYG";
+    }
+
     const transaccionData = {
       email: "{{ email_cliente_operativo }}",
-      monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
-      moneda: campos.op === "venta" ? $("#destino-compra").val() : $("#origen-venta").val(),
+      monto: montoParaBanco, // 🔥 Lo que RECIBE (lo opuesto de BD)
+      moneda: monedaParaBanco, // 🔥 Moneda de lo que RECIBE
       tipo: campos.op === "venta" ? "compra" : "venta",
       estado: "aceptada",
       referencia: "TX-" + Date.now(),
@@ -306,7 +318,7 @@ function procesarTransaccion() {
       fecha: new Date().toISOString()
     };
 
-    console.log("Enviando al banco:", transaccionData);
+    console.log("🏦 Enviando al banco (LO OPUESTO):", transaccionData);
 
     fetch("http://127.0.0.1:8001/transaccion/", {
       method: "POST",
@@ -329,7 +341,7 @@ function procesarTransaccion() {
       } 
       else if (data.estado === "rechazada") estadoFinal = "cancelada";
 
-      // PASO 4: Actualizar estado en BD
+      // PASO 4: Actualizar estado en BD (sin cambios)
       const payloadActualizacion = {
         transaccion_id: transaccionId,
         nuevo_estado: estadoFinal

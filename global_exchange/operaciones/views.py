@@ -34,7 +34,7 @@ import json
 from django.utils import timezone
 from django.http import JsonResponse
 from limite_moneda.models import LimiteTransaccion
-from django.db.models import Sum
+from django.db.models import Sum, Case, When, F, DecimalField
 import random
 from django.core.mail import send_mail
 
@@ -139,16 +139,32 @@ def simulador_operaciones(request):
         transacciones_validas = Transaccion.objects.filter(
             estado__in=["completada"]  # solo considerar transacciones activas
         )
-
-        # Gastado hoy
+        
+        # Gastado hoy (si es venta: monto * tasa_usada)
         gasto_diario = transacciones_validas.filter(
             fecha__date=hoy
-        ).aggregate(total=Sum("monto"))["total"] or 0
+        ).aggregate(
+            total=Sum(
+                Case(
+                    When(tipo__iexact='venta', then=F('monto') * F('tasa_usada')),
+                    default=F('monto'),
+                    output_field=DecimalField()
+                )
+            )
+        )["total"] or 0
 
-        # Gastado en el mes
+        # Gastado en el mes (si es venta: monto * tasa_usada)
         gasto_mensual = transacciones_validas.filter(
             fecha__date__gte=inicio_mes
-        ).aggregate(total=Sum("monto"))["total"] or 0
+        ).aggregate(
+            total=Sum(
+                Case(
+                    When(tipo__iexact='venta', then=F('monto') * F('tasa_usada')),
+                    default=F('monto'),
+                    output_field=DecimalField()
+                )
+            )
+        )["total"] or 0
 
         limites_disponibles.append({
             "limite": limite,
