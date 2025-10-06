@@ -5,7 +5,9 @@
         <div class="tab-selector">
             <button class="tab-btn active" data-tab="diario">Diario</button>
             <button class="tab-btn" data-tab="mensual">Mensual</button>
+            <!--
             <button class="tab-btn" data-tab="monedas">Monedas</button>
+            -->
         </div>
     </div>
 
@@ -15,14 +17,21 @@
         <div class="limite-display">
             <div class="limite-main">
                 <div class="limite-amount">
-                    <span class="amount-label">{{ item.limite.moneda.abreviacion }}</span>
-                    <span class="amount-total">₲ {{ item.limite.limite_diario|floatformat:0 }}</span>
+                    <span class="amount-usado">{{ item.gasto_diario |floatformat:0}}</span>
+                    <span class="amount-total">/ {{ item.limite.limite_diario|floatformat:0 }} {{ item.limite.moneda.abreviacion }}</span>
+                </div>
+                <div class="limite-percentage">{{item.porcentaje_diario |floatformat:2 }}%</div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-track">
+                    <div class="progress-bar" style="width: {{ item.porcentaje_diario|stringformat:"f" }}%"></div>
                 </div>
             </div>
             <div class="limite-info">
-                <span class="info-gastado">Gastado: ₲ {{ item.gasto_diario|floatformat:0 }}</span>
-                <span class="info-disponible">Disponible: ₲ {{ item.disponible_diario|floatformat:0 }}</span>
-                  <span class="info-renovacion">00:00:00 hs</span>
+                <span class="info-disponible">Disponible: {{ item.disponible_diario|floatformat:0 }} {{ item.limite.moneda.abreviacion }}</span>
+                <span class="info-renovacion">Renueva: <span>00:00:00</span> hs</span>
+
+
             </div>
         </div>
         {% empty %}
@@ -36,15 +45,19 @@
     <div class="limite-display">
         <div class="limite-main">
             <div class="limite-amount">
-                <span class="amount-label">{{ item.limite.moneda.abreviacion }}</span>
-                <span class="amount-total">₲ {{ item.limite.limite_mensual|floatformat:0 }}</span>
-              
+                <span class="amount-usado">{{ item.gasto_mensual |floatformat:0}}</span>
+                    <span class="amount-total">/ {{ item.limite.limite_mensual|floatformat:0 }} {{ item.limite.moneda.abreviacion }}</span>
+            </div>
+            <div class="limite-percentage">{{item.porcentaje_mensual |floatformat:2 }}%</div>
+        </div>
+        <div class="progress-container">
+            <div class="progress-track">
+                <div class="progress-bar" style="width: {{ item.porcentaje_mensual|stringformat:"f" }}%"></div>
             </div>
         </div>
         <div class="limite-info">
-            <span class="info-gastado">Gastado: ₲ {{ item.gasto_mensual|floatformat:0 }}</span>
-            <span class="info-disponible">Disponible: ₲ {{ item.disponible_mensual|floatformat:0 }}</span>
-            <span class="info-renovacion">Día 1 próximo mes</span>
+            <span class="info-disponible">Disponible: {{ item.disponible_mensual|floatformat:0 }} {{ item.limite.moneda.abreviacion }}</span>
+            <span class="info-renovacion" data-renovacion="mensual">Día 1 próximo mes</span>
         </div>
     </div>
     {% empty %}
@@ -52,26 +65,28 @@
     {% endfor %}
 </div>
 
-    <!-- Vista Monedas -->
+<!--
+    Vista Monedas
     <div class="tab-content" id="tab-monedas">
         <div class="monedas-grid">
-            {% for limite in limites_cliente %}
+            {% for item in limites_cliente %}
             <div class="moneda-item">
                 <div class="moneda-header">
-                    <span class="moneda-flag">{{ limite.moneda.abreviacion|lower }}</span>
-                    <span class="moneda-code">{{ limite.moneda.abreviacion }}</span>
-                    <span class="moneda-percent">100%</span>
+                    <span class="moneda-flag">{{ item.limite.moneda.abreviacion|lower }}</span>
+                    <span class="moneda-code">{{ item.limite.moneda.abreviacion }}</span>
+                    <span class="moneda-percent">{{item.porcentaje_mensual |floatformat:2 }}%</span>
                 </div>
                 <div class="moneda-progress">
                     <div class="progress-mini">
-                        <div class="progress-fill" style="width: 100%"></div>
+                        <div class="progress-fill" style="width: {{ item.porcentaje_mensual|stringformat:"f" }}%"></div>
                     </div>
                 </div>
-                <span class="moneda-amount">₲ {{ limite.limite_mensual|floatformat:0 }} / ₲ {{ limite.limite_mensual|floatformat:0 }}</span>
+                <span class="moneda-amount">₲ {{ item.gasto_mensual|floatformat:0 }} / ₲ {{ item.limite.limite_mensual|floatformat:0 }}</span>
             </div>
             {% endfor %}
         </div>
     </div>
+-->
 </section>
 
 
@@ -104,6 +119,91 @@
             }, 100);
         });
     </script>
+
+<script>
+const urlHoraServidor = "{% url 'hora_servidor' %}";
+
+async function obtenerHoraServidor() {
+    const response = await fetch(urlHoraServidor);
+    const data = await response.json();
+    return new Date(data.hora); // <-- parseamos ISO a objeto Date
+}
+
+function iniciarContador(segundosRestantes, element) {
+    function actualizar() {
+        if (segundosRestantes <= 0) {
+            element.textContent = "00:00:00";
+            clearInterval(timer);
+            return;
+        }
+
+        let horas = Math.floor(segundosRestantes / 3600);
+        let minutos = Math.floor((segundosRestantes % 3600) / 60);
+        let segundos = segundosRestantes % 60;
+
+        element.textContent =
+            String(horas).padStart(2, "0") + ":" +
+            String(minutos).padStart(2, "0") + ":" +
+            String(segundos).padStart(2, "0");
+
+        segundosRestantes--;
+    }
+
+    actualizar();
+    const timer = setInterval(actualizar, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+    const fechaServidor = await obtenerHoraServidor();
+    console.log("Hora del servidor (UTC):", fechaServidor);
+
+    // Convertimos a hora local si querés, o mantenemos UTC
+    const h = fechaServidor.getHours();
+    const m = fechaServidor.getMinutes();
+    const s = fechaServidor.getSeconds();
+    console.log(`Hora local: ${h}:${m}:${s}`);
+
+    const segundosTranscurridos = h * 3600 + m * 60 + s;
+    const segundosRestantes = 24 * 3600 - segundosTranscurridos;
+
+    document.querySelectorAll(".info-renovacion span").forEach(span => {
+        iniciarContador(segundosRestantes, span);
+    });
+});
+</script>
+
+<script>
+async function obtenerHoraServidor() {
+    const response = await fetch("{% url 'hora_servidor' %}");
+    const data = await response.json();
+    return new Date(data.hora); // ya devuelve Date en zona de Paraguay
+}
+
+function actualizarRenovacionMensual(fechaServidor) {
+    const spans = document.querySelectorAll('.info-renovacion[data-renovacion="mensual"]');
+
+    spans.forEach(span => {
+        const hoy = new Date(fechaServidor);
+
+        // Calculamos el primer día del próximo mes
+        const primerDiaProximoMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1);
+
+        // Diferencia en milisegundos
+        const diffMs = primerDiaProximoMes - hoy;
+
+        // Convertimos a días
+        const diasRestantes = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        span.textContent = `Renueva en ${diasRestantes} día${diasRestantes > 1 ? 's' : ''}`;
+    });
+}
+
+(async () => {
+    const fechaServidor = await obtenerHoraServidor();
+    actualizarRenovacionMensual(fechaServidor);
+})();
+</script>
+
 
     <style>
         * {

@@ -14,29 +14,56 @@
             <i class="icon">📊</i>
           </div>
           <div class="indicador-content">
-            <span class="numero">15</span>
-            <span class="label">Transacciones totales</span>
-            <div class="trend-indicator up">+8.2%</div>
+            {% with ultima=transacciones.0 %}
+              <span class="numero">{{total_transaccion}}</span>
+              <span class="label">Transacciones totales</span>
+              <div class="trend-indicator up">Última hace {{ ultima.fecha|timesince }}</div>
+            {% endwith %}
           </div>
         </div>
         <div class="indicador-card">
-          <div class="indicador-icon">
-            <i class="icon">💰</i>
-          </div>
-          <div class="indicador-content">
-            <span class="numero">1,350 USD</span>
-            <span class="label">Ganancia estimada</span>
-            <div class="trend-indicator up">+15.3%</div>
-          </div>
-        </div>
+    <div class="indicador-icon">
+        <i class="icon">💵</i>
+    </div>
+    <div class="indicador-content">
+        {% if transacciones %}
+            {% with ultima=transacciones.0 %}
+                <span class="numero">{{ ultima.monto }} {{ ultima.moneda_destino.abreviacion }}</span>
+                <span class="label">Monto última operación</span>
+                <!--
+                <div class="trend-indicator {% if ultima.tipo == 'Venta' %}down{% elif ultima.tipo == 'Compra' %}up{% else %}neutral{% endif %}">
+                    {{ ultima.fecha|timesince }} ago
+                </div>
+                -->
+            {% endwith %}
+        {% else %}
+            <span class="numero">--</span>
+            <span class="label">Monto última operación</span>
+            <div class="trend-indicator neutral">--</div>
+        {% endif %}
+    </div>
+</div>
+
         <div class="indicador-card">
           <div class="indicador-icon">
             <i class="icon">⚡</i>
           </div>
           <div class="indicador-content">
-            <span class="numero">Venta</span>
-            <span class="label">Última operación</span>
-            <div class="trend-indicator neutral">2 min ago</div>
+            {% if transacciones %}
+              {% with ultima=transacciones.0 %}
+                <span class="numero tipo-{{ ultima.tipo|capfirst  }}">{{ ultima.tipo|capfirst }}</span>
+                <span class="label">Última operación</span>
+                <!--
+                <div class="trend-indicator {% if ultima.tipo == 'Venta' %}down{% elif ultima.tipo == 'Compra' %}up{% else %}neutral{% endif %}">
+                  {{ ultima.fecha|timesince }} ago
+                </div>
+              -->
+              {% endwith %}
+            {% else %}
+              <span class="numero">--</span>
+              <span class="label">Última operación</span>
+              <div class="trend-indicator neutral">--</div>
+            {% endif %}
           </div>
         </div>
       </section>
@@ -747,6 +774,17 @@ function continuarProcesandoTransaccion() {
                          (campos.op === "venta" ? 
                           parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) : 
                           parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
+
+    let gananciaCalculada;
+    PB_MONEDA="{{ PB_MONEDA }}"
+    
+    if (campos.op === "venta") {
+        const valor = parseFloat($("#valor-compra").val());
+        gananciaCalculada = valor - (valor / tasaCalculada * PB_MONEDA);
+    } else {
+        const valor = parseFloat($("#valor-venta").val());
+        gananciaCalculada = valor * PB_MONEDA - (valor * tasaCalculada);
+    }
     
     const payloadLocal = {
       usuario_id: "{{ request.user.id }}",
@@ -758,9 +796,10 @@ function continuarProcesandoTransaccion() {
       tasa_usada: tasaCalculada,
       tasa_ref_id: TASA_REF_ID,
       cliente_id: parseInt("{{ cliente_operativo_id }}", 10),
+      ganancia:window.ganancia_total,
     };
 
-    console.log("Guardando en BD LOCAL:", payloadLocal);
+    console.log("Guardando en BD LOCAL ConversorReal:", payloadLocal);
 
     fetch("{% url 'guardar_transaccion' %}", {
       method: "POST",

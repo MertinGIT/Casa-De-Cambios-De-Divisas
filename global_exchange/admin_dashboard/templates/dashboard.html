@@ -6,89 +6,836 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <div class="container-fluid dashboard-container">
-  <h1 class="mb-4">📊 Dashboard - Panel de Administración</h1>
+  <div class="dashboard-container">
+    <!-- Header -->
+    <div class="dashboard-header">
+      <div class="header-title">
+        <h1>Panel de Administración</h1>
+      </div>
+      <div class="header-actions">
+        <div class="date-selector">
+          <span>📅</span>
+          <span>Hoy: <strong>{{ fecha_actual }}</strong></span>
+        </div>
+        <button class="btn-refresh" onclick="location.reload()">
+          <span>🔄</span>
+          <span>Actualizar</span>
+        </button>
+      </div>
+    </div>
 
-  <!-- Tarjetas resumen -->
-  <div class="row g-4">
-    <div class="col-md-3">
-      <div class="card">
-        <h3>Ganancias Hoy</h3>
-        <p>USD 1,250</p>
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">💰</div>
+        </div>
+        <div class="stat-content">
+          <h3>Ganancias Hoy</h3>
+          <div class="stat-value">{{ ganancias_hoy|floatformat:2 }} Gs</div>
+          <div class="stat-footer">
+            vs. ayer: {{ ganancias_ayer|floatformat:2 }} Gs
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card">
-        <h3>Transacciones</h3>
-        <p>45</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card">
-        <h3>Clientes</h3>
-        <p>320</p>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card">
-        <h3>Total en Caja</h3>
-        <p>USD 15,000</p>
-      </div>
-    </div>
-  </div>
 
-  <!-- Gráfico -->
-  <div class="chart-container mt-4">
-    <h3>Ganancias Diarias (USD)</h3>
-    <canvas id="gananciasChart"></canvas>
-  </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">📊</div>
+        </div>
+        <div class="stat-content">
+          <h3>Transacciones</h3>
+          <div class="stat-value">{{ transacciones_hoy }}</div>
+          <div class="stat-footer">
+            Promedio: {{ promedio_transacciones_dia }}/día
+          </div>
+        </div>
+      </div>
 
-  <!-- Tabla de últimas transacciones -->
-  <div class="table-container mt-4">
-    <h3>Últimas Transacciones</h3>
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Cliente</th>
-          <th>Moneda</th>
-          <th>Operación</th>
-          <th>Monto</th>
-          <th>Fecha</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td data-label="Cliente">Juan Pérez</td>
-          <td data-label="Moneda">USD</td>
-          <td data-label="Operación">
-            <span class="estado estado-venta">Venta</span>
-          </td>
-          <td data-label="Monto">500</td>
-          <td data-label="Fecha">20/08/25</td>
-        </tr>
-        <tr>
-          <td data-label="Cliente">María López</td>
-          <td data-label="Moneda">EUR</td>
-          <td data-label="Operación">
-            <span class="estado estado-compra">Compra</span>
-          </td>
-          <td data-label="Monto">300</td>
-          <td data-label="Fecha">20/08/25</td>
-        </tr>
-        <tr>
-          <td data-label="Cliente">Carlos Gómez</td>
-          <td data-label="Moneda">BRL</td>
-          <td data-label="Operación">
-            <span class="estado estado-venta">Venta</span>
-          </td>
-          <td data-label="Monto">1500</td>
-          <td data-label="Fecha">19/08/25</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">👥</div>
+        </div>
+        <div class="stat-content">
+          <h3>Clientes Activos</h3>
+          <div class="stat-value">{{ clientes_activos }}</div>
+          <div class="stat-footer">+{{ nuevos_clientes_mes }} este mes</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon">💹</div>
+        </div>
+        <div class="stat-content" id="caja-valor">
+          <h3>Moneda mas Operada</h3>
+          <div id="caja-monto" class="stat-value">{{moneda_mas_operada }}</div>
+          <div class="stat-footer">{{ total_operaciones }} transacciones</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">Ganancias Diarias</h3>
+          <div class="chart-filter">
+            <button class="filter-btn active">7D</button>
+            <button class="filter-btn">30D</button>
+            <button class="filter-btn">3M</button>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas style="max-width: 800px" id="gananciasChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+    <div class="chart-header">
+        <h3 class="chart-title">Top Monedas del Día</h3>
+    </div>
+    <div class="monedas-ranking">
+        {% for moneda in top_monedas %}
+        <div class="moneda-item">
+            <div class="moneda-info">
+                <span class="moneda-flag">
+                    {% if moneda.moneda_origen__abreviacion  == 'USD' %}🇺🇸{% endif %}
+                    {% if moneda.moneda_origen__abreviacion  == 'EUR' %}🇪🇺{% endif %}
+                    {% if moneda.moneda_origen__abreviacion  == 'BRL' %}🇧🇷{% endif %}
+                    {% if moneda.moneda_origen__abreviacion  == 'ARS' %}🇦🇷{% endif %}
+                </span>
+                <div class="moneda-details">
+                    <span class="moneda-code">{{ moneda.moneda_origen__abreviacion  }}</span>
+                    <span class="moneda-name">{{ moneda.moneda_origen__nombre  }}</span>
+                </div>
+            </div>
+            <div class="moneda-stats">
+                <div class="stat-number">{{ moneda.total }}</div>
+                <div class="badge compra">C: {{ moneda.compras }}</div>
+    <div class="badge venta">V: {{ moneda.ventas }}</div>
+            </div>
+        </div>
+        {% empty %}
+        <p style="text-align:center; color:#999;">No hay transacciones hoy</p>
+        {% endfor %}
+    </div>
 </div>
 
-<!-- JS del gráfico -->
-<script src="{% static 'admin_dashboard/js/graficoGanancias.js' %}"></script>
 
-{% endblock %}
+    <!-- Transactions Table -->
+    <div class="table-container">
+      <div class="table-header">
+        <h3 class="table-title">Últimas Transacciones</h3>
+        <div class="table-search">
+          <span>🔍</span>
+          <input
+            type="text"
+            placeholder="Buscar transacción..."
+            id="searchInput"
+          />
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Moneda Origen</th>
+            <th>Moneda Destino</th>
+            <th>Operación</th>
+            <th>Monto</th>
+            <th>Ganancia</th>
+            <th>Fecha</th>
+          </tr>
+        </thead>
+        <tbody id="transactionsTable">
+  {% for transaccion in ultimas_transacciones %}
+  <tr>
+    <td data-label="Cliente">{{ transaccion.cliente.nombre }}</td>
+    <td data-label="Moneda Origen">{{ transaccion.moneda_origen.abreviacion }}</td>
+    <td data-label="Moneda Destino">{{ transaccion.moneda_destino.abreviacion }}</td>
+    <td data-label="Operación">
+      {% if transaccion.tipo == "venta" %}
+        <span class="badge venta">Venta</span>
+      {% else %}
+        <span class="badge compra">Compra</span>
+      {% endif %}
+    </td>
+    <td data-label="Monto" class="amount">{{ transaccion.monto|floatformat:2 }}</td>
+    <td data-label="Ganancia" class="amount">{{ transaccion.ganancia|floatformat:2 }}</td>
+    <td data-label="Fecha">{{ transaccion.fecha|date:"d/m/Y H:i" }}</td>
+  </tr>
+  {% empty %}
+  <tr>
+    <td colspan="7" style="text-align: center; color: #999">
+      No hay transacciones
+    </td>
+  </tr>
+  {% endfor %}
+</tbody>
+
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Datos pre-cargados desde el backend
+    const gananciasData = {
+      "7D": {
+        labels: {{ labels_7d|safe }},
+        data: {{ data_7d|safe }}
+      },
+      "30D": {
+        labels: {{ labels_30d|safe }},
+        data: {{ data_30d|safe }}
+      },
+      "3M": {
+        labels: {{ labels_3m|safe }},
+        data: {{ data_3m|safe }}
+      }
+    };
+    // Valor inicial del gráfico
+    let currentRange = "7D";
+      // Chart Configuration
+      const ctx = document.getElementById('gananciasChart').getContext('2d');
+      const gananciasChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+              labels: gananciasData[currentRange].labels,
+              datasets: [{
+                  label: 'Ganancias (Gs)',
+                  data: gananciasData[currentRange].data,
+                  borderColor: '#5d5fef',
+                  backgroundColor: 'rgba(93, 95, 239, 0.1)',
+                  borderWidth: 3,
+                  fill: true,
+                  tension: 0.4,
+                  pointRadius: 5,
+                  pointBackgroundColor: '#5d5fef',
+                  pointBorderColor: '#fff',
+                  pointBorderWidth: 2,
+                  pointHoverRadius: 7
+              }]
+          },
+          options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                  legend: {
+                      display: false
+                  },
+                  tooltip: {
+                      backgroundColor: '#1e2d70',
+                      padding: 12,
+                      titleFont: {
+                          size: 14,
+                          weight: 'bold'
+                      },
+                      bodyFont: {
+                          size: 13
+                      },
+                      borderColor: '#5d5fef',
+                      borderWidth: 1
+                  }
+              },
+              scales: {
+                  y: {
+                      beginAtZero: true,
+                      grid: {
+                          color: 'rgba(0,0,0,0.05)',
+                          drawBorder: false
+                      },
+                      ticks: {
+                          color: '#666',
+                          font: {
+                              size: 11
+                          },
+                          callback: function(value) {
+                              return '$' + value;
+                          }
+                      }
+                  },
+                  x: {
+                      grid: {
+                          display: false
+                      },
+                      ticks: {
+                          color: '#666',
+                          font: {
+                              size: 11
+                          }
+                      }
+                  }
+              }
+          }
+      });
+
+      // Search functionality
+      document.getElementById('searchInput').addEventListener('input', function(e) {
+          const searchTerm = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll('#transactionsTable tr');
+
+          rows.forEach(row => {
+              const text = row.textContent.toLowerCase();
+              row.style.display = text.includes(searchTerm) ? '' : 'none';
+          });
+      });
+
+      // Filter buttons
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.addEventListener('click', function() {
+              document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+              this.classList.add('active');
+              // Aquí podrías cargar datos según el filtro seleccionado
+              currentRange = this.textContent;
+            gananciasChart.data.labels = gananciasData[currentRange].labels;
+            gananciasChart.data.datasets[0].data = gananciasData[currentRange].data;
+            gananciasChart.update();
+          });
+      });
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        sans-serif;
+      background: #f4f6fb;
+      color: #1e2d70;
+    }
+
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Header */
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-title h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #1e2d70;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .date-selector {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: white;
+      padding: 0.5rem 1rem;
+      border-radius: 12px;
+      border: 1px solid #e8ecf7;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .btn-refresh {
+      background: white;
+      border: 1px solid #e8ecf7;
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .btn-refresh:hover {
+      background: #f4f6fb;
+      color: #5d5fef;
+      transform: translateY(-1px);
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e8ecf7;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #5d5fef, #4a4cd9);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #f4f6fb, #e8ecf7);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .stat-trend {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+    }
+
+    .stat-trend.up {
+      color: #16a34a;
+      background: #f0fdf4;
+    }
+
+    .stat-trend.down {
+      color: #dc2626;
+      background: #fef2f2;
+    }
+
+    .stat-content h3 {
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1e2d70;
+      line-height: 1;
+    }
+
+    .stat-footer {
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #f4f6fb;
+      font-size: 0.8rem;
+      color: #999;
+    }
+
+    /* Charts Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e8ecf7;
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e2d70;
+    }
+
+    .chart-filter {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .filter-btn {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid #e8ecf7;
+      background: white;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: #666;
+      font-weight: 500;
+    }
+
+    .filter-btn.active {
+      background: #5d5fef;
+      color: white;
+      border-color: #5d5fef;
+    }
+
+    .filter-btn:hover:not(.active) {
+      background: #f4f6fb;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 300px;
+    }
+
+    /* Activity Feed */
+    .activity-item {
+      display: flex;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid #f4f6fb;
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      background: #f4f6fb;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.2rem;
+    }
+
+    .activity-icon.success {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .activity-icon.warning {
+      background: #fef3cd;
+      color: #d97706;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-title {
+      font-weight: 600;
+      color: #1e2d70;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .activity-desc {
+      color: #666;
+      font-size: 0.85rem;
+    }
+
+    .activity-time {
+      color: #999;
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Table */
+    .table-container {
+      grid-column: 1 / -1; /* Ocupa todas las columnas del grid */
+      background: white;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e8ecf7;
+      overflow-x: auto;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .table-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1e2d70;
+    }
+
+    .table-search {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #f4f6fb;
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      border: 1px solid #e8ecf7;
+    }
+
+    .table-search input {
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 0.9rem;
+      width: 200px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: #f4f6fb;
+    }
+
+    th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid #f4f6fb;
+      font-size: 0.9rem;
+    }
+
+    tr:hover {
+      background: #fafbfc;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .badge.compra {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .badge.venta {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .amount {
+      font-weight: 600;
+      color: #1e2d70;
+    }
+    .monedas-ranking {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .moneda-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background: #f4f6fb;
+      border-radius: 12px;
+      border: 1px solid #e8ecf7;
+      transition: all 0.2s ease;
+    }
+
+    .moneda-item:hover {
+      background: #fff;
+      transform: translateX(4px);
+    }
+
+    .moneda-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .moneda-flag {
+      font-size: 1.8rem;
+    }
+
+    .moneda-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .moneda-code {
+      font-weight: 700;
+      color: #1e2d70;
+      font-size: 0.95rem;
+    }
+
+    .moneda-name {
+      color: #666;
+      font-size: 0.8rem;
+    }
+
+    .moneda-stats {
+      text-align: right;
+    }
+
+    .stat-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #5d5fef;
+      line-height: 1;
+    }
+
+    .stat-label {
+      color: #666;
+      font-size: 0.75rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard-container {
+        padding: 1rem;
+      }
+
+      .dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-title h1 {
+        font-size: 1.5rem;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .chart-wrapper {
+        height: 250px;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+      }
+
+      .table-search input {
+        width: 150px;
+      }
+      .chart-card{
+        max-width: 500px;
+      }
+      table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  thead tr {
+    display: none; /* Oculta cabecera */
+  }
+
+  tr {
+    margin-bottom: 1rem;
+    border: 1px solid #e8ecf7;
+    border-radius: 12px;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border: none;
+    font-size: 0.85rem;
+  }
+
+  td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #666;
+  }
+
+  .badge {
+    margin-left: 0.5rem;
+  }
+    }
+
+    @media (max-width: 480px) {
+      th,
+      td {
+        padding: 0.6rem;
+        font-size: 0.85rem;
+      }
+
+      .stat-value {
+        font-size: 1.6rem;
+      }
+      .chart-card{
+        max-width: 100%;
+      }
+    }
+  </style>
+  {% endblock %}
+</div>
