@@ -145,42 +145,51 @@ def medio_acreditacion_list(request):
     :param request: HttpRequest
     :return: HttpResponse
     """
-    cliente_id = request.GET.get('cliente_id')
+    from cliente_usuario.models import Usuario_Cliente
+    cliente = None
+    clientes = Cliente.objects.all()    
     search_field = request.GET.get('search_field', '').strip()
     search_value = request.GET.get('search_value', '').strip()
-    cliente = None
-    clientes = Cliente.objects.all()
-    medios_qs = MedioAcreditacion.objects.select_related('cliente', 'entidad', 'moneda').all()
+    # Obtener cliente operativo asociado al usuario autenticado
+    cliente_operativo = None
+    if request.user.is_authenticated:
+        from operaciones.views import obtener_clientes_usuario
+        clientes_asociados, cliente_operativo, _ = obtener_clientes_usuario(request.user, request)
+    # Si hay filtro por cliente, usar ese; si no, usar el operativo
+    cliente_id = request.GET.get('cliente_id')
     if cliente_id:
         cliente = Cliente.objects.filter(pk=cliente_id).first()
-        medios_qs = medios_qs.filter(cliente_id=cliente_id)
-    # Buscador por campo
+    elif cliente_operativo:
+        cliente = cliente_operativo
+    medios_qs = MedioAcreditacion.objects.select_related('cliente', 'entidad').all()
+    if cliente:
+        medios_qs = medios_qs.filter(cliente_id=cliente.id)
+    # Si no hay cliente seleccionado, mostrar advertencia y no permitir agregar medios
+    cliente_context_required = False
+    if not cliente:
+        cliente_context_required = True
+    # Buscador por campo (solo campos válidos)
     if search_field and search_value:
-        if search_field == 'titular':
-            medios_qs = medios_qs.filter(titular__icontains=search_value)
-        elif search_field == 'entidad':
+        if search_field == 'entidad':
             medios_qs = medios_qs.filter(entidad__nombre__icontains=search_value)
-        elif search_field == 'numero_cuenta':
-            medios_qs = medios_qs.filter(numero_cuenta__icontains=search_value)
-        elif search_field == 'tipo_cuenta':
-            medios_qs = medios_qs.filter(tipo_cuenta__icontains=search_value)
-        elif search_field == 'moneda':
-            medios_qs = medios_qs.filter(moneda__nombre__icontains=search_value)
-    medios_qs = medios_qs.order_by('-estado', 'titular')
+        elif search_field == 'estado':
+            medios_qs = medios_qs.filter(estado__iexact=search_value)
+        elif search_field == 'cliente':
+            medios_qs = medios_qs.filter(cliente__nombre__icontains=search_value)
+    medios_qs = medios_qs.order_by('-estado', 'entidad__nombre')
     paginator = Paginator(medios_qs, 10)  # 10 por página
     page_number = request.GET.get('page')
     medios = paginator.get_page(page_number)
     form = MedioAcreditacionForm()
     # Para compatibilidad con paginador estilo clientes
     page_obj = medios
-    # Campos disponibles para búsqueda
+    # Campos disponibles para búsqueda (solo válidos)
     search_fields = [
-        ('titular', 'Titular'),
         ('entidad', 'Entidad'),
-        ('numero_cuenta', 'Número de Cuenta'),
-        ('tipo_cuenta', 'Tipo de Cuenta'),
-        ('moneda', 'Moneda'),
+        ('cliente', 'Cliente'),
+        ('estado', 'Estado'),
     ]
+    entidades = TipoEntidadFinanciera.objects.filter(estado=True)
     return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {
         'medios': medios,
         'form': form,
@@ -191,6 +200,8 @@ def medio_acreditacion_list(request):
         'search_fields': search_fields,
         'page_obj': page_obj,
         'request': request,
+        'entidades': entidades,
+        'cliente_context_required': cliente_context_required,
     })
 
 def medio_acreditacion_create(request):
@@ -285,15 +296,9 @@ def medio_acreditacion_detail(request, pk):
     :return: JsonResponse
     """
     medio = get_object_or_404(MedioAcreditacion, pk=pk)
-    print("Medio: ", medio.moneda, flush=True)
     data = {
         'cliente': medio.cliente_id,
         'entidad': medio.entidad_id,
-        'numero_cuenta': medio.numero_cuenta,
-        'tipo_cuenta': medio.tipo_cuenta,
-        'titular': medio.titular,
-        'documento_titular': medio.documento_titular,
-        'moneda': medio.moneda_id,
         'estado': bool(medio.estado),
         'modal_title': 'Editar Medio'
     }
@@ -350,48 +355,79 @@ def campos_entidad_list(request, entidad_id):
 
 # Vista para mostrar y guardar formulario dinámico de medio de acreditación (solo creación)
 def medio_acreditacion_dinamico(request, entidad_id, cliente_id):
+    from django.db import transaction
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
     cliente = get_object_or_404(Cliente, pk=cliente_id)
     campos = entidad.campos.order_by('orden')
+    monedas = Moneda.objects.filter(estado=True)
     errores = {}
     valores = {}
+    medio_id = request.GET.get('medio_id') or request.POST.get('medio_id')
+    medio = None
+    if medio_id:
+        medio = MedioAcreditacion.objects.filter(pk=medio_id, entidad=entidad, cliente=cliente).first()
+        # Cargar valores actuales si existe
+        if medio:
+            valores = {v.campo_id: v.valor for v in ValorCampoMedioAcreditacion.objects.filter(medio=medio)}
     if request.method == 'POST':
-        # Validación dinámica
+        # Validate and collect values
         for campo in campos:
-            valor = request.POST.get(f'campo_{campo.id}', '').strip()
+            field_name = f"campo_{campo.id}"
+            valor = request.POST.get(field_name, '').strip()
             valores[campo.id] = valor
             if campo.requerido and not valor:
                 errores[campo.id] = 'Este campo es obligatorio.'
-            if campo.regex_validacion and valor:
+            elif campo.regex_validacion and valor:
                 import re
                 if not re.match(campo.regex_validacion, valor):
                     errores[campo.id] = campo.mensaje_error or 'Formato inválido.'
-        if not errores:
-            medio = MedioAcreditacion.objects.create(
-                cliente=cliente,
-                entidad=entidad,
-                numero_cuenta=request.POST.get('numero_cuenta', ''),
-                tipo_cuenta=request.POST.get('tipo_cuenta', ''),
-                titular=request.POST.get('titular', ''),
-                documento_titular=request.POST.get('documento_titular', ''),
-                moneda=Moneda.objects.get(pk=request.POST.get('moneda')),
-                estado=True
-            )
-            for campo in campos:
-                valor = request.POST.get(f'campo_{campo.id}', '')
-                ValorCampoMedioAcreditacion.objects.create(
-                    medio=medio,
-                    campo=campo,
-                    valor=valor
+        if errores:
+            html = render_to_string('medio_acreditacion/medio_acreditacion_dinamico.html', {
+                'entidad': entidad,
+                'campos': campos,
+                'cliente': cliente,
+                'errores': errores,
+                'valores': valores,
+                'monedas': monedas,
+                'medio': medio,
+            }, request=request)
+            return JsonResponse({'success': False, 'html': html})
+        # Crear o actualizar MedioAcreditacion
+        with transaction.atomic():
+            if medio:
+                # Actualizar valores dinámicos existentes
+                for campo in campos:
+                    vcm = ValorCampoMedioAcreditacion.objects.filter(medio=medio, campo=campo).first()
+                    if vcm:
+                        vcm.valor = valores.get(campo.id, '')
+                        vcm.save()
+                    else:
+                        ValorCampoMedioAcreditacion.objects.create(medio=medio, campo=campo, valor=valores.get(campo.id, ''))
+            else:
+                medio = MedioAcreditacion.objects.create(
+                    cliente=cliente,
+                    entidad=entidad,
+                    estado=True
                 )
-            return redirect('medio_acreditacion_list')
-    return render(request, 'medio_acreditacion/medio_acreditacion_dinamico.html', {
+                for campo in campos:
+                    ValorCampoMedioAcreditacion.objects.create(
+                        medio=medio,
+                        campo=campo,
+                        valor=valores.get(campo.id, '')
+                    )
+        html = '<div class="success-message">Medio de acreditación guardado correctamente.</div>'
+        return JsonResponse({'success': True, 'html': html})
+    # GET: retornar formulario vacío o con valores actuales
+    html = render_to_string('medio_acreditacion/medio_acreditacion_dinamico.html', {
         'entidad': entidad,
         'campos': campos,
         'cliente': cliente,
         'errores': errores,
         'valores': valores,
-    })
+        'monedas': monedas,
+        'medio': medio,
+    }, request=request)
+    return JsonResponse({'success': False, 'html': html})
 
 def campo_entidad_create(request, entidad_id):
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)

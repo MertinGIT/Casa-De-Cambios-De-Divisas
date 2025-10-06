@@ -1,6 +1,6 @@
 from django.urls import path
 from . import views
-
+from medio_acreditacion.views import medio_acreditacion_dinamico
 urlpatterns = [
     # CRUD de usuarios con roles y permisos
     path("usuarios-roles/", views.user_roles_lista, name="user_roles_lista"),

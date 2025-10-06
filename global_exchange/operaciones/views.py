@@ -17,7 +17,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
-from medio_acreditacion.models import MedioAcreditacion
+from medio_acreditacion.models import MedioAcreditacion, TipoEntidadFinanciera  # ya estaba MedioAcreditacion
 from operaciones.models import Transaccion
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
@@ -265,29 +265,27 @@ def simulador_operaciones(request):
     print("TC_COMP222: ",TC_COMP,flush=True)
 
 
-    # Obtener medios de acreditación del cliente operativo
+    # Obtener medios de acreditación del cliente operativo (como queryset para el template)
     medios_acreditacion = []
     if cliente_operativo:
-        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True)
-        for m in medios_qs:
+        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True).select_related('entidad')
+        # Serializar para JS: entidad, tipo, campos dinámicos
+        medios_acreditacion = []
+        for medio in medios_qs:
             medios_acreditacion.append({
-                "id": m.id,
-                "entidad": {
-                    "nombre": m.entidad.nombre,
-                    "tipo": m.entidad.tipo,
+                'id': medio.id,
+                'entidad': {
+                    'id': medio.entidad.id,
+                    'nombre': medio.entidad.nombre,
+                    'tipo': medio.entidad.tipo,
                 },
-                "tipo_cuenta": m.tipo_cuenta,
-                "numero_cuenta": m.numero_cuenta,
-                "titular": m.titular,
-                "documento_titular": m.documento_titular,
-                "moneda": {
-                    "nombre": m.moneda.nombre,
-                    "abreviacion": m.moneda.abreviacion,
-                },
-                "tiempo_acreditacion": "2-3 minutos"  # si lo querés fijo por ahora
+                'campos': [
+                    {'label': campo['label'], 'value': campo['value']} for campo in medio.dynamic_fields
+                ]
             })
-        print("medios_acreditacion:", medios_acreditacion, flush=True)
-        
+
+    # Obtener entidades financieras activas
+    entidades = TipoEntidadFinanciera.objects.filter(estado=True)
 
     context = {
         'monedas': monedas,
@@ -313,8 +311,8 @@ def simulador_operaciones(request):
         "PB_MONEDA": PB_MONEDA,
         "TASA_REF_ID": TASA_REF_ID,
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
-        "medios_acreditacion": json.dumps(medios_acreditacion),
-        "limites_cliente": limites_disponibles,
+        "medios_acreditacion": json.dumps(medios_acreditacion),  # <-- serializado para JS
+        "entidades": entidades,
     }
 
     return render(request, 'operaciones/conversorReal.html', context)

@@ -18,5 +18,6 @@ urlpatterns = [
     path('campo_entidad/<int:campo_id>/editar/', views.campo_entidad_edit, name='campo_entidad_edit'),
     path('campo_entidad/<int:campo_id>/eliminar/', views.campo_entidad_delete, name='campo_entidad_delete'),
     path('entidad/<int:entidad_id>/campos/add/', views.campo_entidad_create, name='campo_entidad_create'),
-    path('medios_acreditacion/dinamico/<int:entidad_id>/<int:cliente_id>/', views.medio_acreditacion_dinamico, name='medio_acreditacion_dinamico'),
+    path('medios_acreditacion/<int:entidad_id>/<int:cliente_id>/', views.medio_acreditacion_dinamico, name='medio_acreditacion_dinamico'),
+
 ]

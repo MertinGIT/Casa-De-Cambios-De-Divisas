@@ -64,7 +64,7 @@ urlpatterns = [
     path('admin/configuracion/seguridad/', include(usuarios_urls)),
     path('admin/configuracion/seguridad/roles/', include('roles_permisos.urls'), name='roles'),
     path("admin/configuracion/pagos/", include("metodos_pagos.urls"), name = 'metodos_pagos'),
-    path('clientes/', include('medio_acreditacion.urls')),
+    path('', include('medio_acreditacion.urls')),
     path('clientes/', include(cliente_usuario_urls), name='cliente_usuario'),
     path('clientes/', include('clientes.urls'), name = 'clientes'), 
     path('clientes/limites/', include('limite_moneda.urls')),
