@@ -137,6 +137,14 @@ class Transaccion(models.Model):
         default="pendiente",
         help_text="Estado del ciclo de vida."
     )
+    ganancia = models.DecimalField(
+        max_digits=23,
+        decimal_places=8,
+        null=True,
+        blank=True,
+        help_text="Ganancia obtenida por la casa de cambio en esta transacción."
+    )
+
 
     moneda_origen = models.ForeignKey(
         Moneda,

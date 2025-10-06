@@ -241,6 +241,7 @@ def simulador_operaciones(request):
                         resultado_sin_desc = round(valor / TC_VTA_SIN_DESC, 2)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                        print("ganancia_total 244",ganancia_total,flush=True)
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
@@ -257,6 +258,7 @@ def simulador_operaciones(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         # 'ultimo' puede no existir si nunca hubo registros
         fecha_tasa = locals().get("ultimo", {}).get("fecha", "")
+        print("ganancia_total 261",ganancia_total,flush=True)
         return JsonResponse({
             "resultado": resultado,
             "resultado_sin_desc": resultado_sin_desc,  # sin descuento
@@ -271,6 +273,7 @@ def simulador_operaciones(request):
     print("cliente_operativo: ",cliente_operativo,flush=True)
     print("TC_VTA 222: ",TC_VTA,flush=True)
     print("TC_COMP222: ",TC_COMP,flush=True)
+    print("ganancia 2744: ",ganancia_total,flush=True)
 
 
     # Obtener medios de acreditación del cliente operativo
@@ -296,7 +299,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-
+    print("ganancia 302: ",ganancia_total,flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -599,6 +602,7 @@ def guardar_transaccion(request):
         tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
         tasa_ref_id = data.get("tasa_ref_id")
         cliente_id = data.get("cliente_id")
+        ganancia = Decimal(str(data.get("ganancia", "0")))
 
         # Validación de campos obligatorios
         if not (moneda_origen_id and moneda_destino_id and tasa_ref_id and cliente_id):
@@ -633,6 +637,7 @@ def guardar_transaccion(request):
             tasa_usada=tasa_usada,
             tasa_ref=tasa_ref,
             cliente=cliente,
+            ganancia=ganancia,
         )
 
         return JsonResponse({

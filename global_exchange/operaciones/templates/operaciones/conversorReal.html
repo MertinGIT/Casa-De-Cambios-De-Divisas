@@ -774,6 +774,17 @@ function continuarProcesandoTransaccion() {
                          (campos.op === "venta" ? 
                           parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) : 
                           parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
+
+    let gananciaCalculada;
+    PB_MONEDA="{{ PB_MONEDA }}"
+    
+    if (campos.op === "venta") {
+        const valor = parseFloat($("#valor-compra").val());
+        gananciaCalculada = valor - (valor / tasaCalculada * PB_MONEDA);
+    } else {
+        const valor = parseFloat($("#valor-venta").val());
+        gananciaCalculada = valor * PB_MONEDA - (valor * tasaCalculada);
+    }
     
     const payloadLocal = {
       usuario_id: "{{ request.user.id }}",
@@ -785,9 +796,10 @@ function continuarProcesandoTransaccion() {
       tasa_usada: tasaCalculada,
       tasa_ref_id: TASA_REF_ID,
       cliente_id: parseInt("{{ cliente_operativo_id }}", 10),
+      ganancia:window.ganancia_total,
     };
 
-    console.log("Guardando en BD LOCAL:", payloadLocal);
+    console.log("Guardando en BD LOCAL ConversorReal:", payloadLocal);
 
     fetch("{% url 'guardar_transaccion' %}", {
       method: "POST",
