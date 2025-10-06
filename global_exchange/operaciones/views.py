@@ -56,6 +56,11 @@ def simulador_operaciones(request):
     # === Monedas activas desde la BD ===
     monedas = list(Moneda.objects.filter(estado=True).values("id", "abreviacion", "nombre"))
     
+    transacciones = (Transaccion.objects
+          .filter(usuario=request.user)
+          .select_related('moneda_origen', 'moneda_destino')
+          .order_by('-fecha'))
+    
     # === Transacciones dinámicas: últimas 5 del usuario ===
     transacciones_qs = Transaccion.ultimas(limite=5, usuario=request.user)\
         .select_related("moneda_origen", "moneda_destino")
@@ -142,6 +147,8 @@ def simulador_operaciones(request):
         gasto_diario = transacciones_validas.filter(
             fecha__date=hoy
         ).aggregate(total=Sum("monto"))["total"] or 0
+        
+        
 
         # Gastado en el mes
         gasto_mensual = transacciones_validas.filter(
@@ -154,9 +161,10 @@ def simulador_operaciones(request):
             "disponible_diario": max(limite.limite_diario - gasto_diario, 0),
             "gasto_mensual": gasto_mensual,
             "disponible_mensual": max(limite.limite_mensual - gasto_mensual, 0),
+            "porcentaje_diario": (gasto_diario / limite.limite_diario * 100) if limite.limite_diario > 0 else 0,
+            "porcentaje_mensual": (gasto_mensual / limite.limite_mensual * 100) if limite.limite_mensual > 0 else 0,
         })
 
-        
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
@@ -308,6 +316,7 @@ def simulador_operaciones(request):
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
         "transacciones": transacciones_qs,
+        "total_transaccion":transacciones.count,
         "email_cliente_operativo": email_cliente_operativo,
         'medios': metodos_pago,
         "PB_MONEDA": PB_MONEDA,

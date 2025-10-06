@@ -14,29 +14,56 @@
             <i class="icon">📊</i>
           </div>
           <div class="indicador-content">
-            <span class="numero">15</span>
-            <span class="label">Transacciones totales</span>
-            <div class="trend-indicator up">+8.2%</div>
+            {% with ultima=transacciones.0 %}
+              <span class="numero">{{total_transaccion}}</span>
+              <span class="label">Transacciones totales</span>
+              <div class="trend-indicator up">Última hace {{ ultima.fecha|timesince }}</div>
+            {% endwith %}
           </div>
         </div>
         <div class="indicador-card">
-          <div class="indicador-icon">
-            <i class="icon">💰</i>
-          </div>
-          <div class="indicador-content">
-            <span class="numero">1,350 USD</span>
-            <span class="label">Ganancia estimada</span>
-            <div class="trend-indicator up">+15.3%</div>
-          </div>
-        </div>
+    <div class="indicador-icon">
+        <i class="icon">💵</i>
+    </div>
+    <div class="indicador-content">
+        {% if transacciones %}
+            {% with ultima=transacciones.0 %}
+                <span class="numero">{{ ultima.monto }} {{ ultima.moneda_destino.abreviacion }}</span>
+                <span class="label">Monto última operación</span>
+                <!--
+                <div class="trend-indicator {% if ultima.tipo == 'Venta' %}down{% elif ultima.tipo == 'Compra' %}up{% else %}neutral{% endif %}">
+                    {{ ultima.fecha|timesince }} ago
+                </div>
+                -->
+            {% endwith %}
+        {% else %}
+            <span class="numero">--</span>
+            <span class="label">Monto última operación</span>
+            <div class="trend-indicator neutral">--</div>
+        {% endif %}
+    </div>
+</div>
+
         <div class="indicador-card">
           <div class="indicador-icon">
             <i class="icon">⚡</i>
           </div>
           <div class="indicador-content">
-            <span class="numero">Venta</span>
-            <span class="label">Última operación</span>
-            <div class="trend-indicator neutral">2 min ago</div>
+            {% if transacciones %}
+              {% with ultima=transacciones.0 %}
+                <span class="numero tipo-{{ ultima.tipo|capfirst  }}">{{ ultima.tipo|capfirst }}</span>
+                <span class="label">Última operación</span>
+                <!--
+                <div class="trend-indicator {% if ultima.tipo == 'Venta' %}down{% elif ultima.tipo == 'Compra' %}up{% else %}neutral{% endif %}">
+                  {{ ultima.fecha|timesince }} ago
+                </div>
+              -->
+              {% endwith %}
+            {% else %}
+              <span class="numero">--</span>
+              <span class="label">Última operación</span>
+              <div class="trend-indicator neutral">--</div>
+            {% endif %}
           </div>
         </div>
       </section>

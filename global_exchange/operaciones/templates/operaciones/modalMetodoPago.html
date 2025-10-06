@@ -389,7 +389,7 @@ function mostrarMensaje(titulo, texto) {
   }
 }
 
-function confirmarMetodoPago() {
+async function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
     
     const metodoSeleccionado = document.querySelector('input[name="metodo"]:checked');
@@ -482,10 +482,24 @@ function confirmarMetodoPago() {
         return;
     }
 
+    // Obtener la hora del servidor
+    let timestampServidor = '';
+    try {
+        const res = await fetch("{% url 'hora_servidor' %}");
+        console.log("res:",res)
+        const data = await res.json();
+        timestampServidor = data.hora; // ISO desde Django
+    } catch (err) {
+        console.error("Error obteniendo hora del servidor:", err);
+        timestampServidor = new Date().toISOString(); // fallback
+    }
+    //console.log("res:",res)
+    console.log("timestampServidor: ",timestampServidor)
+
     // Recopilar datos del formulario según el método
     const datosTransaccion = {
         metodo: metodoSeleccionado.value,
-        timestamp: new Date().toISOString(),
+        timestamp: timestampServidor,
         total: document.querySelector('.precio-total')?.textContent || '$0.00'
     };
 
