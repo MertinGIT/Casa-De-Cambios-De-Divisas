@@ -29,12 +29,10 @@ class NotificacionConsumer(AsyncJsonWebsocketConsumer):
 
     async def notificar_cambio_tasa(self, event):
         """
-        Verifica si el usuario tiene activa la notificación para esta moneda
-        antes de enviar el mensaje.
+        Envía notificación con información ampliada del cambio.
         """
         moneda = event.get("moneda")
         
-        # Verificar si el usuario tiene activa la notificación para esta moneda
         tiene_activa = await self.usuario_tiene_notificacion_activa(moneda)
         
         if tiene_activa:
@@ -44,6 +42,8 @@ class NotificacionConsumer(AsyncJsonWebsocketConsumer):
                 "precio_anterior": event.get("precio_anterior"),
                 "precio_nuevo": event.get("precio_nuevo"),
                 "porcentaje_cambio": event.get("porcentaje_cambio"),
+                "es_nueva": event.get("es_nueva", False),
+                "tipo_cambio": event.get("tipo_cambio", "EDICION"),
             })
 
     @database_sync_to_async
