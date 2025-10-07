@@ -604,6 +604,7 @@ function mostrarMensaje(titulo, texto) {
 }
 
 async function confirmarMetodoPago() {
+async function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
     
     const metodoRadio = document.querySelector('input[name="metodo"]:checked');
@@ -699,6 +700,52 @@ async function confirmarMetodoPago() {
         mostrarError("Transacción rechazada", mensajeError);
         return;
     }
+
+    // Obtener la hora del servidor
+    let timestampServidor = '';
+    try {
+        const res = await fetch("{% url 'hora_servidor' %}");
+        console.log("res:",res)
+        const data = await res.json();
+        timestampServidor = data.hora; // ISO desde Django
+    } catch (err) {
+        console.error("Error obteniendo hora del servidor:", err);
+        timestampServidor = new Date().toISOString(); // fallback
+    }
+    //console.log("res:",res)
+    console.log("timestampServidor: ",timestampServidor)
+
+    // Recopilar datos del formulario según el método
+    const datosTransaccion = {
+        metodo: metodoSeleccionado.value,
+        timestamp: timestampServidor,
+        total: document.querySelector('.precio-total')?.textContent || '$0.00'
+    };
+
+    switch (metodoSeleccionado.value) {
+        case 'tarjeta':
+            datosTransaccion.numeroTarjeta = document.getElementById('numero-tarjeta').value;
+            datosTransaccion.fechaExp = document.getElementById('fecha-exp').value;
+            datosTransaccion.titular = document.getElementById('nombre-tarjeta').value;
+            datosTransaccion.cvv = document.getElementById('cvv').value;
+            break;
+            
+        case 'billetera':
+            datosTransaccion.tipoBilletera = document.getElementById('tipo-billetera').value;
+            datosTransaccion.email = document.getElementById('email-billetera').value;
+            break;
+            
+        case 'transferencia':
+            datosTransaccion.banco = document.getElementById('banco').value;
+            datosTransaccion.cuenta = document.getElementById('cuenta-numero').value;
+            break;
+            
+        case 'efectivo':
+            datosTransaccion.observaciones = "Pago contra entrega";
+            break;
+    }
+
+    console.log('Datos de transacción:', datosTransaccion);
     
     // Cerrar modal de pago
     cerrarModalPago();

@@ -58,6 +58,11 @@ def simulador_operaciones(request):
     # === Monedas activas desde la BD ===
     monedas = list(Moneda.objects.filter(estado=True).values("id", "abreviacion", "nombre"))
     
+    transacciones = (Transaccion.objects
+          .filter(usuario=request.user)
+          .select_related('moneda_origen', 'moneda_destino')
+          .order_by('-fecha'))
+    
     # === Transacciones dinámicas: últimas 5 del usuario ===
     transacciones_qs = Transaccion.ultimas(limite=5, usuario=request.user)\
         .select_related("moneda_origen", "moneda_destino")
@@ -174,9 +179,10 @@ def simulador_operaciones(request):
             "disponible_diario": max(limite.limite_diario - gasto_diario, 0),
             "gasto_mensual": gasto_mensual,
             "disponible_mensual": max(limite.limite_mensual - gasto_mensual, 0),
+            "porcentaje_diario": (gasto_diario / limite.limite_diario * 100) if limite.limite_diario > 0 else 0,
+            "porcentaje_mensual": (gasto_mensual / limite.limite_mensual * 100) if limite.limite_mensual > 0 else 0,
         })
 
-        
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
     for abrev, registros in data_por_moneda.items():
@@ -253,6 +259,7 @@ def simulador_operaciones(request):
                         resultado_sin_desc = round(valor / TC_VTA_SIN_DESC, 2)
                         resultado = round(valor / TC_VTA, 2)
                         ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                        print("ganancia_total 244",ganancia_total,flush=True)
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
@@ -269,6 +276,7 @@ def simulador_operaciones(request):
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         # 'ultimo' puede no existir si nunca hubo registros
         fecha_tasa = locals().get("ultimo", {}).get("fecha", "")
+        print("ganancia_total 261",ganancia_total,flush=True)
         return JsonResponse({
             "resultado": resultado,
             "resultado_sin_desc": resultado_sin_desc,  # sin descuento
@@ -283,6 +291,7 @@ def simulador_operaciones(request):
     print("cliente_operativo: ",cliente_operativo,flush=True)
     print("TC_VTA 222: ",TC_VTA,flush=True)
     print("TC_COMP222: ",TC_COMP,flush=True)
+    print("ganancia 2744: ",ganancia_total,flush=True)
 
 
     # Obtener medios de acreditación del cliente operativo
@@ -308,7 +317,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-    print("context resultado",resultado)
+    print("context resultado",resultado)    print("ganancia 302: ",ganancia_total,flush=True)
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -328,6 +337,7 @@ def simulador_operaciones(request):
         "tasa_vta": TC_VTA,
         "tasa_cmp": TC_COMP,
         "transacciones": transacciones_qs,
+        "total_transaccion":transacciones.count,
         "email_cliente_operativo": email_cliente_operativo,
         'medios': metodos_pago,
         "PB_MONEDA": PB_MONEDA,
@@ -613,6 +623,7 @@ def guardar_transaccion(request):
         tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
         tasa_ref_id = data.get("tasa_ref_id")
         cliente_id = data.get("cliente_id")
+        ganancia = Decimal(str(data.get("ganancia", "0")))
 
         # Validación de campos obligatorios
         if not (moneda_origen_id and moneda_destino_id and tasa_ref_id and cliente_id):
@@ -647,6 +658,7 @@ def guardar_transaccion(request):
             tasa_usada=tasa_usada,
             tasa_ref=tasa_ref,
             cliente=cliente,
+            ganancia=ganancia,
         )
 
         return JsonResponse({

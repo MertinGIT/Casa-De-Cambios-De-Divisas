@@ -20,7 +20,8 @@
         <div class="summary-header">
           <span class="summary-label">Resumen de la operación</span>
         </div>
-
+        {{ ganancia_total }}
+        {{PB_MONEDA}}
         <div class="summary-items">
           <div class="summary-item">
             <div class="item-icon">📊</div>
@@ -279,9 +280,10 @@
           tasa: response.tasa + " (" + response.fecha_tasa + ")",
           descuento: response.descuento + "%",
           sin_descuento: response.resultado_sin_desc + " " + campos.$destino.val(),
+          ganancia_total:response.ganancia_total,
         };
 
-        window.datos = datos;
+        window.ganancia_total = datos.ganancia_total;
         console.log("modal confirmación:");
         console.log("limite",window.limite);
         if (window.limite){
