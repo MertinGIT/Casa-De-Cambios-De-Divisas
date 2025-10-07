@@ -198,7 +198,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 # ⚠️ Si querés permitir todos (solo en desarrollo):
 # CORS_ALLOW_ALL_ORIGINS = True
 
-
+CSRF_TRUSTED_ORIGINS = os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",")
 # ============================================================================
 # Validación de contraseñas
 # ============================================================================

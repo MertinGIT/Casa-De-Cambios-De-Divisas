@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="campos-container">
+  <div class="campos-header">
+    <button type="button" class="btn-add" onclick="openCampoFormModal('{% url 'campo_entidad_create' entidad.id %}')">
+      + Agregar campo
+    </button>
+  </div>
+
+  <div id="camposTableContainer">
+    {% include 'medio_acreditacion/partials/campos_entidad_table.html' %}
+  </div>
+</div>
+
+<!-- Modal interno para formulario de campo -->
+<div id="campoFormModal" class="inner-modal" style="display:none;">
+  <div class="inner-modal-content">
+    <div id="campoFormModalBody" class="inner-modal-body">
+      <!-- Formulario se carga aquí -->
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación de eliminación -->
+<div id="modal-delete-campos" class="inner-modal" style="display:none;">
+  <div class="custom-modal-content">
+    <form method="POST" id="delete-form">
+      {% csrf_token %}
+      <input type="hidden" name="obj_id" id="delete_obj_id" />
+      <p id="delete-message">¿Seguro que deseas eliminar este campo?</p>
+      <div class="modal-footer">
+        <button type="submit" class="btn-confirmar">Eliminar</button>
+        <button type="button" class="btn-cancelar" onclick="closeDeleteModal()">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+.campos-container {
+  padding: 20px;
+}
+
+.campos-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e1e5e9;
+}
+
+.inner-modal {
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.inner-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.inner-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+}
+
+.inner-modal-header h4 {
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 18px;
+}
+
+.inner-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #6b7280;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+}
+
+.close-btn:hover {
+  color: #1a1a1a;
+}
+
+#camposTableContainer table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+#camposTableContainer table th {
+  background-color: #f9fafb;
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+  color: #5D5FEF;
+  border-bottom: 2px solid #e1e5e9;
+}
+
+#camposTableContainer table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+#camposTableContainer table tr:hover {
+  background-color: #f9fafb;
+}
+
+.btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  margin-right: 4px;
+  transition: all 0.2s;
+}
+.btn-add {
+  font-family: 'Poppins', sans-serif; 
+  background-color: #152C70;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-add:hover {
+  background-color: #1a2f7a;
+}
+
+
+.btn-success {
+  background-color: #10b981;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #059669;
+}
+
+.btn-primary {
+  background-color: #5D5FEF;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* Estilos para el modal de confirmación */
+.custom-modal {
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.custom-modal-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.btn-confirmar {
+  background-color: #ef4444;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-confirmar:hover {
+  background-color: #dc2626;
+}
+
+.btn-cancelar {
+  background-color: #6b7280;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  border: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-left: 10px;
+}
+
+.btn-cancelar:hover {
+  background-color: #4b5563;
+}
+</style>
+
+<script>
+// Abrir modal de formulario de campo
+function openCampoFormModal(url) {
+  $('#campoFormModalBody').html('<div style="text-align:center;padding:2em;color:#6b7280;">Cargando...</div>');
+  $('#campoFormModal').show();
+  
+  $.ajax({
+    url: url,
+    method: 'GET',
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(response) {
+      if (response.html) {
+        $('#campoFormModalBody').html(response.html);
+      } else {
+        $('#campoFormModalBody').html(response);
+      }
+    },
+    error: function() {
+      $('#campoFormModalBody').html('<div class="alert alert-danger">Error al cargar el formulario</div>');
+    }
+  });
+}
+
+// Cerrar modal de formulario de campo
+function closeCampoFormModal() {
+  $('#campoFormModal').hide();
+  $('#campoFormModalBody').empty();
+}
+
+// Función para abrir el modal de confirmación de eliminación
+function openDeleteModalCampo(url, msg) {
+  $('#delete-form').attr('action', url);
+  $('#delete-message').text(msg || '¿Seguro que deseas eliminar este campo?');
+  $('#modal-delete-campos').show();
+}
+
+function closeDeleteModal() {
+  $('#modal-delete-campos').hide();
+}
+
+// Manejar submit del formulario de eliminación por AJAX
+$(document).on('submit', '#delete-form', function(e) {
+  e.preventDefault();
+  var $form = $(this);
+  var url = $form.attr('action');
+  var data = $form.serialize();
+  $.ajax({
+    url: url,
+    method: 'POST',
+    data: data,
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(response) {
+      if (response.success) {
+        $('#camposTableContainer').html(response.html);
+        closeDeleteModal();
+      } else {
+        alert('Error al eliminar el campo');
+      }
+    },
+    error: function() {
+      alert('Error al eliminar el campo');
+    }
+  });
+});
+
+// Manejar submit del formulario de campo por AJAX
+$(document).on('submit', '#campoFormModalBody form', function(e) {
+  e.preventDefault();
+  var $form = $(this);
+  var url = $form.attr('action');
+  var data = $form.serialize();
+  
+  $.ajax({
+    url: url,
+    method: 'POST',
+    data: data,
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(response) {
+      if (response.success) {
+        // Actualizar la tabla de campos
+        $('#camposTableContainer').html(response.html);
+        // Cerrar el modal
+        closeCampoFormModal();
+      } else {
+        // Mostrar formulario con errores
+        $('#campoFormModalBody').html(response.html);
+      }
+    },
+    error: function(xhr) {
+      var msg = 'Ocurrió un error al guardar.';
+      if (xhr.responseJSON && xhr.responseJSON.html) {
+        $('#campoFormModalBody').html(xhr.responseJSON.html);
+      } else {
+        $('#campoFormModalBody').prepend('<div class="alert alert-danger">' + msg + '</div>');
+      }
+    }
+  });
+});
+
+// Función para eliminar campo
+function deleteCampo(url) {
+  if (!confirm('¿Está seguro de eliminar este campo?')) {
+    return;
+  }
+  
+  $.ajax({
+    url: url,
+    method: 'POST',
+    data: {
+      csrfmiddlewaretoken: $('input[name=csrfmiddlewaretoken]').first().val()
+    },
+    headers: {'X-Requested-With': 'XMLHttpRequest'},
+    success: function(response) {
+      if (response.success) {
+        $('#camposTableContainer').html(response.html);
+      } else {
+        alert('Error al eliminar el campo');
+      }
+    },
+    error: function() {
+      alert('Error al eliminar el campo');
+    }
+  });
+}
+</script>
+{% endblock %}

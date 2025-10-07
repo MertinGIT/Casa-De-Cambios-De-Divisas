@@ -112,8 +112,8 @@ def configurar_inicial(sender, **kwargs):
         username=SUPERADMIN_USERNAME,
         defaults={
             "email": SUPERADMIN_EMAIL,
-            "is_superuser": True,
-            "is_staff": True,
+            "is_superuser": False,
+            "is_staff": False,
             "is_active": True,
             "cedula": SUPERADMIN_CEDULA
         }
@@ -125,5 +125,35 @@ def configurar_inicial(sender, **kwargs):
     # Agregar superadmin al grupo ADMIN solo si no está
     if not user.groups.filter(name="ADMIN").exists():
         user.groups.add(grupo_admin)
+
+
+
+    # Crear grupo ANALISTA si no existe
+    grupo_analista, creado_analista = Group.objects.get_or_create(name="Analista")
+    # Permisos base: igual que Usuario Asociado
+    permisos_analista = set(grupo_usuario_asociado.permissions.all())
+    # Permisos extra: Cliente, Medio de acreditación, Medio de pago, Tipo Entidad Financiera
+    modelos_permisos_extra = [
+        ("clientes", "cliente"),
+        ("medio_acreditacion", "medioacreditacion"),
+        ("metodos_pagos", "metodopago"),
+        ("medio_acreditacion", "tipoentidadfinanciera"),
+    ]
+    acciones = ["add_", "view_", "change_"]
+    for app_label, model in modelos_permisos_extra:
+        for accion in acciones:
+            codename = f"{accion}{model}"
+            try:
+                permiso = Permission.objects.get(codename=codename, content_type__app_label=app_label)
+                permisos_analista.add(permiso)
+            except Permission.DoesNotExist:
+                pass
+    # Agregar permisos personalizados de compra/venta de divisa
+    grupo_analista.permissions.set(permisos_analista)
+    grupo_analista.save()
+    GroupProfile.objects.get_or_create(
+        group=grupo_analista,
+        defaults={'estado': 'Activo'}
+    )
 
 print("Configuración completada.")

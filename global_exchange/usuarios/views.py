@@ -37,26 +37,12 @@ from .forms import UserRolePermissionForm
 import sys
 from clientes.models import Cliente, Segmentacion
 from cliente_usuario.models import Usuario_Cliente
+from roles_permisos.middleware import require_role
 
 User = get_user_model()
 # Create your views here.
 
 # Solo usuarios normales (no superadmin)
-
-
-def user_required(view_func):
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.has_perm('session.view_panel_admin'):
-                print("Entra", flush=True)
-                # Si es superadmin, lo redirige al panel de admin
-                return redirect('admin_dashboard')
-            else:
-                return view_func(request, *args, **kwargs)
-        # Si no está logueado, redirige a login
-        return redirect('login')
-    return _wrapped_view
 
 # Solo superadmin
 
@@ -69,7 +55,7 @@ Vista principal para usuarios normales.
 Muestra las cotizaciones de distintas monedas y los datos del usuario
 autenticado en el contexto del template `home.html`.
 """
-@user_required  # con esto protejemos las rutas
+@require_role(['Usuario'])  # con esto protejemos las rutas
 def home(request):
     
     # === DATOS DESDE LA BD ===
@@ -288,7 +274,7 @@ def signup(request):
       y envía un correo de activación.
     """
     if request.user.is_authenticated:
-        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
+        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name=['Analista']).exists() :
             return redirect('admin')
         else:
             return redirect('home')
@@ -453,8 +439,7 @@ def signin(request):
     # Si ya tiene sesión activa, redirigir según rol
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
-        if request.user.groups.filter(name='ADMIN').exists():
-            print("PRIMER IF:", flush=True)
+        if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name=['Analista']).exists():
             return redirect('admin_dashboard')
         else:
             if request.user.mfa_secret:
@@ -494,8 +479,7 @@ def signin(request):
             })
         else:
             login(request, user)
-            # MFA: si ya tiene secret
-            if request.user.groups.filter(name='ADMIN').exists():
+            if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name='Analista').exists() :
                 return redirect('admin_dashboard')
             else:
                 if user.mfa_secret:
@@ -616,7 +600,7 @@ def error_404_view(request, exception):
     return render(request, '404.html', status=404)
 
 
-@user_required
+@require_role(['Usuario'])  # con esto protejemos las rutas
 def editarPerfil(request):
     """
     **editarPerfil(request)**  
@@ -741,7 +725,7 @@ def crud_empleados(request):
     # Pasamos los datos al template
     return render(request, 'empleados.html', {'empleados': empleados})
 
-
+@require_role(['ADMIN'])
 def user_roles_lista(request):
     """
     Lista de usuarios con buscador básico.

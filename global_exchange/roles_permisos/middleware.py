@@ -22,12 +22,13 @@ class RoleBasedMiddleware:
         # Reglas de acceso por ruta
         self.access_rules = {
             # Solo superusuarios pueden acceder a estas rutas
-             r"^/admin/.*$": ["ADMIN"], 
+             r"^/admin/.*$": ['ADMIN', 'Analista'], 
+             r"^/clientes/.*$": ['Analista'], 
             
             # Usuarios comunes pueden acceder solo a ciertas rutas
             '/home/': ['Usuario', 'Usuario Asociado', 'Usuario'],
-            '/editarperfil/': ['ADMIN', 'Usuario Asociado', 'Usuario'],
-            '/operaciones/': ['ADMIN', 'Usuario Asociado'],
+            '/editarperfil/': ['Usuario Asociado', 'Usuario'],
+            '/operaciones/': ['Usuario Asociado'],
 
         }
 
@@ -42,12 +43,6 @@ class RoleBasedMiddleware:
         # Si el usuario no está autenticado
         if not request.user.is_authenticated:
             return redirect('login')
-
-        # Verificar si el usuario pertenece a un grupo permitido
-        if request.user.groups.filter(name='ADMIN').exists():
-            # Los superusuarios siempre tienen acceso
-            response = self.get_response(request)
-            return response
 
         # Verificar acceso según grupos
         if self._user_has_access(request.user, path):
@@ -71,7 +66,7 @@ class RoleBasedMiddleware:
         for route, roles in self.access_rules.items():
             if re.match(route, path):  # <-- regex match
                 return user.groups.filter(name__in=roles).exists()
-        return True  # Si no hay regla, permiti
+        return True 
 
 
 # Decorador alternativo para vistas específicas
@@ -83,11 +78,10 @@ def require_role(allowed_roles):
     def decorator(view_func):
         @login_required
         def wrapped_view(request, *args, **kwargs):
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
 
             # Verificar si el usuario tiene alguno de los roles requeridos
             if request.user.groups.filter(name__in=allowed_roles).exists():
+                print("ENTRO ACA", flush=True)
                 return view_func(request, *args, **kwargs)
             else:
                 return render(request, "403.html", status=403)
@@ -104,9 +98,6 @@ def require_permission(permission_codename):
     def decorator(view_func):
         @login_required
         def wrapped_view(request, *args, **kwargs):
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-
             if request.user.has_perm(permission_codename):
                 return view_func(request, *args, **kwargs)
             else:

@@ -2,7 +2,6 @@
 from django import forms
 from .models import TipoEntidadFinanciera, MedioAcreditacion
 from clientes.models import Cliente
-from monedas.models import Moneda
 
 
 class TipoEntidadFinancieraForm(forms.ModelForm):
@@ -66,24 +65,13 @@ class TipoEntidadFinancieraForm(forms.ModelForm):
 class MedioAcreditacionForm(forms.ModelForm):
     """
     Formulario para gestionar medios de acreditación de clientes.
-
-    Permite crear y editar instancias de `MedioAcreditacion`.
-
-    Inicialización personalizada:
-        - Filtra entidades, clientes y monedas activas.
-        - Permite preseleccionar y ocultar el cliente si se proporciona `cliente_id`.
-
-    Métodos de limpieza personalizados:
-        - `clean_numero_cuenta`: Normaliza el número de cuenta.
-        - `clean_titular`: Normaliza el nombre del titular.
-        - `clean`: Valida que no exista un medio de acreditación duplicado para la misma entidad y número de cuenta.
+    Solo permite crear y editar instancias de `MedioAcreditacion` con los campos actuales: cliente, entidad, estado.
     """
 
     class Meta:
         model = MedioAcreditacion
         fields = [
-            'cliente', 'entidad', 'numero_cuenta', 'tipo_cuenta',
-            'titular', 'documento_titular', 'moneda'
+            'cliente', 'entidad', 'estado'
         ]
         widgets = {
             'cliente': forms.Select(attrs={
@@ -92,106 +80,21 @@ class MedioAcreditacionForm(forms.ModelForm):
             'entidad': forms.Select(attrs={
                 'class': 'form-control'
             }),
-            'numero_cuenta': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Ej: 1234567890 o 0981123456',
-                'maxlength': 50
-            }),
-            'tipo_cuenta': forms.Select(attrs={
-                'class': 'form-control'
-            }),
-            'titular': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Nombre completo del titular',
-                'maxlength': 200
-            }),
-            'documento_titular': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'CI/RUC del titular',
-                'maxlength': 20
-            }),
-            'moneda': forms.Select(attrs={
-                'class': 'form-control'
+            'estado': forms.CheckboxInput(attrs={
+                'class': 'form-check-input'
             }),
         }
         labels = {
             'cliente': 'Cliente',
             'entidad': 'Entidad Financiera',
-            'numero_cuenta': 'Número de Cuenta/Teléfono',
-            'tipo_cuenta': 'Tipo de Cuenta',
-            'titular': 'Titular de la Cuenta',
-            'documento_titular': 'Documento del Titular',
-            'moneda': 'Moneda',
+            'estado': 'Activo',
         }
 
     def __init__(self, *args, **kwargs):
-        """
-        Inicializa el formulario con filtros personalizados.
-
-        :param cliente_id: Si se proporciona, selecciona automáticamente el cliente y oculta el campo.
-        """
         cliente_id = kwargs.pop('cliente_id', None)
         super().__init__(*args, **kwargs)
-
-        self.fields['entidad'].queryset = TipoEntidadFinanciera.objects.filter(
-            estado=True)
-        self.fields['cliente'].queryset = Cliente.objects.filter(
-            estado='activo')
-        self.fields['moneda'].queryset = Moneda.objects.filter(
-            estado=True)
-
+        self.fields['entidad'].queryset = TipoEntidadFinanciera.objects.filter(estado=True)
+        self.fields['cliente'].queryset = Cliente.objects.filter(estado='activo')
         if cliente_id:
             self.fields['cliente'].initial = cliente_id
             self.fields['cliente'].widget = forms.HiddenInput()
-
-    def clean_numero_cuenta(self):
-        """
-        Limpia y normaliza el campo `numero_cuenta`.
-
-        :return: Número de cuenta limpio.
-        """
-        numero_cuenta = self.cleaned_data.get('numero_cuenta')
-        if numero_cuenta:
-            numero_cuenta = numero_cuenta.strip()
-        return numero_cuenta
-
-    def clean_titular(self):
-        """
-        Limpia y normaliza el campo `titular`.
-
-        :return: Nombre del titular en formato title.
-        """
-        titular = self.cleaned_data.get('titular')
-        if titular:
-            titular = titular.strip().title()
-        return titular
-
-    def clean(self):
-        """
-        Validación general del formulario.
-
-        - Verifica que no exista otro medio de acreditación con la misma entidad y número de cuenta.
-        - Excluye la instancia actual si se está editando.
-
-        :raises forms.ValidationError: Si ya existe un medio de acreditación duplicado.
-        :return: Diccionario de datos limpios.
-        """
-        cleaned_data = super().clean()
-        entidad = cleaned_data.get('entidad')
-        numero_cuenta = cleaned_data.get('numero_cuenta')
-
-        if entidad and numero_cuenta:
-            queryset = MedioAcreditacion.objects.filter(
-                entidad=entidad,
-                numero_cuenta=numero_cuenta
-            )
-            if self.instance and self.instance.pk:
-                queryset = queryset.exclude(pk=self.instance.pk)
-
-            if queryset.exists():
-                raise forms.ValidationError(
-                    f'Ya existe un medio de acreditación con el número {numero_cuenta} '
-                    f'en {entidad.nombre}.'
-                )
-
-        return cleaned_data

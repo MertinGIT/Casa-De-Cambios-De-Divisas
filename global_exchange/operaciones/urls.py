@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from medio_acreditacion.views import medio_acreditacion_dinamico
 
 urlpatterns = [
     path("", views.simulador_operaciones, name="operaciones"),

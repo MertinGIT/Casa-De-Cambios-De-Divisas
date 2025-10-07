@@ -37,38 +37,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-def superadmin_required(view_func):
-    """
-    Decorador personalizado para restringir acceso solo a superusuarios.
-    
-    Funcionalidad:
-    - Verifica que el usuario esté autenticado
-    - Valida que tenga permisos de superadmin
-    - Redirige a login si no está autenticado
-    - Redirige a home si no tiene permisos
-    
-    Args:
-        view_func: Función de vista a proteger
-        
-    Returns:
-        Función decorada con validación de permisos
-        
-    Uso:
-        @superadmin_required
-        def mi_vista(request):
-            pass
-    """
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.is_superuser:
-                return view_func(request, *args, **kwargs)
-            else:
-                return redirect('home')
-        return redirect('login')
-    return _wrapped_view
 
-@superadmin_required
 def metodos_pagos(request):
     """
     Vista funcional simple para renderizar la lista de métodos de pago.
@@ -84,7 +53,6 @@ def metodos_pagos(request):
     """
     return render(request, 'metodos_pagos/lista.html')
 
-@method_decorator(superadmin_required, name='dispatch')
 class MetodoPagoListView(ListView):
     """
     Vista principal para listar métodos de pago con búsqueda avanzada.
@@ -173,7 +141,6 @@ class MetodoPagoListView(ListView):
         
         return context
 
-@method_decorator(superadmin_required, name='dispatch')
 class MetodoPagoCreateView(CreateView):
     """
     Vista para crear nuevos métodos de pago.
@@ -228,7 +195,6 @@ class MetodoPagoCreateView(CreateView):
             messages.error(self.request, "Error al agregar el método de pago.")
             return self.form_invalid(form)
 
-@method_decorator(superadmin_required, name='dispatch')
 class MetodoPagoUpdateView(UpdateView):
     """
     Vista para editar métodos de pago existentes.
@@ -278,7 +244,6 @@ class MetodoPagoUpdateView(UpdateView):
             messages.error(self.request, "Error al actualizar el método de pago.")
             return self.form_invalid(form)
 
-@method_decorator(superadmin_required, name='dispatch')
 class MetodoPagoDesactivateView(UpdateView):
     """
     Vista para desactivar métodos de pago.
@@ -316,7 +281,6 @@ class MetodoPagoDesactivateView(UpdateView):
         messages.success(request, "Método de pago desactivado correctamente.")
         return redirect(self.success_url)
     
-@method_decorator(superadmin_required, name='dispatch')
 class MetodoPagoActivateView(UpdateView):
     """
     Vista para reactivar métodos de pago desactivados.
@@ -388,7 +352,6 @@ def MetodoPago_detalle(request, pk):
     })
 
 @require_POST
-@superadmin_required
 def validar_nombre_metodo_pago(request):
     """
     Vista AJAX para validar unicidad del nombre en tiempo real.

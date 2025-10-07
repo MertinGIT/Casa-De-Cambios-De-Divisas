@@ -1,0 +1,119 @@
+{% load dict_get %}
+{% if campos and campos|length > 0 %}
+<form method="post" id="form-accion">
+  {% csrf_token %}
+  {% for campo in campos %}
+    <div class="form-group">
+      <label>{{ campo.etiqueta }}{% if campo.requerido %}*{% endif %}</label>
+      <div class="input-icon">
+        {% if campo.tipo == 'numero' %}
+          <span class="icon">🔢</span>
+        {% elif campo.tipo == 'fecha' %}
+          <span class="icon">📅</span>
+        {% elif campo.tipo == 'email' %}
+          <span class="icon">✉️</span>
+        {% else %}
+          <span class="icon">📝</span>
+        {% endif %}
+        <input
+          type="{% if campo.tipo == 'numero' %}number{% elif campo.tipo == 'fecha' %}date{% elif campo.tipo == 'email' %}email{% else %}text{% endif %}"
+          name="campo_{{ campo.id }}"
+          class="form-control custom-input"
+          placeholder="{{ campo.placeholder }}"
+          {% if campo.requerido %}required{% endif %}
+          {% if campo.regex_validacion %}pattern="{{ campo.regex_validacion }}"{% endif %}
+          title="{{ campo.mensaje_error|default:campo.ayuda }}"
+          value="{{ valores|dict_get:campo.id }}"
+        >
+      </div>
+      {% if campo.ayuda %}<small>{{ campo.ayuda }}</small>{% endif %}
+      <div class="error-messages">
+        {% if errores and errores|dict_get:campo.id %}<div class="error-message">{{ errores|dict_get:campo.id }}</div>{% endif %}
+      </div>
+    </div>
+  {% endfor %}
+  <div class="modal-footer-nuevo">
+    <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+    <button type="submit" class="btn-confirmar">Guardar</button>
+  </div>
+</form>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
+<script>
+  // Mensajes en español
+  jQuery.extend(jQuery.validator.messages, {
+    required: "Este campo es obligatorio.",
+    email: "Por favor, escribe una dirección de correo válida.",
+    digits: "Por favor, escribe sólo números.",
+    minlength: jQuery.validator.format("Por favor, no escribas menos de {0} caracteres."),
+    maxlength: jQuery.validator.format("Por favor, no escribas más de {0} caracteres."),
+    pattern: "Formato inválido."
+  });
+
+  $(document).ready(function () {
+    $("#form-accion").validate({
+      errorElement: 'div',
+      errorClass: 'error-message',
+      validClass: 'valid',
+      errorPlacement: function(error, element) {
+        let formGroup = element.closest('.form-group');
+        let errorContainer = formGroup.find('.error-messages');
+        if (!errorContainer.length) {
+          errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
+        }
+        errorContainer.html(error);
+      },
+      highlight: function(element, errorClass, validClass) {
+        $(element).addClass('error').removeClass(validClass);
+      },
+      unhighlight: function(element, errorClass, validClass) {
+        $(element).removeClass('error').addClass(validClass);
+      },
+      success: function(label, element) {
+        $(element).closest('.form-group').find('.error-messages').empty();
+      },
+      submitHandler: function(form) {
+        form.submit();
+      },
+      invalidHandler: function(event, validator) {
+        // Opcional: mostrar mensaje general si lo deseas
+      }
+    });
+  });
+</script>
+<style>
+  .error-message {
+    color: #ef4444 !important;
+    font-size: 12px !important;
+    font-weight: normal !important;
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    background: none !important;
+    border: none !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
+    animation: slideDown 0.3s ease-out;
+  }
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2;
+  }
+  .valid {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+  }
+</style>
+{% else %}
+<div style="color:red; font-weight:bold;">No hay campos configurados para esta entidad o no se recibió contexto.<br>Debug: entidad={{ entidad }}, campos={{ campos }}</div>
+{% endif %}
