@@ -20,8 +20,6 @@
         <div class="summary-header">
           <span class="summary-label">Resumen de la operación</span>
         </div>
-        {{ ganancia_total }}
-        {{PB_MONEDA}}
         <div class="summary-items">
           <div class="summary-item">
             <div class="item-icon">📊</div>
@@ -283,6 +281,7 @@
           ganancia_total:response.ganancia_total,
         };
 
+        window.datos=datos;
         window.ganancia_total = datos.ganancia_total;
         mostrarModalConfirmacion(datos);
       },

@@ -216,7 +216,7 @@
       <div class="filtro-transacciones">
         <select id="filtro-columna" class="input-select">
           <option value="fecha">Fecha</option>
-          <option value="monto">Monto</option>
+          <option value="monto">Monto Origen</option>
           <option value="moneda">Moneda</option>
           <option value="estado">Estado</option>
           <option value="tipo">Tipo</option>
@@ -234,8 +234,9 @@
           <tr>
             <th>ID</th>
             <th>Fecha</th>
-            <th>Monto</th>
-            <th>Moneda</th>
+            <th>Monto Origen</th>
+            <th>Moneda Origen</th>
+            <th>Moneda Destino</th>
             <th>Estado</th>
             <th>Tipo</th>
           </tr>
@@ -246,6 +247,7 @@
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
             <td>{{ t.monto }}</td>
+            <td>{{ t.moneda_origen }}</td>
             <td>{{ t.moneda_destino }}</td>
             <td>
               <span class="estado {{ t.estado|lower }}">{{ t.estado }}</span>
@@ -949,6 +951,11 @@ function continuarProcesandoTransaccion() {
 
     });
 </script>
+
+<script>
+    window.mfaTransacciones = {{ mfa_transacciones|yesno:"true,false" }};
+</script>
+
 
 <style>
   .dashboard-grid {
