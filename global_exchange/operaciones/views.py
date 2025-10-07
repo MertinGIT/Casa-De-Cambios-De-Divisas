@@ -317,7 +317,7 @@ def simulador_operaciones(request):
             })
         print("medios_acreditacion:", medios_acreditacion, flush=True)
         
-    print("context resultado",resultado)    print("ganancia 302: ",ganancia_total,flush=True)
+    print("context resultado",resultado)    
     context = {
         'monedas': monedas,
         'resultado': resultado,
