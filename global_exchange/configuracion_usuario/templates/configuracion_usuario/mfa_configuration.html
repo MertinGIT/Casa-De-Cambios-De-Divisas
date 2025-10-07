@@ -1,0 +1,656 @@
+{% extends 'baseDashboardUsuario.html' %}
+{% load static %}
+{% block dashboard_content %}
+<div class="config-container">
+  <div class="page-header">
+    <h1 class="page-title">
+      <span>🔒</span>
+      Configuración de Seguridad
+    </h1>
+    <p class="page-subtitle">
+      Administra las opciones de seguridad para tus transacciones
+    </p>
+  </div>
+
+  <div class="success-message" id="successMessage">
+    <span class="success-icon">✓</span>
+    <span class="success-text">Configuración guardada exitosamente</span>
+  </div>
+
+  <div class="error-message" id="errorMessage" style="display: none;">
+    <span class="error-icon">✕</span>
+    <span class="error-text">Error al guardar la configuración</span>
+  </div>
+
+  <form method="post" id="securityForm">
+    {% csrf_token %}
+
+    <!-- MFA Configuration Card -->
+    <div class="config-card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="card-icon">🔐</div>
+          <span>Autenticación de Dos Factores (MFA)</span>
+        </div>
+        <div class="status-badge inactive" id="statusBadge">
+          <span id="statusIcon">●</span>
+          <span id="statusText">{{ user.mfa_transacciones|yesno:"Activo,Inactivo" }}</span>
+        </div>
+      </div>
+
+      <div class="card-body">
+        <div class="config-section">
+          <p class="section-description">
+            La autenticación de dos factores añade una capa adicional de
+            seguridad a tus transacciones. Cuando está activada, recibirás un
+            código por email que deberás ingresar para completar cada operación.
+          </p>
+
+          <div class="toggle-container">
+            <div class="toggle-info">
+              <div class="toggle-title">Activar MFA para transacciones</div>
+              <div class="toggle-desc">
+                Requiere verificación por email en cada transacción
+              </div>
+            </div>
+            <label class="toggle-switch">
+              <input
+                type="checkbox"
+                id="mfaSwitch"
+                name="mfa_transacciones"
+                {% if user.mfa_transacciones %}checked{% endif %}
+              />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="info-box">
+            <div class="info-header">
+              <span class="info-icon">💡</span>
+              <span class="info-title">¿Qué es MFA?</span>
+            </div>
+            <div class="info-text">
+              La autenticación multifactor (MFA) protege tu cuenta requiriendo:
+              <ul>
+                <li><strong>Algo que sabes:</strong> Tu contraseña</li>
+                <li><strong>Algo que tienes:</strong> Código enviado a tu email</li>
+              </ul>
+              Esto hace que sea mucho más difícil para alguien acceder a tu
+              cuenta sin autorización.
+            </div>
+          </div>
+
+          <div class="warning-box" id="warningBox" style="display: none">
+            <div class="warning-header">
+              <span class="warning-icon">⚠️</span>
+              <span class="warning-title">Importante</span>
+            </div>
+            <div class="warning-text">
+              Al desactivar MFA, tus transacciones se realizarán directamente
+              sin verificación adicional. Solo hazlo si estás seguro de que tu
+              entorno es confiable.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions-footer">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          onclick="window.history.back()"
+        >
+          <span>←</span>
+          <span>Volver</span>
+        </button>
+        <button type="submit" class="btn btn-primary" id="submitBtn">
+          <span>💾</span>
+          <span>Guardar cambios</span>
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+const securityForm = document.getElementById("securityForm");
+const successMessage = document.getElementById("successMessage");
+const errorMessage = document.getElementById("errorMessage");
+const mfaSwitch = document.getElementById("mfaSwitch");
+const statusBadge = document.getElementById("statusBadge");
+const statusText = document.getElementById("statusText");
+const warningBox = document.getElementById("warningBox");
+const submitBtn = document.getElementById("submitBtn");
+
+// Función para actualizar el estado visual
+function updateStatus(isActive) {
+    console.log('Actualizando estado visual:', isActive);
+    if (isActive) {
+        statusBadge.classList.remove("inactive");
+        statusBadge.classList.add("active");
+        statusText.textContent = "Activo";
+        warningBox.style.display = "none";
+    } else {
+        statusBadge.classList.remove("active");
+        statusBadge.classList.add("inactive");
+        statusText.textContent = "Inactivo";
+        warningBox.style.display = "block";
+    }
+}
+
+// Inicializar estado al cargar la página
+document.addEventListener("DOMContentLoaded", function() {
+    console.log('Página cargada, estado inicial del switch:', mfaSwitch.checked);
+    updateStatus(mfaSwitch.checked);
+});
+
+// Actualizar estado cuando cambia el switch
+mfaSwitch.addEventListener("change", function() {
+    console.log('Switch cambiado a:', this.checked);
+    updateStatus(this.checked);
+});
+
+// Manejar el envío del formulario
+securityForm.addEventListener("submit", function(e) {
+    e.preventDefault(); // Evitar recarga de página
+    
+    console.log('=== INICIANDO ENVÍO DEL FORMULARIO ===');
+    console.log('Estado del switch:', mfaSwitch.checked);
+
+    // Deshabilitar botón durante el envío
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span>⏳</span><span>Guardando...</span>';
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    console.log('CSRF Token encontrado:', csrfToken ? 'Sí' : 'No');
+    
+    const formData = new FormData();
+    
+    // IMPORTANTE: Siempre enviar el parámetro, "on" si está activado, "off" si está desactivado
+    if (mfaSwitch.checked) {
+        formData.append("mfa_transacciones", "on");
+        console.log('Switch activado - enviando "on"');
+    } else {
+        formData.append("mfa_transacciones", "off");
+        console.log('Switch desactivado - enviando "off"');
+    }
+
+    const url = "{% url 'mfa_configuration' %}";
+    console.log('URL de destino:', url);
+
+    fetch(url, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": csrfToken,
+            "X-Requested-With": "XMLHttpRequest"
+        },
+        body: formData
+    })
+    .then(response => {
+        console.log('Respuesta recibida:', response.status, response.statusText);
+        console.log('Content-Type:', response.headers.get('content-type'));
+        
+        if (!response.ok) {
+            return response.text().then(text => {
+                console.error('Respuesta de error del servidor:', text);
+                throw new Error(`Error ${response.status}: ${response.statusText}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Datos JSON recibidos:', data);
+        
+        if (data.success) {
+            console.log('✓ Guardado exitoso!');
+            // Mostrar mensaje de éxito
+            successMessage.classList.add("show");
+            
+            // Ocultar mensaje después de 3 segundos
+            setTimeout(() => {
+                successMessage.classList.remove("show");
+            }, 3000);
+            
+            // Actualizar estado visual
+            updateStatus(data.mfa_enabled);
+        } else {
+            throw new Error(data.error || 'Error desconocido');
+        }
+    })
+    .catch(err => {
+        console.error('✗ Error capturado:', err);
+        
+        // Mostrar mensaje de error
+        errorMessage.querySelector('.error-text').textContent = 
+            'Error al guardar: ' + err.message;
+        errorMessage.style.display = 'flex';
+        errorMessage.classList.add("show");
+        
+        // Ocultar mensaje después de 5 segundos
+        setTimeout(() => {
+            errorMessage.classList.remove("show");
+            setTimeout(() => {
+                errorMessage.style.display = 'none';
+            }, 300);
+        }, 5000);
+    })
+    .finally(() => {
+        console.log('=== FIN DEL ENVÍO ===');
+        // Rehabilitar botón
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>💾</span><span>Guardar cambios</span>';
+    });
+});
+</script>
+
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6fb;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  .config-container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1e2d70;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .page-subtitle {
+    color: #666;
+    font-size: 1rem;
+  }
+
+  .config-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e8ecf7;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .card-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e8ecf7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #1e2d70;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .card-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #f4f6fb, #e8ecf7);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .status-badge {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .status-badge.active {
+    background: #f0fdf4;
+    color: #16a34a;
+  }
+
+  .status-badge.inactive {
+    background: #fef2f2;
+    color: #dc2626;
+  }
+
+  .card-body {
+    padding: 2rem;
+  }
+
+  .config-section {
+    margin-bottom: 2rem;
+  }
+
+  .config-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .section-description {
+    color: #666;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .toggle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: #f4f6fb;
+    border-radius: 12px;
+    border: 2px solid #e8ecf7;
+    transition: all 0.3s ease;
+  }
+
+  .toggle-container:hover {
+    border-color: #5d5fef;
+    background: #fafbff;
+  }
+
+  .toggle-info {
+    flex: 1;
+  }
+
+  .toggle-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e2d70;
+    margin-bottom: 0.5rem;
+  }
+
+  .toggle-desc {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+
+  .toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 34px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 24px;
+    width: 24px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background: linear-gradient(135deg, #5d5fef, #4a4cd9);
+  }
+
+  input:focus + .slider {
+    box-shadow: 0 0 0 4px rgba(93, 95, 239, 0.2);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(28px);
+  }
+
+  .info-box {
+    background: #e8f2ff;
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+  }
+
+  .info-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .info-icon {
+    color: #0284c7;
+    font-size: 1.2rem;
+  }
+
+  .info-title {
+    color: #0c4a6e;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .info-text {
+    color: #0369a1;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  .info-text ul {
+    margin-top: 0.5rem;
+    padding-left: 1.5rem;
+  }
+
+  .info-text li {
+    margin-bottom: 0.25rem;
+  }
+
+  .warning-box {
+    background: #fff8e6;
+    border: 1px solid #ffd700;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-top: 1.5rem;
+    transition: all 0.3s ease;
+  }
+
+  .warning-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .warning-icon {
+    color: #d97706;
+    font-size: 1.2rem;
+  }
+
+  .warning-title {
+    color: #92400e;
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .warning-text {
+    color: #b45309;
+    font-size: 0.85rem;
+    line-height: 1.6;
+  }
+
+  .actions-footer {
+    display: flex;
+    gap: 1rem;
+    padding: 1.5rem 2rem;
+    background: #f4f6fb;
+    border-top: 1px solid #e8ecf7;
+  }
+
+  .btn {
+    padding: 0.9rem 2rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #5d5fef 0%, #4a4cd9 100%);
+    color: white;
+    flex: 1;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(93, 95, 239, 0.3);
+  }
+
+  .btn-secondary {
+    background: white;
+    color: #666;
+    border: 1px solid #e8ecf7;
+  }
+
+  .btn-secondary:hover {
+    background: #f4f6fb;
+    color: #1e2d70;
+  }
+
+  .success-message, .error-message {
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: none;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideDown 0.3s ease;
+  }
+
+  .success-message {
+    background: #f0fdf4;
+    border: 2px solid #86efac;
+  }
+
+  .error-message {
+    background: #fef2f2;
+    border: 2px solid #fca5a5;
+  }
+
+  .success-message.show, .error-message.show {
+    display: flex;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .success-icon {
+    color: #16a34a;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .error-icon {
+    color: #dc2626;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+
+  .success-text {
+    color: #15803d;
+    font-weight: 600;
+  }
+
+  .error-text {
+    color: #991b1b;
+    font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    body {
+      padding: 1rem;
+    }
+
+    .config-container {
+      padding: 0;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .toggle-container {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .actions-footer {
+      flex-direction: column;
+    }
+
+    .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+{% endblock %}
