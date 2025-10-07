@@ -308,6 +308,7 @@ def simulador_operaciones(request):
         'moneda_seleccionada': moneda_seleccionada,
         'operacion': operacion,
         "user": request.user,
+        "mfa_transacciones": request.user.mfa_transacciones,
         "origen": origen,
         "destino": destino,
         'data_por_moneda': data_por_moneda,

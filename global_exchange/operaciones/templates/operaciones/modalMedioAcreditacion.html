@@ -261,7 +261,12 @@
 
         // Cerrar modal
         cerrarModalAcreditacion();
-        mostrarModalPin();
+
+        if (window.mfaTransacciones) {
+            mostrarModalPin();   // pedir PIN
+        } else {
+            procesarTransaccion(); // ir directo
+        }
     }
 
     function resetearFormularioAcreditacion() {

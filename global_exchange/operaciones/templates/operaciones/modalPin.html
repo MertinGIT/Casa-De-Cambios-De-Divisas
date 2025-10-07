@@ -327,6 +327,7 @@ function procesarTransaccion() {
       if (data.estado === "aceptada"){
         estadoFinal = "completada";
         // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
+        console.log("Datossss",window.datos)
         window.transaccionActual = {
           ...window.datos, // datos del padre
           ...window.datosAcreditacion,
