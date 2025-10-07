@@ -343,6 +343,7 @@ def simulador_operaciones(request):
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
         "medios_acreditacion": json.dumps(medios_acreditacion),  # <-- serializado para JS
         "entidades": entidades,
+        "limites_cliente": limites_disponibles,
     }
 
     return render(request, 'operaciones/conversorReal.html', context)
