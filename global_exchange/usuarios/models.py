@@ -37,6 +37,7 @@ class CustomUser(AbstractUser):
                               )
      # Campo para MFA
     mfa_secret = models.CharField(max_length=32, blank=True, null=True)
+    mfa_transacciones = models.BooleanField(default=False)
 
     def __str__(self):
         """Retorna el nombre de usuario como string representativo."""

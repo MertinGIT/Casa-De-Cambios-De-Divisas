@@ -49,7 +49,7 @@ urlpatterns = [
     path('operaciones/', include(operaciones_urls)),
     path('historial/', include('historial_transacciones.urls'), name='historial_usuario'),
     path('notificaciones/', include('notificaciones.urls')),
-    path('configuracion/', configuracion_view_usuario.configuracion_view_usuario, name='configuracion_usuario'),
+    path('configuracion/', include("configuracion_usuario.urls")),
 
     
     

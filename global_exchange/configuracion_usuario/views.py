@@ -1,8 +1,9 @@
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.contrib.auth.decorators import login_required
 from clientes.models import Cliente
 from cliente_usuario.models import Usuario_Cliente
-
+from django.http import JsonResponse
+import json
 def configuracion_view_usuario(request):
     # === Segmentación según usuario ===
     descuento = 0
@@ -81,4 +82,65 @@ def set_cliente_operativo(request):
         except Cliente.DoesNotExist:
             return JsonResponse({"success": False, "error": "Cliente no encontrado"}, status=404)
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
+
+@login_required
+def mfa_configuration(request):
+    """Configuración de autenticación multifactor"""
+    user = request.user
+    
+    print(f"\n=== MFA Configuration View ===")
+    print(f"Método: {request.method}")
+    print(f"Usuario: {user.username}")
+    print(f"MFA actual en BD: {user.mfa_transacciones}")
+
+    # Manejo de petición AJAX POST
+    if request.method == "POST":
+        print(f"Es AJAX: {request.headers.get('X-Requested-With') == 'XMLHttpRequest'}")
+        print(f"POST data: {request.POST}")
+        
+        # Verificar si es una petición AJAX
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            try:
+                # Obtener el valor del parámetro
+                mfa_valor = request.POST.get("mfa_transacciones", "off")
+                mfa_estado = mfa_valor == "on"
+                
+                print(f"Valor recibido: '{mfa_valor}'")
+                print(f"Nuevo estado MFA: {mfa_estado}")
+                
+                # Guardar en la base de datos
+                user.mfa_transacciones = mfa_estado
+                user.save()
+                
+                # Verificar que se guardó
+                user.refresh_from_db()
+                print(f"MFA guardado en BD: {user.mfa_transacciones}")
+                
+                return JsonResponse({
+                    "success": True,
+                    "mfa_enabled": mfa_estado,
+                    "message": "Configuración actualizada exitosamente"
+                })
+            except Exception as e:
+                print(f"ERROR: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                return JsonResponse({
+                    "success": False,
+                    "error": str(e)
+                }, status=500)
+        else:
+            # Petición POST normal (sin AJAX)
+            mfa_valor = request.POST.get("mfa_transacciones", "off")
+            mfa_estado = mfa_valor == "on"
+            user.mfa_transacciones = mfa_estado
+            user.save()
+            print(f"POST normal - MFA guardado: {mfa_estado}")
+            return redirect('mfa_configuration')
+
+    # GET request - renderizar template
+    print(f"Renderizando template con MFA: {user.mfa_transacciones}")
+    return render(request, "configuracion_usuario/mfa_configuration.html", {
+        "user": user
+    })
 
