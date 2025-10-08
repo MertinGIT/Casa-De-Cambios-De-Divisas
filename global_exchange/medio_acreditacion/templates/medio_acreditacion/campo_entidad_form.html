@@ -1,0 +1,352 @@
+{% block content %}
+<!-- Template: medio_acreditacion/campo_entidad_form.html -->
+<div class="modal-header">
+  <h2>
+    {% if campo %}Editar Campo{% else %}Agregar Campo{% endif %}
+  </h2>
+  <button type="button" class="close-btn" onclick="closeCampoFormModal()" title="Cerrar">
+    &times;
+  </button>
+</div>
+
+<form method="post" action="{% if campo %}{% url 'campo_entidad_edit' campo.id %}{% else %}{% url 'campo_entidad_create' entidad.id %}{% endif %}" class="campo-form">
+  {% csrf_token %}
+  
+  {% if errores %}
+  <div class="alert alert-danger">
+    <ul style="margin: 0; padding-left: 20px;">
+      {% for field, error in errores.items %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+  
+  <div class="form-group">
+    <label for="id_nombre">Nombre interno *</label>
+    <input type="text" 
+           id="id_nombre" 
+           name="nombre" 
+           class="form-control" 
+           placeholder="ej: numero_sucursal" 
+           value="{{ campo.nombre|default_if_none:'' }}" 
+           required>
+    <small class="form-text">Identificador único del campo (sin espacios)</small>
+  </div>
+  
+  <div class="form-group">
+    <label for="id_etiqueta">Etiqueta visible *</label>
+    <input type="text" 
+           id="id_etiqueta" 
+           name="etiqueta" 
+           class="form-control" 
+           placeholder="ej: Número de Sucursal" 
+           value="{{ campo.etiqueta|default_if_none:'' }}" 
+           required>
+    <small class="form-text">Texto que verá el usuario</small>
+  </div>
+  
+  <div class="form-group">
+    <label for="id_tipo">Tipo de campo *</label>
+    <select id="id_tipo" name="tipo" class="form-control" required>
+      <option value="">-- Seleccionar --</option>
+      <option value="texto" {% if campo and campo.tipo == 'texto' %}selected{% endif %}>Texto</option>
+      <option value="numero" {% if campo and campo.tipo == 'numero' %}selected{% endif %}>Número</option>
+      <option value="fecha" {% if campo and campo.tipo == 'fecha' %}selected{% endif %}>Fecha</option>
+      <option value="email" {% if campo and campo.tipo == 'email' %}selected{% endif %}>Email</option>
+    </select>
+  </div>
+  
+  <div class="form-row">
+    <div class="form-group col-6">
+      <label for="id_orden">Orden</label>
+      <input type="number" 
+             id="id_orden" 
+             name="orden" 
+             class="form-control" 
+             value="{{ campo.orden|default_if_none:'0' }}" 
+             min="0">
+    </div>
+    
+    <div class="form-group col-6">
+      <label class="checkbox-label">
+        <input type="checkbox" 
+               name="requerido" 
+               {% if campo and campo.requerido %}checked{% endif %}>
+        <span>Campo requerido</span>
+      </label>
+    </div>
+  </div>
+  
+  <div class="form-group">
+    <label for="id_placeholder">Placeholder (opcional)</label>
+    <input type="text" 
+           id="id_placeholder" 
+           name="placeholder" 
+           class="form-control" 
+           placeholder="ej: Ingrese el número de sucursal" 
+           value="{{ campo.placeholder|default_if_none:'' }}">
+  </div>
+  
+  <div class="form-group">
+    <label for="id_ayuda">Texto de ayuda (opcional)</label>
+    <textarea id="id_ayuda" 
+              name="ayuda" 
+              class="form-control" 
+              rows="2" 
+              placeholder="Información adicional para el usuario">{{ campo.ayuda|default_if_none:'' }}</textarea>
+  </div>
+  
+  <div class="form-group">
+    <label for="id_regex">Expresión regular de validación (opcional)</label>
+    <input type="text" 
+           id="id_regex" 
+           name="regex_validacion" 
+           class="form-control" 
+           placeholder="ej: ^\d{4}$" 
+           value="{{ campo.regex_validacion|default_if_none:'' }}">
+    <small class="form-text">Patrón para validar el formato del campo</small>
+  </div>
+  
+  <div class="form-group">
+    <label for="id_mensaje_error">Mensaje de error personalizado (opcional)</label>
+    <input type="text" 
+           id="id_mensaje_error" 
+           name="mensaje_error" 
+           class="form-control" 
+           placeholder="ej: Debe ingresar 4 dígitos" 
+           value="{{ campo.mensaje_error|default_if_none:'' }}">
+  </div>
+  
+  <div class="form-actions">
+    <button type="button" class="btn btn-cancelar" onclick="closeCampoFormModal()">
+      Cancelar
+    </button>
+    <button type="submit" class="btn btn-confirmar">
+      {% if campo %}Guardar cambios{% else %}Agregar campo{% endif %}
+    </button>
+  </div>
+</form>
+
+<style>
+
+.modal-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.modal-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.close-btn {
+  position: absolute;
+  right: 16px;
+  top: 0;
+  background: none;
+  border: none;
+  font-size: 26px;
+  font-weight: bold;
+  color: #6b7280;
+  cursor: pointer;
+  z-index: 100;
+}
+
+.close-btn:hover {
+  color: #ef4444;
+  transform: scale(1.2);
+}
+
+.campo-form {
+  padding: 0;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e1e5e9;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #5D5FEF;
+  box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+}
+
+.form-text {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 4px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.form-row .form-group {
+  margin-bottom: 0;
+}
+
+.col-6 {
+  flex: 1;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  margin-top: 28px;
+}
+
+.checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.checkbox-label span {
+  font-size: 13px;
+  color: #374151;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.alert-danger {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+}
+
+.alert-danger ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-cancelar {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-cancelar:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-confirmar {
+  background-color: #5d5fef;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-confirmar:hover {
+  background-color: #4f46e5;
+}
+
+.btn-secondary {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-primary {
+  background-color: #5D5FEF;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #4338ca;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.close-btn-inner {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-btn-inner:hover {
+  background-color: #f3f4f6;
+  color: #1a1a1a;
+}
+.inner-modal-content {
+    max-height: 60vh !important;
+}
+</style>
+{% endblock %}

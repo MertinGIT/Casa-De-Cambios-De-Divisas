@@ -7,17 +7,17 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView
 from django.http import JsonResponse
 from .models import Cliente, Segmentacion
 from .forms import ClienteForm
+from roles_permisos.middleware import require_role 
 import logging
 
 logger = logging.getLogger(__name__)
 
-
+@require_role(['Analista'])
 def clientes(request):
     """
     Renderiza la vista principal de clientes.
     """
     return render(request, 'clientes/lista.html')
-
 
 class ClienteListView(ListView):
     """

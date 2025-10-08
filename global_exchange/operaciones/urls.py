@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from medio_acreditacion.views import medio_acreditacion_dinamico
 
 urlpatterns = [
     path("", views.simulador_operaciones, name="operaciones"),
@@ -12,4 +13,5 @@ urlpatterns = [
     path('verificar-limites/', views.verificar_limites, name='verificar_limites'),
     path("enviar-pin/", views.enviar_pin, name="enviar_pin"),
     path("validar-pin/", views.validar_pin, name="validar_pin"),
+    path('crear_pago_stripe/', views.crear_pago_stripe, name='crear_pago_stripe'),
 ]

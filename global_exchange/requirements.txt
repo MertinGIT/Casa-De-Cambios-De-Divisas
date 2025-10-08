@@ -50,3 +50,4 @@ daphne
 redis
 urllib3==2.5.0
 wheel==0.42.0
+stripe

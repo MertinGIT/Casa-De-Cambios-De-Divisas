@@ -37,26 +37,12 @@ from .forms import UserRolePermissionForm
 import sys
 from clientes.models import Cliente, Segmentacion
 from cliente_usuario.models import Usuario_Cliente
+from roles_permisos.middleware import require_role
 
 User = get_user_model()
 # Create your views here.
 
 # Solo usuarios normales (no superadmin)
-
-
-def user_required(view_func):
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if request.user.is_authenticated:
-            if request.user.has_perm('session.view_panel_admin'):
-                print("Entra", flush=True)
-                # Si es superadmin, lo redirige al panel de admin
-                return redirect('admin_dashboard')
-            else:
-                return view_func(request, *args, **kwargs)
-        # Si no está logueado, redirige a login
-        return redirect('login')
-    return _wrapped_view
 
 # Solo superadmin
 
@@ -69,7 +55,7 @@ Vista principal para usuarios normales.
 Muestra las cotizaciones de distintas monedas y los datos del usuario
 autenticado en el contexto del template `home.html`.
 """
-@user_required  # con esto protejemos las rutas
+@require_role(['Usuario'])  # con esto protejemos las rutas
 def home(request):
     
     # === DATOS DESDE LA BD ===
@@ -93,7 +79,7 @@ def home(request):
             data_por_moneda[abrev] = []
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
+            "fecha": tasa.vigencia,
             #"compra": float(tasa.monto_compra),
             #"venta": float(tasa.monto_venta),
             "comision_compra": float(tasa.comision_compra),
@@ -161,7 +147,7 @@ def home(request):
 
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
+            "fecha": tasa.vigencia,
             "compra": round(TC_VTA, 2),
             "venta": round(TC_COMP, 2),
             "comision_compra": float(tasa.comision_compra),
@@ -192,17 +178,19 @@ def home(request):
             else:
                 # === OBTENER PB_MONEDA DE LA FECHA MÁS RECIENTE ===
                 registros = data_por_moneda.get(moneda_seleccionada, [])
+                print("registros sin ordenar:", registros, flush=True)
                 if not registros:
                     resultado = "No hay cotización disponible" # no hay cotización, no mostrar nada
                     ganancia_total = 0
                     COMISION_VTA = 0
                     COMISION_COM = 0
                 else:
+                    
                     if registros:
                         print("entro",registros, flush=True)
                         registros_ordenados = sorted(
                             registros,
-                            key=lambda x: datetime.strptime(x["fecha"] + " 2025", "%d %b %Y"),
+                            key=lambda x: x["fecha"],
                             reverse=True
                         )
                         ultimo = registros_ordenados[0]
@@ -286,7 +274,7 @@ def signup(request):
       y envía un correo de activación.
     """
     if request.user.is_authenticated:
-        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists():
+        if request.user.is_superuser or request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name=['Analista']).exists() :
             return redirect('admin')
         else:
             return redirect('home')
@@ -451,8 +439,7 @@ def signin(request):
     # Si ya tiene sesión activa, redirigir según rol
     if request.user.is_authenticated:
         # Redirige según tipo de usuario
-        if request.user.groups.filter(name='ADMIN').exists():
-            print("PRIMER IF:", flush=True)
+        if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name=['Analista']).exists():
             return redirect('admin_dashboard')
         else:
             if request.user.mfa_secret:
@@ -492,8 +479,7 @@ def signin(request):
             })
         else:
             login(request, user)
-            # MFA: si ya tiene secret
-            if request.user.groups.filter(name='ADMIN').exists():
+            if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name='Analista').exists() :
                 return redirect('admin_dashboard')
             else:
                 if user.mfa_secret:
@@ -565,7 +551,7 @@ def pagina_aterrizaje(request):
 
         # Insertar al inicio para que el primero sea el más reciente
         data_por_moneda[abrev].insert(0, {
-            "fecha": tasa.vigencia.strftime("%d %b"),
+            "fecha": tasa.vigencia,
             "compra": round(TC_COMP, 2),
             "venta": round(TC_VTA, 2)
         })
@@ -614,7 +600,7 @@ def error_404_view(request, exception):
     return render(request, '404.html', status=404)
 
 
-@user_required
+@require_role(['Usuario'])  # con esto protejemos las rutas
 def editarPerfil(request):
     """
     **editarPerfil(request)**  
@@ -739,7 +725,7 @@ def crud_empleados(request):
     # Pasamos los datos al template
     return render(request, 'empleados.html', {'empleados': empleados})
 
-
+@require_role(['ADMIN'])
 def user_roles_lista(request):
     """
     Lista de usuarios con buscador básico.

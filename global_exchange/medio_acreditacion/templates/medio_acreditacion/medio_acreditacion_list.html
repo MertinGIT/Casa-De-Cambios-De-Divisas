@@ -1,4 +1,4 @@
-{% extends 'base_admin.html' %}
+{% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
 {% load humanize %}
 {% block dashboard_content %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -104,7 +104,7 @@ body {
   flex-wrap: wrap;
 }
 
-.btn-add {
+.btn-agregar {
   font-family: 'Poppins', sans-serif; 
   background-color: #152C70;
   color: white;
@@ -117,8 +117,21 @@ body {
   transition: background-color 0.2s;
 }
 
-.btn-add:hover {
+.btn-agregar:hover {
   background-color: #1a2f7a;
+}
+
+.btn-add {
+  background-color: #5d5fef;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-add:hover {
+  background-color: #4f46e5;
 }
 
 .table-container {
@@ -289,6 +302,240 @@ body {
   font-size: 14px;
 }
 
+/* Estilos mejorados para modales */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.modal-content-nuevo {
+  background-color: #ffffff;
+  margin: 3% auto;
+  width: 95%;
+  max-width: 700px;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  animation: modalFadeIn 0.3s ease-out;
+  overflow: hidden;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-header-nuevo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    position: relative;
+}
+
+.modal-header-nuevo h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin: 0;
+}
+
+.modal-title-nuevo {
+  color: white;
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.close-button-nuevo {
+    position: absolute;
+    right: 16px;
+    top: 0;
+    background: none;
+    border: none;
+    font-size: 26px;
+    font-weight: bold;
+    color: #6b7280;
+    cursor: pointer;
+    z-index: 100;
+}
+
+.close-button-nuevo:hover {
+    color: #ef4444;
+    transform: scale(1.2);
+  }
+
+.modal-body-nuevo {
+  padding: 28px 24px;
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+}
+
+.form-group-nuevo {
+  margin-bottom: 20px;
+}
+
+.label-nuevo {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.select-nuevo,
+.input-nuevo {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  background-color: #ffffff;
+  color: #1f2937;
+  transition: all 0.2s;
+}
+
+.select-nuevo:focus,
+.input-nuevo:focus {
+  outline: none;
+  border-color: #5D5FEF;
+  box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.input-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon .icon {
+  position: absolute;
+  left: 12px;
+  font-size: 18px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.input-icon input.custom-input {
+  width: 100%;
+  padding: 12px 16px 12px 44px;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  background-color: #f9fafb;
+  color: #1f2937;
+  transition: all 0.2s;
+}
+
+.input-icon input.custom-input:focus {
+  outline: none;
+  border-color: #5D5FEF;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+}
+
+.form-group small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.modal-body-nuevo .btn-add {
+  width: 100%;
+  margin-top: 24px;
+  padding: 12px 20px;
+  font-size: 15px;
+}
+
+.modal-content {
+  background-color: #ffffff;
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+}
+.btn-cancelar {
+  background-color: #f3f4f6;
+  color: #374151;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.modal-footer-nuevo {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.btn-cancelar:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-confirmar {
+  background-color: #5d5fef;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.btn-confirmar:hover {
+  background-color: #4f46e5;
+}
+
 /* Responsivo */
 @media (max-width: 768px) {
   .main-wrapper {
@@ -337,7 +584,6 @@ body {
     gap: 16px;
   }
   
-  /* Mobile Table Responsiveness - Convert to Cards */
   .table-container {
     border: none;
     border-radius: 0;
@@ -397,6 +643,23 @@ body {
     padding: 8px 12px;
     font-size: 12px;
   }
+
+  .modal-content-nuevo {
+    width: 98%;
+    margin: 5% auto;
+  }
+
+  .modal-header-nuevo {
+    padding: 16px 20px;
+  }
+
+  .modal-title-nuevo {
+    font-size: 18px;
+  }
+
+  .modal-body-nuevo {
+    padding: 20px 16px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -440,7 +703,7 @@ body {
   }
 }
 </style>
-{% include 'clientes/base_clientes.html' %}
+
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
@@ -455,17 +718,25 @@ body {
         </select>
       </form>  
     </div>
-    <button class="btn-add rounded border-0 my-2" onclick="openCreateModal('{% url 'medio_acreditacion_create' %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}', 'Agregar Medio de Acreditación')">+ Agregar Acreditación</button> 
+    
+    <button class="btn-agregar rounded border-0 my-2" id="btn-agregar-medio" {% if cliente_context_required %}disabled style="opacity:0.5;cursor:not-allowed;"{% endif %}>+ Agregar Medio de Acreditación</button>
+    
+    {% if cliente_context_required %}
+      <div style="color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-weight: 500;">
+        Debe seleccionar un cliente para poder agregar un medio de acreditación.
+      </div>
+    {% endif %}
+    
     <div class="table-container">
       <table class="custom-table">
         <thead>
           <tr>
-            <th>Cliente</th>
             <th>Entidad</th>
-            <th>Número de Cuenta</th>
-            <th>Tipo de Cuenta</th>
-            <th>Titular</th>
-            <th>Moneda</th>
+            {% if medios and medios.0.dynamic_fields %}
+              {% for campo, valor in medios.0.dynamic_fields.items %}
+                <th>{{ campo|capfirst }}</th>
+              {% endfor %}
+            {% endif %}
             <th>Activo</th>
             <th>Acciones</th>
           </tr>
@@ -473,17 +744,15 @@ body {
         <tbody style="text-align: center;">
           {% for medio in medios %}
             <tr>
-              <td data-label="Cliente">{{ medio.cliente }}</td>
               <td data-label="Entidad">{{ medio.entidad }}</td>
-              <td data-label="Número de Cuenta">{{ medio.numero_cuenta }}</td>
-              <td data-label="Tipo de Cuenta">{{ medio.get_tipo_cuenta_display }}</td>
-              <td data-label="Titular">{{ medio.titular }}</td>
-              <td data-label="Moneda">{{ medio.moneda }}</td>
+              {% for campo, valor in medio.dynamic_fields.items %}
+                <td data-label="{{ campo|capfirst }}">{{ valor }}</td>
+              {% endfor %}
               <td data-label="Estado">{% if medio.estado %}<span class="status-badge status-activo">Activo</span>{% else %}<span class="status-badge status-inactivo">Inactivo</span>{% endif %}</td>
               <td data-label="Acciones">
                 <button class="btn-edit btn btn-sm btn-primary"
                   data-id="{{ medio.id }}"
-                  data-edit="{% url 'medio_acreditacion_update' 0 %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}"
+                  data-edit="{% url 'medio_acreditacion_update' medio.id %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}"
                   data-title="Editar Medio de Acreditación"
                   data-detalle="{% url 'medio_acreditacion_detail' medio.id %}">
                     Editar
@@ -491,26 +760,37 @@ body {
                 {% if medio.estado %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-danger"
-                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" 0 %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}", "¿Seguro que deseas desactivar este registro?", "Desactivar")'>
+                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" medio.id %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}", "¿Seguro que deseas desactivar este registro?", "Desactivar")'>
                     Desactivar
                   </button>
                 {% else %}
                   <button type="button"
                           class="btn-delete btn btn-sm btn-success"
-                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" 0 %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}", "¿Seguro que deseas activar este registro?", "Activar")'>
+                          onclick='openDeleteModal({{ medio.id }}, "{% url "medio_acreditacion_toggle" medio.id %}{% if cliente %}?cliente_id={{ cliente.id }}{% endif %}", "¿Seguro que deseas activar este registro?", "Activar")'>
                     Activar
                   </button>
                 {% endif %}
               </td>
             </tr>
           {% empty %}
-            <tr>
-              <td colspan="8" class="no-results">Sin resultados encontrados.</td>
-            </tr>
+            {% with num_cols=3 %}
+              {% if medios and medios.0.dynamic_fields %}
+                {% with num_cols=num_cols|add:medios.0.dynamic_fields|length %}
+                  <tr>
+                    <td colspan="{{ num_cols }}" class="no-results">Sin resultados encontrados.</td>
+                  </tr>
+                {% endwith %}
+              {% else %}
+                <tr>
+                  <td colspan="{{ num_cols }}" class="no-results">Sin resultados encontrados.</td>
+                </tr>
+              {% endif %}
+            {% endwith %}
           {% endfor %}
         </tbody>
       </table>
     </div>
+    
     <!-- Paginación -->
     {% if page_obj %}
     <div class="pagination-wrapper">
@@ -565,8 +845,175 @@ body {
           {% endif %}
         </ul>
       </nav>
-      {% endif %}
+    </div>
+    {% endif %}
   </div>
 </div>
-{% include "medio_acreditacion/medio_acreditacion_form.html" %}
+
+<!-- MODAL AGREGAR MEDIO (flujo dinámico real) -->
+<div id="modal-agregar-medio" class="modal" style="display:none;">
+  <div class="modal-content-nuevo">
+    <div class="modal-header-nuevo">
+      <h2 class="modal-title-nuevo">Agregar medio de acreditación</h2>
+      <button class="close-button-nuevo" onclick="cerrarModalAgregarMedio()">&times;</button>
+    </div>
+    <div class="modal-body-nuevo">
+      <div class="form-group-nuevo">
+        <label for="select-entidad" class="label-nuevo">Entidad financiera:</label>
+        <select id="select-entidad" class="select-nuevo">
+          <option value="">Seleccione una entidad</option>
+          {% for entidad in entidades %}
+            <option value="{{ entidad.id }}">{{ entidad.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div id="form-dinamico-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EDITAR MEDIO (dinámico) -->
+<div id="modal-editar-medio" class="modal" style="display:none;">
+  <div class="modal-content-nuevo">
+    <div class="modal-header-nuevo">
+      <h2 class="modal-title-nuevo">Editar medio de acreditación</h2>
+      <button class="close-button-nuevo" onclick="cerrarModalEditarMedio()">&times;</button>
+    </div>
+    <div class="modal-body-nuevo">
+      <div id="form-editar-dinamico-container"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ACTIVAR/DESACTIVAR -->
+<div id="modal-confirmar-toggle" class="modal" style="display:none;">
+  <div class="modal-content">
+    <span class="close" onclick="cerrarModalConfirmarToggle()">&times;</span>
+    <h3 id="modal-toggle-title">Confirmar acción</h3>
+    <p id="modal-toggle-msg">¿Seguro que deseas realizar esta acción?</p>
+    <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+      <button class="btn btn-secondary" onclick="cerrarModalConfirmarToggle()">Cancelar</button>
+      <form id="form-toggle-accion" method="post" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger" id="btn-confirmar-toggle">Confirmar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- jQuery necesario para los modales -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+$('#btn-agregar-medio').click(function(){
+  abrirModalAgregarMedio();
+});
+
+function abrirModalAgregarMedio() {
+  document.getElementById('modal-agregar-medio').style.display = 'block';
+}
+
+function cerrarModalAgregarMedio() {
+  document.getElementById('modal-agregar-medio').style.display = 'none';
+  $('#form-dinamico-container').html('');
+  $('#select-entidad').val('');
+}
+
+$('#select-entidad').on('change', function() {
+  var entidadId = $(this).val();
+  var clienteId = '{{ cliente.id|default:"" }}';
+  if(entidadId && clienteId) {
+    $('#form-dinamico-container').html('<div>Cargando...</div>');
+    $.get('/medios_acreditacion/' + entidadId + '/' + clienteId + '/', function(data) {
+      $('#form-dinamico-container').html(data.html);
+      $('#form-accion').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $.post('/medios_acreditacion/' + entidadId + '/' + clienteId + '/', formData, function(resp) {
+          cerrarModalAgregarMedio();
+          location.reload();
+        }).fail(function(xhr) {
+          var data = xhr.responseJSON;
+          if (data && data.html) {
+            $('#form-dinamico-container').html(data.html);
+          } else {
+            $('#form-dinamico-container').html(xhr.responseText);
+          }
+        });
+      });
+    });
+  } else {
+    $('#form-dinamico-container').html('');
+  }
+});
+
+// EDITAR MEDIO
+$('.btn-edit').on('click', function() {
+  var medioId = $(this).data('id');
+  var detalleUrl = $(this).data('detalle');
+  var clienteId = '{{ cliente.id|default:"" }}';
+  
+  $.get(detalleUrl, function(data) {
+    var entidadId = data.entidad;
+    $('#form-editar-dinamico-container').html('<div>Cargando...</div>');
+    $.get('/medios_acreditacion/' + entidadId + '/' + clienteId + '/?medio_id=' + medioId, function(resp) {
+      $('#form-editar-dinamico-container').html(resp.html);
+      if(data.modal_title) {
+        $('#modal-editar-medio .modal-title-nuevo').text(data.modal_title);
+      }
+      $('#form-accion').on('submit', function(e) {
+        e.preventDefault();
+        var formData = $(this).serialize();
+        $.post('/medios_acreditacion/' + entidadId + '/' + clienteId + '/?medio_id=' + medioId, formData, function(resp2) {
+          cerrarModalEditarMedio();
+          location.reload();
+        }).fail(function(xhr) {
+          var data2 = xhr.responseJSON;
+          if (data2 && data2.html) {
+            $('#form-editar-dinamico-container').html(data2.html);
+          } else {
+            $('#form-editar-dinamico-container').html(xhr.responseText);
+          }
+        });
+      });
+    });
+    abrirModalEditarMedio();
+  });
+});
+
+function abrirModalEditarMedio() {
+  document.getElementById('modal-editar-medio').style.display = 'block';
+}
+
+function cerrarModalEditarMedio() {
+  document.getElementById('modal-editar-medio').style.display = 'none';
+  $('#form-editar-dinamico-container').html('');
+}
+
+// ACTIVAR/DESACTIVAR MEDIO
+function openDeleteModal(medioId, url, msg, accion) {
+  $('#modal-toggle-title').text(accion + ' medio de acreditación');
+  $('#modal-toggle-msg').text(msg);
+  $('#form-toggle-accion').off('submit').on('submit', function(e) {
+    e.preventDefault();
+    $.post(url, {'csrfmiddlewaretoken': '{{ csrf_token }}'}, function(resp) {
+      cerrarModalConfirmarToggle();
+      location.reload();
+    });
+  });
+  document.getElementById('modal-confirmar-toggle').style.display = 'block';
+}
+
+function cerrarModalConfirmarToggle() {
+  document.getElementById('modal-confirmar-toggle').style.display = 'none';
+}
+
+// Cerrar modales al hacer click fuera
+window.onclick = function(event) {
+  if(event.target.classList.contains('modal')) {
+    $('.modal').hide();
+    $('#form-dinamico-container').html('');
+    $('#form-editar-dinamico-container').html('');
+  }
+}
+</script>
 {% endblock %}

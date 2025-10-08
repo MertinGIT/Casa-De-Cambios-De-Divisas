@@ -10,6 +10,7 @@ Views (operaciones):
 Nota:
 Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
 """
+import os
 from django.views.decorators.http import require_POST
 
 from decimal import Decimal
@@ -17,7 +18,7 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
-from medio_acreditacion.models import MedioAcreditacion
+from medio_acreditacion.models import MedioAcreditacion, TipoEntidadFinanciera  # ya estaba MedioAcreditacion
 from operaciones.models import Transaccion
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
@@ -33,9 +34,10 @@ import json
 from django.utils import timezone
 from django.http import JsonResponse
 from limite_moneda.models import LimiteTransaccion
-from django.db.models import Sum
+from django.db.models import Sum, Case, When, F, DecimalField
 import random
 from django.core.mail import send_mail
+import datetime
 
 
 @login_required
@@ -130,40 +132,16 @@ def simulador_operaciones(request):
     TC_COMP = 0
     PB_MONEDA = 0
     TASA_REF_ID =None
+    resultado_sin_desc=0
     limites = LimiteTransaccion.objects.all()  # tus límites generales por moneda
 
     hoy = localtime(now()).date()
+    #hoy=datetime.date(2025, 10, 5)
     inicio_mes = hoy.replace(day=1)
 
     limites_disponibles = []
 
-    for limite in limites:
-        # Filtrar transacciones confirmadas y no canceladas
-        transacciones_validas = Transaccion.objects.filter(
-            estado__in=["completada"]  # solo considerar transacciones activas
-        )
 
-        # Gastado hoy
-        gasto_diario = transacciones_validas.filter(
-            fecha__date=hoy
-        ).aggregate(total=Sum("monto"))["total"] or 0
-        
-        
-
-        # Gastado en el mes
-        gasto_mensual = transacciones_validas.filter(
-            fecha__date__gte=inicio_mes
-        ).aggregate(total=Sum("monto"))["total"] or 0
-
-        limites_disponibles.append({
-            "limite": limite,
-            "gasto_diario": gasto_diario,
-            "disponible_diario": max(limite.limite_diario - gasto_diario, 0),
-            "gasto_mensual": gasto_mensual,
-            "disponible_mensual": max(limite.limite_mensual - gasto_mensual, 0),
-            "porcentaje_diario": (gasto_diario / limite.limite_diario * 100) if limite.limite_diario > 0 else 0,
-            "porcentaje_mensual": (gasto_mensual / limite.limite_mensual * 100) if limite.limite_mensual > 0 else 0,
-        })
 
     # === Determinar tasas por defecto para mostrar en GET ===
     tasa_default = None
@@ -275,31 +253,75 @@ def simulador_operaciones(request):
     print("TC_COMP222: ",TC_COMP,flush=True)
     print("ganancia 2744: ",ganancia_total,flush=True)
 
+    for limite in limites:
 
-    # Obtener medios de acreditación del cliente operativo
+        # Filtrar todas las transacciones de esos usuarios
+        transacciones_validas = Transaccion.objects.filter(
+            estado__in=["completada"],
+            cliente=cliente_operativo.id
+        )
+        print("transacciones_validas: ",transacciones_validas,flush=True)
+        print("Cliente Operativo id: ", cliente_operativo.id, flush=True)
+        
+        # Gastado hoy (si es venta: monto * tasa_usada)
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(
+            total=Sum(
+                Case(
+                    When(tipo__iexact='venta', then=F('monto') * F('tasa_usada')),
+                    default=F('monto'),
+                    output_field=DecimalField()
+                )
+            )
+        )["total"] or 0
+
+        # Gastado en el mes (si es venta: monto * tasa_usada)
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(
+            total=Sum(
+                Case(
+                    When(tipo__iexact='venta', then=F('monto') * F('tasa_usada')),
+                    default=F('monto'),
+                    output_field=DecimalField()
+                )
+            )
+        )["total"] or 0
+
+        limites_disponibles.append({
+            "limite": limite,
+            "gasto_diario": gasto_diario,
+            "disponible_diario": max(limite.limite_diario - gasto_diario, 0),
+            "gasto_mensual": gasto_mensual,
+            "disponible_mensual": max(limite.limite_mensual - gasto_mensual, 0),
+            "porcentaje_diario": (gasto_diario / limite.limite_diario * 100) if limite.limite_diario > 0 else 0,
+            "porcentaje_mensual": (gasto_mensual / limite.limite_mensual * 100) if limite.limite_mensual > 0 else 0,
+        })
+
+
+    # Obtener medios de acreditación del cliente operativo (como queryset para el template)
     medios_acreditacion = []
     if cliente_operativo:
-        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True)
-        for m in medios_qs:
+        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True).select_related('entidad')
+        # Serializar para JS: entidad, tipo, campos dinámicos
+        medios_acreditacion = []
+        for medio in medios_qs:
             medios_acreditacion.append({
-                "id": m.id,
-                "entidad": {
-                    "nombre": m.entidad.nombre,
-                    "tipo": m.entidad.tipo,
+                'id': medio.id,
+                'entidad': {
+                    'id': medio.entidad.id,
+                    'nombre': medio.entidad.nombre,
+                    'tipo': medio.entidad.tipo,
                 },
-                "tipo_cuenta": m.tipo_cuenta,
-                "numero_cuenta": m.numero_cuenta,
-                "titular": m.titular,
-                "documento_titular": m.documento_titular,
-                "moneda": {
-                    "nombre": m.moneda.nombre,
-                    "abreviacion": m.moneda.abreviacion,
-                },
-                "tiempo_acreditacion": "2-3 minutos"  # si lo querés fijo por ahora
+                'campos': [
+                    {'label': campo['label'], 'value': campo['value']} for campo in medio.dynamic_fields
+                ]
             })
-        print("medios_acreditacion:", medios_acreditacion, flush=True)
-        
-    print("ganancia 302: ",ganancia_total,flush=True)
+
+    # Obtener entidades financieras activas
+    entidades = TipoEntidadFinanciera.objects.filter(estado=True)
+    print("context resultado",resultado)    
     context = {
         'monedas': monedas,
         'resultado': resultado,
@@ -326,10 +348,11 @@ def simulador_operaciones(request):
         "PB_MONEDA": PB_MONEDA,
         "TASA_REF_ID": TASA_REF_ID,
         "data_transacciones_json": json.dumps(transacciones_chart),  # para el gráfico
-        "medios_acreditacion": json.dumps(medios_acreditacion),
+        "medios_acreditacion": json.dumps(medios_acreditacion),  # <-- serializado para JS
+        "entidades": entidades,
         "limites_cliente": limites_disponibles,
     }
-
+    print("DEBUG limites_disponibles:", limites_disponibles, flush=True)
     return render(request, 'operaciones/conversorReal.html', context)
 
 
@@ -337,65 +360,74 @@ def simulador_operaciones(request):
 def verificar_limites(request):
     """
     Verifica si el monto de la transacción excede los límites diarios o mensuales
+    del cliente operativo actual.
     """
     try:
         monto = Decimal(request.POST.get('monto', 0))
         moneda_abrev = request.POST.get('moneda')
-        
+        user = request.user  # usuario autenticado
+
+        # Obtener el cliente operativo actual
+        _, cliente_operativo, _ = obtener_clientes_usuario(user, request)
+        if not cliente_operativo:
+            return JsonResponse({
+                'success': False,
+                'mensaje': 'No se encontró un cliente operativo asociado al usuario.'
+            })
+
         # Obtener la moneda
         moneda = Moneda.objects.get(abreviacion=moneda_abrev)
-        
-        # Obtener el límite general para esta moneda
-        limite = LimiteTransaccion.objects.filter(moneda_id=1).first()
-        
+
+        # Obtener límite general (mismo para todos los clientes)
+        limite = LimiteTransaccion.objects.filter(moneda=moneda).first()
         if not limite:
             return JsonResponse({
                 'success': False,
                 'mensaje': f'No se encontró límite configurado para {moneda_abrev}'
             })
-        
-        # Obtener límites configurados
+
+        # Configuración de límites
         limite_diario = limite.limite_diario
         limite_mensual = limite.limite_mensual
-        
-        # Calcular fechas
+
+        # Fechas base
         hoy = localtime(now()).date()
         inicio_mes = hoy.replace(day=1)
-        
-        # Filtrar solo transacciones completadas
+
+        # Filtrar solo transacciones completadas del cliente operativo
         transacciones_validas = Transaccion.objects.filter(
-            estado__in=["completada"]  # solo considerar transacciones completadas
+            estado="completada",
+            cliente=cliente_operativo
         )
-        
-        # Calcular gasto diario
-        gasto_diario = transacciones_validas.filter(
-            fecha__date=hoy
-        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
-        
-        # Calcular gasto mensual
-        gasto_mensual = transacciones_validas.filter(
-            fecha__date__gte=inicio_mes
-        ).aggregate(total=Sum("monto"))["total"] or Decimal('0')
-        
-        # Calcular disponibles
+
+        # Calcular gasto diario y mensual
+        gasto_diario = (
+            transacciones_validas.filter(fecha__date=hoy)
+            .aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        )
+        gasto_mensual = (
+            transacciones_validas.filter(fecha__date__gte=inicio_mes)
+            .aggregate(total=Sum("monto"))["total"] or Decimal('0')
+        )
+
+        # Disponibles
         disponible_diario = limite_diario - gasto_diario
         disponible_mensual = limite_mensual - gasto_mensual
-        
-        # Verificar si excede límites
+
+        # Verificar excedentes
         excede_diario = monto > disponible_diario
         excede_mensual = monto > disponible_mensual
-        
-        # Formatear números para mostrar (formato paraguayo: 1.234.567,89)
+
+        # Formatear en formato paraguayo
         def format_number(num):
             num_str = f"{float(num):,.2f}"
-            # Cambiar formato americano a paraguayo
-            num_str = num_str.replace(',', 'X').replace('.', ',').replace('X', '.')
-            return num_str
-        
+            return num_str.replace(',', 'X').replace('.', ',').replace('X', '.')
+
         return JsonResponse({
             'success': True,
             'excede_diario': excede_diario,
             'excede_mensual': excede_mensual,
+            'cliente': cliente_operativo.nombre,
             'moneda': moneda_abrev,
             'monto_solicitado': format_number(monto),
             'limite_diario': format_number(limite_diario),
@@ -405,7 +437,7 @@ def verificar_limites(request):
             'gastado_mensual': format_number(gasto_mensual),
             'disponible_mensual': format_number(disponible_mensual)
         })
-        
+
     except Moneda.DoesNotExist:
         return JsonResponse({
             'success': False,
@@ -698,6 +730,29 @@ def actualizar_estado_transaccion(request):
             return JsonResponse({"success": False, "error": "Error al actualizar", "detail": str(e)}, status=500)
 
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
+
+import stripe
+
+os.getenv("STRIPE_SECRET_KEY")
+stripe.api_key = "sk_test_51SEA4sPPA3ZGnjFU3wxBTnzxOQ0aTSrfwj4dmiPOvmHEGfB23V2o7PQicRcik5bhGwHBGoYO6RKhYtkBfPFLTVxr00YmgrD9dE"
+@csrf_exempt
+def crear_pago_stripe(request):
+    if request.method == "POST":
+        try:
+            total = int(request.POST.get("total", 0))
+            moneda = "pyg"
+
+            payment_intent = stripe.PaymentIntent.create(
+                amount=total,
+                currency=moneda,
+                automatic_payment_methods={"enabled": True}
+            )
+
+            return JsonResponse({"client_secret": payment_intent.client_secret})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse({"error": "Método no permitido"}, status=405)
 
 def enviar_pin(request):
     if request.user.is_authenticated:

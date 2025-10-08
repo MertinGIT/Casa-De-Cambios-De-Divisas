@@ -1,0 +1,38 @@
+{% if campos %}
+<table>
+  <thead>
+    <tr>
+      <th>Etiqueta</th>
+      <th>Tipo</th>
+      <th>Requerido</th>
+      <th>Orden</th>
+      <th style="text-align:center;">Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for campo in campos %}
+    <tr>
+      <td>{{ campo.etiqueta }}</td>
+      <td>{{ campo.get_tipo_display }}</td>
+      <td>{{ campo.requerido|yesno:"Sí,No" }}</td>
+      <td>{{ campo.orden }}</td>
+      <td style="text-align:center;">
+        <button type="button" class="btn btn-primary btn-sm" 
+                onclick="openCampoFormModal('{% url 'campo_entidad_edit' campo.id %}')">
+          Editar
+        </button>
+        <button type="button" class="btn btn-danger btn-sm" 
+                onclick="openDeleteModalCampo('{% url "campo_entidad_delete" campo.id %}', '¿Seguro que deseas eliminar este campo?')">
+          Eliminar
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<div style="text-align:center; padding:40px; color:#6b7280;">
+  <p>No hay campos configurados para esta entidad.</p>
+  <p style="font-size:12px;">Haz clic en "+ Agregar campo" para comenzar.</p>
+</div>
+{% endif %}

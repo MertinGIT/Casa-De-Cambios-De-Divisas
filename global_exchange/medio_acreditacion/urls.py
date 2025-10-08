@@ -13,4 +13,11 @@ urlpatterns = [
     path('medios_acreditacion/editar/<int:pk>/', views.medio_acreditacion_update, name='medio_acreditacion_update'),
     path('medios_acreditacion/toggle/<int:pk>/', views.medio_acreditacion_toggle, name='medio_acreditacion_toggle'),
     path('medios_acreditacion/detalle/<int:pk>/', views.medio_acreditacion_detail, name='medio_acreditacion_detail'),
+
+    path('entidad/<int:entidad_id>/campos/', views.campos_entidad_list, name='campos_entidad_list'),
+    path('campo_entidad/<int:campo_id>/editar/', views.campo_entidad_edit, name='campo_entidad_edit'),
+    path('campo_entidad/<int:campo_id>/eliminar/', views.campo_entidad_delete, name='campo_entidad_delete'),
+    path('entidad/<int:entidad_id>/campos/add/', views.campo_entidad_create, name='campo_entidad_create'),
+    path('medios_acreditacion/<int:entidad_id>/<int:cliente_id>/', views.medio_acreditacion_dinamico, name='medio_acreditacion_dinamico'),
+
 ]
