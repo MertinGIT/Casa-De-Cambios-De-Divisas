@@ -4,82 +4,131 @@ from rest_framework import status
 from .models import Transaccion, Cliente, Cuenta
 from .serializers import TransaccionBancoSerializer, ClienteSerializer, CuentaSerializer
 from rest_framework_simplejwt.authentication import JWTAuthentication
-@api_view(['GET', 'POST', 'PUT'])
-def transaccion_banco_view(request):
-    if request.method == 'GET':
-        transacciones = Transaccion.objects.all()
-        serializer = TransaccionBancoSerializer(transacciones, many=True)
-        return Response({
-            "mensaje": "Listado de transacciones",
-            "estado": "ok",
-            "datos": serializer.data
-        }, status=status.HTTP_200_OK)
+# @api_view(['GET', 'POST', 'PUT'])
+# def transaccion_banco_view(request):
+#     if request.method == 'GET':
+#         transacciones = Transaccion.objects.all()
+#         serializer = TransaccionBancoSerializer(transacciones, many=True)
+#         return Response({
+#             "mensaje": "Listado de transacciones",
+#             "estado": "ok",
+#             "datos": serializer.data
+#         }, status=status.HTTP_200_OK)
 
-    elif request.method == 'POST':
-        serializer = TransaccionBancoSerializer(data=request.data)
-        print("Datos recibidos para crear transacción:", serializer)
-        if serializer.is_valid():
-            nro_cuenta = request.data.get("nro_cuenta")
-            monto = request.data.get("monto", 0)
-            tipo = request.data.get("tipo")  # debito / credito
+#     elif request.method == 'POST':
+#         serializer = TransaccionBancoSerializer(data=request.data)
+#         print("Datos recibidos para crear transacción:", serializer)
+#         if serializer.is_valid():
+#             nro_cuenta = request.data.get("nro_cuenta")
+#             monto = request.data.get("monto", 0)
+#             tipo = request.data.get("tipo")  # debito / credito
 
-            cuenta, created = Cuenta.objects.get_or_create(nro_cuenta=nro_cuenta)
-            print("Cuenta obtenida o creada:", cuenta, "Creada:", created)
-            transaccion = serializer.save(cuenta=cuenta)
+#             cuenta, created = Cuenta.objects.get_or_create(nro_cuenta=nro_cuenta)
+#             print("Cuenta obtenida o creada:", cuenta, "Creada:", created)
+#             transaccion = serializer.save(cuenta=cuenta)
 
-            if tipo == "compra" or tipo == "venta":
-                cuenta.saldo += monto
-                cuenta.save()
-                transaccion = serializer.save(estado="aceptada")
-            else:
-                return Response({
-                    "mensaje": "Tipo de transacción inválido (use 'debito' o 'credito')",
-                    "estado": "rechazada"
-                }, status=status.HTTP_400_BAD_REQUEST)
+#             if tipo == "compra" or tipo == "venta":
+#                 cuenta.saldo += monto
+#                 cuenta.save()
+#                 transaccion = serializer.save(estado="aceptada")
+#             else:
+#                 return Response({
+#                     "mensaje": "Tipo de transacción inválido (use 'debito' o 'credito')",
+#                     "estado": "rechazada"
+#                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            return Response({
-                "mensaje": "Transacción procesada correctamente",
-                "estado": transaccion.estado,
-                "datos": TransaccionBancoSerializer(transaccion).data
-            }, status=status.HTTP_201_CREATED)
-        else:
-            return Response({
-                "mensaje": "Error en los datos enviados",
-                "estado": "rechazada",
-                "errores": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+#             return Response({
+#                 "mensaje": "Transacción procesada correctamente",
+#                 "estado": transaccion.estado,
+#                 "datos": TransaccionBancoSerializer(transaccion).data
+#             }, status=status.HTTP_201_CREATED)
+#         else:
+#             return Response({
+#                 "mensaje": "Error en los datos enviados",
+#                 "estado": "rechazada",
+#                 "errores": serializer.errors
+#             }, status=status.HTTP_400_BAD_REQUEST)
 
-    elif request.method == 'PUT':
-        referencia = request.data.get("referencia")
-        if not referencia:
-            return Response({
-                "mensaje": "Se requiere 'referencia' para actualizar la transacción",
-                "estado": "rechazada"
-            }, status=status.HTTP_400_BAD_REQUEST)
+#     elif request.method == 'PUT':
+#         referencia = request.data.get("referencia")
+#         if not referencia:
+#             return Response({
+#                 "mensaje": "Se requiere 'referencia' para actualizar la transacción",
+#                 "estado": "rechazada"
+#             }, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            transaccion = Transaccion.objects.get(referencia=referencia)
-        except Transaccion.DoesNotExist:
-            return Response({
-                "mensaje": "Transacción no encontrada",
-                "estado": "rechazada"
-            }, status=status.HTTP_404_NOT_FOUND)
+#         try:
+#             transaccion = Transaccion.objects.get(referencia=referencia)
+#         except Transaccion.DoesNotExist:
+#             return Response({
+#                 "mensaje": "Transacción no encontrada",
+#                 "estado": "rechazada"
+#             }, status=status.HTTP_404_NOT_FOUND)
 
-        serializer = TransaccionBancoSerializer(transaccion, data=request.data, partial=True)
-        if serializer.is_valid():
-            transaccion_actualizada = serializer.save()
-            return Response({
-                "mensaje": "Transacción actualizada correctamente",
-                "estado": transaccion_actualizada.estado,
-                "datos": TransaccionBancoSerializer(transaccion_actualizada).data
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "mensaje": "Error en los datos enviados",
-                "estado": "rechazada",
-                "errores": serializer.errors
-            }, status=status.HTTP_400_BAD_REQUEST)
+#         serializer = TransaccionBancoSerializer(transaccion, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             transaccion_actualizada = serializer.save()
+#             return Response({
+#                 "mensaje": "Transacción actualizada correctamente",
+#                 "estado": transaccion_actualizada.estado,
+#                 "datos": TransaccionBancoSerializer(transaccion_actualizada).data
+#             }, status=status.HTTP_200_OK)
+#         else:
+#             return Response({
+#                 "mensaje": "Error en los datos enviados",
+#                 "estado": "rechazada",
+#                 "errores": serializer.errors
+#             }, status=status.HTTP_400_BAD_REQUEST)
     
+
+
+@api_view(["GET", "POST"])
+def transaccion_banco_view(request):
+    try:
+        if request.method == "GET":
+            return Response({"estado": "ok"}, status=status.HTTP_200_OK)
+
+        elif request.method == "POST":
+            # Verificar si el servidor está recibiendo datos válidos
+            if not request.data:
+                return Response(
+                    {"estado": "error", "mensaje": "No se recibieron datos en la solicitud"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Verificar que los datos sean del tipo esperado (dict)
+            if not isinstance(request.data, dict):
+                return Response(
+                    {"estado": "error", "mensaje": "Formato de datos inválido"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Mostrar en consola lo recibido
+            print("Datos recibidos:", request.data)
+
+            # Simular que el servidor está operativo
+            servidor_operativo = True
+            if not servidor_operativo:
+                return Response(
+                    {"estado": "error", "mensaje": "Servidor no disponible"},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
+
+            # Si todo está bien
+            return Response({"estado": "ok"}, status=status.HTTP_200_OK)
+
+        else:
+            return Response(
+                {"estado": "error", "mensaje": "Método no permitido"},
+                status=status.HTTP_405_METHOD_NOT_ALLOWED
+            )
+
+    except Exception as e:
+        # Captura cualquier error inesperado
+        return Response(
+            {"estado": "error", "mensaje": f"Error interno del servidor: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
 
 from django.conf import settings
 from rest_framework_simplejwt.backends import TokenBackend

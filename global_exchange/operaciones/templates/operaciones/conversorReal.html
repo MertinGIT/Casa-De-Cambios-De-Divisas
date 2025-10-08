@@ -807,7 +807,7 @@ function verificarLimitesDisponibles(montoTransaccion, monedaAbrev, tipoOperacio
           callback(false);
           return;
         }
-        
+        console.log("Límite mensual:", resp.excede_mensual, "Disponible mensual:", resp.limite_mensual);
         // Verificar si excede límite mensual
         if (resp.excede_mensual) {
           $("#modal-exito").fadeOut(); // 🔴 Ocultar modal de éxito

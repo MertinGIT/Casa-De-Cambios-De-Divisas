@@ -169,7 +169,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initModalMetodoPago();
 });
 
-let stripe = Stripe("pk_test_51SEYwwBDAdm72UDMIQSFyXxmCQ7INpiaAx1Qd7bquMBw0CDB22Xcxpqi9GgrFknPcRIZM1aMT9sOlmBXaN7o73Bi00SNq8v4y4");
+let stripe = Stripe("pk_test_51SEA4sPPA3ZGnjFU4SnVSmEAuaC9giCmVeEIawSL8hGh5EiGP3QD5ZRMFMlKPjiYTB4kZtCNyVFEfrXRJM0U941B00kgUDAcDI");
 let elements = stripe.elements();
 let cardElement = null;
 
@@ -603,7 +603,6 @@ function mostrarMensaje(titulo, texto) {
     }
 }
 
-async function confirmarMetodoPago() {
 async function confirmarMetodoPago() {
     console.log("Confirmando método de pago");
     

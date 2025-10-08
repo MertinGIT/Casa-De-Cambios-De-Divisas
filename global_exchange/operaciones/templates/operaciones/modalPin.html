@@ -341,7 +341,7 @@ function procesarTransaccion() {
       console.log("Respuesta del banco:", data);
 
       let estadoFinal = "pendiente";
-      if (data.estado === "aceptada"){
+      if (data.estado === "ok"){
         estadoFinal = "completada";
         // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
         console.log("Datossss",window.datos)
