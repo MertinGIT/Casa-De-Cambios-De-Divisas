@@ -3,7 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
-    command: gunicorn --bind 0.0.0.0:8000 global_exchange.wsgi:application
+    command: sh -c "/wait-for-it.sh db && gunicorn --bind 0.0.0.0:8000 global_exchange.wsgi:application"
     env_file:
       - .env
     volumes:
@@ -12,17 +12,62 @@ services:
     expose:
       - "8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - REDIS_HOST=redis 
+      - DJANGO_SETTINGS_MODULE=global_exchange.settings
+    restart: unless-stopped
+
+  daphne:
+    build: .
+    command: daphne -b 0.0.0.0 -p 9000 global_exchange.asgi:application
+    expose:
+      - "9000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      - REDIS_HOST=redis
+      - DJANGO_SETTINGS_MODULE=global_exchange.settings
+    restart: unless-stopped
 
   db:
     image: postgres:14
     restart: always
     environment:
-      POSTGRES_DB: ${DJANGO_DB_NAME}
-      POSTGRES_USER: ${DJANGO_DB_USER}
-      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD}
+      POSTGRES_DB: db_global_exchange
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "1234"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Montar configuración personalizada
+      - ./postgresql/pg_hba.conf:/etc/postgresql/pg_hba.conf
+      - ./postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d db_global_exchange"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    command: 
+      - "postgres"
+      - "-c"
+      - "listen_addresses=*"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "hba_file=/etc/postgresql/pg_hba.conf"
+      - "-c"
+      - "log_connections=on"
+      - "-c"
+      - "log_disconnections=on"
 
   nginx:
     image: nginx:latest
@@ -33,9 +78,27 @@ services:
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     depends_on:
-      - web
+      web:
+        condition: service_started
+      daphne:
+        condition: service_started
+    restart: unless-stopped
+      
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   postgres_data:
   static_volume:
   media_volume:
+  redis_data:

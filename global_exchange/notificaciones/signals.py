@@ -1,18 +1,19 @@
-from django.db.models.signals import post_save
+# notificaciones/signals.py
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from decimal import Decimal
 from datetime import datetime
 from cotizaciones.models import TasaDeCambio
-from notificaciones.models import AuditoriaTasaCambio, NotificacionMoneda
-from django.db.models.signals import post_save, pre_save
+from notificaciones.models import NotificacionMoneda, AuditoriaTasaCambio
 
 UMBRAL_CAMBIO = Decimal('0.01')  # 1% de cambio mínimo
 
 # Variable temporal para almacenar valores antes de guardar
 _valores_anteriores = {}
 
+
 @receiver(pre_save, sender=TasaDeCambio)
 def capturar_valores_anteriores(sender, instance, **kwargs):
     """
@@ -30,21 +31,76 @@ def capturar_valores_anteriores(sender, instance, **kwargs):
             pass
 
 
-@receiver(pre_save, sender=TasaDeCambio)
-def capturar_valores_anteriores(sender, instance, **kwargs):
+def notificar_tasa_mas_actual(moneda_origen, moneda_destino, tasa_editada_id=None):
     """
-    ANTES de guardar, captura los valores actuales si es una edición.
+    Busca la tasa más actual y notifica comparándola con la anterior.
     """
-    if instance.pk:  # Si existe, es una edición
-        try:
-            tasa_actual = TasaDeCambio.objects.get(pk=instance.pk)
-            _valores_anteriores[instance.pk] = {
-                'precio': tasa_actual.precio_base,
-                'vigencia': tasa_actual.vigencia,
-                'estado': tasa_actual.estado
+    # Buscar la tasa más actual
+    tasa_mas_actual = TasaDeCambio.objects.filter(
+        moneda_origen=moneda_origen,
+        moneda_destino=moneda_destino,
+        estado=True
+    ).order_by('-vigencia').first()
+    
+    if not tasa_mas_actual:
+        print("ℹ️ No hay tasas activas")
+        return
+    
+    # Buscar la tasa anterior a la más actual
+    tasa_anterior = TasaDeCambio.objects.filter(
+        moneda_origen=moneda_origen,
+        moneda_destino=moneda_destino,
+        estado=True,
+        vigencia__lt=tasa_mas_actual.vigencia
+    ).order_by('-vigencia').first()
+    
+    if not tasa_anterior:
+        print("ℹ️ No hay tasa anterior para comparar")
+        return
+    
+    # Calcular cambio
+    cambio = abs((tasa_mas_actual.precio_base - tasa_anterior.precio_base) / tasa_anterior.precio_base * 100)
+    
+    if cambio < UMBRAL_CAMBIO:
+        print(f"ℹ️ Cambio menor al umbral ({cambio:.2f}%)")
+        return
+    
+    # Obtener usuarios activos
+    usuarios_activos = NotificacionMoneda.objects.filter(
+        moneda=moneda_origen,
+        activa=True
+    ).select_related('user')
+    
+    if not usuarios_activos.exists():
+        print("⚠️ No hay usuarios con notificaciones activas")
+        return
+    
+    # Enviar notificaciones
+    channel_layer = get_channel_layer()
+    
+    for notificacion in usuarios_activos:
+        user = notificacion.user
+        group_name = f"notificaciones_user_{user.id}"
+        
+        async_to_sync(channel_layer.group_send)(
+            group_name,
+            {
+                'type': 'notificar_cambio_tasa',
+                'moneda': moneda_destino.abreviacion,
+                'precio_anterior': float(tasa_anterior.precio_base),
+                'precio_nuevo': float(tasa_mas_actual.precio_base),
+                'porcentaje_cambio': float(cambio),
+                'es_nueva': False,
+                'tipo_cambio': 'CAMBIO_TASA_ACTUAL',
+                'vigencia': tasa_mas_actual.vigencia.isoformat(),
+                'timestamp': datetime.now().isoformat()
             }
-        except TasaDeCambio.DoesNotExist:
-            pass
+        )
+    
+    print(f"✅ Cambio en tasa MÁS ACTUAL - Notificado a {usuarios_activos.count()} usuario(s)")
+    print(f"   Tasa actual: {tasa_mas_actual.vigencia} (${tasa_mas_actual.precio_base})")
+    print(f"   Tasa anterior: {tasa_anterior.vigencia} (${tasa_anterior.precio_base})")
+    print(f"   Cambio: {cambio:.2f}%")
 
 
 @receiver(post_save, sender=TasaDeCambio)
@@ -59,20 +115,19 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
     
     # Determinar tipo de cambio y valores anteriores
     if created:
+        # 🔥 CREACIÓN
         tipo_cambio = 'CREACION'
         
-        # 🔥 VALIDACIÓN: ¿Hay tasas con vigencia POSTERIOR a la nueva?
-        # Si hay tasas más recientes, esta es una tasa histórica y NO debe notificar
+        # Verificar si hay tasas con vigencia posterior
         existe_tasa_mas_reciente = TasaDeCambio.objects.filter(
             moneda_origen=instance.moneda_origen,
             moneda_destino=instance.moneda_destino,
             estado=True,
-            vigencia__gt=instance.vigencia  # 🔥 Vigencias POSTERIORES
+            vigencia__gt=instance.vigencia
         ).exclude(pk=instance.pk).exists()
         
         if existe_tasa_mas_reciente:
-            print(f"⚠️ CREACIÓN de tasa histórica (vigencia: {instance.vigencia}). Hay tasas más recientes. NO se notifica.")
-            # 🔥 Registra en auditoría pero NO notifica
+            print(f"⚠️ CREACIÓN de tasa histórica (vigencia: {instance.vigencia}). NO se notifica.")
             AuditoriaTasaCambio.objects.create(
                 tasa=instance,
                 tipo_cambio=tipo_cambio,
@@ -83,39 +138,24 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
                 vigencia_nueva=instance.vigencia,
                 estado_nuevo=instance.estado,
             )
-            return  # 🔥 SALIR sin notificar
+            return
         
-        # 🔹 Si llegamos aquí, es la tasa MÁS ACTUAL
-        # Buscar la tasa con vigencia más reciente ANTERIOR a esta
-        ultima_auditoria = AuditoriaTasaCambio.objects.filter(
-            tasa__moneda_origen=instance.moneda_origen,
-            tasa__moneda_destino=instance.moneda_destino,
-            tasa__estado=True,
-            estado_nuevo=True,
-            vigencia_nueva__lt=instance.vigencia
-        ).order_by('-vigencia_nueva').first()
+        # Es la más actual, buscar la anterior
+        tasa_anterior = TasaDeCambio.objects.filter(
+            moneda_origen=instance.moneda_origen,
+            moneda_destino=instance.moneda_destino,
+            estado=True,
+            vigencia__lt=instance.vigencia
+        ).order_by('-vigencia').first()
         
-        if ultima_auditoria:
-            precio_anterior = ultima_auditoria.precio_nuevo
-            vigencia_anterior = ultima_auditoria.vigencia_nueva
-            estado_anterior = ultima_auditoria.estado_nuevo
-            print(f"📋 Nueva tasa MÁS ACTUAL. Comparando con auditoría de vigencia {vigencia_anterior}: {precio_anterior}")
+        if tasa_anterior:
+            precio_anterior = tasa_anterior.precio_base
+            vigencia_anterior = tasa_anterior.vigencia
+            estado_anterior = tasa_anterior.estado
+            print(f"📋 Nueva tasa MÁS ACTUAL. Comparando con vigencia {vigencia_anterior}: ${precio_anterior}")
         else:
-            # Si no hay auditoría, buscar directamente en TasaDeCambio
-            tasa_anterior = TasaDeCambio.objects.filter(
-                moneda_origen=instance.moneda_origen,
-                moneda_destino=instance.moneda_destino,
-                estado=True,
-                vigencia__lt=instance.vigencia
-            ).exclude(pk=instance.pk).order_by('-vigencia').first()
-            
-            if tasa_anterior:
-                precio_anterior = tasa_anterior.precio_base
-                vigencia_anterior = tasa_anterior.vigencia
-                estado_anterior = tasa_anterior.estado
-                print(f"📋 Nueva tasa MÁS ACTUAL. Comparando con tasa de vigencia {vigencia_anterior}: {precio_anterior}")
-            else:
-                print(f"ℹ️ Primera tasa ACTIVA registrada para {instance.moneda_origen.abreviacion}")
+            print(f"ℹ️ Primera tasa activa para {instance.moneda_origen.abreviacion}")
+    
     else:
         # 🔥 EDICIÓN
         tipo_cambio = 'EDICION'
@@ -124,23 +164,55 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
         vigencia_anterior = valores_previos.get('vigencia')
         estado_anterior = valores_previos.get('estado')
         
-        # 🔥 DETECTAR SI CAMBIÓ LA VIGENCIA
+        # Detectar si cambió la vigencia
         cambio_vigencia = vigencia_anterior != instance.vigencia
         
-        if cambio_vigencia:
-            print(f"📅 Cambió la vigencia: {vigencia_anterior} → {instance.vigencia}")
+        # Verificar si ERA la más actual ANTES de editar
+        era_la_mas_actual = False
+        if vigencia_anterior:
+            era_la_mas_actual = not TasaDeCambio.objects.filter(
+                moneda_origen=instance.moneda_origen,
+                moneda_destino=instance.moneda_destino,
+                estado=True,
+                vigencia__gt=vigencia_anterior
+            ).exclude(pk=instance.pk).exists()
         
-        # 🔥 VALIDACIÓN: ¿Hay tasas con vigencia POSTERIOR a la NUEVA vigencia?
-        existe_tasa_mas_reciente = TasaDeCambio.objects.filter(
+        # Verificar si ES la más actual DESPUÉS de editar
+        es_la_mas_actual = not TasaDeCambio.objects.filter(
             moneda_origen=instance.moneda_origen,
             moneda_destino=instance.moneda_destino,
             estado=True,
-            vigencia__gt=instance.vigencia  # 🔥 Comparar con la NUEVA vigencia
+            vigencia__gt=instance.vigencia
         ).exclude(pk=instance.pk).exists()
         
-        if existe_tasa_mas_reciente:
-            print(f"⚠️ EDICIÓN de tasa antigua (vigencia: {instance.vigencia}). Hay tasas más recientes. NO se notifica.")
-            # 🔥 Registra en auditoría pero NO notifica
+        print(f"📊 Edición: era_actual={era_la_mas_actual}, es_actual={es_la_mas_actual}, cambió_vigencia={cambio_vigencia}")
+        
+        # 🔥 CASO 1: Era la más actual y SIGUE siendo la más actual
+        if era_la_mas_actual and es_la_mas_actual:
+            print(f"✏️ Editando tasa que SIGUE siendo la MÁS ACTUAL")
+            # Compara con su propio valor anterior
+        
+        # 🔥 CASO 2: NO era la más actual, pero AHORA SÍ lo es
+        elif not era_la_mas_actual and es_la_mas_actual:
+            print(f"✏️ Tasa que AHORA es la MÁS ACTUAL (vigencia cambió de {vigencia_anterior} a {instance.vigencia})")
+            # Buscar la tasa que ERA la más actual antes de esta edición
+            tasa_que_era_actual = TasaDeCambio.objects.filter(
+                moneda_origen=instance.moneda_origen,
+                moneda_destino=instance.moneda_destino,
+                estado=True,
+                vigencia__lt=instance.vigencia
+            ).exclude(pk=instance.pk).order_by('-vigencia').first()
+            
+            if tasa_que_era_actual:
+                precio_anterior = tasa_que_era_actual.precio_base
+                vigencia_anterior = tasa_que_era_actual.vigencia
+                print(f"📋 Comparando con la que ERA la más actual: {vigencia_anterior} (${precio_anterior})")
+        
+        # 🔥 CASO 3: Era la más actual pero YA NO lo es
+        elif era_la_mas_actual and not es_la_mas_actual:
+            print(f"⚠️ Tasa que ERA la más actual YA NO lo es (vigencia: {vigencia_anterior} → {instance.vigencia})")
+            
+            # Registrar en auditoría
             AuditoriaTasaCambio.objects.create(
                 tasa=instance,
                 tipo_cambio=tipo_cambio,
@@ -151,34 +223,31 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
                 vigencia_nueva=instance.vigencia,
                 estado_nuevo=instance.estado,
             )
-            # Limpiar valores anteriores
+            
             if instance.pk in _valores_anteriores:
                 del _valores_anteriores[instance.pk]
-            return  # 🔥 SALIR sin notificar
+            
+            # 🔥 Notificar sobre la que AHORA es la más actual
+            notificar_tasa_mas_actual(instance.moneda_origen, instance.moneda_destino, instance.pk)
+            return
         
-        # 🔥 Si cambió la vigencia a una más actual, buscar con qué comparar
-        if cambio_vigencia:
-            print(f"✏️ Editando vigencia a la MÁS ACTUAL: {vigencia_anterior} → {instance.vigencia}")
-            
-            # Buscar la tasa con vigencia más reciente ANTERIOR a la nueva vigencia
-            tasa_comparacion = TasaDeCambio.objects.filter(
-                moneda_origen=instance.moneda_origen,
-                moneda_destino=instance.moneda_destino,
-                estado=True,
-                vigencia__lt=instance.vigencia  # 🔥 Menor a la NUEVA vigencia
-            ).exclude(pk=instance.pk).order_by('-vigencia').first()
-            
-            if tasa_comparacion:
-                # 🔥 Comparar con la tasa más reciente anterior
-                precio_anterior = tasa_comparacion.precio_base
-                vigencia_anterior = tasa_comparacion.vigencia
-                print(f"📋 Comparando con tasa anterior de vigencia {vigencia_anterior}: {precio_anterior}")
-            else:
-                print(f"⚠️ No hay tasa anterior para comparar")
+        # 🔥 CASO 4: NO era ni ES la más actual
         else:
-            print(f"✏️ Editando precio de tasa MÁS ACTUAL: {precio_anterior} → {instance.precio_base} (vigencia: {instance.vigencia})")
+            print(f"⚠️ Tasa que NO es la más actual. NO se notifica.")
+            AuditoriaTasaCambio.objects.create(
+                tasa=instance,
+                tipo_cambio=tipo_cambio,
+                precio_anterior=precio_anterior,
+                vigencia_anterior=vigencia_anterior,
+                estado_anterior=estado_anterior,
+                precio_nuevo=instance.precio_base,
+                vigencia_nueva=instance.vigencia,
+                estado_nuevo=instance.estado,
+            )
+            if instance.pk in _valores_anteriores:
+                del _valores_anteriores[instance.pk]
+            return
         
-        # Limpiar valores anteriores
         if instance.pk in _valores_anteriores:
             del _valores_anteriores[instance.pk]
     
@@ -194,37 +263,33 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
         estado_nuevo=instance.estado,
     )
     
-    # 🔥 NO NOTIFICAR SI LA TASA NUEVA ESTÁ INACTIVA
+    # Validaciones
     if not instance.estado:
         print(f"⚠️ Tasa inactiva, no se notifica")
         return
     
-    # === NOTIFICAR SOLO SI HAY CAMBIO SIGNIFICATIVO ===
-    # Si no hay precio anterior, no hay con qué comparar
     if precio_anterior is None:
         print(f"ℹ️ No hay precio anterior para comparar")
         return
     
-    # Obtener usuarios con notificaciones activas
+    # Obtener usuarios activos
     usuarios_activos = NotificacionMoneda.objects.filter(
         moneda=instance.moneda_origen,
         activa=True
     ).select_related('user')
 
     if not usuarios_activos.exists():
-        print(f"⚠️ No hay usuarios con notificaciones activas para {instance.moneda_origen.abreviacion}")
+        print(f"⚠️ No hay usuarios con notificaciones activas")
         return
 
-    # 🔥 Calcular cambio porcentual
+    # Calcular cambio
     cambio_precio = auditoria.porcentaje_cambio()
     
-    # 🔥 NOTIFICAR SI:
-    # 1. Hay cambio de precio significativo, O
-    # 2. Cambió la vigencia a una fecha más actual (aunque el precio sea igual)
-    debe_notificar = cambio_precio >= UMBRAL_CAMBIO or cambio_vigencia
+    # Notificar si hay cambio significativo O cambió vigencia
+    debe_notificar = cambio_precio >= UMBRAL_CAMBIO or (cambio_vigencia and not created)
     
     if not debe_notificar:
-        print(f"ℹ️ No hay cambio significativo (precio: {cambio_precio:.2f}%, vigencia: {'cambió' if cambio_vigencia else 'sin cambio'})")
+        print(f"ℹ️ No hay cambio significativo (precio: {cambio_precio:.2f}%)")
         return
 
     # === ENVIAR NOTIFICACIONES ===
@@ -245,23 +310,11 @@ def notificar_cambio_tasa(sender, instance, created, **kwargs):
                 'es_nueva': created,
                 'tipo_cambio': tipo_cambio,
                 'vigencia': instance.vigencia.isoformat(),
-                'cambio_vigencia': cambio_vigencia,
                 'timestamp': datetime.now().isoformat()
             }
         )
 
-    if cambio_vigencia and cambio_precio < UMBRAL_CAMBIO:
-        razon = "cambio de vigencia a fecha más actual"
-    elif cambio_precio >= UMBRAL_CAMBIO:
-        razon = f"cambio de precio ({cambio_precio:.2f}%)"
-    else:
-        razon = f"cambio de vigencia Y precio ({cambio_precio:.2f}%)"
-    
-    tipo = "NUEVA tasa MÁS ACTUAL" if created else f"EDICIÓN"
-    print(f"✅ {tipo} - Notificado a {usuarios_activos.count()} usuario(s) para {instance.moneda_origen.abreviacion}")
-    print(f"   Razón: {razon}")
-    
-    if created:
-        print(f"   Vigencia anterior: {vigencia_anterior} (${precio_anterior}) → Vigencia nueva: {instance.vigencia} (${instance.precio_base})")
-    else:
-        print(f"   Vigencia: {vigencia_anterior} → {instance.vigencia} | Precio: ${precio_anterior} → ${instance.precio_base}")
+    tipo_msg = "NUEVA tasa MÁS ACTUAL" if created else "EDICIÓN de tasa MÁS ACTUAL"
+    print(f"✅ {tipo_msg} - Notificado a {usuarios_activos.count()} usuario(s)")
+    print(f"   Vigencia: {vigencia_anterior} → {instance.vigencia}")
+    print(f"   Precio: ${precio_anterior} → ${instance.precio_base} ({cambio_precio:.2f}%)")
