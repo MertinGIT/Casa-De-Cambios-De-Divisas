@@ -179,50 +179,48 @@ function verificarPin() {
     .then(resp => resp.json())
     .then(data => {
       if (data.success) {
-      cerrarModalPin();
-      //if (pin === "1234") {
-      // Antes de procesar la transacción, verificamos la tasa
-      verificarTasaActualizada(function(tasaActualizada) {
-        if (tasaActualizada) {
-          console.log("PIN correcto y tasa actualizada, procesando transacción...");
-              procesarTransaccion()
+        cerrarModalPin();
+        
+        // Verificar tasa actualizada
+        verificarTasaActualizada(function(tasaActualizada) {
+          if (tasaActualizada) {
+            console.log("PIN correcto y tasa actualizada, procesando transacción...");
+            
+            // 🔥 PRIMERO: Procesar transacción bancaria
+            // 🔥 NO procesar pago Stripe aquí
+            procesarTransaccion();
 
-              if (window.metodoSeleccionado === "tarjeta") {
-                procesarPagoStripe();
-              }
+          } else {
+            // Tasa desactualizada
+            $("#modal-exito").css("display", "none");
+            mostrarMensaje(
+              "Transacción Rechazada",
+              "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.",
+              "warning",
+              true
+            );
+            $("#modal-pin").fadeOut();
+          }
+        });
+      } else {
+        // PIN incorrecto
+        console.log("PIN incorrecto:", pin);
+        document.getElementById("mensaje-pin").style.display = "block";
+        pinInputs.forEach((input) => {
+          input.value = "";
+          input.classList.add("error");
+        });
+        pinInputs[0].focus();
 
-        } else {
-          // Cortar flujo si la tasa no está actualizada
-          $("#modal-exito").css("display", "none");
-          mostrarMensaje(
-            "Transacción Rechazada",
-            "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.",
-            "warning",
-            true
-          );
-          $("#modal-pin").fadeOut();
-        }
-      });
-  } else {
-    // PIN incorrecto
-    console.log("PIN incorrecto:", pin);
-    document.getElementById("mensaje-pin").style.display = "block";
-    pinInputs.forEach((input) => {
-      input.value = "";
-      input.classList.add("error");
-    });
-    pinInputs[0].focus();
-
-    setTimeout(() => {
-      pinInputs.forEach((input) => input.classList.remove("error"));
-    }, 2000);
-  }
+        setTimeout(() => {
+          pinInputs.forEach((input) => input.classList.remove("error"));
+        }, 2000);
+      }
     })
     .catch(err => {
       console.error("Error verificando PIN:", err);
-      //mostrarMensaje("⚠️ Error", "Error al verificar el PIN. Intente nuevamente.");
     });
-  // Limpiar inputs del PIN
+  
   pinInputs.forEach((input) => input.value = "");
 }
 
@@ -251,20 +249,19 @@ function procesarTransaccion() {
     return;
   }
 
-  // Obtener la tasa calculada correctamente
   const tasaCalculada = campos.$resultado.data("tasa") ||
     (campos.op === "venta" ? parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", ".")) :
                              parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", ".")));
 
-    let gananciaCalculada;
-    PB_MONEDA="{{ PB_MONEDA }}"
-    if (campos.op === "venta") {
-        const valor = parseFloat($("#valor-compra").val());
-        gananciaCalculada = valor - (valor / tasaCalculada * PB_MONEDA);
-    } else {
-        const valor = parseFloat($("#valor-venta").val());
-        gananciaCalculada = valor * PB_MONEDA - (valor * tasaCalculada);
-    }
+  let gananciaCalculada;
+  PB_MONEDA="{{ PB_MONEDA }}"
+  if (campos.op === "venta") {
+      const valor = parseFloat($("#valor-compra").val());
+      gananciaCalculada = valor - (valor / tasaCalculada * PB_MONEDA);
+  } else {
+      const valor = parseFloat($("#valor-venta").val());
+      gananciaCalculada = valor * PB_MONEDA - (valor * tasaCalculada);
+  }
 
   // PASO 1: Guardar en BD como PENDIENTE
   const payloadLocal = {
@@ -300,23 +297,21 @@ function procesarTransaccion() {
 
     const transaccionId = localResp.id;
 
-    // 🔥 PASO 2: Enviar al banco - LO OPUESTO (lo que RECIBE el cliente)
+    // PASO 2: Enviar al banco
     let montoParaBanco, monedaParaBanco;
     
     if (campos.op === "venta") {
-      // COMPRA: Cliente entrega 7408 PYG → Banco debe guardar 1 USD (lo que recibe)
-      montoParaBanco = parseFloat($("#resultado-compra").val()); // 1 USD
-      monedaParaBanco = $("#destino-compra").val(); // "USD"
+      montoParaBanco = parseFloat($("#resultado-compra").val());
+      monedaParaBanco = $("#destino-compra").val();
     } else {
-      // VENTA: Cliente entrega 1 USD → Banco debe guardar 7408 PYG (lo que recibe)
-      montoParaBanco = parseFloat($("#resultado-venta").val()); // 7408 PYG
+      montoParaBanco = parseFloat($("#resultado-venta").val());
       monedaParaBanco = "PYG";
     }
 
     const transaccionData = {
       email: "{{ email_cliente_operativo }}",
-      monto: montoParaBanco, // 🔥 Lo que RECIBE (lo opuesto de BD)
-      moneda: monedaParaBanco, // 🔥 Moneda de lo que RECIBE
+      monto: montoParaBanco,
+      moneda: monedaParaBanco,
       tipo: campos.op === "venta" ? "compra" : "venta",
       estado: "aceptada",
       referencia: "TX-" + Date.now(),
@@ -329,7 +324,7 @@ function procesarTransaccion() {
       fecha: new Date().toISOString()
     };
 
-    console.log("🏦 Enviando al banco (LO OPUESTO):", transaccionData);
+    console.log("🏦 Enviando al banco:", transaccionData);
 
     fetch("http://127.0.0.1:8001/transaccion/", {
       method: "POST",
@@ -337,23 +332,64 @@ function procesarTransaccion() {
       body: JSON.stringify(transaccionData)
     })
     .then(resp => resp.json())
-    .then(data => {
+    .then(async data => { // 🔥 async aquí
       console.log("Respuesta del banco:", data);
 
       let estadoFinal = "pendiente";
+      
       if (data.estado === "ok"){
         estadoFinal = "completada";
-        // Guardar transacción globalmente para el modal y la descarga y usar en otros modales
-        console.log("Datossss",window.datos)
+        
+        // Guardar transacción globalmente
         window.transaccionActual = {
-          ...window.datos, // datos del padre
+          ...window.datos,
           ...window.datosAcreditacion,
           ...transaccionData      
         };
-      } 
-      else if (data.estado === "rechazada") estadoFinal = "cancelada";
 
-      // PASO 4: Actualizar estado en BD (sin cambios)
+        // 🔥 PASO 3: Si el banco aprobó Y hay pago con tarjeta, procesarlo AHORA
+        if (window.metodoSeleccionado === "tarjeta") {
+          console.log("💳 Banco aprobó, procesando pago con tarjeta...");
+          
+          const pagoExitoso = await procesarPagoStripe();
+          
+          if (!pagoExitoso) {
+            console.error("❌ Pago con tarjeta falló después de aprobación bancaria");
+            estadoFinal = "cancelada"; // 🔥 Cambiar estado a cancelada
+            
+            mostrarMensaje(
+              "Error de Pago",
+              "La transacción bancaria fue aprobada pero el pago con tarjeta falló. Por favor contacte con soporte.",
+              "error"
+            );
+            
+            // Actualizar estado a cancelada y retornar
+            const payloadCancelacion = {
+              transaccion_id: transaccionId,
+              nuevo_estado: "cancelada"
+            };
+            
+            await fetch("{% url 'actualizar_estado_transaccion' %}", {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken")
+              },
+              body: JSON.stringify(payloadCancelacion)
+            });
+            
+            return; // 🔥 Detener aquí
+          }
+          
+          console.log("✅ Pago con tarjeta exitoso");
+        }
+        
+      } else if (data.estado === "rechazada") {
+        estadoFinal = "cancelada";
+      }
+
+      // PASO 4: Actualizar estado en BD
       const payloadActualizacion = {
         transaccion_id: transaccionId,
         nuevo_estado: estadoFinal
@@ -372,6 +408,7 @@ function procesarTransaccion() {
       .then(updateResp => {
         if (updateResp.success) {
           if (estadoFinal === "completada") {
+            // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
             $("#modal-pin").fadeOut();
             $("#modal-exito").fadeIn().css("display", "flex");
           } else {

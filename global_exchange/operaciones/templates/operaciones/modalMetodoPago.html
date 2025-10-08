@@ -351,11 +351,9 @@ function mostrarModalPago() {
         });
     }
 }
-
 window.procesarPagoStripe = async function() {
     console.log("🔄 Iniciando procesarPagoStripe...");
     
-    // Verificar que tenemos el payment method
     if (!window.stripePaymentMethod) {
         console.error("❌ No hay payment method guardado");
         mostrarMensaje(
@@ -363,29 +361,24 @@ window.procesarPagoStripe = async function() {
             "No se encontraron los datos de la tarjeta. Por favor intente nuevamente.",
             "error"
         );
-        return;
+        return false;
     }
 
     try {
         let montoEnGuaranies;
         
-        // Verificar si tenemos los datos de la transacción con descuento aplicado
         if (window.datos) {
-            const tipo = window.datos.tipo; // "Compra" o "Venta"
+            const tipo = window.datos.tipo;
             let montoTexto = '';
             
-            // Determinar qué campo usar según el tipo de operación
             if (tipo === 'Compra') {
-                // En COMPRA: el cliente ENTREGA PYG
                 montoTexto = window.datos.entregar;
                 console.log("💰 Operación COMPRA - usando 'entregar':", montoTexto);
             } else if (tipo === 'Venta') {
-                // En VENTA: el cliente RECIBE PYG
                 montoTexto = window.datos.recibir;
                 console.log("💰 Operación VENTA - usando 'recibir':", montoTexto);
             }
             
-            // Extraer el monto (ej: "20000 PYG" -> 20000)
             if (montoTexto) {
                 const montoMatch = montoTexto.trim().match(/^([\d,\.]+)/);
                 
@@ -396,38 +389,26 @@ window.procesarPagoStripe = async function() {
             }
         }
         
-        // Fallback: calcular desde los campos si no tenemos window.datos
         if (!montoEnGuaranies) {
             const campos = getCampos();
-            
-            // Obtener el texto completo del precio (ej: "1000 USD")
             let precioTexto = document.getElementById('precio_a_pagar').textContent.trim();
-            
-            // Extraer monto y moneda
             let partes = precioTexto.split(' ');
             let montoOriginal = parseFloat(partes[0].replace(/[^0-9.]/g, ''));
             let monedaPago = partes[1] || '';
             
             console.log("⚠️ Fallback - Monto original:", montoOriginal, monedaPago);
             
-            // Si la moneda NO es PYG, necesitamos convertir
             if (monedaPago !== 'PYG') {
-                // Obtener el resultado calculado (que está en la moneda destino)
                 let resultado = parseFloat(campos.$resultado.val());
                 
                 if (campos.op === "compra") {
-                    // COMPRA: cliente entrega USD/EUR/etc, recibe PYG
-                    // El resultado YA está en PYG
                     montoEnGuaranies = Math.round(resultado);
                 } else {
-                    // VENTA: cliente entrega PYG, recibe USD/EUR/etc
-                    // El monto original YA está en PYG
                     montoEnGuaranies = Math.round(montoOriginal);
                 }
                 
                 console.log("💱 Conversión realizada a PYG:", montoEnGuaranies);
             } else {
-                // Si ya es PYG, usar el monto directamente
                 montoEnGuaranies = Math.round(montoOriginal);
                 console.log("✅ Ya está en PYG:", montoEnGuaranies);
             }
@@ -436,15 +417,13 @@ window.procesarPagoStripe = async function() {
         if (!montoEnGuaranies || montoEnGuaranies <= 0) {
             console.error("❌ Monto inválido:", montoEnGuaranies);
             mostrarMensaje("Error", "El monto a pagar no es válido", "error");
-            return;
+            return false;
         }
 
         console.log("💰 Total final a cobrar en guaraníes:", montoEnGuaranies);
 
-        // Obtener CSRF token
         const csrftoken = getCookie('csrftoken');
 
-        // Crear el PaymentIntent en el servidor
         console.log("📡 Creando PaymentIntent en el servidor...");
         let response = await fetch("/operaciones/crear_pago_stripe/", {
             method: "POST",
@@ -464,12 +443,11 @@ window.procesarPagoStripe = async function() {
                 "No se pudo procesar el pago: " + data.error,
                 "error"
             );
-            return;
+            return false;
         }
 
         console.log("✅ PaymentIntent creado:", data.payment_intent_id);
 
-        // Confirmar el pago usando el payment method que guardamos
         console.log("🔐 Confirmando pago con Stripe...");
         const result = await stripe.confirmCardPayment(data.client_secret, {
             payment_method: window.stripePaymentMethod.id
@@ -484,6 +462,7 @@ window.procesarPagoStripe = async function() {
             );
             
             $("#modal-pin").fadeOut();
+            return false;
             
         } else if (result.paymentIntent && result.paymentIntent.status === "succeeded") {
             console.log("✅ ¡PAGO EXITOSO! PaymentIntent ID:", result.paymentIntent.id);
@@ -496,10 +475,9 @@ window.procesarPagoStripe = async function() {
             // Limpiar el payment method después de usarlo
             window.stripePaymentMethod = null;
             
-            // Mostrar modal de éxito
-            console.log("🎉 Mostrando modal de éxito");
-            $("#modal-pin").fadeOut();
-            $("#modal-exito").fadeIn().css("display", "flex");
+            // 🔥 NO MOSTRAR MODAL - solo retornar éxito
+            console.log("✅ Pago con tarjeta exitoso");
+            return true;
             
         } else {
             console.warn("⚠️ Estado del pago inesperado:", result.paymentIntent?.status);
@@ -508,6 +486,7 @@ window.procesarPagoStripe = async function() {
                 "El pago está en proceso de verificación", 
                 "warning"
             );
+            return false;
         }
         
     } catch (err) {
@@ -519,6 +498,7 @@ window.procesarPagoStripe = async function() {
         );
         
         window.stripePaymentMethod = null;
+        return false;
     }
 };
 
