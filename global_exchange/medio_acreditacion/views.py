@@ -9,6 +9,7 @@ from clientes.forms import ClienteForm
 from clientes.models import Cliente
 from monedas.models import Moneda
 from django.template.loader import render_to_string
+from operaciones.views import obtener_clientes_usuario
 
 def tipo_entidad_list(request):
     """
@@ -138,70 +139,57 @@ def tipo_entidad_toggle(request, pk):
 
 def medio_acreditacion_list(request):
     """
-    Lista todos los medios de acreditación, opcionalmente filtrando por cliente, y permite búsqueda y paginación.
-
+    Lista todos los medios de acreditación, filtrando únicamente por cliente_operativo global.
     Renderiza la plantilla `medio_acreditacion_list.html` con los medios, clientes y formulario.
-
-    :param request: HttpRequest
-    :return: HttpResponse
     """
-    from cliente_usuario.models import Usuario_Cliente
     cliente = None
-    clientes = Cliente.objects.all()    
-    search_field = request.GET.get('search_field', '').strip()
-    search_value = request.GET.get('search_value', '').strip()
     # Obtener cliente operativo asociado al usuario autenticado
     cliente_operativo = None
+    clientes_asociados = None
+    segmento_nombre = None
+    descuento = None
     if request.user.is_authenticated:
-        from operaciones.views import obtener_clientes_usuario
         clientes_asociados, cliente_operativo, _ = obtener_clientes_usuario(request.user, request)
-    # Si hay filtro por cliente, usar ese; si no, usar el operativo
-    cliente_id = request.GET.get('cliente_id')
-    if cliente_id:
-        cliente = Cliente.objects.filter(pk=cliente_id).first()
-    elif cliente_operativo:
+    # Filtrar solo por cliente_operativo
+    if cliente_operativo:
         cliente = cliente_operativo
     medios_qs = MedioAcreditacion.objects.select_related('cliente', 'entidad').all()
     if cliente:
         medios_qs = medios_qs.filter(cliente_id=cliente.id)
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        descuento = float(cliente_operativo.segmentacion.descuento or 0)
+        segmento_nombre = cliente_operativo.segmentacion.nombre
     # Si no hay cliente seleccionado, mostrar advertencia y no permitir agregar medios
     cliente_context_required = False
     if not cliente:
         cliente_context_required = True
-    # Buscador por campo (solo campos válidos)
-    if search_field and search_value:
-        if search_field == 'entidad':
-            medios_qs = medios_qs.filter(entidad__nombre__icontains=search_value)
-        elif search_field == 'estado':
-            medios_qs = medios_qs.filter(estado__iexact=search_value)
-        elif search_field == 'cliente':
-            medios_qs = medios_qs.filter(cliente__nombre__icontains=search_value)
+    # Eliminar buscador por campo cliente y cualquier filtro manual
     medios_qs = medios_qs.order_by('-estado', 'entidad__nombre')
     paginator = Paginator(medios_qs, 10)  # 10 por página
     page_number = request.GET.get('page')
     medios = paginator.get_page(page_number)
     form = MedioAcreditacionForm()
-    # Para compatibilidad con paginador estilo clientes
     page_obj = medios
-    # Campos disponibles para búsqueda (solo válidos)
     search_fields = [
         ('entidad', 'Entidad'),
-        ('cliente', 'Cliente'),
         ('estado', 'Estado'),
     ]
     entidades = TipoEntidadFinanciera.objects.filter(estado=True)
     return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {
         'medios': medios,
         'form': form,
+        'user': request.user,
         'cliente': cliente,
-        'clientes': clientes,
-        'search_field': search_field,
-        'search_value': search_value,
+        'clientes': clientes_asociados,
         'search_fields': search_fields,
         'page_obj': page_obj,
         'request': request,
         'entidades': entidades,
         'cliente_context_required': cliente_context_required,
+        'clientes_asociados': clientes_asociados,
+        "cliente_operativo": cliente_operativo,        
+        "segmento": segmento_nombre,
+        "descuento": descuento,
     })
 
 def medio_acreditacion_create(request):

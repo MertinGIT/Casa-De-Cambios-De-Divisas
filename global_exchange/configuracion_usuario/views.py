@@ -14,6 +14,7 @@ def configuracion_view_usuario(request):
 
         if (cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo"):
             descuento = float(cliente_operativo.segmentacion.descuento)
+            segmento_nombre = cliente_operativo.segmentacion.nombre
         
     return render(request, 'configuracion_usuario/configuracion_home_usuario.html',{"segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
