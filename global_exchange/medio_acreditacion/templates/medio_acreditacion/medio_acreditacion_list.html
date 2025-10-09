@@ -1,5 +1,4 @@
 {% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
-{% load humanize %}
 {% block dashboard_content %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -13,7 +12,7 @@ body {
 .main-wrapper {
   padding: 24px;
   min-height: 100vh;
-  max-width: 1200px;
+  min-width: 1000px;
   margin: 0 auto;
 }
 
@@ -703,29 +702,14 @@ body {
   }
 }
 </style>
-
+{% include 'configuracion_usuario/base_configuracion_usuario.html' %}
 <div class="main-wrapper">
   <div class="page-container">
     <div class="page-header">
       <h1 class="page-title">Medios de Acreditación</h1>
-      <form method="get" style="display: flex; align-items: center; gap: 12px;">
-        <label for="cliente_id" style="font-weight: 500; color: #152C70; width: 100%">Filtrar por cliente:</label>
-        <select name="cliente_id" id="cliente_id" class="form-control" onchange="this.form.submit()" style="min-width: 200px;">
-          <option value="">Todos</option>
-          {% for c in clientes %}
-            <option value="{{ c.id }}" {% if cliente and cliente.id == c.id %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-        </select>
-      </form>  
     </div>
     
     <button class="btn-agregar rounded border-0 my-2" id="btn-agregar-medio" {% if cliente_context_required %}disabled style="opacity:0.5;cursor:not-allowed;"{% endif %}>+ Agregar Medio de Acreditación</button>
-    
-    {% if cliente_context_required %}
-      <div style="color: #b91c1c; background: #fee2e2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px; margin-bottom: 16px; font-weight: 500;">
-        Debe seleccionar un cliente para poder agregar un medio de acreditación.
-      </div>
-    {% endif %}
     
     <div class="table-container">
       <table class="custom-table">

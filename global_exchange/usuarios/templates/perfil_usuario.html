@@ -112,6 +112,11 @@ dropdownItems.forEach(item => {
                     // Visual del dropdown
                     dropdownItems.forEach(el => el.classList.remove("selected"));
                     this.classList.add("selected");
+
+                    // Si estamos en la página de medios de acreditación, recargar para mostrar los medios del nuevo cliente
+                    if (window.location.pathname.includes('/medios_acreditacion/')) {
+                        window.location.reload();
+                    }
                 } else {
                     console.warn("No se pudo actualizar cliente operativo:", data);
                 }
