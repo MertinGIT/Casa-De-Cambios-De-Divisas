@@ -15,7 +15,7 @@ class TipoEntidadFinancieraForm(forms.ModelForm):
     """
     class Meta:
         model = TipoEntidadFinanciera
-        fields = ['nombre', 'tipo']
+        fields = ['nombre', 'tipo', 'comision']
         widgets = {
             'nombre': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -25,14 +25,22 @@ class TipoEntidadFinancieraForm(forms.ModelForm):
             'tipo': forms.Select(attrs={
                 'class': 'form-control'
             }),
+            'comision': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'step': '0.01',
+                'min': '0',
+                'placeholder': 'Comisión (%)'
+            }),
         }
         labels = {
             'nombre': 'Nombre de la Entidad',
             'tipo': 'Tipo de Entidad',
+            'comision': 'Comisión (%)',
         }
         help_texts = {
             'nombre': 'Nombre completo de la entidad financiera',
             'tipo': 'Seleccione el tipo de entidad financiera',
+            'comision': 'Comisión que gana la entidad por transacción',
         }
 
     def clean_nombre(self):

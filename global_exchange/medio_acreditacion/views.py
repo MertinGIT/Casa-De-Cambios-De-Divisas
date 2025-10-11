@@ -88,6 +88,7 @@ def tipo_entidad_detail(request, pk):
     data = {
         'nombre': entidad.nombre,
         'tipo': entidad.tipo,
+        'comision': float(entidad.comision),
         'modal_title': f'Editar Entidad: {entidad.nombre}'
     }
     return JsonResponse(data)

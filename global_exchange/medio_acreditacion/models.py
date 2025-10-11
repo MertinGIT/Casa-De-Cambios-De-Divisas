@@ -9,9 +9,7 @@ class TipoEntidadFinanciera(models.Model):
         - nombre (str): Nombre de la entidad financiera (ej. "Banco Itaú", "Tigo Money").
         - tipo (str): Tipo de entidad, con opciones: BANCO, BILLETERA, COOPERATIVA, FINTECH, OTRO.
         - estado (bool): Indica si la entidad está activa o inactiva.
-
-    Métodos:
-        - __str__: Retorna una representación legible de la entidad.
+        - comision (Decimal): Comisión que gana la entidad por transacción.
     """
     nombre = models.CharField(max_length=100)  # "Banco Itaú", "Tigo Money", etc.
     tipo = models.CharField(max_length=20, choices=[
@@ -22,6 +20,7 @@ class TipoEntidadFinanciera(models.Model):
         ('OTRO', 'Otro')
     ])
     estado = models.BooleanField(default=True)
+    comision = models.DecimalField(max_digits=8, decimal_places=2, default=0, help_text="Comisión que gana la entidad por transacción")
 
     class Meta:
         verbose_name = "Tipo de Entidad Financiera"
