@@ -1,5 +1,5 @@
 {% load static %}
-
+{% load permisos_activos %}
 <link rel="stylesheet" href="{% static 'css/sidebar.css' %}" />
 
 <div id="sidebar" class="sidebar">
@@ -20,24 +20,30 @@
         <span class="label">Reports</span></a>
     </li>
     -->
+    {% if request.user|has_active_group_perm:'usuarios.change_customuser' %}
     <li>
       <a href="{% url 'editarperfil' %}">
         <span class="icon">&#x1F464;</span>
         <span class="label">Mi Perfil</span>
       </a>
     </li>
+    {% endif %} 
+    {% if request.user|has_active_group_perm:'operaciones.add_transaccion' %}
     <li>
       <a href="{% url 'operaciones' %}">
         <span class="icon">&#x1F4B5;</span>
         <span class="label">Operaciones</span>
       </a>
     </li>
+    {% endif %} 
+    {% if request.user|has_active_group_perm:'operaciones.view_transaccion' %}
     <li>
       <a href="{% url 'historial_transacciones:historial_usuario' %}">
         <span class="icon">&#128195;</span>
         <span class="label">Historial</span>
       </a>
     </li>
+    {% endif %} 
     <li>
       <a href="{% url 'configuracion_usuario' %}"><span class="icon">&#9881;</span>
         <span class="label">Configuracion</span></a>

@@ -1,6 +1,6 @@
 {% extends 'base_admin.html' %}
 {% load static %}
-
+{% load permisos_activos %}
 {% block dashboard_content %}
 <main class="main-container-grid flex items-center justify-center min-h-screen bg-gray-50">
 
@@ -31,12 +31,13 @@
         <div class="title">Segmentación</div>
         <p class="desc">Gestión de clientes VIP, minoristas, etc.</p>
       </a>
-
+    {% if request.user|has_active_group_perm:'usuarios.view_customuser' %}
       <a href="{% url 'user_roles_lista' %}" class="module-card">
         <div class="icon">🔒</div>
         <div class="title">Seguridad</div>
         <p class="desc">Permisos y controles de acceso.</p>
       </a>
+      {% endif %}
     </div>
   </div>
 </main>

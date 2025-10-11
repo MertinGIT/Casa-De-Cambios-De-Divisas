@@ -62,10 +62,15 @@ class RoleBasedMiddleware:
 
 
     def _user_has_access(self, user, path):
-        """Verifica si el usuario tiene acceso a cierta ruta según roles"""
+        """Verifica si el usuario tiene acceso a cierta ruta según roles activos"""
         for route, roles in self.access_rules.items():
             if re.match(route, path):  # <-- regex match
-                return user.groups.filter(name__in=roles).exists()
+                # Filtrar solo los roles activos del usuario
+                user_roles_activos = user.groups.filter(
+                    name__in=roles,
+                    profile__estado="Activo"
+                )
+                return user_roles_activos.exists()
         return True 
 
 
@@ -81,7 +86,6 @@ def require_role(allowed_roles):
 
             # Verificar si el usuario tiene alguno de los roles requeridos
             if request.user.groups.filter(name__in=allowed_roles).exists():
-                print("ENTRO ACA", flush=True)
                 return view_func(request, *args, **kwargs)
             else:
                 return render(request, "403.html", status=403)
