@@ -18,6 +18,14 @@
     </div>
     <div class="error-messages"></div>
 </div>
+<div class="form-group">
+    <label for="{{ form.comision.id_for_label }}">Comisión (%)</label>
+    <div class="input-icon">
+        <span class="icon">💰</span>
+        {{ form.comision|add_class:"custom-input" }}
+    </div>
+    <div class="error-messages"></div>
+</div>
 <style>
     .custom-input {
         width: 100%;
@@ -114,10 +122,12 @@
             rules: {
                 nombre: { required: true, minlength: 2, maxlength: 100 },
                 tipo: { required: true },
+                comision: { required: true, number: true, min: 0 },
             },
             messages: {
                 nombre: { required: "El nombre es obligatorio", minlength: "Mínimo 2 caracteres", maxlength: "Máximo 100" },
                 tipo: { required: "Debe seleccionar un tipo" },
+                comision: { required: "La comisión es obligatoria", number: "Debe ser un número", min: "No puede ser menor que 0" },
             },
             errorElement: 'div',
             errorClass: 'error-message',
