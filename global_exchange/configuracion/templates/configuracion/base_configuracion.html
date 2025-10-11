@@ -1,108 +1,124 @@
+{% load permisos_activos %}
 <div class="contenedor-principal">
   <main class="main-container">
 
     <div class="modules">
 
-      <a href="{% url 'monedas' %}" class="module-btn {% if request.resolver_match.url_name == 'monedas' %}active-config{% endif %}">💰 Monedas</a>
+      <a href="{% url 'monedas' %}"
+        class="module-btn {% if request.resolver_match.url_name == 'monedas' %}active-config{% endif %}">💰 Monedas</a>
 
-      <a href="{% url 'cotizacion' %}" class="module-btn {% if request.resolver_match.url_name == 'cotizacion' %}active-config{% endif %}">💱 Tasa de Cambio</a>
+      <a href="{% url 'cotizacion' %}"
+        class="module-btn {% if request.resolver_match.url_name == 'cotizacion' %}active-config{% endif %}">💱 Tasa de
+        Cambio</a>
 
-      <a href="{% url 'metodos_pagos' %}" class="module-btn {% if request.resolver_match.url_name == 'metodos_pagos' %}active-config{% endif %}">💳 Métodos de Pago</a>
+      <a href="{% url 'metodos_pagos' %}"
+        class="module-btn {% if request.resolver_match.url_name == 'metodos_pagos' %}active-config{% endif %}">💳
+        Métodos de Pago</a>
 
-      <a href="{% url 'lista-segmentaciones' %}" class="module-btn {% if request.resolver_match.url_name == 'lista-segmentaciones' %}active-config{% endif %}">👥 Segmentacion</a>
-
-      <a href="{% url 'user_roles_lista' %}" class="module-btn {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">🔒 Seguridad</a>
-
+      <a href="{% url 'lista-segmentaciones' %}"
+        class="module-btn {% if request.resolver_match.url_name == 'lista-segmentaciones' %}active-config{% endif %}">👥
+        Segmentacion</a>
+      {% if request.user|has_active_group_perm:'usuarios.view_customuser' %}
+      <a href="{% url 'user_roles_lista' %}"
+        class="module-btn {% if request.resolver_match.url_name == 'user_roles_lista' %}active-config{% endif %}">🔒
+        Seguridad</a>
+      {% endif %}
     </div>
 
   </main>
 </div>
 
 <style>
-body, html {
-  height: 100%;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  /*background-color: #f4f6fb;*/
-}
-.contenedor-principal{
-  padding: 24px;
-}
-.main-container {
-  text-align: center;
-  padding: 3rem 2rem;
-  border-radius: 24px;
-  background-color: #ffffff;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-  /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
-  flex: 1;           
-  max-width: 1200px; 
-  width: 100%;
-  table-layout: fixed;
-}
+  body,
+  html {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    /*background-color: #f4f6fb;*/
+  }
 
-.main-container:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
-}
+  .contenedor-principal {
+    padding: 24px;
+  }
 
-.modules {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: center;
-}
-
-.module-btn {
-  display: inline-block; 
-  padding: 0.9rem 1.8rem;
-  border-radius: 14px;
-  text-decoration: none;
-  background-color: #737791;
-  color: #fff;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-.module-btn:hover {
-  background-color: #5d5fef;
-  color: #fff;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
-
-.active-config {
-  background-color: #5d5fef;
-  box-shadow: 0 6px 20px rgba(93, 95, 239, 0.4);
-}
-
-@media (max-width: 768px) {
   .main-container {
-    padding: 2rem 1rem;
+    text-align: center;
+    padding: 3rem 2rem;
+    border-radius: 24px;
+    background-color: #ffffff;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    /*transition: transform 0.3s ease, box-shadow 0.3s ease;*/
+    flex: 1;
+    max-width: 1200px;
+    width: 100%;
+    table-layout: fixed;
   }
-  .modules {
-    gap: 0.8rem;
-  }
-  .module-btn {
-    font-size: 14px;
-    padding: 0.7rem 1.2rem;
-  }
-}
 
-@media (max-width: 480px) {
+  .main-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+  }
+
   .modules {
-    flex-direction: column; 
-    gap: 0.6rem;
-    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
   }
+
   .module-btn {
-    width: 100%; 
-    max-width: 250px; 
-    font-size: 14px;
-    padding: 0.7rem 1rem;
+    display: inline-block;
+    padding: 0.9rem 1.8rem;
+    border-radius: 14px;
+    text-decoration: none;
+    background-color: #737791;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   }
-}
+
+  .module-btn:hover {
+    background-color: #5d5fef;
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  .active-config {
+    background-color: #5d5fef;
+    box-shadow: 0 6px 20px rgba(93, 95, 239, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .main-container {
+      padding: 2rem 1rem;
+    }
+
+    .modules {
+      gap: 0.8rem;
+    }
+
+    .module-btn {
+      font-size: 14px;
+      padding: 0.7rem 1.2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .modules {
+      flex-direction: column;
+      gap: 0.6rem;
+      align-items: center;
+    }
+
+    .module-btn {
+      width: 100%;
+      max-width: 250px;
+      font-size: 14px;
+      padding: 0.7rem 1rem;
+    }
+  }
 </style>

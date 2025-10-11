@@ -1,4 +1,5 @@
 {% load static %}
+{% load permisos_activos %}
 <!-- Font Awesome CDN -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
   integrity="sha512-papU9rjE+..." crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -21,12 +22,14 @@
       <a href="#"><span class="icon">&#x1F4CA;</span>
         <span class="label">Reportes</span></a>
     </li>
+    {% if request.user|has_active_group_perm:'clientes.view_cliente' %}
     <li>
       <a href="{% url 'clientes' %}">
         <span class="icon">&#x1F464;</span>
         <span class="label">Clientes</span>
       </a>
     </li>
+    {% endif %}
   </ul>
   <hr />
 
