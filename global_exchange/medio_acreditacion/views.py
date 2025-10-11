@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.urls import reverse
+from django.db.models import Count
 from django.core.paginator import Paginator
 from .models import TipoEntidadFinanciera, MedioAcreditacion, CampoEntidadFinanciera, ValorCampoMedioAcreditacion
 from .forms import TipoEntidadFinancieraForm, MedioAcreditacionForm
@@ -175,7 +176,8 @@ def medio_acreditacion_list(request):
         ('entidad', 'Entidad'),
         ('estado', 'Estado'),
     ]
-    entidades = TipoEntidadFinanciera.objects.filter(estado=True)
+    entidades = TipoEntidadFinanciera.objects.filter(estado=True).annotate(num_campos=Count('campos')).filter(num_campos__gt=0)
+    print(f"ENTIDADES: {entidades}", flush=True)
     return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {
         'medios': medios,
         'form': form,
