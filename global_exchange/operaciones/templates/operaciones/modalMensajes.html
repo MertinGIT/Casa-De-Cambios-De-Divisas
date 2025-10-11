@@ -17,7 +17,7 @@
 <script>
 // FUNCIÓN GLOBAL para mostrar mensajes desde cualquier archivo
 window.mostrarMensajeModal = function(titulo, texto, tipo = 'warning', recargar = false) {
-  console.log("Mostrando mensaje:", titulo, texto,"Tipo:", tipo);
+  console.log("Mostrando mensaje:", titulo, texto,"Tipo:", tipo,"recargar",recargar);
   
   // Cerrar otros modales primero
   $(".modal").not("#modal-mensaje").fadeOut();

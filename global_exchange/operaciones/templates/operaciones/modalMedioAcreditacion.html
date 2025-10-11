@@ -188,18 +188,28 @@
 
     function confirmarAcreditacion() {
         if (!medioSeleccionado) {
-            alert('Por favor seleccione un medio de acreditación');
+            window.mostrarMensajeModal("Info",'Por favor seleccione un medio de acreditación','info');
             return;
         }
 
+         // 🚨 Si no hay ningún campo definido
+    if (!medioSeleccionado.campos || medioSeleccionado.campos.length === 0) {
+        window.mostrarMensajeModal("Error","El medio seleccionado no tiene datos configurados. Debe completar los datos de acreditación en la Configuracion.");
+        return;
+    }
+
         // Validar que todos los campos requeridos tengan valor
     const camposFaltantes = medioSeleccionado.campos.filter(campo => {
-        return !campo.value || campo.value.trim() === "";
+        // si "campo" es un input HTML real
+        let valor = campo.value !== undefined ? campo.value : "";
+        valor = valor.toString().trim();
+        return valor === "";
     });
 
+    console.log("confirmarAcreditacion",camposFaltantes)
     if (camposFaltantes.length > 0) {
-        let nombres = camposFaltantes.map(c => c.label).join(", ");
-        alert("⚠️ El medio seleccionado no tiene datos completos. Faltan: " + nombres);
+        let nombres = camposFaltantes.map(c => c.label || c.name || "(campo)").join(", ");
+        alert("⚠️ El medio seleccionado no tiene datos completos. Debe completar: " + nombres);
         return;
     }
 

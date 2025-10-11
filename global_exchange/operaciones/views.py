@@ -454,7 +454,7 @@ def verificar_limites(request):
         print(f"Error en verificar_limites: {str(e)}", flush=True)
         return JsonResponse({
             'success': False,
-            'mensaje': f'Error al verificar límites: {str(e)}'
+            #'mensaje': f'Error al verificar límites: {str(e)}'
         })
 
 def obtener_clientes_usuario(user,request):

@@ -308,6 +308,11 @@
                 return false;
             }
 
+            if (!montoStr) {
+                mostrarMensaje("⚠️ Error", "Debe ingresar un monto. No puede dejar el campo vacío.");
+                return false;
+            }
+
             return true;
           }
           
@@ -320,6 +325,7 @@
             if (campos.op === "venta") {
               const monedaDestino = campos.$destino.val();
               if (resultado < 0.5) {
+                cerrarModalConfirmacion()
                 mostrarMensaje("⚠️ Error", `El monto resultante debe ser mayor o igual a 0.5 ${monedaDestino}`);
                 return false;
               }
@@ -328,6 +334,7 @@
             else {
               const monedaOrigen = campos.$origen.val();
               if (monto < 0.5) {
+                console.log("337 monto conversorReal",monto)
                 mostrarMensaje("⚠️ Error", `El monto a vender debe ser mayor o igual a 0.5 ${monedaOrigen}`);
                 return false;
               }
@@ -551,9 +558,9 @@
           calcularResultado();
         });
 
-        function mostrarMensaje(titulo, texto,recargar) {
+        function mostrarMensaje(titulo, texto) {
           if (window.mostrarMensajeModal) {
-            window.mostrarMensajeModal(titulo, texto,'warning',recargar);
+            window.mostrarMensajeModal(titulo, texto,'warning');
           } else {
             console.error("Modal mensaje no disponible");
             alert(titulo + ": " + texto);
@@ -569,9 +576,9 @@
             const partes = montoStr.split(".");
             const enteros = partes[0] || "";
             const decimales = partes[1] || "";
-            console.log("partes", partes);
-            console.log("enteros", enteros);
-            console.log("decimales", decimales);
+            console.log("partes 577", partes);
+            console.log("enteros 578", enteros);
+            console.log("decimales 579", decimales);
 
             if (enteros.length > 15) {
                 mostrarMensaje("⚠️ Error", "El monto no puede tener más de 15 dígitos antes del punto decimal.");
@@ -580,6 +587,10 @@
 
             if (decimales.length > 8) {
                 mostrarMensaje("⚠️ Error", "El monto no puede tener más de 8 decimales.");
+                return false;
+            }
+            if (decimales.length <1 || enteros.length < 1) {
+                mostrarMensaje("⚠️ Error", "Debe ingresar un monto. No puede dejar el campo vacío.");
                 return false;
             }
 
@@ -629,7 +640,7 @@
               console.log("Tasa actualizada, procediendo a método de pago");
             }else{
               $("#modal-exito").hide();
-              mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.",recargar=true);
+              mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
               $("#modal-confirmacion").fadeOut();
             }
             });
@@ -644,7 +655,7 @@
               $("#modal-pin").fadeIn().css("display", "flex");
             }else{
               $("#modal-exito").hide();
-              mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.",recargar=true);
+              mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
               $("#modal-pin").fadeOut();
             }
             });
@@ -1003,7 +1014,7 @@ function continuarProcesandoTransaccion() {
     })
     .catch(localErr => {
       console.error("Error guardando localmente:", localErr);
-      mostrarMensaje("⚠️ Error", "Error al guardar la transacción",recargar=true);
+      mostrarMensaje("⚠️ Error", "Error al guardar la transacción");
     });
   }
 }

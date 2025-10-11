@@ -150,6 +150,7 @@
     content.style.transform = "scale(0.7) translateY(-50px)";
     content.style.opacity = "0";
 
+    
     setTimeout(() => {
       modal.style.display = "none";
       document.getElementById("mensaje-error-tasa").style.display = "none";
@@ -285,7 +286,8 @@
         window.ganancia_total = datos.ganancia_total;
         console.log("modal confirmación:");
         console.log("limite",window.limite);
-        if (window.limite){
+        console.log("verificando campos.$valor.val()",campos.$valor.val())
+        if (window.limite && campos.$resultado.val()>0.5){
           console.log("verificando limites")
           mostrarModalConfirmacion(datos);
           return;
