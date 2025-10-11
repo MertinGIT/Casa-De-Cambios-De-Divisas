@@ -27,7 +27,18 @@ document.addEventListener("DOMContentLoaded", () => {
   function crearGrafico(moneda) {
     const data = dataPorMoneda[moneda] || [];
 
-    const fechas = data.map((d) => d.fecha);
+    const fechas = data.map((d) => {
+      const fecha = new Date(d.fecha);
+      // formato legible: "09/10/2025 18:00"
+      return fecha.toLocaleString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    });
+
     const compra = data.map((d) => d.compra);
     const venta = data.map((d) => d.venta);
 

@@ -192,6 +192,17 @@
             return;
         }
 
+        // Validar que todos los campos requeridos tengan valor
+    const camposFaltantes = medioSeleccionado.campos.filter(campo => {
+        return !campo.value || campo.value.trim() === "";
+    });
+
+    if (camposFaltantes.length > 0) {
+        let nombres = camposFaltantes.map(c => c.label).join(", ");
+        alert("⚠️ El medio seleccionado no tiene datos completos. Faltan: " + nombres);
+        return;
+    }
+
         window.datosAcreditacion = medioSeleccionado;
 
         // Cerrar modal

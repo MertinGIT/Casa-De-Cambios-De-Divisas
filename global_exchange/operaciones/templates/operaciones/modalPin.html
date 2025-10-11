@@ -90,12 +90,12 @@
     }, 200);
   }
 
-  function mostrarMensaje(titulo, texto) {
+  function mostrarMensaje(titulo, texto,tipo='warning',recargar) {
     console.log("mostrarMensaje en Pin:", titulo, texto);
     
     if (window.mostrarMensajeModal) {
       // Mostrar mensaje
-      window.mostrarMensajeModal(titulo, texto);
+      window.mostrarMensajeModal(titulo, texto,tipo,recargar);
     } else {
       console.error("Modal mensaje no disponible desde PIN");
       alert(titulo + ": " + texto);
@@ -317,12 +317,22 @@ function procesarTransaccion() {
       referencia: "TX-" + Date.now(),
       motivo: `Cambio de ${origenAbrev} a ${destinoAbrev}`,
       cedula: "{{cliente_operativo.cedula}}",
-      nro_cuenta: window.datosAcreditacion.numero_cuenta,
+      //nro_cuenta: window.datosAcreditacion.numero_cuenta,
       cliente_id: parseInt("{{ cliente_operativo.id }}", 10),
       entidad_id: 1,
       usuario_ejecutor: parseInt("{{ user.id }}", 10),
       fecha: new Date().toISOString()
     };
+
+    // Validar que transaccionData no tenga valores undefined o vacíos
+    const valoresInvalidos = Object.entries(transaccionData).filter(([k, v]) => {
+      return v === undefined || v === null || v === "";
+    });
+    if (valoresInvalidos.length > 0) {
+  console.error("❌ Transacción inválida, faltan datos:", valoresInvalidos);
+  mostrarMensaje("⚠️ Error", "La transacción no se pudo enviar. Faltan datos obligatorios.");
+  return; // 🔥 Detener aquí
+}
 
     console.log("🏦 Enviando al banco:", transaccionData);
 
@@ -406,13 +416,14 @@ function procesarTransaccion() {
       })
       .then(resp => resp.json())
       .then(updateResp => {
+        console.log("updateResp",updateResp)
         if (updateResp.success) {
           if (estadoFinal === "completada") {
             // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
             $("#modal-pin").fadeOut();
             $("#modal-exito").fadeIn().css("display", "flex");
           } else {
-            mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco");
+            mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
           }
         } else {
           mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");

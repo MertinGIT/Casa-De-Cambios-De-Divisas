@@ -405,10 +405,17 @@ def verificar_limites(request):
             transacciones_validas.filter(fecha__date=hoy)
             .aggregate(total=Sum("monto"))["total"] or Decimal('0')
         )
-        gasto_mensual = (
-            transacciones_validas.filter(fecha__date__gte=inicio_mes)
-            .aggregate(total=Sum("monto"))["total"] or Decimal('0')
-        )
+        gasto_mensual = transacciones_validas.filter(
+            fecha__date__gte=inicio_mes
+        ).aggregate(
+            total=Sum(
+                Case(
+                    When(tipo__iexact='venta', then=F('monto') * F('tasa_usada')),
+                    default=F('monto'),
+                    output_field=DecimalField()
+                )
+            )
+        )["total"] or 0
 
         # Disponibles
         disponible_diario = limite_diario - gasto_diario

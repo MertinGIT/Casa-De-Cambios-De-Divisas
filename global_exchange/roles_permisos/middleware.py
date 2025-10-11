@@ -23,7 +23,7 @@ class RoleBasedMiddleware:
         self.access_rules = {
             # Solo superusuarios pueden acceder a estas rutas
              r"^/admin/.*$": ['ADMIN', 'Analista'], 
-             r"^/clientes/.*$": ['Analista'], 
+             r"^/clientes/.*$": ['ADMIN','Analista'], 
             
             # Usuarios comunes pueden acceder solo a ciertas rutas
             '/home/': ['Usuario', 'Usuario Asociado', 'Usuario'],
