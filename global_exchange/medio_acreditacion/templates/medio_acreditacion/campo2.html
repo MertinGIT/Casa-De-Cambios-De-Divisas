@@ -136,7 +136,6 @@
   </div>
 </form>
 
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
 <script>
@@ -147,7 +146,6 @@
     number: "Debe ser un número válido.",
     min: jQuery.validator.format("El valor no puede ser menor que {0}.")
   });
-  
   $(document).ready(function () {
     $("#form-campo-entidad").validate({
       errorElement: 'div',
@@ -191,65 +189,11 @@
         ayuda: { maxlength: "Máximo 255 caracteres" },
       },
       submitHandler: function(form) {
-        // AQUÍ ESTÁ LA CLAVE: Enviar por AJAX en lugar de submit normal
-        const formData = new FormData(form);
-        const submitBtn = $(form).find('button[type="submit"]');
-        
-        // Deshabilitar botón mientras se procesa
-        submitBtn.prop('disabled', true).text('Guardando...');
-        
-        $.ajax({
-          url: $(form).attr('action'),
-          type: 'POST',
-          data: formData,
-          processData: false,
-          contentType: false,
-          success: function(response) {
-            // Cerrar el modal
-            closeCampoFormModal();
-            
-            // Recargar la lista de campos
-            if (typeof loadCampos === 'function') {
-              loadCampos();
-            } else {
-              // Si no existe la función, recargar la página
-              location.reload();
-            }
-            
-            // Mostrar mensaje de éxito (opcional)
-            // Puedes agregar un toast o notificación aquí
-          },
-          error: function(xhr) {
-            // Re-habilitar el botón
-            submitBtn.prop('disabled', false).text('{% if campo %}Guardar cambios{% else %}Agregar campo{% endif %}');
-            
-            // Mostrar errores del servidor
-            if (xhr.responseJSON && xhr.responseJSON.errores) {
-              let errores = xhr.responseJSON.errores;
-              for (let field in errores) {
-                let input = $('[name="' + field + '"]');
-                let formGroup = input.closest('.form-group');
-                let errorContainer = formGroup.find('.error-messages');
-                
-                if (!errorContainer.length) {
-                  errorContainer = $('<div class="error-messages"></div>').appendTo(formGroup);
-                }
-                
-                errorContainer.html('<div class="error-message">' + errores[field] + '</div>');
-                input.addClass('error');
-              }
-            } else {
-              alert('Ocurrió un error al guardar. Por favor, intente nuevamente.');
-            }
-          }
-        });
-        
-        return false; // Prevenir el submit tradicional
+        form.submit();
       }
     });
   });
 </script>
-
 <style>
 
 .modal-header {
@@ -419,11 +363,6 @@
   background-color: #4f46e5;
 }
 
-.btn-confirmar:disabled {
-  background-color: #9ca3af;
-  cursor: not-allowed;
-}
-
 .btn-secondary {
   background-color: #f3f4f6;
   color: #374151;
@@ -472,44 +411,39 @@
   background-color: #f3f4f6;
   color: #1a1a1a;
 }
-
 .inner-modal-content {
-  max-height: 60vh !important;
+    max-height: 60vh !important;
 }
-
 .error-message {
-  color: #ef4444 !important;
-  font-size: 12px !important;
-  font-weight: normal !important;
-  margin: 2px 0 !important;
-  padding: 0 !important;
-  display: block !important;
-  background: none !important;
-  border: none !important;
-  text-align: left !important;
-  line-height: 1.4 !important;
-  animation: slideDown 0.3s ease-out;
-}
-
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
+    color: #ef4444 !important;
+    font-size: 12px !important;
+    font-weight: normal !important;
+    margin: 2px 0 !important;
+    padding: 0 !important;
+    display: block !important;
+    background: none !important;
+    border: none !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
+    animation: slideDown 0.3s ease-out;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
-}
-
-.error {
-  border-color: #ef4444 !important;
-  background-color: #fef2f2;
-}
-
-.valid {
-  border-color: #10b981;
-  background-color: #f0fdf4;
-}
+  .error {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2;
+  }
+  .valid {
+    border-color: #10b981;
+    background-color: #f0fdf4;
+  }
 </style>
 {% endblock %}
