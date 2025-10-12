@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth.models import Group
+from cliente_usuario.models import Usuario_Cliente
 from usuarios.models import CustomUser
 from cliente_segmentacion.models import Segmentacion
 from clientes.models import Cliente
@@ -9,7 +10,9 @@ from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
 from decimal import Decimal
 from django.utils import timezone
-
+from django.core import mail
+from unittest.mock import patch
+from django.urls import reverse
 
 class OperacionesViewsTest(TestCase):
 
@@ -29,6 +32,9 @@ class OperacionesViewsTest(TestCase):
             estado="activo"
         )
 
+        # Asociar cliente al usuario
+        Usuario_Cliente.objects.create(id_usuario=self.user, id_cliente=self.cliente)
+    
         self.client = Client()
         self.client.login(username="testuser", password="12345")
         session = self.client.session
@@ -41,10 +47,9 @@ class OperacionesViewsTest(TestCase):
         self.tasa = TasaDeCambio.objects.create(
             moneda_origen=self.moneda_usd,
             moneda_destino=self.moneda_pyg,
-            monto_compra=7200,
-            monto_venta=7300,
-            comision_compra=50,
-            comision_venta=50,
+            precio_base=Decimal("7200"),
+            comision_compra=Decimal("50"),
+            comision_venta=Decimal("50"),
             estado=True,
             vigencia=timezone.now()
         )
@@ -54,7 +59,6 @@ class OperacionesViewsTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.status_code, 200)
-
 
     def test_simulador_operaciones_post_venta(self):
         url = reverse("operaciones")
@@ -71,16 +75,64 @@ class OperacionesViewsTest(TestCase):
     def test_guardar_transaccion(self):
         url = reverse("guardar_transaccion")  # sin namespace
         payload = {
-            "monto": "1000",
-            "tipo": "venta",
+            "monto": "100",
+            "tipo": "compra",
             "estado": "pendiente",
-            "moneda_origen_id": self.moneda_pyg.id,
-            "moneda_destino_id": self.moneda_usd.id,
-            "tasa_usada": "7300",
-            "tasa_ref_id": self.tasa.id
+            "moneda_origen_id": self.moneda_usd.id,
+            "moneda_destino_id": self.moneda_pyg.id,
+            "tasa_usada": "7200",
+            "tasa_ref_id": self.tasa.id,
+            "cliente_id": self.cliente.id,
+            "ganancia": "10"
         }
         response = self.client.post(url, data=payload, content_type="application/json")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertTrue(data["success"])
         self.assertEqual(Transaccion.objects.count(), 1)
+        
+    @patch("operaciones.views.send_mail")  # 👈 parcheamos send_mail en la vista
+    def test_enviar_pin_envia_email_y_guarda_en_sesion(self, mock_send_mail):
+        url = reverse("enviar_pin")
+        response = self.client.get(url, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+
+        # ✅ Verificar que send_mail fue llamado
+        mock_send_mail.assert_called_once()
+        args, kwargs = mock_send_mail.call_args
+        self.assertIn("Tu código de verificación es", args[1])  # cuerpo del mail contiene el PIN
+
+        # ✅ Verificar que el pin se guardó en sesión
+        session = self.client.session
+        self.assertIn("pin_seguridad", session)
+    def test_validar_pin_correcto(self):
+        # Simulamos que ya hay un PIN en la sesión
+        session = self.client.session
+        session["pin_seguridad"] = "1234"
+        session.save()
+
+        url = reverse("validar_pin")
+        response = self.client.post(url, {"pin": "1234"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["success"])
+
+        # Verificar que el PIN fue eliminado de la sesión
+        session = self.client.session
+        self.assertNotIn("pin_seguridad", session)
+
+    def test_validar_pin_incorrecto(self):
+        # Guardamos un PIN en la sesión
+        session = self.client.session
+        session["pin_seguridad"] = "1234"
+        session.save()
+
+        url = reverse("validar_pin")
+        response = self.client.post(url, {"pin": "0000"})
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertFalse(data["success"])
+        self.assertIn("PIN incorrecto", data["message"])

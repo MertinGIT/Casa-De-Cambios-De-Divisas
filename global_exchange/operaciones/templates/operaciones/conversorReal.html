@@ -217,7 +217,8 @@
         <select id="filtro-columna" class="input-select">
           <option value="fecha">Fecha</option>
           <option value="monto">Monto Origen</option>
-          <option value="moneda">Moneda</option>
+          <option value="moneda_origen">Moneda Origen</option>
+          <option value="moneda_destino">Moneda Destino</option>
           <option value="estado">Estado</option>
           <option value="tipo">Tipo</option>
         </select>
@@ -1033,9 +1034,10 @@ function continuarProcesandoTransaccion() {
           switch (columna) {
             case 'fecha': valor = t.find('td:nth-child(2)').text().toLowerCase(); break;
             case 'monto': valor = t.find('td:nth-child(3)').text().toLowerCase(); break;
-            case 'moneda': valor = t.find('td:nth-child(4)').text().toLowerCase(); break;
-            case 'estado': valor = t.find('td:nth-child(5)').text().toLowerCase(); break;
-            case 'tipo': valor = t.find('td:nth-child(6)').text().toLowerCase(); break;
+            case 'moneda_origen': valor = t.find('td:nth-child(4)').text().toLowerCase(); break;
+            case 'moneda_destino': valor = t.find('td:nth-child(5)').text().toLowerCase(); break;
+            case 'estado': valor = t.find('td:nth-child(6)').text().toLowerCase(); break;
+            case 'tipo': valor = t.find('td:nth-child(7)').text().toLowerCase(); break;
           }
           t.toggle(valor.includes(query));
         });
