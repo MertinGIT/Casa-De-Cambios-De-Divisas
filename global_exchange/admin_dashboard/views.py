@@ -46,10 +46,10 @@ def admin_dashboard(request):
     moneda_mas_operada = Transaccion.objects.filter(
         estado="completada",
         fecha__month=hoy.month
-    ).values("moneda_origen__abreviacion").annotate(total=Count("id")).order_by("-total").first()
+    ).values("moneda_destino__abreviacion").annotate(total=Count("id")).order_by("-total").first()
     
     if moneda_mas_operada:
-        moneda = moneda_mas_operada['moneda_origen__abreviacion']
+        moneda = moneda_mas_operada['moneda_destino__abreviacion']
         total_operaciones = moneda_mas_operada['total']
     else:
         moneda = None
