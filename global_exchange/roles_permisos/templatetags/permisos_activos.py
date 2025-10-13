@@ -19,9 +19,7 @@ def has_active_group_perm(user, perm_codename):
            perm_codename in group.permissions.values_list('content_type__app_label', flat=True):
             if user.has_perm(f"{group.permissions.first().content_type.app_label}.{perm_codename}"):
                 return True
-    # Alternativamente, verificar si el usuario tiene el permiso y algún grupo activo lo otorga
-    if user.has_perm(perm_codename):
-        for group in grupos_activos:
-            if group.permissions.filter(codename=perm_codename.split('.')[-1]).exists():
-                return True
+    # Verificar si el usuario tiene el permiso directamente (no por grupo)
+    if user.user_permissions.filter(codename=perm_codename.split('.')[-1]).exists():
+        return True
     return False
