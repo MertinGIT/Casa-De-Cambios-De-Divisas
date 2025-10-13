@@ -77,7 +77,8 @@ def configurar_inicial(sender, **kwargs):
     # Obtener permisos para Usuario Asociado:
     permisos_view = Permission.objects.filter(codename__startswith="view_")
     permisos_usuario_especificos = Permission.objects.filter(
-        codename__in=["add_usuario", "view_usuario", "change_usuario"]
+        codename__in=["add_customuser", "view_customuser", "change_customuser", "add_metodopago"
+                      , "view_medioacreditacion", "add_medioacreditacion", "add_transaccion", "view_transaccion"]
     )
     
     permisos_usuario_asociado = permisos_view.union(permisos_usuario_especificos)
@@ -138,6 +139,7 @@ def configurar_inicial(sender, **kwargs):
         ("medio_acreditacion", "medioacreditacion"),
         ("metodos_pagos", "metodopago"),
         ("medio_acreditacion", "tipoentidadfinanciera"),
+        ("cliente_usuario", "usuario_cliente")
     ]
     acciones = ["add_", "view_", "change_"]
     for app_label, model in modelos_permisos_extra:
