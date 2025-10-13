@@ -379,7 +379,7 @@ def verificar_limites(request):
         moneda = Moneda.objects.get(abreviacion=moneda_abrev)
 
         # Obtener límite general (mismo para todos los clientes)
-        limite = LimiteTransaccion.objects.filter(moneda=moneda).first()
+        limite = LimiteTransaccion.objects.first()
         if not limite:
             return JsonResponse({
                 'success': False,
@@ -739,9 +739,9 @@ def actualizar_estado_transaccion(request):
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
 
 import stripe
+from django.conf import settings
 
-os.getenv("STRIPE_SECRET_KEY")
-stripe.api_key = "sk_test_51SEA4sPPA3ZGnjFU3wxBTnzxOQ0aTSrfwj4dmiPOvmHEGfB23V2o7PQicRcik5bhGwHBGoYO6RKhYtkBfPFLTVxr00YmgrD9dE"
+stripe.api_key = settings.STRIPE_SECRET_KEY
 @csrf_exempt
 def crear_pago_stripe(request):
     if request.method == "POST":
