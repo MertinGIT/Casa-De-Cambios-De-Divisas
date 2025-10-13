@@ -633,16 +633,17 @@
           });
 
           // Nuevo botón para confirmar método de pago
-          $("#btn-confirmar").click(function () {
+          $("#btn-confirmar-pago").click(function () {
             verificarTasaActualizada(function(tasaActualizada) {
+            console.log("Tasa actualizada:", tasaActualizada);
             if (tasaActualizada) {
               //$("#modal-confirmacion").fadeOut();
-              //$("#modal-metodo").fadeIn().css("display", "flex");
+              $("#modal-acreditacion").fadeIn().css("display", "flex");
               console.log("Tasa actualizada, procediendo a método de pago");
             }else{
-              $("#modal-exito").hide();
+              //$("#modal-exito").hide();
               mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
-              $("#modal-confirmacion").fadeOut();
+              $("#modal-acreditacion").fadeOut();
             }
             });
           });
@@ -727,7 +728,7 @@
             if (fechaBaseDatos > fechaNavegador) {
               // ⚠️ La tasa ya cambió
               $("#btn-continuar-tasa").show();   // mostrar botón de recalcular
-              $("#btn-confirmar").hide();        // ocultar botón de confirmar
+                    // ocultar botón de confirmar
               advertenciaMostrada = true;
 
               if (callback) callback(false); // avisar que NO puede continuar

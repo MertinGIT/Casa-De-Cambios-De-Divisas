@@ -165,7 +165,7 @@ function verificarTasaActualizada(callback) {
             if (fechaBaseDatos > fechaNavegador) {
               // ⚠️ La tasa ya cambió
               $("#btn-continuar-tasa").show();   // mostrar botón de recalcular
-              $("#btn-confirmar").hide();        // ocultar botón de confirmar
+                      // ocultar botón de confirmar
               advertenciaMostrada = true;
 
               if (callback) callback(false); // avisar que NO puede continuar
