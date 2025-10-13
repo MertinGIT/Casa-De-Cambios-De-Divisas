@@ -379,7 +379,7 @@ def verificar_limites(request):
         moneda = Moneda.objects.get(abreviacion=moneda_abrev)
 
         # Obtener límite general (mismo para todos los clientes)
-        limite = LimiteTransaccion.objects.filter(moneda=moneda).first()
+        limite = LimiteTransaccion.objects.first()
         if not limite:
             return JsonResponse({
                 'success': False,
