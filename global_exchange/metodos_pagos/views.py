@@ -348,6 +348,7 @@ def MetodoPago_detalle(request, pk):
     return JsonResponse({
         "nombre": metodo_pago.nombre,
         "descripcion": metodo_pago.descripcion,
+        "comision": metodo_pago.comision,
         "activo": metodo_pago.activo,
     })
 
