@@ -83,7 +83,20 @@ class MedioAcreditacion(models.Model):
 
 class CampoEntidadFinanciera(models.Model):
     """
-    Define los campos requeridos por cada entidad financiera para el alta de un medio de acreditación.
+    Define los campos requeridos por una entidad financiera para registrar
+    un nuevo medio de acreditación.
+
+    Campos:
+        - entidad (FK): Entidad financiera a la que pertenece el campo.
+        - nombre (str): Nombre técnico del campo (ej. "cedula", "telefono").
+        - etiqueta (str): Texto descriptivo visible en formularios.
+        - tipo (str): Tipo de dato del campo (texto, número, fecha, email).
+        - requerido (bool): Indica si el campo es obligatorio.
+        - orden (int): Posición del campo en los formularios dinámicos.
+        - regex_validacion (str): Expresión regular para validación personalizada.
+        - mensaje_error (str): Mensaje mostrado al fallar la validación.
+        - placeholder (str): Texto guía dentro del campo de entrada.
+        - ayuda (str): Texto explicativo adicional para el usuario.
     """
     entidad = models.ForeignKey(TipoEntidadFinanciera, on_delete=models.CASCADE, related_name='campos')
     nombre = models.CharField(max_length=100)  # Ej: "cedula", "telefono"
@@ -102,16 +115,32 @@ class CampoEntidadFinanciera(models.Model):
     ayuda = models.CharField(max_length=255, blank=True)
 
     def __str__(self):
+        """
+        Retorna una representación legible del campo asociado a una entidad.
+
+        :return str: Cadena con el formato "Entidad - Etiqueta".
+        """
         return f"{self.entidad.nombre} - {self.etiqueta}"
 
 
 class ValorCampoMedioAcreditacion(models.Model):
     """
-    Almacena el valor ingresado por el usuario para cada campo dinámico de un medio de acreditación.
+    Almacena el valor ingresado por el usuario para un campo dinámico
+    de un medio de acreditación.
+
+    Campos:
+        - medio (FK): Referencia al medio de acreditación correspondiente.
+        - campo (FK): Campo dinámico definido para la entidad financiera.
+        - valor (str): Valor ingresado por el usuario.
     """
     medio = models.ForeignKey(MedioAcreditacion, on_delete=models.CASCADE, related_name='valores_campos')
     campo = models.ForeignKey(CampoEntidadFinanciera, on_delete=models.CASCADE)
     valor = models.CharField(max_length=255)
 
     def __str__(self):
+        """
+        Retorna una representación legible del valor almacenado.
+
+        :return str: Cadena con el formato "Medio - Etiqueta: Valor".
+        """
         return f"{self.medio} - {self.campo.etiqueta}: {self.valor}"
