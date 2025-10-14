@@ -72,11 +72,22 @@ class TipoEntidadFinancieraForm(forms.ModelForm):
 
 class MedioAcreditacionForm(forms.ModelForm):
     """
-    Formulario para gestionar medios de acreditación de clientes.
-    Solo permite crear y editar instancias de `MedioAcreditacion` con los campos actuales: cliente, entidad, estado.
+    Formulario para la gestión de medios de acreditación asociados a clientes.
+
+    Este formulario permite crear y editar instancias del modelo `MedioAcreditacion`.
+    Se limita a los campos: cliente, entidad financiera y estado del medio.
     """
 
     class Meta:
+        """
+        Metadatos de configuración del formulario.
+
+        Atributos:
+            - model (Model): Modelo asociado (`MedioAcreditacion`).
+            - fields (list): Campos disponibles en el formulario.
+            - widgets (dict): Configuración de los widgets HTML por campo.
+            - labels (dict): Etiquetas descriptivas para cada campo.
+        """
         model = MedioAcreditacion
         fields = [
             'cliente', 'entidad', 'estado'
@@ -99,6 +110,17 @@ class MedioAcreditacionForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        """
+        Inicializa el formulario con datos personalizados.
+
+        Si se recibe un parámetro `cliente_id`, el campo `cliente` se oculta y
+        se establece automáticamente su valor inicial. Además, los campos
+        `cliente` y `entidad` filtran sus opciones para mostrar solo
+        registros activos.
+
+        :param args: Argumentos posicionales heredados de `ModelForm`.
+        :param kwargs: Argumentos clave. Puede incluir `cliente_id` (int).
+        """
         cliente_id = kwargs.pop('cliente_id', None)
         super().__init__(*args, **kwargs)
         self.fields['entidad'].queryset = TipoEntidadFinanciera.objects.filter(estado=True)
