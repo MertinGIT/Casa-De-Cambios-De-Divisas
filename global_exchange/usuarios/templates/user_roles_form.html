@@ -45,9 +45,23 @@ Editar Usuario
       <h3>Permisos</h3>
     </div>
     
+    <!-- Buscador de permisos -->
+    <div class="search-section">
+      <div class="search-input-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          id="permission-search" 
+          class="search-input" 
+          placeholder="Buscar permisos..."
+        >
+        <button type="button" id="clear-search" class="clear-search" style="display: none;">×</button>
+      </div>
+    </div>
+    
     <!-- Disponibles -->
     <div class="available-section">
-      <label>Disponibles</label>
+      <label>Disponibles <span id="perms-count" class="count-badge"></span></label>
       <select id="user-available-perms" class="custom-select" multiple>
       </select>
     </div>
@@ -125,6 +139,83 @@ Editar Usuario
     border-bottom: 2px solid #5D5FEF;
   }
 
+  /* ================== BUSCADOR ================== */
+  .search-section {
+    margin-bottom: 12px;
+  }
+
+  .search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 14px;
+    color: #64748b;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 8px 32px 8px 32px;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: #5D5FEF;
+    box-shadow: 0 0 0 3px rgba(93, 95, 239, 0.1);
+  }
+
+  .search-input::placeholder {
+    color: #94a3b8;
+  }
+
+  .clear-search {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #e2e8f0;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  .clear-search:hover {
+    background: #cbd5e1;
+    color: #334155;
+  }
+
+  .count-badge {
+    display: inline-block;
+    background: #5D5FEF;
+    color: white;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-left: 4px;
+    font-weight: 600;
+  }
+
   /* ================== SECCIONES ================== */
   .available-section, .assigned-section {
     margin-bottom: 16px;
@@ -162,6 +253,10 @@ Editar Usuario
 
   .custom-select option:hover {
     background-color: #f0f0ff;
+  }
+
+  .custom-select option[style*="display: none"] {
+    display: none !important;
   }
 
   /* ================== CONTENEDOR DE CHECKBOXES ================== */
@@ -277,9 +372,70 @@ Editar Usuario
 </style>
 
 <script>
+  // ================== FUNCIONES GLOBALES PARA EL BUSCADOR ==================
+  window.updatePermissionCount = function() {
+    const availablePerms = document.getElementById("user-available-perms");
+    const permsCountBadge = document.getElementById("perms-count");
+    const searchInput = document.getElementById("permission-search");
+    
+    if (availablePerms && permsCountBadge) {
+      const visibleOptions = Array.from(availablePerms.options).filter(opt => opt.style.display !== 'none');
+      const total = availablePerms.options.length;
+      const visible = visibleOptions.length;
+      
+      if (searchInput && searchInput.value.trim()) {
+        permsCountBadge.textContent = `${visible}/${total}`;
+      } else {
+        permsCountBadge.textContent = `${total}`;
+      }
+    }
+  };
+
+  window.filterPermissions = function() {
+    const availablePerms = document.getElementById("user-available-perms");
+    const searchInput = document.getElementById("permission-search");
+    const clearSearchBtn = document.getElementById("clear-search");
+    
+    if (!availablePerms || !searchInput) return;
+    
+    const searchTerm = searchInput.value.toLowerCase().trim();
+    
+    Array.from(availablePerms.options).forEach(option => {
+      const text = option.textContent.toLowerCase();
+      if (text.includes(searchTerm)) {
+        option.style.display = '';
+      } else {
+        option.style.display = 'none';
+      }
+    });
+    
+    window.updatePermissionCount();
+    
+    // Mostrar/ocultar botón de limpiar
+    if (clearSearchBtn) {
+      if (searchTerm) {
+        clearSearchBtn.style.display = 'flex';
+      } else {
+        clearSearchBtn.style.display = 'none';
+      }
+    }
+  };
+
+  window.clearPermissionSearch = function() {
+    const searchInput = document.getElementById("permission-search");
+    const clearSearchBtn = document.getElementById("clear-search");
+    
+    if (searchInput) {
+      searchInput.value = "";
+      window.filterPermissions();
+      searchInput.focus();
+    }
+  };
+
+  // ================== INICIALIZACIÓN AL CARGAR EL DOM ==================
   document.addEventListener("DOMContentLoaded", function () {
-    // -----------------------------
-    // FUNCION AUXILIAR MEJORADA
+    
+    // Función auxiliar para mover elementos al contenedor de seleccionados
     function moveToSelected(container, option, inputName, selectId) {
       const value = option.value;
       const text = option.textContent;
@@ -301,22 +457,31 @@ Editar Usuario
           opt.value = value;
           opt.textContent = text;
           selectId.appendChild(opt);
-          wrapper.remove(); // Eliminar el wrapper completo
+          wrapper.remove();
+          
+          // Actualizar contador y aplicar filtro de búsqueda
+          if (selectId.id === "user-available-perms") {
+            window.updatePermissionCount();
+            window.filterPermissions();
+          }
         }
       });
 
       wrapper.appendChild(label);
       container.appendChild(wrapper);
-      option.remove(); // eliminar del select
+      option.remove();
+      
+      // Actualizar contador si es de permisos
+      if (selectId.id === "user-available-perms") {
+        window.updatePermissionCount();
+      }
     }
 
-    // -----------------------------
-    // GRUPOS
+    // ================== CONFIGURACIÓN DE GRUPOS ==================
     const availableGroups = document.getElementById("user-available-groups");
     const selectedGroups = document.getElementById("user-selected-groups");
 
     if (availableGroups && selectedGroups) {
-      // Click simple - mover con un solo click
       availableGroups.addEventListener("click", function (e) {
         if (e.target.tagName === "OPTION") {
           moveToSelected(selectedGroups, e.target, "groups", availableGroups);
@@ -324,18 +489,30 @@ Editar Usuario
       });
     }
 
-    // -----------------------------
-    // PERMISOS
+    // ================== CONFIGURACIÓN DE PERMISOS CON BUSCADOR ==================
     const availablePerms = document.getElementById("user-available-perms");
     const selectedPerms = document.getElementById("user-selected-perms");
+    const searchInput = document.getElementById("permission-search");
+    const clearSearchBtn = document.getElementById("clear-search");
 
-    if (availablePerms && selectedPerms) {
-      // Click simple - mover con un solo click
+    if (availablePerms && selectedPerms && searchInput) {
+      // Click para mover permisos
       availablePerms.addEventListener("click", function (e) {
         if (e.target.tagName === "OPTION") {
           moveToSelected(selectedPerms, e.target, "user_permissions", availablePerms);
         }
       });
+
+      // Evento de búsqueda
+      searchInput.addEventListener("input", window.filterPermissions);
+
+      // Botón de limpiar búsqueda
+      if (clearSearchBtn) {
+        clearSearchBtn.addEventListener("click", window.clearPermissionSearch);
+      }
+
+      // Inicializar contador
+      window.updatePermissionCount();
     }
   });
 </script>
