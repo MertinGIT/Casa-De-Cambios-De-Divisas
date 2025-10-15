@@ -362,9 +362,21 @@ function procesarTransaccion() {
         // 🔥 PASO 3: Si el banco aprobó Y hay pago con tarjeta, procesarlo AHORA
         if (window.metodoSeleccionado === "tarjeta") {
           console.log("💳 Banco aprobó, procesando pago con tarjeta...");
-          
-          const pagoExitoso = await procesarPagoStripe();
-          
+          const tipoTarjetaSelect = document.getElementById("tipo-tarjeta");
+          const tipoTarjeta = window.tipoTarjetaSeleccionada || "stripe";
+          console.log("Tipo de tarjeta seleccionada:", tipoTarjeta);
+          let pagoExitoso = false;
+
+          if (tipoTarjeta === "stripe") {
+
+            pagoExitoso = await procesarPagoStripe(window.nacionalPaymentData);
+          } else if (tipoTarjeta === "nacional") {
+            pagoExitoso = await procesarPagoNacional(window.nacionalPaymentData);
+          } else {
+            console.error("Método de tarjeta desconocido:", tipoTarjeta);
+            mostrarMensaje("⚠️ Error", "Método de pago con tarjeta desconocido.");
+            return; // 🔥 Detener aquí
+          }
           if (!pagoExitoso) {
             console.error("❌ Pago con tarjeta falló después de aprobación bancaria");
             estadoFinal = "cancelada"; // 🔥 Cambiar estado a cancelada
