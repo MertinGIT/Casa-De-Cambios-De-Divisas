@@ -13,10 +13,9 @@
                 <!-- Métodos de pago -->
                 <div class="metodos-container">
                     {% for medio in medios %}
-                        {% if "efectivo" not in medio.nombre|lower %}
                             {% if "tarjeta" in medio.nombre|lower %}
                                 <div class="metodo-item">
-                                    <input type="radio" id="tarjeta" name="metodo" value="tarjeta" class="metodo-radio">
+                                    <input type="radio" id="tarjeta" name="metodo" value="{{ medio.id }}" data-form="tarjeta" class="metodo-radio">
                                     <label for="tarjeta" class="metodo-label">
                                         <div class="metodo-icon">💳</div>
                                         <div class="metodo-info">
@@ -28,7 +27,7 @@
                                 </div>
                             {% elif "billetera" in medio.nombre|lower %}
                                 <div class="metodo-item">
-                                    <input type="radio" id="billetera" name="metodo" value="billetera" class="metodo-radio">
+                                    <input type="radio" id="billetera" name="metodo" value="{{ medio.id }}" data-form="billetera" class="metodo-radio">
                                     <label for="billetera" class="metodo-label">
                                         <div class="metodo-icon">📱</div>
                                         <div class="metodo-info">
@@ -40,7 +39,7 @@
                                 </div>
                             {% elif "banco" in medio.nombre|lower %}
                                 <div class="metodo-item">
-                                    <input type="radio" id="transferencia" name="metodo" value="transferencia" class="metodo-radio">
+                                    <input type="radio" id="transferencia" name="metodo" value="{{ medio.id }}" data-form="transferencia" class="metodo-radio">
                                     <label for="transferencia" class="metodo-label">
                                         <div class="metodo-icon">🏦</div>
                                         <div class="metodo-info">
@@ -50,13 +49,10 @@
                                         <div class="metodo-check">✓</div>
                                     </label>
                                 </div>
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-
-                    {# Efectivo al final #}
+                                {% elif "efectivo" in medio.nombre|lower %}
+                            {# Efectivo al final #}
                     <div class="metodo-item">
-                        <input type="radio" id="efectivo" name="metodo" value="efectivo" class="metodo-radio">
+                        <input type="radio" id="efectivo" name="metodo" value="{{ medio.id }}" data-form="efectivo" class="metodo-radio">
                         <label for="efectivo" class="metodo-label">
                             <div class="metodo-icon">💵</div>
                             <div class="metodo-info">
@@ -66,6 +62,8 @@
                             <div class="metodo-check">✓</div>
                         </label>
                     </div>
+                            {% endif %}
+                    {% endfor %}
                 </div>
 
                 <!-- Información del método seleccionado -->
@@ -284,9 +282,14 @@ function handleMetodoChange(metodSeleccionado) {
     formMetodos.forEach(form => {
         form.style.display = 'none';
     });
+
+    // Obtener el radio seleccionado
+    const radio = document.querySelector(`input[name="metodo"]:checked`);
+    const formId = radio.dataset.form; // 'tarjeta', 'billetera', etc.
+    window.metodoSeleccionadoNombre = formId; // Guardar el nombre del método seleccionado
     
     // Mostrar formulario correspondiente
-    const targetForm = document.getElementById(`form-${metodSeleccionado}`);
+    const targetForm = document.getElementById(`form-${formId}`);
     
     if (targetForm) {
         setTimeout(() => {
@@ -303,7 +306,7 @@ function handleMetodoChange(metodSeleccionado) {
     }
     
     // Inicializar Stripe solo si es tarjeta
-    if (metodSeleccionado === 'tarjeta') {
+    if (formId === 'tarjeta') {
         setTimeout(() => {
             inicializarTarjeta();
         }, 200);
@@ -592,13 +595,13 @@ async function confirmarMetodoPago() {
         return;
     }
 
-    window.metodoSeleccionado = metodoRadio.value;
+    window.metodoSeleccionado = parseInt(metodoRadio.value);
     let esValido = true;
     let mensajeError = '';
 
     const btnConfirmar = document.getElementById('btn-confirmar-pago');
 
-    switch (window.metodoSeleccionado) {
+    switch (window.metodoSeleccionadoNombre) {
         case 'tarjeta':
             // CRÍTICO: Crear el Payment Method ANTES de cerrar el modal
             btnConfirmar.disabled = true;
@@ -620,6 +623,7 @@ async function confirmarMetodoPago() {
                 });
 
                 if (error) {
+                    esValido = false;
                     console.error("Error creando payment method:", error);
                     mostrarError("Error de Tarjeta", error.message);
                     btnConfirmar.disabled = false;
@@ -696,17 +700,20 @@ async function confirmarMetodoPago() {
 
     // Recopilar datos del formulario según el método
     const datosTransaccion = {
-        metodo: metodoSeleccionado.value,
+        metodo: window.metodoSeleccionadoNombre,
         timestamp: timestampServidor,
         total: document.querySelector('.precio-total')?.textContent || '$0.00'
     };
 
-    switch (metodoSeleccionado.value) {
+    switch (window.metodoSeleccionadoNombre) {
         case 'tarjeta':
+            /*
             datosTransaccion.numeroTarjeta = document.getElementById('numero-tarjeta').value;
             datosTransaccion.fechaExp = document.getElementById('fecha-exp').value;
             datosTransaccion.titular = document.getElementById('nombre-tarjeta').value;
             datosTransaccion.cvv = document.getElementById('cvv').value;
+            */
+           datosTransaccion.paymentMethodId = window.stripePaymentMethod?.id || null;
             break;
             
         case 'billetera':

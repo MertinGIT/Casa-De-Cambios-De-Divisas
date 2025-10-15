@@ -90,6 +90,8 @@ def simulador_operaciones(request):
     )
 
     metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion"))
+    
+    print("metodos_pago:", metodos_pago, flush=True)
 
     # Reorganizar tasas
     data_por_moneda = {}
@@ -257,7 +259,7 @@ def simulador_operaciones(request):
 
         # Filtrar todas las transacciones de esos usuarios
         transacciones_validas = Transaccion.objects.filter(
-            estado__in=["completada"],
+            estado__in=["confirmada"],
             cliente=cliente_operativo.id
         )
         print("transacciones_validas: ",transacciones_validas,flush=True)
@@ -396,7 +398,7 @@ def verificar_limites(request):
 
         # Filtrar solo transacciones completadas del cliente operativo
         transacciones_validas = Transaccion.objects.filter(
-            estado="completada",
+            estado="confirmada",
             cliente=cliente_operativo
         )
 
@@ -642,6 +644,7 @@ def guardar_transaccion(request):
         tasa_usada = Decimal(str(data.get("tasa_usada", "0")))
         tasa_ref_id = data.get("tasa_ref_id")
         cliente_id = data.get("cliente_id")
+        metodo_pago_id = data.get("metodo_pago_id")
         ganancia = Decimal(str(data.get("ganancia", "0")))
 
         # Validación de campos obligatorios
@@ -677,6 +680,7 @@ def guardar_transaccion(request):
             tasa_usada=tasa_usada,
             tasa_ref=tasa_ref,
             cliente=cliente,
+            metodo_pago_id=metodo_pago_id,
             ganancia=ganancia,
         )
 

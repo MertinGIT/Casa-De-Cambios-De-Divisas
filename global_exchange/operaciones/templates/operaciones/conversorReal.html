@@ -219,6 +219,7 @@
           <option value="monto">Monto Origen</option>
           <option value="moneda_origen">Moneda Origen</option>
           <option value="moneda_destino">Moneda Destino</option>
+          <option value="metodo_pago">Metodo de Pago</option>
           <option value="estado">Estado</option>
           <option value="tipo">Tipo</option>
         </select>
@@ -238,6 +239,7 @@
             <th>Monto Origen</th>
             <th>Moneda Origen</th>
             <th>Moneda Destino</th>
+            <th>Metodo de Pago</th>
             <th>Estado</th>
             <th>Tipo</th>
           </tr>
@@ -250,8 +252,9 @@
             <td>{{ t.monto }}</td>
             <td>{{ t.moneda_origen }}</td>
             <td>{{ t.moneda_destino }}</td>
+            <td>{{ t.metodo_pago }}</td>
             <td>
-              <span class="estado {{ t.estado|lower }}">{{ t.estado }}</span>
+              <span class="estado {{ t.estado|lower }}">{{ t.estado|capfirst  }}</span>
             </td>
             <td class="tipo-{{ t.tipo|lower }}">{{ t.tipo }}</td>
           </tr>
@@ -897,6 +900,7 @@ function continuarProcesandoTransaccion() {
       tasa_usada: tasaCalculada,
       tasa_ref_id: TASA_REF_ID,
       cliente_id: parseInt("{{ cliente_operativo_id }}", 10),
+      metodo_pago: window.metodoSeleccionado,
       ganancia:window.ganancia_total,
     };
 
@@ -916,6 +920,14 @@ function continuarProcesandoTransaccion() {
       console.log("Guardada en BD:", localResp);
 
       if (localResp.success) {
+
+        console.log("Transacción metodoSeleccionado COnversorReal:", window.metodoSeleccionadoNombre);
+    if (window.metodoSeleccionadoNombre === "efectivo") {
+      // Solo guardamos en BD como pendiente
+      window.mostrarMensajeModal("Pendiente", "Debe acercarse a un local para completar el pagooo.", "info",true);
+      return; // 🚫 NO continuar con conexión al banco
+    }
+
         const transaccionId = localResp.id;
 
         // 🔥 PARA BANCO: Enviar lo OPUESTO de lo que se guardó en BD local
@@ -948,7 +960,8 @@ function continuarProcesandoTransaccion() {
           cliente_id: parseInt("{{ cliente_operativo.id }}", 10),
           entidad_id: 1,
           usuario_ejecutor: parseInt("{{ user.id }}", 10),
-          fecha: new Date().toISOString()
+          fecha: new Date().toISOString(),
+          metodo_pago_id: window.metodoSeleccionado,
         };
 
         console.log("🏦 Datos para banco simulado (lo que RECIBE):", transaccionData);
@@ -975,7 +988,7 @@ function continuarProcesandoTransaccion() {
               },
               body: JSON.stringify({
                 transaccion_id: transaccionId,
-                nuevo_estado: "completada"
+                nuevo_estado: "confirmada"
               }),
             })
             .then(resp => resp.json())
@@ -1010,6 +1023,7 @@ function continuarProcesandoTransaccion() {
           mostrarMensaje("❌ Error", "No se pudo conectar con el banco simulado");
         });
       } else {
+        console.log("Respuesta guardado local en conversorReal:", localResp.error);
         mostrarMensaje("⚠️ Error", localResp.error || "No se pudo guardar la transacción inicial");
       }
     })
@@ -1036,8 +1050,9 @@ function continuarProcesandoTransaccion() {
             case 'monto': valor = t.find('td:nth-child(3)').text().toLowerCase(); break;
             case 'moneda_origen': valor = t.find('td:nth-child(4)').text().toLowerCase(); break;
             case 'moneda_destino': valor = t.find('td:nth-child(5)').text().toLowerCase(); break;
-            case 'estado': valor = t.find('td:nth-child(6)').text().toLowerCase(); break;
-            case 'tipo': valor = t.find('td:nth-child(7)').text().toLowerCase(); break;
+            case 'metodo_pago': valor = t.find('td:nth-child(6)').text().toLowerCase(); break;
+            case 'estado': valor = t.find('td:nth-child(7)').text().toLowerCase(); break;
+            case 'tipo': valor = t.find('td:nth-child(8)').text().toLowerCase(); break;
           }
           t.toggle(valor.includes(query));
         });
@@ -1180,7 +1195,7 @@ function continuarProcesandoTransaccion() {
   .tabla-transacciones td.tipo-venta::before {
     content: "🔴 ";
   }
-  .estado.completada {
+  .estado.confirmada {
     color: #16a34a;
     font-weight: 600;
   }
