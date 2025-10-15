@@ -11,6 +11,14 @@ from clientes.models import Cliente
 from django.contrib.auth.decorators import login_required
 
 def panel_alertas(request):
+    """
+    Muestra el panel de configuración de alertas para el usuario autenticado.
+
+    Obtiene las monedas activas, las notificaciones configuradas por el usuario 
+    y la información del cliente operativo actual (segmento y descuento).
+    Retorna el contexto necesario para renderizar la plantilla 
+    'notificaciones/configuracionAlertas.html'.
+    """
     monedas = Moneda.objects.filter(estado=True)
     notificaciones_usuario = NotificacionMoneda.objects.filter(user=request.user, activa=True)
     monedas_activas = [n.moneda.abreviacion for n in notificaciones_usuario]
@@ -34,6 +42,14 @@ def panel_alertas(request):
 
 
 def guardar_configuracion(request):
+    """
+    Procesa y guarda la configuración de alertas de monedas seleccionadas por el usuario.
+
+    - Lee los datos enviados por POST en formato JSON.
+    - Actualiza o crea los registros de notificación por moneda.
+    - Asegura que la moneda base 'PYG' (Guaraní) siempre permanezca activa.
+    - Devuelve una respuesta JSON con el estado de la operación.
+    """
     if request.method == "POST":
         try:
             data = json.loads(request.body)
@@ -75,9 +91,13 @@ def guardar_configuracion(request):
 
 def obtener_clientes_usuario(user,request):
     """
-    Devuelve:
-        - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    Obtiene los clientes asociados al usuario autenticado.
+
+    Retorna:
+        tuple:
+            - clientes_asociados (list): Lista de instancias Cliente activas relacionadas con el usuario.
+            - cliente_operativo (Cliente|None): Cliente actualmente seleccionado, 
+              determinado a partir de la sesión o el primero disponible.
     """
 
      # Solo clientes activos
@@ -104,8 +124,17 @@ def obtener_clientes_usuario(user,request):
 @login_required
 def set_cliente_operativo(request):
     """
-    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
-    con segmento y descuento para actualizar el front sin recargar.
+    Guarda en sesión el cliente operativo seleccionado y devuelve una respuesta JSON.
+
+    Este endpoint permite actualizar dinámicamente la información de segmento y descuento
+    del cliente activo en el frontend sin recargar la página.
+
+    Retorna:
+        JsonResponse:
+            - success (bool): Indica si la operación fue exitosa.
+            - segmento (str|None): Nombre del segmento activo (si existe).
+            - descuento (float): Descuento asociado al segmento.
+            - cliente_nombre (str): Nombre del cliente operativo seleccionado.
     """
     cliente_id = request.POST.get('cliente_id')
 

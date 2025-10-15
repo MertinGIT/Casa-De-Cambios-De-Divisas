@@ -1,38 +1,14 @@
-Clientes
-========
+Historial de Transacciones
+==========================
 
-Este módulo se encarga de gestionar la información relacionada con los clientes de la casa de cambios.
-
-Modelos
--------
-.. autoclass:: clientes.models.Segmentacion
-
-.. autoclass:: clientes.models.Cliente
-
-Vistas basadas en función
-------------------------
-.. autofunction:: clientes.views.clientes
+Este módulo gestiona el historial de transacciones de los clientes, permitiendo registrar, consultar y analizar las operaciones realizadas por cada cliente en la plataforma.
 
 
-Vistas basadas en clase
------------------------
-.. autoclass:: clientes.views.ClienteListView
-   :members: get_queryset, get_context_data
-
-
-
-.. autoclass:: clientes.views.ClienteCreateView
-   :members: get_context_data
-
-
-
-.. autoclass:: clientes.views.ClienteUpdateView
-   :members: get_context_data
-
-
-
-.. autoclass:: clientes.views.ClienteDeleteView
-   :members: delete
-
-
-   
+Vistas
+------
+.. autofunction:: historial_transacciones.views.historial_usuario
+.. autofunction:: historial_transacciones.views.detalle_transaccion
+.. autofunction:: historial_transacciones.views.exportar_historial_excel   
+.. autofunction:: historial_transacciones.views.exportar_historial_pdf
+.. autofunction:: historial_transacciones.views.obtener_clientes_usuario
+.. autofunction:: historial_transacciones.views.set_cliente_operativo

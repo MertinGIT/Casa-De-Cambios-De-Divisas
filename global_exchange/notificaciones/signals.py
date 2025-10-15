@@ -1,4 +1,14 @@
-# notificaciones/signals.py
+"""
+Signals de la aplicación Notificaciones.
+
+Este módulo se encarga de escuchar los cambios realizados en las tasas de cambio (TasaDeCambio)
+y generar notificaciones en tiempo real hacia los usuarios suscritos a dichas monedas.
+
+Incluye:
+    - Captura de valores anteriores a una modificación (pre_save)
+    - Registro de auditoría y detección de cambios significativos (post_save)
+    - Envío de notificaciones mediante WebSockets (Channels)
+"""
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
@@ -17,7 +27,10 @@ _valores_anteriores = {}
 @receiver(pre_save, sender=TasaDeCambio)
 def capturar_valores_anteriores(sender, instance, **kwargs):
     """
-    ANTES de guardar, captura los valores actuales si es una edición.
+    Captura los valores actuales de una tasa de cambio ANTES de ser guardada.
+
+    Permite comparar los valores previos con los nuevos en la señal post_save
+    para determinar si hubo cambios relevantes.
     """
     if instance.pk:  # Si existe, es una edición
         try:
@@ -33,7 +46,11 @@ def capturar_valores_anteriores(sender, instance, **kwargs):
 
 def notificar_tasa_mas_actual(moneda_origen, moneda_destino, tasa_editada_id=None):
     """
-    Busca la tasa más actual y notifica comparándola con la anterior.
+    Notifica a los usuarios cuando se detecta un cambio en la tasa más actual.
+
+    - Compara la tasa más reciente con la inmediatamente anterior.
+    - Si el cambio porcentual supera el umbral definido, envía una notificación
+      por WebSocket a los usuarios que tengan activa la notificación de esa moneda.
     """
     # Buscar la tasa más actual
     tasa_mas_actual = TasaDeCambio.objects.filter(
@@ -106,7 +123,19 @@ def notificar_tasa_mas_actual(moneda_origen, moneda_destino, tasa_editada_id=Non
 @receiver(post_save, sender=TasaDeCambio)
 def notificar_cambio_tasa(sender, instance, created, **kwargs):
     """
-    DESPUÉS de guardar, registra en auditoría y notifica cambios.
+    Maneja los eventos DESPUÉS de guardar una tasa de cambio (TasaDeCambio).
+
+    Acciones:
+        - Registra la operación en la tabla AuditoriaTasaCambio.
+        - Determina si se debe notificar un cambio significativo.
+        - Envía la notificación a los usuarios que tengan activadas alertas 
+          para la moneda correspondiente.
+
+    Casos tratados:
+        1. Creación de una nueva tasa (CREACION)
+        2. Edición de una tasa existente (EDICION)
+        3. Detección de cambios de vigencia o pérdida de actualidad
+        4. Evita notificar cambios menores al umbral
     """
     precio_anterior = None
     vigencia_anterior = None
