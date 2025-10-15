@@ -181,10 +181,10 @@ def exportar_historial_pdf(request):
     p.line(40, y, width - 40, y)
     y -= 10
 
-    # Filas de datos
+    # Filas de datocliente_operativs
     p.setFont("Helvetica", 8)
     for t in qs:
-        if y < 60:  # salto de página
+        if y < 60:  # salto de páginacliente_operativ
             p.showPage()
             y = height - 50
             p.setFont("Helvetica-Bold", 9)
@@ -217,7 +217,9 @@ def obtener_clientes_usuario(user,request):
     """
     Devuelve:
         - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+        - cliente_operativ
+ID	Fecha	Monto	Moneda Origen	Moneda Destino	Tipo	Tasa Usada	Estado
+o: cliente actualmente seleccionado (desde sesión si existe)
     """
 
      # Solo clientes activos
