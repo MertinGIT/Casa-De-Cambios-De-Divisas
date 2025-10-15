@@ -949,6 +949,11 @@ async function confirmarMetodoPago() {
 
                 if (error) {
                     console.error("Error creando payment method:", error);
+
+                    //$("#modal-acreditacion").css("display", "none"); 
+                    mostrarError("Error de Tarjeta", error.message);
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = '<span>Confirmar pago</span>';
                     handleErrorMsg("Error de Tarjeta", error.message || "Error creando método de pago con Stripe.");
                     return;
                 }

@@ -748,9 +748,9 @@ def actualizar_estado_transaccion(request):
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
 
 import stripe
+from django.conf import settings
 
-os.getenv("STRIPE_SECRET_KEY")
-stripe.api_key = "sk_test_51SEA4sPPA3ZGnjFU3wxBTnzxOQ0aTSrfwj4dmiPOvmHEGfB23V2o7PQicRcik5bhGwHBGoYO6RKhYtkBfPFLTVxr00YmgrD9dE"
+stripe.api_key = settings.STRIPE_SECRET_KEY
 @csrf_exempt
 def crear_pago_stripe(request):
     if request.method == "POST":
@@ -771,6 +771,28 @@ def crear_pago_stripe(request):
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
 def enviar_pin(request):
+    """
+    Genera y envía un PIN de seguridad al correo del usuario autenticado.
+
+    Este PIN es un número aleatorio de 4 dígitos que se guarda en la sesión 
+    del usuario y es válido únicamente para una transacción. 
+    El código se envía al email asociado a la cuenta del usuario.
+
+    Flujo:
+        1. Verifica si el usuario está autenticado.
+        2. Genera un PIN aleatorio de 4 dígitos.
+        3. Guarda el PIN en la sesión bajo la clave 'pin_seguridad'.
+        4. Envía el PIN por correo electrónico al usuario.
+        5. Devuelve un JsonResponse con el estado de la operación.
+
+    Args:
+        request (HttpRequest): Petición HTTP recibida.
+
+    Returns:
+        JsonResponse:
+            - {"success": True, "message": "Se envió un PIN a tu correo"} si el usuario está autenticado y el correo se envió.
+            - {"success": False, "message": "Usuario no autenticado"} si no hay sesión activa.
+    """
     if request.user.is_authenticated:
         # Generar un PIN aleatorio de 4 dígitos
         pin = str(random.randint(1000, 9999))
@@ -790,6 +812,27 @@ def enviar_pin(request):
     return JsonResponse({"success": False, "message": "Usuario no autenticado"})
 
 def validar_pin(request):
+    """
+    Valida el PIN ingresado por el usuario contra el almacenado en sesión.
+
+    El PIN se compara con el valor guardado en la clave 'pin_seguridad' 
+    de la sesión. Si el PIN es correcto, se elimina de la sesión para 
+    evitar reutilización.
+
+    Flujo:
+        1. Recibe el PIN ingresado desde un formulario vía POST.
+        2. Obtiene el PIN guardado en la sesión.
+        3. Compara ambos valores.
+        4. Devuelve un JsonResponse indicando si la validación fue exitosa o no.
+
+    Args:
+        request (HttpRequest): Petición HTTP con los datos del formulario.
+
+    Returns:
+        JsonResponse:
+            - {"success": True} si el PIN ingresado coincide con el de la sesión.
+            - {"success": False, "message": "PIN incorrecto"} si el PIN no coincide o no existe.
+    """
     if request.method == "POST":
         pin_ingresado = request.POST.get("pin")
         pin_guardado = request.session.get("pin_seguridad")

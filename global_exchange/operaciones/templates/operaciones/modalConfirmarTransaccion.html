@@ -87,7 +87,7 @@
       </button>
       <button
         class="btn-modal-confirmacion primary"
-        onclick="confirmarTransaccion()"
+        onclick="confirmarTransaccion()" id="btn-confirmar-transaccion"
       >
         <span>Confirmar</span>
         <div class="btn-arrow">→</div>
@@ -246,6 +246,20 @@
       return;
     }
 
+
+    $("#btn-confirmar-transaccion").click(function () {
+        verificarTasaActualizada(function(tasaActualizada) {
+        console.log("Tasa actualizada:", tasaActualizada);
+        if (tasaActualizada) {
+          //$("#modal-confirmacion").fadeOut();
+          //$("#modal-metodo").fadeIn().css("display", "flex");
+          console.log("Tasa actualizada, procediendo a método de pago");
+        }else{
+          mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+          $("#modal-metodo").fadeOut();
+        }
+        });
+      });
 
 
     // si no existe resultado calculado todavía, calcular localmente

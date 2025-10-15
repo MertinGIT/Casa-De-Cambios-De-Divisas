@@ -13,17 +13,19 @@ El sistema backend de Global Exchange centraliza la gestión de operaciones de c
    :maxdepth: 2
    :caption: Contenidos:
    
-   usuarios
    admin_dashboard
-   clientes
    cliente_segmentacion
-   global_exchange
-   roles_permisos
-   monedas
-   cotizaciones
    cliente_usuario
-   metodos_pagos
-   operaciones
-   limite_moneda
+   clientes
+   configuracion_usuario
+   cotizaciones
+   global_exchange
    historial_transacciones
+   limite_moneda
    medio_acreditacion
+   metodos_pagos
+   monedas
+   notificaciones
+   operaciones
+   roles_permisos
+   usuarios
