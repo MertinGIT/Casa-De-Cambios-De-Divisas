@@ -5,6 +5,10 @@
         <div class="modal-header-pago">
             <span class="close-btn" onclick="cerrarModalPago()">&times;</span>
             <h3 class="modal-title">Seleccione método de pago</h3>
+            <div id="desglose_pago" style="display:none; margin-top:10px; text-align:center; font-size:0.95rem;">
+                <div>Monto base: <span id="monto_base_desglose"></span></div>
+                <div>Comisión (<span id="comision_porcentaje"></span>%): <span id="comision_valor"></span></div>
+            </div>
             <p class="modal-subtitle">Total a pagar: <span class="precio-total" id="precio_a_pagar"></span></p>
         </div>
 
@@ -264,6 +268,49 @@ $("#btn-cerrar-mensaje-pago").click(function () {
     $("#modal-mensaje-pago").fadeOut();
 });
 
+
+// Utilidad para obtener comisión del método seleccionado
+document.getDesgloseComision = function(metodo) {
+    // medios es el contexto Django pasado al template
+    let medios = window.MEDIOS_PAGO || [];
+    console.log("MEDIOS: ", medios);
+    if (!medios.length && typeof window.medios_pago_json !== 'undefined') {
+        medios = window.medios_pago_json;
+    }
+    // Buscar el medio por nombre o id
+    let medio = medios.find(m => {
+        console.log("MEDIO SELECCCIONADO: ", metodo)
+        if (m.nombre && m.nombre.toLowerCase().includes(metodo)) return true;
+        if (m.id && m.id === metodo) return true;
+        return false;
+    });
+    if (!medio) {
+        // Efectivo suele tener comisión 0
+        if (metodo === 'efectivo') return {comision: 0, nombre: 'Efectivo'};
+        return {comision: 0, nombre: metodo};
+    }
+    return {comision: parseFloat(medio.comision || 0), nombre: medio.nombre};
+};
+
+function actualizarDesglosePago(metodo) {
+    const campos = getCampos();
+    let montoBase = parseFloat(campos.$valor.val().replace(/,/g, '')) || 0;
+    let moneda = campos.$origen.val();
+    let {comision, nombre} = document.getDesgloseComision(metodo);
+    let comisionValor = +(montoBase * comision/100).toFixed(2);
+    let total = +(montoBase + comisionValor).toFixed(2);
+    // Actualizar desglose
+    document.getElementById('monto_base_desglose').textContent = montoBase + ' ' + moneda;
+    document.getElementById('comision_porcentaje').textContent = (comision).toFixed(2);
+    document.getElementById('comision_valor').textContent = comisionValor + ' ' + moneda;
+    document.getElementById('desglose_pago').style.display = 'block';
+    // Actualizar el total principal
+    document.getElementById('precio_a_pagar').textContent = total + ' ' + moneda;
+    window.monto_total_con_comision = total;
+    window.moneda_total_con_comision = moneda;
+}
+
+// Modifica handleMetodoChange para actualizar el desglose
 function handleMetodoChange(metodSeleccionado) {
     const infoPago = document.getElementById('info-pago');
     const btnConfirmar = document.getElementById('btn-confirmar-pago');
@@ -311,6 +358,9 @@ function handleMetodoChange(metodSeleccionado) {
     
     // Habilitar botón de confirmar
     btnConfirmar.disabled = false;
+
+    // Mostrar desglose de comisión
+    actualizarDesglosePago(metodSeleccionado);
 }
 
 function mostrarModalPago() {
@@ -665,6 +715,7 @@ async function confirmarMetodoPago() {
                 esValido = false;
                 mensajeError = 'Por favor seleccione un banco';
             } else if (!cuenta || cuenta.length < 8) {
+                console.log("CUENTA NUEVA: ", cuenta);
                 esValido = false;
                 mensajeError = 'Por favor ingrese un número de cuenta válido';
             }

@@ -326,6 +326,16 @@ def cliente_create(request):
 # Vista para que el analista gestione los campos de una entidad financiera
 
 def campos_entidad_list(request, entidad_id):
+    """
+    Muestra y permite agregar campos personalizados a una entidad financiera.
+
+    Esta vista lista todos los `CampoEntidadFinanciera` asociados a una entidad y,
+    en caso de recibir una solicitud POST, crea un nuevo campo con los datos enviados.
+
+    :param request: Objeto HttpRequest que contiene la información de la solicitud.
+    :param entidad_id: ID de la entidad financiera (TipoEntidadFinanciera) cuyos campos se gestionan.
+    :return: Renderiza la plantilla HTML correspondiente o redirige tras la creación exitosa.
+    """
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
     campos = entidad.campos.all().order_by('orden')
     if request.method == 'POST':
@@ -346,6 +356,19 @@ def campos_entidad_list(request, entidad_id):
 
 # Vista para mostrar y guardar formulario dinámico de medio de acreditación (solo creación)
 def medio_acreditacion_dinamico(request, entidad_id, cliente_id):
+    """
+    Genera, valida y guarda formularios dinámicos de medios de acreditación.
+
+    Dependiendo del método HTTP:
+      - GET: Renderiza el formulario con los campos definidos por la entidad.
+      - POST: Valida los datos ingresados, guarda o actualiza los valores dinámicos
+        asociados al `MedioAcreditacion`.
+
+    :param request: Objeto HttpRequest con la solicitud del usuario.
+    :param entidad_id: ID de la entidad financiera asociada.
+    :param cliente_id: ID del cliente que está registrando el medio.
+    :return: JsonResponse con el resultado de la operación (success, html).
+    """
     from django.db import transaction
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
     cliente = get_object_or_404(Cliente, pk=cliente_id)
@@ -421,6 +444,16 @@ def medio_acreditacion_dinamico(request, entidad_id, cliente_id):
     return JsonResponse({'success': False, 'html': html})
 
 def campo_entidad_create(request, entidad_id):
+    """
+    Crea un nuevo campo personalizado para una entidad financiera.
+
+    Realiza validaciones de duplicidad y formato antes de registrar el campo.
+    Soporta solicitudes AJAX (retornando HTML parcial) y normales (con redirección).
+
+    :param request: Objeto HttpRequest.
+    :param entidad_id: ID de la entidad (TipoEntidadFinanciera).
+    :return: JsonResponse o render con el formulario actualizado.
+    """
     entidad = get_object_or_404(TipoEntidadFinanciera, pk=entidad_id)
     
     if request.method == 'POST':
@@ -489,6 +522,16 @@ def campo_entidad_create(request, entidad_id):
 
 
 def campo_entidad_edit(request, campo_id):
+    """
+    Edita los datos de un campo personalizado existente.
+
+    Permite modificar los atributos del campo y realiza validaciones
+    de duplicidad y consistencia. Admite solicitudes AJAX y normales.
+
+    :param request: Objeto HttpRequest.
+    :param campo_id: ID del campo (CampoEntidadFinanciera) a editar.
+    :return: JsonResponse o render actualizado según el tipo de solicitud.
+    """
     campo = get_object_or_404(CampoEntidadFinanciera, pk=campo_id)
     entidad = campo.entidad
     
@@ -566,6 +609,16 @@ def campo_entidad_edit(request, campo_id):
 
 
 def campo_entidad_delete(request, campo_id):
+    """
+    Elimina un campo personalizado de una entidad financiera.
+
+    Si la solicitud proviene por AJAX, devuelve la tabla actualizada.
+    En caso contrario, redirige a la lista de campos.
+
+    :param request: Objeto HttpRequest.
+    :param campo_id: ID del campo a eliminar.
+    :return: JsonResponse o HttpResponseRedirect según el contexto.
+    """
     campo = get_object_or_404(CampoEntidadFinanciera, pk=campo_id)
     entidad = campo.entidad
     
