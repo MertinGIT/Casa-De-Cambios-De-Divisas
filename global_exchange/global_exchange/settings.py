@@ -103,7 +103,8 @@ INSTALLED_APPS = [
     'historial_transacciones',
     'channels',
     'notificaciones',
-    'configuracion_usuario'
+    'configuracion_usuario',
+    'tauser'
 ]
 
 

@@ -762,7 +762,7 @@ verificarLimites =function() {
   const campos = getCampos();
   const origenAbrev = campos.$origen.val();
   const destinoAbrev = campos.$destino.val();
-  const montoTransaccion = campos.op === "venta" ? parseFloat(campos.$valor.val()) : parseFloat(campos.$resultado.val());
+  const montoTransaccion = campos.op === "venta" ? parseFloat(campos.$valor.val()) : parseFloat(campos.$resultado.val()); 
 
   // Determinar qué moneda y monto enviar según el tipo de operación
   let monedaParaLimite, montoParaLimite;
@@ -774,7 +774,7 @@ verificarLimites =function() {
     montoParaLimite = montoTransaccion;
   } else {
     // VENTA: cliente entrega USD/ARS/etc
-    monedaParaLimite = origenAbrev;
+    monedaParaLimite = "PYG";
     montoParaLimite = montoTransaccion;
   }
   console.log("Monto transacción:");
