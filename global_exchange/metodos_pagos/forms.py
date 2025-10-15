@@ -118,36 +118,40 @@ class MetodoPagoForm(forms.ModelForm):
     Campos incluidos:
     - nombre: Campo requerido con validación de unicidad
     - descripcion: Campo opcional con longitud limitada
+    - comision: Campo requerido con validación numérica
     
     Validaciones aplicadas:
     - Nombre: requerido, mínimo 3 caracteres, máximo 100, único
     - Descripción: opcional, máximo 500 caracteres, normalizada
+    - Comisión: requerida, numérica, entre 0 y 100
     
     Widgets configurados:
     - TextInput para nombre con atributos HTML específicos
     - Textarea para descripción con filas y límite de caracteres
+    - NumberInput para comisión con rango y pasos definidos
     
     Meta configuración:
         model: MetodoPago - Modelo base del formulario
-        fields: ['nombre', 'descripcion'] - Campos incluidos
+        fields: ['nombre', 'descripcion', 'comision'] - Campos incluidos
         labels: Etiquetas personalizadas para los campos
         widgets: Configuración de widgets con clases CSS y atributos
     
     Ejemplos de uso:
         # Creación de nuevo método
-        form = MetodoPagoForm(data={'nombre': 'Efectivo'})
+        form = MetodoPagoForm(data={'nombre': 'Efectivo', 'comision': 2.5})
         if form.is_valid():
             metodo = form.save()
             
         # Edición de método existente
         metodo = MetodoPago.objects.get(pk=1)
-        form = MetodoPagoForm(instance=metodo, data={'nombre': 'Efectivo USD'})
+        form = MetodoPagoForm(instance=metodo, data={'nombre': 'Efectivo USD', 'comision': 3.0})
         if form.is_valid():
             form.save()
     
     Validaciones personalizadas:
         - clean_nombre(): Validación completa del campo nombre
         - clean_descripcion(): Normalización y validación de descripción
+        - clean_comision(): Validación de rango y obligatoriedad de comisión
     
     Consideraciones de seguridad:
         - Validación de longitud para prevenir ataques
@@ -181,12 +185,21 @@ class MetodoPagoForm(forms.ModelForm):
                 - placeholder: Texto de ayuda
                 - rows: Número de filas visibles
                 - maxlength: Límite de caracteres en HTML
+
+            comision (NumberInput):
+                - class: Clases CSS para estilos
+                - id: ID específico para JavaScript
+                - placeholder: Texto de ayuda
+                - step: Paso para incremento (0.01)
+                - min: Valor mínimo (0)
+                - max: Valor máximo (100)
         """
         model = MetodoPago
-        fields = ['nombre', 'descripcion']
+        fields = ['nombre', 'descripcion', 'comision']
         labels = {
             'nombre': 'Nombre',
             'descripcion': 'Descripción',
+            'comision': 'Comisión (%)',
         }
         widgets = {
             'nombre': forms.TextInput(attrs={
@@ -202,6 +215,14 @@ class MetodoPagoForm(forms.ModelForm):
                 'rows': 3,
                 'maxlength': '500',
             }),
+            'comision': forms.NumberInput(attrs={
+                'class': 'form-control custom-input',
+                'id': 'id_comision',
+                'placeholder': 'Ej: 2.50',
+                'step': '0.01',
+                'min': '0',
+                'max': '100',
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -214,6 +235,7 @@ class MetodoPagoForm(forms.ModelForm):
         Configuraciones aplicadas:
         - nombre: Marcado como requerido explícitamente
         - descripcion: Marcado como opcional explícitamente
+        - comision: Marcado como requerido con rango específico
         
         Args:
             *args: Argumentos posicionales para ModelForm
@@ -235,6 +257,9 @@ class MetodoPagoForm(forms.ModelForm):
         # Configuración explícita de campos requeridos
         self.fields['nombre'].required = True
         self.fields['descripcion'].required = False
+        self.fields['comision'].required = True
+        self.fields['comision'].min_value = 0
+        self.fields['comision'].max_value = 100
 
     def clean_nombre(self):
         """
@@ -388,6 +413,62 @@ class MetodoPagoForm(forms.ModelForm):
         # Retornar descripción normalizada o valor por defecto
         return descripcion or "No hay descripción"
     
+    def clean_comision(self):
+        """
+        Validación personalizada del campo comisión.
+        
+        Asegura que la comisión esté presente, sea numérica y esté
+        dentro del rango permitido (0 a 100). Este campo es obligatorio
+        y su validación es crítica para el correcto funcionamiento del
+        sistema de métodos de pago.
+        
+        Validaciones aplicadas:
+        1. Verificación de campo no vacío
+        2. Validación de tipo numérico
+        3. Validación de rango (0 a 100)
+        
+        Returns:
+            float: Comisión validada y dentro del rango permitido
+            
+        Raises:
+            ValidationError: En cualquiera de los siguientes casos:
+                - Comisión vacía o no proporcionada
+                - Comisión no es un valor numérico
+                - Comisión menor a 0
+                - Comisión mayor a 100
+        
+        Proceso de validación:
+            1. Obtiene valor del campo desde cleaned_data
+            2. Verifica que no sea None
+            3. Valida que sea un número
+            4. Verifica que esté dentro del rango permitido
+            5. Retorna valor de comisión si pasa todas las validaciones
+        
+        Ejemplos:
+            >>> form = MetodoPagoForm(data={'comision': '  2.5  '})
+            >>> form.is_valid()
+            True
+            >>> form.cleaned_data['comision']
+            2.5
+            
+            >>> form = MetodoPagoForm(data={'comision': 'abc'})
+            >>> form.is_valid()
+            False
+            >>> form.errors['comision']
+            ['La comisión debe ser un número.']
+        
+        Consideraciones:
+            - La comisión es un campo crítico para el cálculo de pagos
+            - Debe ser validada rigurosamente para evitar errores
+            - La normalización de espacios asegura consistencia
+        """
+        comision = self.cleaned_data.get('comision')
+        if comision is None:
+            raise ValidationError('La comisión es obligatoria.')
+        if comision < 0 or comision > 100:
+            raise ValidationError('La comisión debe estar entre 0 y 100.')
+        return comision
+
     def clean(self):
         """
         Validación global del formulario.

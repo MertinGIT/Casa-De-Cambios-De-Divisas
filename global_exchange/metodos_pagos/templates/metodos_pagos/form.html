@@ -65,6 +65,24 @@
   </div>
 </div>
 
+<!-- CAMPO: COMISIÓN DEL MÉTODO DE PAGO -->
+<!-- Campo obligatorio para porcentaje de comisión -->
+<div class="form-group">
+  <label for="{{ form.comision.id_for_label }}">Comisión (%)</label>
+  <div class="input-icon">
+    <!-- Icono: Porcentaje -->
+    <span class="icon">&#37;</span>
+    {{ form.comision|add_class:"custom-input" }}
+  </div>
+  <div class="error-messages">
+    {% if form.comision.errors %}
+      {% for error in form.comision.errors %}
+        <div class="error-message">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>
+
 <!--
   ESTILOS CSS PERSONALIZADOS
   ==========================
@@ -182,6 +200,13 @@
   background-color: #fef2f2;
 }
 {% endif %}
+
+{% if form.comision.errors %}
+#id_comision {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2;
+}
+{% endif %}
 </style>
 
 <!--
@@ -283,6 +308,12 @@ function setupMetodoPagoValidation() {
             descripcion: {
                 required: false,
                 maxlength: 500
+            },
+            comision: {
+                required: true,
+                number: true,
+                min: 0,
+                max: 100
             }
         },
         
@@ -296,6 +327,12 @@ function setupMetodoPagoValidation() {
             },
             descripcion: {
                 maxlength: "La descripción no puede exceder 500 caracteres"
+            },
+            comision: {
+                required: "La comisión es obligatoria",
+                number: "Por favor, ingresa un número válido",
+                min: "La comisión no puede ser menor que 0",
+                max: "La comisión no puede exceder 100"
             }
         },
         

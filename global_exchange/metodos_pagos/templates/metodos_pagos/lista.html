@@ -621,7 +621,8 @@ body {
         <thead>
           <tr>
             <th>Nombre</th>
-            <th>Descripcion</th>
+            <th>Descripción</th>
+            <th>Comisión (%)</th>
             <th>Estado</th>
             <th>Acciones</th>
           </tr>
@@ -635,7 +636,10 @@ body {
               <td data-label="Nombre">{{ mp.nombre }}</td>
               
               <!-- Campo: Descripción (opcional) -->
-              <td data-label="Descripcion">{{ mp.descripcion }}</td>
+              <td data-label="Descripción">{{ mp.descripcion }}</td>
+              
+              <!-- Campo: Comisión (%) -->
+              <td data-label="Comisión (%)">{{ mp.comision|floatformat:2 }}</td>
               
               <!-- Campo: Estado con badge visual -->
               <td data-label="Estado">

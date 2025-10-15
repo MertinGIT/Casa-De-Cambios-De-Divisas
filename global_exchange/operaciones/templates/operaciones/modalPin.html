@@ -266,7 +266,9 @@ function procesarTransaccion() {
   // PASO 1: Guardar en BD como PENDIENTE
   const payloadLocal = {
     usuario_id: "{{ request.user.id }}",
-    monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
+    monto: typeof window.monto_total_con_comision !== "undefined"
+        ? window.monto_total_con_comision
+        : parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
     tipo: campos.op === "venta" ? "compra" : "venta",
     estado: "pendiente",
     moneda_origen_id: moneda_origen_id,
