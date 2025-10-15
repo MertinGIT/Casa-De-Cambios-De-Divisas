@@ -71,71 +71,71 @@
                 <!-- Información del método seleccionado -->
                 <div id="info-pago" class="info-pago" style="display: none;">
                     
-                    <!-- Formulario para tarjeta con Stripe -->
-<!-- Formulario para tarjeta con Stripe -->
-<div id="form-tarjeta" class="form-metodo" style="display: none;">
-    <h4 class="form-title">Información de la tarjeta</h4>
+                    <!-- Formulario de tarjeta (oculto hasta seleccionar tipo) -->
+                    <div id="form-tarjeta" class="form-metodo" style="display: none;">
+                        <h4 class="form-title">Información de la tarjeta</h4>
+                        
+                        <!-- Badge que muestra el tipo seleccionado -->
+                        <div id="tipo-seleccionado-badge" style="display: none; margin-bottom: 16px; padding: 12px; background: #e8f5e9; border-radius: 8px; border-left: 4px solid #4CAF50;">
+                            <span id="tipo-tarjeta-seleccionado" style="color: #2e7d32; font-weight: 500;"></span>
+                            <button type="button" onclick="cambiarTipoTarjeta()" style="float: right; background: none; border: none; color: #4CAF50; cursor: pointer; text-decoration: underline;">
+                                Cambiar
+                            </button>
+                        </div>
+                        
+                        <!-- Contenedor para mostrar el formulario según tipo seleccionado -->
+                        <div id="contenedor-formulario-tarjeta" style="display: none;">
+                            <!-- FORMULARIO STRIPE -->
+                            <div id="form-tarjeta-stripe" style="display: none;">
+                                <div class="form-group" style="margin-bottom: 16px;">
+                                    <label for="card-number-element">Número de tarjeta</label>
+                                    <div id="card-number-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+                                </div>
 
-    <!-- Selector de tipo de tarjeta -->
-    <div class="form-group" style="margin-bottom: 16px;">
-        <label for="tipo-tarjeta">Tipo de tarjeta</label>
-        <select id="tipo-tarjeta">
-            <option value="">Seleccionar...</option>
-            <option value="nacional">Tarjetas Nacionales</option>
-            <option value="stripe">Tarjetas Internacionales</option>
-        </select>
-    </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="card-expiry-element">Fecha de expiración</label>
+                                        <div id="card-expiry-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+                                    </div>
 
-    <!-- FORMULARIO STRIPE -->
-    <div id="form-tarjeta-stripe" style="display: none;">
-        <div class="form-group" style="margin-bottom: 16px;">
-            <label for="card-number-element">Número de tarjeta</label>
-            <div id="card-number-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
-        </div>
+                                    <div class="form-group" style="display: block; position: relative; top: 22px; margin-bottom: 0;">
+                                        <label for="card-cvc-element">CVC</label>
+                                        <div id="card-cvc-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+                                    </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
-            <div class="form-group" style="margin-bottom: 0;">
-                <label for="card-expiry-element">Fecha de expiración</label>
-                <div id="card-expiry-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
-            </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label for="card-postal-element">Código postal</label>
+                                        <div id="card-postal-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
+                                    </div>
+                                </div>
 
-            <div class="form-group" style="display: block; position: relative; top: 22px; margin-bottom: 0;">
-                <label for="card-cvc-element">CVC</label>
-                <div id="card-cvc-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
-            </div>
+                                <div id="card-errors-stripe" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
+                            </div>
 
-            <div class="form-group" style="margin-bottom: 0;">
-                <label for="card-postal-element">Código postal</label>
-                <div id="card-postal-element" style="padding: 12px; border: 1px solid #ddd; border-radius: 6px; background: white;"></div>
-            </div>
-        </div>
-
-        <div id="card-errors-stripe" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
-    </div>
-
-    <!-- FORMULARIO TARJETA NACIONAL -->
-    <div id="form-tarjeta-nacional" style="display: none;">
-        <div class="form-group">
-            <label for="numero-nacional">Número de tarjeta</label>
-            <input type="text" id="numero-nacional" maxlength="19" placeholder="#### #### #### ####">
-        </div>
-        <div class="form-group">
-            <label for="nombre-nacional">Nombre del titular</label>
-            <input type="text" id="nombre-nacional" placeholder="Nombre completo">
-        </div>
-        <div class="form-group" style="display: flex; gap: 10px;">
-            <div style="flex: 1;">
-                <label for="vencimiento-nacional">Vencimiento</label>
-                <input type="text" id="vencimiento-nacional" placeholder="MM/AA">
-            </div>
-            <div style="flex: 1;">
-                <label for="cvc-nacional">CVC</label>
-                <input type="text" id="cvc-nacional" maxlength="3" placeholder="***">
-            </div>
-        </div>
-        <div id="card-errors-nacional" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
-    </div>
-</div>
+                            <!-- FORMULARIO TARJETA NACIONAL -->
+                            <div id="form-tarjeta-nacional" style="display: none;">
+                                <div class="form-group">
+                                    <label for="numero-nacional">Número de tarjeta</label>
+                                    <input type="text" id="numero-nacional" maxlength="19" placeholder="#### #### #### ####">
+                                </div>
+                                <div class="form-group">
+                                    <label for="nombre-nacional">Nombre del titular</label>
+                                    <input type="text" id="nombre-nacional" placeholder="Nombre completo">
+                                </div>
+                                <div class="form-group" style="display: flex; gap: 10px;">
+                                    <div style="flex: 1;">
+                                        <label for="vencimiento-nacional">Vencimiento</label>
+                                        <input type="text" id="vencimiento-nacional" placeholder="MM/AA">
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <label for="cvc-nacional">CVC</label>
+                                        <input type="text" id="cvc-nacional" maxlength="3" placeholder="***">
+                                    </div>
+                                </div>
+                                <div id="card-errors-nacional" role="alert" style="color: #e74c3c; margin-top: 8px; font-size: 14px;"></div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Formulario para billetera digital -->
                     <div id="form-billetera" class="form-metodo" style="display: none;">
@@ -194,6 +194,38 @@
             <button type="button" class="btn-modal-exito primary" id="btn-confirmar-pago" disabled>
                 <span>Confirmar pago</span>
             </button>
+        </div>
+    </div>
+</div>
+
+<!-- POP-UP PARA SELECCIONAR TIPO DE TARJETA -->
+<div id="popup-tipo-tarjeta" class="popup-tipo-tarjeta" style="display: none;">
+    <div class="popup-overlay" onclick="cerrarPopupTipoTarjeta()"></div>
+    <div class="popup-content">
+        <div class="popup-header">
+            <h3>Selecciona el tipo de tarjeta</h3>
+            <button class="popup-close" onclick="cerrarPopupTipoTarjeta()">&times;</button>
+        </div>
+        <div class="popup-body">
+            <div class="tipo-tarjeta-opciones">
+                <button type="button" class="opcion-tarjeta" data-tipo="nacional">
+                    <div class="opcion-icon">🇵🇾</div>
+                    <div class="opcion-info">
+                        <h4>Tarjetas Nacionales</h4>
+                        <p>Tarjetas emitidas en Paraguay</p>
+                    </div>
+                    <div class="opcion-arrow">→</div>
+                </button>
+                
+                <button type="button" class="opcion-tarjeta" data-tipo="stripe">
+                    <div class="opcion-icon">🌎</div>
+                    <div class="opcion-info">
+                        <h4>Tarjetas Internacionales</h4>
+                        <p>Visa, Mastercard, American Express</p>
+                    </div>
+                    <div class="opcion-arrow">→</div>
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -409,11 +441,11 @@ function handleMetodoChange(metodSeleccionado) {
         }, 150);
     }
     
-    // Inicializar Stripe solo si es tarjeta
+    // ⭐ NUEVO: Si es tarjeta, abrir el pop-up automáticamente
     if (metodSeleccionado === 'tarjeta') {
         setTimeout(() => {
-            inicializarTarjeta();
-        }, 200);
+            abrirPopupTipoTarjeta();
+        }, 400); // Pequeño delay para que la animación del formulario se complete
     }
     
     // Habilitar botón de confirmar
@@ -822,7 +854,7 @@ async function confirmarMetodoPago() {
     case 'tarjeta':
         btnConfirmar.disabled = true;
         const tipoTarjetaSelect = document.getElementById('tipo-tarjeta');
-        const tipoTarjeta = tipoTarjetaSelect ? tipoTarjetaSelect.value : 'stripe'; // por defecto stripe si no existe
+        const tipoTarjeta = window.tipoTarjetaSeleccionada || 'stripe';// por defecto stripe si no existe
         
         // Helper: mostrar error simple
         function handleErrorMsg(title, message) {
@@ -1061,6 +1093,121 @@ function validateEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
+
+// Función para abrir el pop-up de tipo de tarjeta
+function abrirPopupTipoTarjeta() {
+    const popup = document.getElementById('popup-tipo-tarjeta');
+    if (popup) {
+        popup.style.display = 'flex';
+    }
+}
+
+// Función para cerrar el pop-up
+function cerrarPopupTipoTarjeta() {
+    const popup = document.getElementById('popup-tipo-tarjeta');
+    if (popup) {
+        popup.style.display = 'none';
+    }
+}
+
+// Función para cambiar tipo de tarjeta (cuando hacen click en "Cambiar")
+function cambiarTipoTarjeta() {
+    // Limpiar selección anterior
+    window.tipoTarjetaSeleccionada = null;
+    
+    // Ocultar formularios
+    const contenedorFormulario = document.getElementById('contenedor-formulario-tarjeta');
+    const badge = document.getElementById('tipo-seleccionado-badge');
+    
+    if (contenedorFormulario) contenedorFormulario.style.display = 'none';
+    if (badge) badge.style.display = 'none';
+    
+    // Limpiar campos
+    limpiarFormulariosTarjeta();
+    
+    // Abrir pop-up nuevamente
+    abrirPopupTipoTarjeta();
+}
+
+// Event listeners para las opciones de tipo de tarjeta
+document.addEventListener('click', function(e) {
+    const opcionTarjeta = e.target.closest('.opcion-tarjeta');
+    if (opcionTarjeta) {
+        const tipo = opcionTarjeta.getAttribute('data-tipo');
+        seleccionarTipoTarjeta(tipo);
+    }
+});
+
+// Función para seleccionar el tipo de tarjeta
+function seleccionarTipoTarjeta(tipo) {
+    window.tipoTarjetaSeleccionada = tipo;
+    
+    const badge = document.getElementById('tipo-seleccionado-badge');
+    const badgeTexto = document.getElementById('tipo-tarjeta-seleccionado');
+    const contenedorFormulario = document.getElementById('contenedor-formulario-tarjeta');
+    const formStripe = document.getElementById('form-tarjeta-stripe');
+    const formNacional = document.getElementById('form-tarjeta-nacional');
+    
+    // Mostrar y actualizar badge
+    if (badge && badgeTexto) {
+        badge.style.display = 'block';
+        if (tipo === 'nacional') {
+            badgeTexto.textContent = '🇵🇾 Tarjetas Nacionales seleccionadas';
+        } else if (tipo === 'stripe') {
+            badgeTexto.textContent = '🌎 Tarjetas Internacionales seleccionadas';
+        }
+    }
+    
+    // Mostrar contenedor de formulario
+    if (contenedorFormulario) {
+        contenedorFormulario.style.display = 'block';
+    }
+    
+    // Mostrar formulario correspondiente
+    if (tipo === 'stripe') {
+        formStripe.style.display = 'block';
+        formNacional.style.display = 'none';
+        setTimeout(() => inicializarTarjeta(), 100);
+    } else if (tipo === 'nacional') {
+        formStripe.style.display = 'none';
+        formNacional.style.display = 'block';
+        setupNationalFormatters();
+    }
+    
+    // Cerrar el pop-up
+    cerrarPopupTipoTarjeta();
+}
+
+// Función para limpiar formularios de tarjeta
+function limpiarFormulariosTarjeta() {
+    // Limpiar Stripe
+    if (cardNumberElement) cardNumberElement.clear();
+    if (cardExpiryElement) cardExpiryElement.clear();
+    if (cardCvcElement) cardCvcElement.clear();
+    if (postalCodeElement) postalCodeElement.clear();
+    
+    // Limpiar nacional
+    const numeroNacional = document.getElementById('numero-nacional');
+    const nombreNacional = document.getElementById('nombre-nacional');
+    const vencimientoNacional = document.getElementById('vencimiento-nacional');
+    const cvcNacional = document.getElementById('cvc-nacional');
+    
+    if (numeroNacional) numeroNacional.value = '';
+    if (nombreNacional) nombreNacional.value = '';
+    if (vencimientoNacional) vencimientoNacional.value = '';
+    if (cvcNacional) cvcNacional.value = '';
+}
+
+// Cerrar pop-up con tecla ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const popup = document.getElementById('popup-tipo-tarjeta');
+        if (popup && popup.style.display === 'flex') {
+            cerrarPopupTipoTarjeta();
+        }
+    }
+});
+
 </script>
 
 <style>
@@ -1389,4 +1536,194 @@ function validateEmail(email) {
             flex-direction: column;
         }
     }
+
+/* Estilos para el badge de tipo seleccionado */
+#tipo-seleccionado-badge {
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Estilos para el pop-up */
+.popup-tipo-tarjeta {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.3s ease;
+}
+
+.popup-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+}
+
+.popup-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+    overflow: hidden;
+}
+
+.popup-header {
+    padding: 24px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #333;
+    font-weight: 600;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.popup-close:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.popup-body {
+    padding: 24px;
+}
+
+.tipo-tarjeta-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.opcion-tarjeta {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.opcion-tarjeta:hover {
+    border-color: #4CAF50;
+    background: #f8fff9;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.opcion-icon {
+    font-size: 48px;
+    margin-right: 16px;
+}
+
+.opcion-info {
+    flex: 1;
+    text-align: left;
+}
+
+.opcion-info h4 {
+    margin: 0 0 4px 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 600;
+}
+
+.opcion-info p {
+    margin: 0;
+    font-size: 14px;
+    color: #666;
+}
+
+.opcion-arrow {
+    font-size: 24px;
+    color: #4CAF50;
+    transition: transform 0.3s ease;
+}
+
+.opcion-tarjeta:hover .opcion-arrow {
+    transform: translateX(4px);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .popup-content {
+        width: 95%;
+        margin: 0 10px;
+    }
+    
+    .opcion-icon {
+        font-size: 36px;
+    }
+    
+    .opcion-info h4 {
+        font-size: 16px;
+    }
+    
+    .opcion-info p {
+        font-size: 13px;
+    }
+}
+
+
 </style>
