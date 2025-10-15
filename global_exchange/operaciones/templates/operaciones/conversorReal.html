@@ -247,7 +247,7 @@
           <tr>
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
-            <td>{{ t.monto }}</td>
+            <td>{{ t.monto|floatformat:2 }}</td>
             <td>{{ t.moneda_origen }}</td>
             <td>{{ t.moneda_destino }}</td>
             <td>
@@ -638,7 +638,7 @@
             console.log("Tasa actualizada:", tasaActualizada);
             if (tasaActualizada) {
               //$("#modal-confirmacion").fadeOut();
-              $("#modal-acreditacion").fadeIn().css("display", "flex");
+              //$("#modal-acreditacion").fadeIn().css("display", "flex");
               console.log("Tasa actualizada, procediendo a método de pago");
             }else{
               //$("#modal-exito").hide();
@@ -758,7 +758,7 @@ verificarLimites =function() {
   const campos = getCampos();
   const origenAbrev = campos.$origen.val();
   const destinoAbrev = campos.$destino.val();
-  const montoTransaccion = parseFloat(campos.$valor.val());
+  const montoTransaccion = campos.op === "venta" ? parseFloat(campos.$valor.val()) : parseFloat(campos.$resultado.val());
 
   // Determinar qué moneda y monto enviar según el tipo de operación
   let monedaParaLimite, montoParaLimite;
