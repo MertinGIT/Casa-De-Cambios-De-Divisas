@@ -50,4 +50,4 @@ class ConfiguracionViewsTestCase(TestCase):
     def test_configuracion_view(self):
         response = self.client.get(reverse('configuracion'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'configuracion_home.html')
+        self.assertTemplateUsed(response, 'configuracion/configuracion_home.html')

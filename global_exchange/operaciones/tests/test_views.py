@@ -41,12 +41,11 @@ class OperacionesViewsTest(TestCase):
         self.tasa = TasaDeCambio.objects.create(
             moneda_origen=self.moneda_usd,
             moneda_destino=self.moneda_pyg,
-            monto_compra=7200,
-            monto_venta=7300,
-            comision_compra=50,
-            comision_venta=50,
-            estado=True,
-            vigencia=timezone.now()
+            # monto_compra=Decimal("7300.00"),
+            # monto_venta=Decimal("7500.00"),
+            precio_base=Decimal("7400.00"),
+            comision_compra=Decimal("0.00"),
+            comision_venta=Decimal("0.00"),
         )
 
     def test_simulador_operaciones_get(self):

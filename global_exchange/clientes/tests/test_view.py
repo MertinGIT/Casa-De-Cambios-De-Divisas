@@ -98,6 +98,7 @@ class ClienteViewsTest(TestCase):
         self.assertJSONEqual(
             response.content,
             {
+                "cedula": None,
                 "nombre": "Juan Pérez",
                 "email": "juan@example.com",
                 "telefono": "123456",

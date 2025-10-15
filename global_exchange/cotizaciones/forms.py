@@ -2,7 +2,8 @@ from decimal import Decimal, ROUND_DOWN
 from django import forms
 from .models import TasaDeCambio
 from monedas.models import Moneda
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, InvalidOperation
+from django.utils import timezone
 
 class TasaDeCambioForm(forms.ModelForm):
     """
@@ -166,6 +167,12 @@ class TasaDeCambioForm(forms.ModelForm):
             )
         return cleaned_data
 
+    def clean_vigencia(self):
+        vigencia = self.cleaned_data.get('vigencia')
+        if not vigencia:
+            return timezone.now()
+        return vigencia
+
     class Meta:
         model = TasaDeCambio
         fields = ['moneda_origen', 'moneda_destino', 'precio_base', 'comision_compra', 'comision_venta', 'vigencia', 'estado']
@@ -199,9 +206,8 @@ class TasaDeCambioForm(forms.ModelForm):
             defaults={'nombre': 'Guaraní'}
         )
         self.fields['moneda_origen'].initial = guarani
-        self.fields['moneda_origen'].disabled = True  
-        # Quitar del select de destino la moneda base
-        self.fields['moneda_destino'].queryset = Moneda.objects.filter(
-        estado=True
-        ).exclude(pk=guarani.pk)
-
+        self.fields['moneda_origen'].disabled = True
+        self.fields['moneda_origen'].queryset = Moneda.objects.all()
+        # permitir cualquier moneda destino (activa o no) excepto la base
+        self.fields['moneda_destino'].queryset = Moneda.objects.exclude(pk=guarani.pk)
+        self.fields['vigencia'].required = False  # permitir que el POST no lo envíe

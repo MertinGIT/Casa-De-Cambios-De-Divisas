@@ -7,6 +7,7 @@ from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from datetime import datetime
 from django.utils import timezone
+from decimal import Decimal
 
 User = get_user_model()
 
@@ -47,8 +48,11 @@ class UsuariosViewsTest(TestCase):
         TasaDeCambio.objects.create(
             moneda_origen=self.usd,
             moneda_destino=self.mxn,
-            monto_compra=5000,
-            monto_venta=5050,
+            # monto_compra=Decimal("7300.00"),
+            # monto_venta=Decimal("7500.00"),
+            precio_base=Decimal("7400.00"),
+            comision_compra=Decimal("0.00"),
+            comision_venta=Decimal("0.00"),
             vigencia=aware_dt,
             estado=True
         )

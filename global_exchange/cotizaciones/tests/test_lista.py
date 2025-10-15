@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.utils import timezone
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
+from decimal import Decimal
 
 class TasaDeCambioListViewTest(TestCase):
     @classmethod
@@ -16,8 +17,9 @@ class TasaDeCambioListViewTest(TestCase):
             TasaDeCambio.objects.create(
                 moneda_origen=cls.guarani,
                 moneda_destino=cls.dolar if i % 2 == 0 else cls.euro,
-                monto_compra=100 + i,
-                monto_venta=110 + i,
+                precio_base=Decimal("7400.00"),
+                comision_compra=Decimal("0.00"),
+                comision_venta=Decimal("0.00"),
                 vigencia=timezone.now(),
                 estado=(i % 2 == 0)
             )

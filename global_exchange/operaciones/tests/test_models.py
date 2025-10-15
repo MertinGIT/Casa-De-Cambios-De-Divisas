@@ -25,10 +25,11 @@ class TransaccionModelTest(TestCase):
         self.tasa = TasaDeCambio.objects.create(
             moneda_origen=self.moneda_origen,
             moneda_destino=self.moneda_destino,
-            monto_compra=Decimal("7000.0"),
-            monto_venta=Decimal("7100.0"),
-            estado=True,
-            vigencia=timezone.now()
+            # monto_compra=Decimal("7300.00"),
+            # monto_venta=Decimal("7500.00"),
+            precio_base=Decimal("7400.00"),
+            comision_compra=Decimal("0.00"),
+            comision_venta=Decimal("0.00"),
         )
 
     def test_crear_transaccion(self):

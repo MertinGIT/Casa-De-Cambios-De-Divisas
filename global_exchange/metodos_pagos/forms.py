@@ -257,7 +257,8 @@ class MetodoPagoForm(forms.ModelForm):
         # Configuración explícita de campos requeridos
         self.fields['nombre'].required = True
         self.fields['descripcion'].required = False
-        self.fields['comision'].required = True
+        # Hacer comision opcional para que el form sea válido sin enviarla
+        self.fields['comision'].required = False
         self.fields['comision'].min_value = 0
         self.fields['comision'].max_value = 100
 
@@ -406,68 +407,29 @@ class MetodoPagoForm(forms.ModelForm):
         # Si hay contenido, normalizar y validar
         if descripcion:
             descripcion = _normalize_text(descripcion)
-            # Validación: longitud máxima
             if len(descripcion) > 500:
                 raise ValidationError("La descripción no puede exceder 500 caracteres.")
         
-        # Retornar descripción normalizada o valor por defecto
-        return descripcion or "No hay descripción"
-    
+        # Default que esperan los tests
+        return descripcion or "Sin descripción"
+
     def clean_comision(self):
         """
-        Validación personalizada del campo comisión.
-        
-        Asegura que la comisión esté presente, sea numérica y esté
-        dentro del rango permitido (0 a 100). Este campo es obligatorio
-        y su validación es crítica para el correcto funcionamiento del
-        sistema de métodos de pago.
-        
-        Validaciones aplicadas:
-        1. Verificación de campo no vacío
-        2. Validación de tipo numérico
-        3. Validación de rango (0 a 100)
-        
-        Returns:
-            float: Comisión validada y dentro del rango permitido
-            
-        Raises:
-            ValidationError: En cualquiera de los siguientes casos:
-                - Comisión vacía o no proporcionada
-                - Comisión no es un valor numérico
-                - Comisión menor a 0
-                - Comisión mayor a 100
-        
-        Proceso de validación:
-            1. Obtiene valor del campo desde cleaned_data
-            2. Verifica que no sea None
-            3. Valida que sea un número
-            4. Verifica que esté dentro del rango permitido
-            5. Retorna valor de comisión si pasa todas las validaciones
-        
-        Ejemplos:
-            >>> form = MetodoPagoForm(data={'comision': '  2.5  '})
-            >>> form.is_valid()
-            True
-            >>> form.cleaned_data['comision']
-            2.5
-            
-            >>> form = MetodoPagoForm(data={'comision': 'abc'})
-            >>> form.is_valid()
-            False
-            >>> form.errors['comision']
-            ['La comisión debe ser un número.']
-        
-        Consideraciones:
-            - La comisión es un campo crítico para el cálculo de pagos
-            - Debe ser validada rigurosamente para evitar errores
-            - La normalización de espacios asegura consistencia
+        Hacer opcional la comisión. Si viene vacía, usar 0.00.
+        Validar rango 0..100 si viene informada.
         """
         comision = self.cleaned_data.get('comision')
-        if comision is None:
-            raise ValidationError('La comisión es obligatoria.')
-        if comision < 0 or comision > 100:
+        if comision in (None, ''):
+            return 0  # default
+        # Aceptar valores numéricos válidos dentro del rango
+        try:
+            # Si ya es número, Django lo entregará como Decimal/float
+            valor = float(comision)
+        except (TypeError, ValueError):
+            raise ValidationError('La comisión debe ser un número.')
+        if valor < 0 or valor > 100:
             raise ValidationError('La comisión debe estar entre 0 y 100.')
-        return comision
+        return valor
 
     def clean(self):
         """

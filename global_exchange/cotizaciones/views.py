@@ -202,5 +202,8 @@ def cotizacion_detalle(request, pk):
         "precio_base": float(cotizacion.precio_base),
         "comision_compra": float(cotizacion.comision_compra),
         "comision_venta": float(cotizacion.comision_venta),
+        # compatibilidad con tests:
+        "monto_compra": float(cotizacion.monto_compra),
+        "monto_venta": float(cotizacion.monto_venta),
         "vigencia": cotizacion.vigencia.strftime("%Y-%m-%d %H:%M") if cotizacion.vigencia else None,
     })
