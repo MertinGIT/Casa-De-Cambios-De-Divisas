@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', () => {
     const tipoTarjetaSelect = document.getElementById('tipo-tarjeta');
     tipoTarjetaSelect.addEventListener("change", (e) => {
-    window.metodoSeleccionado = "tarjeta";      // ya lo tienes
+    window.metodoSeleccionadoNombre = "tarjeta";      // ya lo tienes
     window.tipoTarjetaSeleccionada = e.target.value; // <-- guardar aquí
     });
 
@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-let stripe = Stripe("pk_test_51SEA4sPPA3ZGnjFU4SnVSmEAuaC9giCmVeEIawSL8hGh5EiGP3QD5ZRMFMlKPjiYTB4kZtCNyVFEfrXRJM0U941B00kgUDAcDI");
+let stripe = Stripe("pk_test_51SEYwwBDAdm72UDMIQSFyXxmCQ7INpiaAx1Qd7bquMBw0CDB22Xcxpqi9GgrFknPcRIZM1aMT9sOlmBXaN7o73Bi00SNq8v4y4");
 let elements = stripe.elements();
 let cardElement = null;
 
@@ -368,10 +368,13 @@ function initModalMetodoPago() {
     console.log("Inicializando modal método de pago");
     
     // Event delegation para los radio buttons
+
     document.addEventListener('change', function(e) {
         if (e.target.matches('input[name="metodo"]')) {
             console.log("Método seleccionado:", e.target.value);
-            handleMetodoChange(e.target.value);
+            const radio = document.querySelector('input[name="metodo"]:checked');
+    const formId = radio.dataset.form; // 'tarjeta', 'billetera', etc.
+            handleMetodoChange(formId);
         }
     });
 
