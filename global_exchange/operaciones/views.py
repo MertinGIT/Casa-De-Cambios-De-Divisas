@@ -89,8 +89,9 @@ def simulador_operaciones(request):
         .order_by("moneda_destino", "-vigencia")
     )
 
-    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion"))
-
+    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion", "comision"))
+    for m in metodos_pago:
+        m['comision'] = float(m['comision']) if m['comision'] is not None else 0
     # Reorganizar tasas
     data_por_moneda = {}
     for tasa in tasas:
@@ -593,7 +594,7 @@ def obtener_metodos_pago(request):
     :rtype: JsonResponse
     """
     if request.method == "GET":
-        metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion")
+        metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion", "comision")
         return JsonResponse(list(metodos), safe=False)
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
