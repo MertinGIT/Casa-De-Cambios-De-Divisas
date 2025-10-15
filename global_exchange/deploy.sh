@@ -68,6 +68,7 @@ EOF"
 
 # Ejecutar migraciones
 echo "🔄 Ejecutando migraciones..."
+docker-compose -f docker-compose.prod.yml exec -T web python manage.py makemigrations
 docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
 
 # Copiar archivos estáticos

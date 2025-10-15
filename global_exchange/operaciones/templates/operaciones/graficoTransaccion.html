@@ -51,13 +51,13 @@
       const dias = [...new Set(datosFiltrados.map((d) => d.dia))];
       const compraData = dias.map((d) => {
         return datosFiltrados
-          .filter((x) => x.dia === d && x.tipo === "Compra" && x.estado === "completada")
+          .filter((x) => x.dia === d && x.tipo === "Compra" && x.estado === "confirmada")
           .reduce((sum, x) => sum + x.monto, 0);
       });
 
       const ventaData = dias.map((d) => {
         return datosFiltrados
-          .filter((x) => x.dia === d && x.tipo === "Venta" && x.estado === "completada")
+          .filter((x) => x.dia === d && x.tipo === "Venta" && x.estado === "confirmada")
           .reduce((sum, x) => sum + x.monto, 0);
       });
 

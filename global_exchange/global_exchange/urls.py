@@ -50,6 +50,7 @@ urlpatterns = [
     path('historial/', include('historial_transacciones.urls'), name='historial_usuario'),
     path('notificaciones/', include('notificaciones.urls')),
     path('configuracion/', include("configuracion_usuario.urls")),
+    path('tauser/', include('tauser.urls')),
 
     
     
@@ -69,6 +70,7 @@ urlpatterns = [
     path('clientes/', include('clientes.urls'), name = 'clientes'), 
     path('clientes/limites/', include('limite_moneda.urls')),
     path('usuarios/', include('usuarios.urls')),
+    path('admin/transacciones/', include('admin_transacciones.urls')),
 
 ]
 

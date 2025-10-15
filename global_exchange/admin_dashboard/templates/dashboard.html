@@ -100,14 +100,14 @@
         <div class="moneda-item">
             <div class="moneda-info">
                 <span class="moneda-flag">
-                    {% if moneda.moneda_origen__abreviacion  == 'USD' %}🇺🇸{% endif %}
-                    {% if moneda.moneda_origen__abreviacion  == 'EUR' %}🇪🇺{% endif %}
-                    {% if moneda.moneda_origen__abreviacion  == 'BRL' %}🇧🇷{% endif %}
-                    {% if moneda.moneda_origen__abreviacion  == 'ARS' %}🇦🇷{% endif %}
+                    {% if moneda.moneda_destino__abreviacion  == 'USD' %}🇺🇸{% endif %}
+                    {% if moneda.moneda_destino__abreviacion  == 'EUR' %}🇪🇺{% endif %}
+                    {% if moneda.moneda_destino__abreviacion  == 'BRL' %}🇧🇷{% endif %}
+                    {% if moneda.moneda_destino__abreviacion  == 'ARS' %}🇦🇷{% endif %}
                 </span>
                 <div class="moneda-details">
-                    <span class="moneda-code">{{ moneda.moneda_origen__abreviacion  }}</span>
-                    <span class="moneda-name">{{ moneda.moneda_origen__nombre  }}</span>
+                    <span class="moneda-code">{{ moneda.moneda_destino__abreviacion  }}</span>
+                    <span class="moneda-name">{{ moneda.moneda_destino__nombre  }}</span>
                 </div>
             </div>
             <div class="moneda-stats">

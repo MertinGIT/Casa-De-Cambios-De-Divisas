@@ -41,6 +41,28 @@
   </div>
 </div>
 
+<div id="modal-loader-pin" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-icon-container">
+      <div class="modal-icon" id="loader-icon">⏳</div>
+      <h3 id="loader-title">Enviando PIN</h3>
+    </div>
+    <p id="loader-text">Por favor, espere mientras se envía el PIN de verificación...</p>
+  </div>
+</div>
+
+<!-- MODAL LOADER TRANSACCIÓN -->
+<div id="modal-loader-transaccion" class="modal" style="display: none;">
+  <div class="modal-content">
+    <div class="modal-icon-container">
+      <div class="modal-icon" id="loader-icon-transaccion">⏳</div>
+      <h3 id="loader-title-transaccion">Procesando transacción</h3>
+    </div>
+    <p id="loader-text-transaccion">Conectando con el banco y validando la operación. Por favor, espere...</p>
+  </div>
+</div>
+
+
 <script>
   function mostrarModalPin() {
     console.log("mostrarModalPinnnnnnnnnnnnnnnnn");
@@ -143,7 +165,7 @@ function verificarTasaActualizada(callback) {
             if (fechaBaseDatos > fechaNavegador) {
               // ⚠️ La tasa ya cambió
               $("#btn-continuar-tasa").show();   // mostrar botón de recalcular
-              $("#btn-confirmar").hide();        // ocultar botón de confirmar
+                      // ocultar botón de confirmar
               advertenciaMostrada = true;
 
               if (callback) callback(false); // avisar que NO puede continuar
@@ -224,10 +246,21 @@ function verificarPin() {
   pinInputs.forEach((input) => input.value = "");
 }
 
+function mostrarLoaderTransaccion() {
+  $("#modal-loader-transaccion").fadeIn().css("display", "flex");
+}
+
+function ocultarLoaderTransaccion() {
+  $("#modal-loader-transaccion").fadeOut();
+}
+
 
 // Función separada para procesar y guardar la transacción
 function procesarTransaccion() {
   console.log("Procesando transacción en modalPin");
+
+  // Mostrar loader mientras se conecta al banco
+  mostrarLoaderTransaccion();
 
   const campos = getCampos();
   const origenAbrev = campos.$origen.val();
@@ -266,7 +299,9 @@ function procesarTransaccion() {
   // PASO 1: Guardar en BD como PENDIENTE
   const payloadLocal = {
     usuario_id: "{{ request.user.id }}",
-    monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
+    monto: typeof window.monto_total_con_comision !== "undefined"
+        ? window.monto_total_con_comision
+        : parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
     tipo: campos.op === "venta" ? "compra" : "venta",
     estado: "pendiente",
     moneda_origen_id: moneda_origen_id,
@@ -274,6 +309,7 @@ function procesarTransaccion() {
     tasa_usada: tasaCalculada,
     tasa_ref_id: TASA_REF_ID,
     cliente_id:  parseInt("{{ cliente_operativo.id }}", 10),
+    metodo_pago_id: window.metodoSeleccionado,
     ganancia:window.ganancia_total,
   };
 
@@ -290,10 +326,19 @@ function procesarTransaccion() {
   })
   .then(resp => resp.json())
   .then(localResp => {
+    console.log("Respuesta guardado local en modalPin:", localResp);
     if (!localResp.success) {
       mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción inicial");
       return;
     }
+
+    console.log("Transacción metodoSeleccionadoNombre Pin:", window.metodoSeleccionadoNombre);
+    if (window.metodoSeleccionadoNombre === "efectivo") {
+      // Solo guardamos en BD como pendiente
+      mostrarMensaje("Pendiente", "Debe acercarse a un local para completar el pago.", "info",true);
+      return; // 🚫 NO continuar con conexión al banco
+    }
+
 
     const transaccionId = localResp.id;
 
@@ -321,6 +366,7 @@ function procesarTransaccion() {
       cliente_id: parseInt("{{ cliente_operativo.id }}", 10),
       entidad_id: 1,
       usuario_ejecutor: parseInt("{{ user.id }}", 10),
+      metodo_pago: window.metodoSeleccionado,
       fecha: new Date().toISOString()
     };
 
@@ -344,11 +390,12 @@ function procesarTransaccion() {
     .then(resp => resp.json())
     .then(async data => { // 🔥 async aquí
       console.log("Respuesta del banco:", data);
+      ocultarLoaderTransaccion(); // Ocultar loader al recibir respuesta
 
       let estadoFinal = "pendiente";
       
       if (data.estado === "ok"){
-        estadoFinal = "completada";
+        estadoFinal = "confirmada";
         
         // Guardar transacción globalmente
         window.transaccionActual = {
@@ -358,11 +405,23 @@ function procesarTransaccion() {
         };
 
         // 🔥 PASO 3: Si el banco aprobó Y hay pago con tarjeta, procesarlo AHORA
-        if (window.metodoSeleccionado === "tarjeta") {
+        if (window.metodoSeleccionadoNombre === "tarjeta") {
           console.log("💳 Banco aprobó, procesando pago con tarjeta...");
-          
-          const pagoExitoso = await procesarPagoStripe();
-          
+          const tipoTarjetaSelect = document.getElementById("tipo-tarjeta");
+          const tipoTarjeta = window.tipoTarjetaSeleccionada || "stripe";
+          console.log("Tipo de tarjeta seleccionada:", tipoTarjeta);
+          let pagoExitoso = false;
+
+          if (tipoTarjeta === "stripe") {
+
+            pagoExitoso = await procesarPagoStripe(window.nacionalPaymentData);
+          } else if (tipoTarjeta === "nacional") {
+            pagoExitoso = await procesarPagoNacional(window.nacionalPaymentData);
+          } else {
+            console.error("Método de tarjeta desconocido:", tipoTarjeta);
+            mostrarMensaje("⚠️ Error", "Método de pago con tarjeta desconocido.");
+            return; // 🔥 Detener aquí
+          }
           if (!pagoExitoso) {
             console.error("❌ Pago con tarjeta falló después de aprobación bancaria");
             estadoFinal = "cancelada"; // 🔥 Cambiar estado a cancelada
@@ -418,7 +477,7 @@ function procesarTransaccion() {
       .then(updateResp => {
         console.log("updateResp",updateResp)
         if (updateResp.success) {
-          if (estadoFinal === "completada") {
+          if (estadoFinal === "confirmada") {
             // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
             $("#modal-pin").fadeOut();
             $("#modal-exito").fadeIn().css("display", "flex");
@@ -431,12 +490,14 @@ function procesarTransaccion() {
       })
       .catch(err => {
         console.error("Error actualizando estado:", err);
+        ocultarLoaderTransaccion(); // Ocultar loader al recibir respuesta
         mostrarMensaje("⚠️ Error", "Error al actualizar el estado de la transacción");
       });
 
     })
     .catch(err => {
       console.error("Error enviando transacción:", err);
+      ocultarLoaderTransaccion(); // Ocultar loader al recibir respuesta
 
       // Si falla el banco, actualizar a "cancelada"
       const payloadError = { transaccion_id: transaccionId, nuevo_estado: "cancelada" };
@@ -455,31 +516,57 @@ function procesarTransaccion() {
   })
   .catch(err => {
     console.error("Error guardando en BD:", err);
+    ocultarLoaderTransaccion(); // Ocultar loader al recibir respuesta
     mostrarMensaje("⚠️ Error", "No se pudo guardar la transacción localmente");
   });
 }
 
-function enviarPin() {
-  // 1. Llamar a la view que envía el PIN
-  fetch("{% url 'enviar_pin' %}", {
-    method: "GET",
-    credentials: "same-origin"
-  })
-  .then(resp => resp.json())
-  .then(data => {
-    if (data.success) {
-      console.log("PIN enviado al correo del usuario");
-      mostrarInfo("PIN Enviado", "Se ha enviado el PIN de verificación a su correo electrónico.");
-      // 2. Ahora sí abrir el modal
-      document.getElementById("modal-pin").style.display = "flex";
-    } else {
-      console.error("Error enviando PIN:", data.message);
-      alert("No se pudo enviar el PIN. Intente de nuevo.");
-    }
-  })
-  .catch(err => console.error("Error:", err));
+function mostrarLoaderPin() {
+  $("#modal-loader-pin").fadeIn().css("display", "flex");
 }
 
+function ocultarLoaderPin() {
+  $("#modal-loader-pin").fadeOut();
+}
+
+
+function enviarPin() {
+  const pinInputs = document.querySelectorAll(".pin-digit");
+  const btnVerificar = document.getElementById("btn-verificar-pin");
+
+  // Desactivar inputs y botón
+  pinInputs.forEach(i => i.disabled = true);
+  btnVerificar.disabled = true;
+
+  // Mostrar loader
+  mostrarLoaderPin();
+
+  fetch("{% url 'enviar_pin' %}", { method: "GET", credentials: "same-origin" })
+    .then(resp => resp.json())
+    .then(data => {
+      // Ocultar loader y reactivar inputs
+      ocultarLoaderPin();
+      pinInputs.forEach(i => i.disabled = false);
+      btnVerificar.disabled = false;
+
+      if (data.success) {
+        console.log("PIN enviado ✅");
+        mostrarExito("PIN Enviado", "Se ha enviado el PIN de verificación a su correo electrónico.");
+        document.getElementById("modal-pin").style.display = "flex";
+        pinInputs[0].focus();
+      } else {
+        console.error("Error enviando PIN:", data.message);
+        mostrarMensaje("Error", "No se pudo enviar el PIN. Intente nuevamente.", "error");
+      }
+    })
+    .catch(err => {
+      console.error("Error:", err);
+      ocultarLoaderPin();
+      pinInputs.forEach(i => i.disabled = false);
+      btnVerificar.disabled = false;
+      mostrarMensaje("Error", "Ocurrió un error al enviar el PIN.", "error");
+    });
+}
 
   // Funcionalidad PIN
   document.addEventListener("DOMContentLoaded", function () {
@@ -758,6 +845,166 @@ function enviarPin() {
     background: #4a4cd9;
     transform: translateY(-1px);
   }
+  #modal-loader-pin {
+  z-index: 999999 !important;
+}
+
+#modal-loader-pin .modal-content {
+  background: #fff;
+  padding: 2rem 1.5rem;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  position: relative;
+  margin: 1rem;
+}
+
+#modal-loader-pin .modal-icon-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  align-items: center;
+}
+
+#modal-loader-pin .modal-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  border: 2px solid #5d5fef;
+  color: #5d5fef;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#loader-title {
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+#loader-text {
+  color: #4b5563;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+  #modal-loader-pin .modal-content {
+    margin: 1rem 0.5rem;
+    padding: 1.5rem 1rem;
+  }
+  #modal-loader-pin .modal-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+  #loader-title {
+    font-size: 1.1rem;
+  }
+  #loader-text {
+    font-size: 0.9rem;
+  }
+}
+
+#modal-loader-transaccion {
+  z-index: 999999 !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+}
+
+#modal-loader-transaccion .modal-content {
+  background: #fff;
+  padding: 2rem 1.5rem;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  position: relative;
+  margin: 1rem;
+}
+
+#modal-loader-transaccion .modal-icon-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  align-items: center;
+}
+
+#modal-loader-transaccion .modal-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  font-weight: bold;
+  border: 2px solid #5d5fef;
+  color: #5d5fef;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+#loader-title-transaccion {
+  color: #1f2937;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+#loader-text-transaccion {
+  color: #4b5563;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 480px) {
+  #modal-loader-transaccion .modal-content {
+    margin: 1rem 0.5rem;
+    padding: 1.5rem 1rem;
+  }
+  #modal-loader-transaccion .modal-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.5rem;
+  }
+  #loader-title-transaccion {
+    font-size: 1.1rem;
+  }
+  #loader-text-transaccion {
+    font-size: 0.9rem;
+  }
+}
+
 
   /* RESPONSIVE */
   @media (max-width: 500px) {
