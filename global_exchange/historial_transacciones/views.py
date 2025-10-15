@@ -22,10 +22,18 @@ def historial_usuario(request):
     fecha_inicio = request.GET.get('fecha_inicio', '').strip()
     fecha_fin = request.GET.get('fecha_fin', '').strip()
 
+    # === OBTENER CLIENTE OPERATIVO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user, request)
+    
+    # Filtrar transacciones por usuario Y cliente operativo
     qs = (Transaccion.objects
           .filter(usuario=request.user)
-          .select_related('moneda_origen', 'moneda_destino')
+          .select_related('moneda_origen', 'moneda_destino', 'cliente')
           .order_by('-fecha'))
+    
+    # Filtrar por cliente operativo si existe
+    if cliente_operativo:
+        qs = qs.filter(cliente=cliente_operativo)
 
     # Filtro texto / campo
     if q and campo:
@@ -63,9 +71,8 @@ def historial_usuario(request):
     monedas_disponibles = sorted(monedas_set)
     
     segmento_nombre = "Sin Segmentación"
-    descuento=0
+    descuento = 0
     # === SEGMENTACIÓN SEGÚN USUARIO ===
-    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
         segmento_nombre = cliente_operativo.segmentacion.nombre
         if cliente_operativo.segmentacion.descuento:
@@ -75,14 +82,15 @@ def historial_usuario(request):
         'transacciones': qs,
         'q': q,
         'campo': campo,
-        'moneda_sel': moneda,          # mantener compatibilidad
+        'moneda_sel': moneda,
         'moneda': moneda,
         'monedas_disponibles': monedas_disponibles,
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         "segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,'descuento': descuento
+        "cliente_operativo": cliente_operativo,
+        'descuento': descuento
     }
     return render(request, 'historial_transacciones/historial_usuario.html', context)
 
@@ -269,4 +277,3 @@ def set_cliente_operativo(request):
             )
 
     return JsonResponse({"success": False, "error": "Petición inválida"}, status=400)
-	
