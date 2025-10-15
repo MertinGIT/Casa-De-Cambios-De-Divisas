@@ -32,8 +32,11 @@ from pathlib import Path
 import environ
 import os
 from datetime import datetime, timedelta
+from dotenv import load_dotenv
 
+load_dotenv()  # Carga las variables desde .env
 
+STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY")
 env = environ.Env(
     DEBUG=(bool, False)   
 )
@@ -102,6 +105,7 @@ INSTALLED_APPS = [
     'notificaciones',
     'configuracion_usuario',
     'admin_transacciones',
+    'tauser'
 ]
 
 

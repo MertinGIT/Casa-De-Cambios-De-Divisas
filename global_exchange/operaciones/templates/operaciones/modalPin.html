@@ -165,7 +165,7 @@ function verificarTasaActualizada(callback) {
             if (fechaBaseDatos > fechaNavegador) {
               // ⚠️ La tasa ya cambió
               $("#btn-continuar-tasa").show();   // mostrar botón de recalcular
-              $("#btn-confirmar").hide();        // ocultar botón de confirmar
+                      // ocultar botón de confirmar
               advertenciaMostrada = true;
 
               if (callback) callback(false); // avisar que NO puede continuar
@@ -299,7 +299,9 @@ function procesarTransaccion() {
   // PASO 1: Guardar en BD como PENDIENTE
   const payloadLocal = {
     usuario_id: "{{ request.user.id }}",
-    monto: parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
+    monto: typeof window.monto_total_con_comision !== "undefined"
+        ? window.monto_total_con_comision
+        : parseFloat(campos.op === "venta" ? $("#valor-compra").val() : $("#valor-venta").val()),
     tipo: campos.op === "venta" ? "compra" : "venta",
     estado: "pendiente",
     moneda_origen_id: moneda_origen_id,
@@ -405,9 +407,21 @@ function procesarTransaccion() {
         // 🔥 PASO 3: Si el banco aprobó Y hay pago con tarjeta, procesarlo AHORA
         if (window.metodoSeleccionadoNombre === "tarjeta") {
           console.log("💳 Banco aprobó, procesando pago con tarjeta...");
-          
-          const pagoExitoso = await procesarPagoStripe();
-          
+          const tipoTarjetaSelect = document.getElementById("tipo-tarjeta");
+          const tipoTarjeta = window.tipoTarjetaSeleccionada || "stripe";
+          console.log("Tipo de tarjeta seleccionada:", tipoTarjeta);
+          let pagoExitoso = false;
+
+          if (tipoTarjeta === "stripe") {
+
+            pagoExitoso = await procesarPagoStripe(window.nacionalPaymentData);
+          } else if (tipoTarjeta === "nacional") {
+            pagoExitoso = await procesarPagoNacional(window.nacionalPaymentData);
+          } else {
+            console.error("Método de tarjeta desconocido:", tipoTarjeta);
+            mostrarMensaje("⚠️ Error", "Método de pago con tarjeta desconocido.");
+            return; // 🔥 Detener aquí
+          }
           if (!pagoExitoso) {
             console.error("❌ Pago con tarjeta falló después de aprobación bancaria");
             estadoFinal = "cancelada"; // 🔥 Cambiar estado a cancelada

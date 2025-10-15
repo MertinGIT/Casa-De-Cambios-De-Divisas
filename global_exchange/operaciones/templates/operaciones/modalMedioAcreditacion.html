@@ -187,43 +187,59 @@
     }
 
     function confirmarAcreditacion() {
-        if (!medioSeleccionado) {
-            window.mostrarMensajeModal("Info",'Por favor seleccione un medio de acreditación','info');
+        verificarTasaActualizada(function(tasaActualizada) {
+        console.log("Tasa actualizada123123:", tasaActualizada);
+        if (tasaActualizada) {
+            console.log("Tasa actualizada123123, procediendo a método de pago");
+            
+        
+            console.log("sale por medioSeleccionado");
+            if (!medioSeleccionado) {
+                window.mostrarMensajeModal("Info",'Por favor seleccione un medio de acreditación','info');
+                return;
+            }
+            
+
+            // 🚨 Si no hay ningún campo definido
+            if (!medioSeleccionado.campos || medioSeleccionado.campos.length === 0) {
+                window.mostrarMensajeModal("Error","El medio seleccionado no tiene datos configurados. Debe completar los datos de acreditación en la Configuracion.");
+                return;
+            }
+
+            // Validar que todos los campos requeridos tengan valor
+            const camposFaltantes = medioSeleccionado.campos.filter(campo => {
+                // si "campo" es un input HTML real
+                let valor = campo.value !== undefined ? campo.value : "";
+                valor = valor.toString().trim();
+                return valor === "";
+            });
+
+            console.log("confirmarAcreditacion",camposFaltantes)
+            if (camposFaltantes.length > 0) {
+                let nombres = camposFaltantes.map(c => c.label || c.name || "(campo)").join(", ");
+                alert("⚠️ El medio seleccionado no tiene datos completos. Debe completar: " + nombres);
+                return;
+            }
+
+            window.datosAcreditacion = medioSeleccionado;
+
+            // Cerrar modal
+            cerrarModalAcreditacion();
+
+            if (window.mfaTransacciones) {
+                mostrarModalPin();   // pedir PIN
+            } else {
+                procesarTransaccion(); // ir directo
+            }
+        }else{
+            //$("#modal-exito").hide();
+            mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+            $("#modal-pin").fadeOut();
+            $("#modal-acreditacion").fadeOut();
+            console.log("elseeeeeee");
             return;
         }
-
-         // 🚨 Si no hay ningún campo definido
-    if (!medioSeleccionado.campos || medioSeleccionado.campos.length === 0) {
-        window.mostrarMensajeModal("Error","El medio seleccionado no tiene datos configurados. Debe completar los datos de acreditación en la Configuracion.");
-        return;
-    }
-
-        // Validar que todos los campos requeridos tengan valor
-    const camposFaltantes = medioSeleccionado.campos.filter(campo => {
-        // si "campo" es un input HTML real
-        let valor = campo.value !== undefined ? campo.value : "";
-        valor = valor.toString().trim();
-        return valor === "";
-    });
-
-    console.log("confirmarAcreditacion",camposFaltantes)
-    if (camposFaltantes.length > 0) {
-        let nombres = camposFaltantes.map(c => c.label || c.name || "(campo)").join(", ");
-        alert("⚠️ El medio seleccionado no tiene datos completos. Debe completar: " + nombres);
-        return;
-    }
-
-        window.datosAcreditacion = medioSeleccionado;
-
-        // Cerrar modal
-        cerrarModalAcreditacion();
-
-        if (window.mfaTransacciones) {
-            mostrarModalPin();   // pedir PIN
-        } else {
-            procesarTransaccion(); // ir directo
-        }
-    }
+        })}
 
     function resetearFormularioAcreditacion() {
         // Limpiar selección

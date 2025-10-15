@@ -66,6 +66,11 @@ class MetodoPago(models.Model):
             - False: Método deshabilitado (soft delete)
             - Valor por defecto: True
             - Permite mantener histórico sin eliminar registros
+
+        comision (DecimalField): Porcentaje de comisión aplicado al método de pago.
+            - Máximo 6 dígitos en total, 2 decimales
+            - Valor por defecto: 0.00
+            - Ejemplo: 2.50 para una comisión del 2.5%
     
     Meta opciones:
         verbose_name: Nombre singular en interfaz administrativa
@@ -141,6 +146,14 @@ class MetodoPago(models.Model):
     activo = models.BooleanField(
         default=True,
         help_text="Indica si el método de pago está disponible para nuevas transacciones"
+    )
+
+    # Campo de comisión: porcentaje de comisión aplicado al método de pago
+    comision = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        default=0.00,
+        help_text="Porcentaje de comisión aplicado a este método de pago (ej: 2.50 para 2.5%)"
     )
 
     class Meta:

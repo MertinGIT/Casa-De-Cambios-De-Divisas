@@ -89,10 +89,9 @@ def simulador_operaciones(request):
         .order_by("moneda_destino", "-vigencia")
     )
 
-    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion"))
-    
-    print("metodos_pago:", metodos_pago, flush=True)
-
+    metodos_pago = list(MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion", "comision"))
+    for m in metodos_pago:
+        m['comision'] = float(m['comision']) if m['comision'] is not None else 0
     # Reorganizar tasas
     data_por_moneda = {}
     for tasa in tasas:
@@ -403,10 +402,18 @@ def verificar_limites(request):
         )
 
         # Calcular gasto diario y mensual
-        gasto_diario = (
-            transacciones_validas.filter(fecha__date=hoy)
-            .aggregate(total=Sum("monto"))["total"] or Decimal('0')
-        )
+        gasto_diario = transacciones_validas.filter(
+            fecha__date=hoy
+        ).aggregate(
+            total=Sum(
+                Case(
+                    When(tipo__iexact='venta', then=F('monto') * F('tasa_usada')),
+                    default=F('monto'),
+                    output_field=DecimalField()
+                )
+            )
+        )["total"] or 0
+
         gasto_mensual = transacciones_validas.filter(
             fecha__date__gte=inicio_mes
         ).aggregate(
@@ -595,7 +602,7 @@ def obtener_metodos_pago(request):
     :rtype: JsonResponse
     """
     if request.method == "GET":
-        metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion")
+        metodos = MetodoPago.objects.filter(activo=True).values("id", "nombre", "descripcion", "comision")
         return JsonResponse(list(metodos), safe=False)
     return JsonResponse({"error": "Método no permitido"}, status=405)
 
@@ -743,9 +750,9 @@ def actualizar_estado_transaccion(request):
     return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
 
 import stripe
+from django.conf import settings
 
-os.getenv("STRIPE_SECRET_KEY")
-stripe.api_key = "sk_test_51SEA4sPPA3ZGnjFU3wxBTnzxOQ0aTSrfwj4dmiPOvmHEGfB23V2o7PQicRcik5bhGwHBGoYO6RKhYtkBfPFLTVxr00YmgrD9dE"
+stripe.api_key = settings.STRIPE_SECRET_KEY
 @csrf_exempt
 def crear_pago_stripe(request):
     if request.method == "POST":

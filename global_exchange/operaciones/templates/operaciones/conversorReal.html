@@ -249,7 +249,7 @@
           <tr>
             <td>{{ t.id }}</td>
             <td>{{ t.fecha }}</td>
-            <td>{{ t.monto }}</td>
+            <td>{{ t.monto|floatformat:2 }}</td>
             <td>{{ t.moneda_origen }}</td>
             <td>{{ t.moneda_destino }}</td>
             <td>{{ t.metodo_pago }}</td>
@@ -265,6 +265,10 @@
     </section>
   </div>
 </div>
+
+<script>
+  window.MEDIOS_PAGO = {{ medios|safe }};
+</script>
 
 <!-- MODAL Mensajes -->
 {% include 'operaciones/modalMensajes.html' %}
@@ -636,16 +640,17 @@
           });
 
           // Nuevo botón para confirmar método de pago
-          $("#btn-confirmar").click(function () {
+          $("#btn-confirmar-pago").click(function () {
             verificarTasaActualizada(function(tasaActualizada) {
+            console.log("Tasa actualizada:", tasaActualizada);
             if (tasaActualizada) {
               //$("#modal-confirmacion").fadeOut();
-              //$("#modal-metodo").fadeIn().css("display", "flex");
+              //$("#modal-acreditacion").fadeIn().css("display", "flex");
               console.log("Tasa actualizada, procediendo a método de pago");
             }else{
-              $("#modal-exito").hide();
+              //$("#modal-exito").hide();
               mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
-              $("#modal-confirmacion").fadeOut();
+              $("#modal-acreditacion").fadeOut();
             }
             });
           });
@@ -730,7 +735,7 @@
             if (fechaBaseDatos > fechaNavegador) {
               // ⚠️ La tasa ya cambió
               $("#btn-continuar-tasa").show();   // mostrar botón de recalcular
-              $("#btn-confirmar").hide();        // ocultar botón de confirmar
+                    // ocultar botón de confirmar
               advertenciaMostrada = true;
 
               if (callback) callback(false); // avisar que NO puede continuar
@@ -760,7 +765,7 @@ verificarLimites =function() {
   const campos = getCampos();
   const origenAbrev = campos.$origen.val();
   const destinoAbrev = campos.$destino.val();
-  const montoTransaccion = parseFloat(campos.$valor.val());
+  const montoTransaccion = campos.op === "venta" ? parseFloat(campos.$valor.val()) : parseFloat(campos.$resultado.val()); 
 
   // Determinar qué moneda y monto enviar según el tipo de operación
   let monedaParaLimite, montoParaLimite;
@@ -772,7 +777,7 @@ verificarLimites =function() {
     montoParaLimite = montoTransaccion;
   } else {
     // VENTA: cliente entrega USD/ARS/etc
-    monedaParaLimite = origenAbrev;
+    monedaParaLimite = "PYG";
     montoParaLimite = montoTransaccion;
   }
   console.log("Monto transacción:");
