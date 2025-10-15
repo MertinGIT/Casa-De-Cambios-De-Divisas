@@ -19,7 +19,7 @@ def admin_dashboard(request):
     # Ganancias hoy: suma de tasa_usada de transacciones confirmadas hoy
     ganancias_hoy = Transaccion.objects.filter(
         fecha__date=fecha_actual,
-        estado="completada"
+        estado="confirmada"
     ).aggregate(total=Sum('ganancia'))['total'] or Decimal('0.0')
     print("Ganancias hoy:", ganancias_hoy,flush=True)
     
@@ -28,12 +28,12 @@ def admin_dashboard(request):
     # Ganancias ayer
     ganancias_ayer = Transaccion.objects.filter(
         fecha__date=fecha_ayer,
-        estado="completada"
+        estado="confirmada"
     ).aggregate(total=Sum('ganancia'))['total'] or Decimal('0.0')
     print("Ganancias ayer:", ganancias_ayer, flush=True)
 
     # Número de transacciones hoy
-    transacciones_hoy = Transaccion.objects.filter(estado="completada",
+    transacciones_hoy = Transaccion.objects.filter(estado="confirmada",
         fecha__date=fecha_actual
     ).count()
     promedio_transacciones_dia = int(Transaccion.objects.filter(fecha__month=hoy.month).count() / hoy.day)
@@ -44,7 +44,7 @@ def admin_dashboard(request):
     nuevos_clientes_mes = Cliente.objects.filter(estado="activo", creado_en__month=hoy.month).count()
 
     moneda_mas_operada = Transaccion.objects.filter(
-        estado="completada",
+        estado="confirmada",
         fecha__month=hoy.month
     ).values("moneda_destino__abreviacion").annotate(total=Count("id")).order_by("-total").first()
     
@@ -62,7 +62,7 @@ def admin_dashboard(request):
     
     top_monedas = (
     Transaccion.objects
-    .filter(estado="completada",fecha__date=hoy)
+    .filter(estado="confirmada",fecha__date=hoy)
     .values('moneda_origen__abreviacion', 'moneda_origen__nombre','moneda_destino__abreviacion', 'moneda_destino__nombre')
     .annotate(
         total=Count('id'),
@@ -109,7 +109,7 @@ def obtener_ganancias_por_rango(dias_hacia_atras):
     for dia in dias:
         total = Transaccion.objects.filter(
             fecha__date=dia,
-            estado="completada"
+            estado="confirmada"
         ).aggregate(total=Sum('ganancia'))['total'] or 0
         data.append(float(total))
 

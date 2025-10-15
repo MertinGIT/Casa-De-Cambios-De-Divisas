@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'channels',
     'notificaciones',
     'configuracion_usuario',
+    'admin_transacciones',
     'tauser'
 ]
 

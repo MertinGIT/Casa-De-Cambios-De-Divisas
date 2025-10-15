@@ -70,6 +70,7 @@ urlpatterns = [
     path('clientes/', include('clientes.urls'), name = 'clientes'), 
     path('clientes/limites/', include('limite_moneda.urls')),
     path('usuarios/', include('usuarios.urls')),
+    path('admin/transacciones/', include('admin_transacciones.urls')),
 
 ]
 

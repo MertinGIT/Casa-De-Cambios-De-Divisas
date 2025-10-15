@@ -19,8 +19,8 @@
         <span class="label">Panel Principal</span></a>
     </li>
     <li>
-      <a href="#"><span class="icon">&#x1F4CA;</span>
-        <span class="label">Reportes</span></a>
+      <a href="{% url 'listar_transacciones' %}"><span class="icon">&#x1F4CA;</span>
+        <span class="label">Transacciones</span></a>
     </li>
     {% if request.user|has_active_group_perm:'clientes.view_cliente' %}
     <li>
@@ -70,7 +70,7 @@
         <a href="{% url 'admin_dashboard' %}"><span class="icon">&#x1F4C8;</span> Panel Principal</a>
       </li>
       <li>
-        <a href="#"><span class="icon">&#x1F4CA;</span> Reportes</a>
+        <a href="{% url 'listar_transacciones' %}"><span class="icon">&#x1F4CA;</span>Transacciones</a>
       </li>
       <li>
         <a href="{% url 'clientes' %}">
