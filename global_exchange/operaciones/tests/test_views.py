@@ -4,6 +4,7 @@ from django.contrib.auth.models import Group
 from usuarios.models import CustomUser
 from cliente_segmentacion.models import Segmentacion
 from clientes.models import Cliente
+from cliente_usuario.models import Usuario_Cliente  # ← Importar este modelo
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
@@ -29,6 +30,12 @@ class OperacionesViewsTest(TestCase):
             estado="activo"
         )
 
+        # ← AGREGAR ESTA RELACIÓN Usuario_Cliente
+        Usuario_Cliente.objects.create(
+            id_usuario=self.user,
+            id_cliente=self.cliente
+        )
+
         self.client = Client()
         self.client.login(username="testuser", password="12345")
         session = self.client.session
@@ -41,19 +48,15 @@ class OperacionesViewsTest(TestCase):
         self.tasa = TasaDeCambio.objects.create(
             moneda_origen=self.moneda_usd,
             moneda_destino=self.moneda_pyg,
-            # monto_compra=Decimal("7300.00"),
-            # monto_venta=Decimal("7500.00"),
             precio_base=Decimal("7400.00"),
             comision_compra=Decimal("0.00"),
             comision_venta=Decimal("0.00"),
         )
 
     def test_simulador_operaciones_get(self):
-        url = reverse("operaciones")  # sin namespace
+        url = reverse("operaciones")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.status_code, 200)
-
 
     def test_simulador_operaciones_post_venta(self):
         url = reverse("operaciones")
@@ -68,7 +71,7 @@ class OperacionesViewsTest(TestCase):
         self.assertIn("ganancia_total", data)
 
     def test_guardar_transaccion(self):
-        url = reverse("guardar_transaccion")  # sin namespace
+        url = reverse("guardar_transaccion")
         payload = {
             "monto": "1000",
             "tipo": "venta",
@@ -76,7 +79,8 @@ class OperacionesViewsTest(TestCase):
             "moneda_origen_id": self.moneda_pyg.id,
             "moneda_destino_id": self.moneda_usd.id,
             "tasa_usada": "7300",
-            "tasa_ref_id": self.tasa.id
+            "tasa_ref_id": self.tasa.id,
+            "cliente_id": self.cliente.id
         }
         response = self.client.post(url, data=payload, content_type="application/json")
         self.assertEqual(response.status_code, 200)

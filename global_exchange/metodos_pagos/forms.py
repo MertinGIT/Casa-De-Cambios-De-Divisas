@@ -411,7 +411,7 @@ class MetodoPagoForm(forms.ModelForm):
                 raise ValidationError("La descripción no puede exceder 500 caracteres.")
         
         # Default que esperan los tests
-        return descripcion or "Sin descripción"
+        return descripcion or "No hay descripción"
 
     def clean_comision(self):
         """
