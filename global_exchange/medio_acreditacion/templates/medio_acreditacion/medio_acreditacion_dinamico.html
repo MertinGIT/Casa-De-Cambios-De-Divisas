@@ -33,13 +33,21 @@
     </div>
   {% endfor %}
   <div class="modal-footer-nuevo">
-    <button type="button" class="btn-cancelar" onclick="closeModal()">Cancelar</button>
+    <button type="button" class="btn-cancelar" onclick="cerrarModalDinamico()">Cancelar</button>
     <button type="submit" class="btn-confirmar">Guardar</button>
   </div>
 </form>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js"></script>
 <script>
+  function cerrarModalDinamico() {
+  // Detecta si está en el modal de agregar o editar y cierra el correcto
+  if ($('#modal-agregar-medio').is(':visible')) {
+    cerrarModalAgregarMedio();
+  } else if ($('#modal-editar-medio').is(':visible')) {
+    cerrarModalEditarMedio();
+  }
+}
   // Mensajes en español
   jQuery.extend(jQuery.validator.messages, {
     required: "Este campo es obligatorio.",

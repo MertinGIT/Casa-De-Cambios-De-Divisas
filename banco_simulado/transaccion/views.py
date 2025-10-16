@@ -130,6 +130,43 @@ def transaccion_banco_view(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+import random
+
+@api_view(["POST"])
+def simulador_tarjeta_nacional(request):
+    try:
+        if not request.data or not isinstance(request.data, dict):
+            return Response(
+                {"estado": "error", "mensaje": "Datos inválidos o ausentes"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Campos requeridos actualizados
+        required_fields = ["card_number", "holder_name", "exp_month", "exp_year", "cvc", "amount"]
+        missing = [f for f in required_fields if f not in request.data]
+        if missing:
+            return Response(
+                {"estado": "error", "mensaje": f"Faltan campos: {', '.join(missing)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        print("💳 Simulador tarjeta nacional - datos recibidos:", request.data)
+
+        # Siempre aprueba
+        transaction_id = f"NAC-{random.randint(100000,999999)}"
+        return Response({
+            "estado": "ok",
+            "mensaje": "Pago aprobado (simulado)",
+            "transaction_id": transaction_id
+        }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        return Response(
+            {"estado": "error", "mensaje": f"Error interno del simulador: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 from django.conf import settings
 from rest_framework_simplejwt.backends import TokenBackend
 @api_view(['GET', 'POST'])

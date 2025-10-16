@@ -18,6 +18,9 @@ from usuarios.models import CustomUser
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from clientes.models import Cliente
+from metodos_pagos.models import MetodoPago
+from django.conf import settings
+from django.utils import timezone
 
 class TransaccionQuerySet(models.QuerySet):
     """
@@ -104,6 +107,7 @@ class Transaccion(models.Model):
     TIPOS = [
         ("compra", "Compra"),
         ("venta", "Venta"),
+        ('cambio', 'Cambio'),
     ]
 
     usuario = models.ForeignKey(
@@ -136,6 +140,12 @@ class Transaccion(models.Model):
         choices=ESTADOS,
         default="pendiente",
         help_text="Estado del ciclo de vida."
+    )
+    metodo_pago = models.ForeignKey(
+        MetodoPago,
+        on_delete=models.PROTECT,  # evita que se elimine un método usado en transacciones
+        related_name="transacciones",
+        help_text="Método de pago utilizado en la transacción (ej: efectivo, transferencia)."
     )
     ganancia = models.DecimalField(
         max_digits=23,
@@ -176,6 +186,16 @@ class Transaccion(models.Model):
         related_name="transacciones",
         help_text="Cliente al que pertenece esta transacción."
     )
+    
+    # Nuevos campos para auditoría
+    fecha_procesado = models.DateTimeField(null=True, blank=True)
+    procesado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transacciones_procesadas'
+    )
 
     
     def __str__(self):
@@ -190,6 +210,29 @@ class Transaccion(models.Model):
 
 
     objects = TransaccionManager()
+    def puede_procesarse(self):
+        """Verifica si la transacción puede ser procesada"""
+        return self.estado.lower() == 'pendiente' and self.metodo_pago.nombre.lower()  == 'efectivo'
+    
+    def procesar(self, usuario):
+        """Marca la transacción como confirmada"""
+        if not self.puede_procesarse():
+            raise ValueError("La transacción no puede ser procesada")
+        
+        self.estado = 'confirmada'
+        self.fecha_procesado = timezone.now()
+        self.procesado_por = usuario
+        self.save()
+    
+    def cancelar(self, usuario):
+        """Cancela la transacción"""
+        if self.estado == 'confirmada':
+            raise ValueError("No se puede cancelar una transacción confirmada")
+        
+        self.estado = 'cancelada'
+        self.fecha_procesado = timezone.now()
+        self.procesado_por = usuario
+        self.save()
 
 
     class Meta:

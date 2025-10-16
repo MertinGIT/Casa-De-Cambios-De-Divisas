@@ -16,9 +16,11 @@ def configuracion_view_usuario(request):
             descuento = float(cliente_operativo.segmentacion.descuento)
             segmento_nombre = cliente_operativo.segmentacion.nombre
         
-    return render(request, 'configuracion_usuario/configuracion_home_usuario.html',{"segmento": segmento_nombre,
+    return render(request, 'configuracion_usuario/configuracion_home_usuario.html',{
+        "segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,'descuento': descuento,})
+        "cliente_operativo": cliente_operativo,'descuento': descuento,
+        })
 
 
 def obtener_clientes_usuario(user,request):
@@ -88,7 +90,16 @@ def set_cliente_operativo(request):
 def mfa_configuration(request):
     """Configuración de autenticación multifactor"""
     user = request.user
-    
+
+    segmento_nombre = "Sin Segmentación"
+    descuento=0
+    # === SEGMENTACIÓN SEGÚN USUARIO ===
+    clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user,request)
+    if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
+        segmento_nombre = cliente_operativo.segmentacion.nombre
+        if cliente_operativo.segmentacion.descuento:
+            descuento = float(cliente_operativo.segmentacion.descuento)
+
     print(f"\n=== MFA Configuration View ===")
     print(f"Método: {request.method}")
     print(f"Usuario: {user.username}")
@@ -142,6 +153,9 @@ def mfa_configuration(request):
     # GET request - renderizar template
     print(f"Renderizando template con MFA: {user.mfa_transacciones}")
     return render(request, "configuracion_usuario/mfa_configuration.html", {
-        "user": user
+        "user": user,
+        "segmento": segmento_nombre,
+        "clientes_asociados": clientes_asociados,
+        "cliente_operativo": cliente_operativo,'descuento': descuento
     })
 
