@@ -41,7 +41,7 @@
                                         <div class="metodo-check">✓</div>
                                     </label>
                                 </div>
-                            {% elif "banco" in medio.nombre|lower %}
+                            {% elif "transferencia" in medio.nombre|lower %}
                                 <div class="metodo-item">
                                     <input type="radio" id="transferencia" name="metodo" value="{{ medio.id }}" data-form="transferencia" class="metodo-radio">
                                     <label for="transferencia" class="metodo-label">

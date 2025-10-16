@@ -22,8 +22,8 @@ def listar_transacciones(request):
     Retorna JSON para peticiones AJAX o renderiza template para GET normal.
     """
     
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Acceso denegado"}, status=403)
+    #if not request.user.is_staff:
+    #    return JsonResponse({"error": "Acceso denegado"}, status=403)
     
     # Obtener todas las transacciones
     transacciones = Transaccion.objects.select_related(
