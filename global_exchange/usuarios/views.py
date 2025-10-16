@@ -88,9 +88,7 @@ def home(request):
 
     print("data_por_moneda:", data_por_moneda, flush=True)
 
-    # Comisiones y segmentos
-    COMISION_VTA = 100
-    COMISION_COM = 50
+
     
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     descuento = 0
@@ -120,7 +118,8 @@ def home(request):
     destino = ""
     COMISION_VTA = None
     COMISION_COM = None
-    
+
+
     # Reorganizar datos en un dict similar a tu data_por_moneda
     data_por_moneda = {}
     for tasa in tasas:
@@ -521,8 +520,8 @@ def pagina_aterrizaje(request):
     )
     
     # Comisiones y descuento por segmentacion de clientes
-    COMISION_VTA = 100
-    COMISION_COM = 50
+    COMISION_VTA = None
+    COMISION_COM = None
     descuento = 0
     # === SEGMENTACIÓN SEGÚN USUARIO ===
     if request.user.is_authenticated:  # solo si está logueado
@@ -543,6 +542,8 @@ def pagina_aterrizaje(request):
         PB_MONEDA = float(tasa.precio_base)
         print("PB_MONEDA en pagina_Aterrizaje", PB_MONEDA, flush=True)
         # Calculamos tasas según fórmula
+        COMISION_VTA = float(tasa.comision_venta or 0)
+        COMISION_COM = float(tasa.comision_compra or 0)
         TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
 
@@ -553,7 +554,10 @@ def pagina_aterrizaje(request):
         data_por_moneda[abrev].insert(0, {
             "fecha": tasa.vigencia,
             "compra": round(TC_COMP, 2),
-            "venta": round(TC_VTA, 2)
+            "venta": round(TC_VTA, 2),
+            "comision_compra": float(tasa.comision_compra),
+            "comision_venta": float(tasa.comision_venta),
+            "precio_base": float(tasa.precio_base)
         })
 
     print("data_por_moneda aterrizaje:", data_por_moneda, flush=True)

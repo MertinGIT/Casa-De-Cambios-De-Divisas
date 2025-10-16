@@ -22,7 +22,9 @@ Vistas basadas en función
 .. autofunction:: operaciones.views.guardar_metodo_pago
 .. autofunction:: operaciones.views.guardar_transaccion 
 .. autofunction:: operaciones.views.actualizar_estado_transaccion
-
+.. autofunction:: operaciones.views.crear_pago_stripe
+.. autofunction:: operaciones.views.enviar_pin
+.. autofunction:: operaciones.views.validar_pin 
 
 
 

@@ -11,8 +11,17 @@ from .forms import LimiteTransaccionForm
 
 def lista_limites(request):
     """
-    Listado de los límites globales de operaciones.
-    En la práctica, debería existir solo una instancia.
+    Muestra la lista de límites globales de transacciones.
+
+    Obtiene todas las instancias de `LimiteTransaccion`, ordenadas por estado,
+    y renderiza la plantilla `limite_moneda/lista.html` junto con el formulario
+    de creación de nuevos límites.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+
+    Retorna:
+        HttpResponse: Página renderizada con la lista de límites y el formulario.
     """
     form = LimiteTransaccionForm()
     limites = LimiteTransaccion.objects.all().order_by('-estado')
@@ -23,6 +32,20 @@ def lista_limites(request):
 
 
 def  crear_limite(request):
+    """
+    Crea un nuevo límite de transacción global.
+
+    Procesa los datos enviados mediante POST utilizando `LimiteTransaccionForm`.
+    Si el formulario es válido, crea un nuevo límite asociado a una moneda
+    específica (actualmente se usa la moneda con id=1). Si ocurre un error de
+    validación, se re-renderiza la página mostrando el modal con los errores.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+
+    Retorna:
+        HttpResponse: Redirección a la lista de límites o página renderizada con errores.
+    """
     if request.method == "POST":
         form = LimiteTransaccionForm(request.POST)
         print("POST DATA:", request.POST)  # Para ver qué llega
@@ -50,7 +73,23 @@ def  crear_limite(request):
 
 def editar_limite(request, pk):
     """
-    Editar un límite global existente.
+    Edita un límite de transacción existente.
+
+    Permite modificar los valores de un límite global identificado por su `pk`.
+    Soporta tanto peticiones normales como AJAX, devolviendo respuestas JSON
+    en caso de solicitudes asincrónicas.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+        pk (int): Identificador del límite de transacción a editar.
+
+    Retorna:
+        HttpResponse | JsonResponse:
+            - Página renderizada con el formulario o redirección a la lista de límites.
+            - JSON con el resultado si la petición es AJAX.
+
+    Excepciones:
+        Http404: Si el límite con la clave primaria especificada no existe.
     """
     limite = get_object_or_404(LimiteTransaccion, pk=pk)
 
@@ -109,7 +148,17 @@ def editar_limite(request, pk):
 
 def limite_detalle(request, pk):
     """
-    Devuelve los detalles de un límite global en formato JSON.
+    Devuelve los detalles de un límite en formato JSON.
+
+    Busca el límite de transacción por su clave primaria y devuelve sus
+    atributos principales, como límite diario, mensual y moneda asociada.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+        pk (int): Identificador del límite.
+
+    Retorna:
+        JsonResponse: Diccionario con los datos del límite.
     """
     limite = get_object_or_404(LimiteTransaccion, pk=pk)
     return JsonResponse({
@@ -119,7 +168,26 @@ def limite_detalle(request, pk):
         "moneda": limite.moneda.nombre if limite.moneda else None,
     })
 def cambiar_estado_limite(request, pk):
-    """Alterna el estado entre activo/inactivo de un límite"""
+    """
+    Cambia el estado de un límite entre 'activo' e 'inactivo'.
+
+    Si se activa un límite, cualquier otro límite activo de la misma moneda
+    se desactiva automáticamente para mantener una única configuración activa
+    por moneda. Soporta peticiones AJAX.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+        pk (int): Identificador del límite de transacción.
+
+    Retorna:
+        HttpResponse | JsonResponse:
+            - JSON con el nuevo estado si la petición es AJAX.
+            - Redirección a la lista de límites en solicitudes normales.
+
+    Excepciones:
+        Http404: Si el límite no existe.
+        Exception: Si ocurre un error al guardar los cambios.
+    """
     limite = get_object_or_404(LimiteTransaccion, pk=pk)
     response = {}
 

@@ -755,6 +755,46 @@ from django.conf import settings
 stripe.api_key = settings.STRIPE_SECRET_KEY
 @csrf_exempt
 def crear_pago_stripe(request):
+    """
+    Crea un PaymentIntent en Stripe para procesar un pago.
+
+    Este endpoint recibe una solicitud HTTP POST con el monto total a pagar.
+    Utiliza la API de Stripe para generar un objeto PaymentIntent, que contiene 
+    la información necesaria para completar un pago seguro en el cliente.
+
+    Parámetros esperados (en request.POST):
+        total (int): Monto total del pago expresado en la unidad más pequeña 
+                     de la moneda (por ejemplo, centavos para USD, guaraníes para PYG).
+
+    Flujo del proceso:
+        1. Se obtiene el monto total del pago desde el cuerpo de la solicitud.
+        2. Se crea un PaymentIntent en Stripe con la moneda especificada.
+        3. Se devuelve el `client_secret` del PaymentIntent, que será usado por el
+           cliente (frontend) para completar el pago.
+
+    Respuestas:
+        - 200 OK: Devuelve un JSON con la clave "client_secret" si la creación fue exitosa.
+          Ejemplo:
+              {
+                  "client_secret": "pi_3PxW...secret_123"
+              }
+        - 400 Bad Request: Devuelve un JSON con el mensaje de error si ocurre una excepción.
+        - 405 Method Not Allowed: Devuelve un JSON indicando que el método HTTP no es permitido.
+
+    Ejemplo de uso (cliente JavaScript):
+        fetch("/crear-pago-stripe/", {
+            method: "POST",
+            body: new URLSearchParams({ total: "10000" })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Usar data.client_secret con Stripe.js para confirmar el pago
+        });
+
+    Requiere:
+        - Tener configurada la variable STRIPE_SECRET_KEY en settings.py
+        - Tener instalada y configurada la librería stripe (pip install stripe)
+    """
     if request.method == "POST":
         try:
             total = int(request.POST.get("total", 0))
