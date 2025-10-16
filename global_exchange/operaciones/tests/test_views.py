@@ -9,6 +9,7 @@ from cliente_usuario.models import Usuario_Cliente  # ← Importar este modelo
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
+from metodos_pagos.models import MetodoPago  # ← AGREGAR IMPORT
 from decimal import Decimal
 from django.utils import timezone
 from django.core import mail
@@ -56,6 +57,13 @@ class OperacionesViewsTest(TestCase):
             comision_venta=Decimal("0.00"),
         )
 
+        # ← CREAR MÉTODO DE PAGO
+        self.metodo_pago = MetodoPago.objects.create(
+            nombre="Efectivo Test",
+            descripcion="Pago en efectivo para tests",
+            activo=True
+        )
+
     def test_simulador_operaciones_get(self):
         url = reverse("operaciones")
         response = self.client.get(url)
@@ -83,7 +91,8 @@ class OperacionesViewsTest(TestCase):
             "moneda_destino_id": self.moneda_usd.id,
             "tasa_usada": "7300",
             "tasa_ref_id": self.tasa.id,
-            "cliente_id": self.cliente.id
+            "cliente_id": self.cliente.id,
+            "metodo_pago_id": self.metodo_pago.id  # ← AGREGAR ESTE CAMPO
         }
         response = self.client.post(url, data=payload, content_type="application/json")
         self.assertEqual(response.status_code, 200)

@@ -7,6 +7,7 @@ from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
 from clientes.models import Cliente
 from cliente_segmentacion.models import Segmentacion
+from metodos_pagos.models import MetodoPago  # ← AGREGAR IMPORT
 from django.utils import timezone
 
 class TransaccionModelTest(TestCase):
@@ -45,6 +46,13 @@ class TransaccionModelTest(TestCase):
             comision_venta=Decimal("0.00"),
         )
 
+        # ← CREAR MÉTODO DE PAGO
+        self.metodo_pago = MetodoPago.objects.create(
+            nombre="Efectivo Test",
+            descripcion="Pago en efectivo para tests",
+            activo=True
+        )
+
     def test_crear_transaccion(self):
         """Se puede crear una transacción correctamente"""
         transaccion = Transaccion.objects.create(
@@ -56,7 +64,8 @@ class TransaccionModelTest(TestCase):
             moneda_origen=self.moneda_origen,
             moneda_destino=self.moneda_destino,
             tasa_usada=Decimal("7100.0"),
-            tasa_ref=self.tasa
+            tasa_ref=self.tasa,
+            metodo_pago=self.metodo_pago  # ← AGREGAR ESTE CAMPO
         )
 
         self.assertEqual(transaccion.usuario, self.user)
@@ -68,6 +77,7 @@ class TransaccionModelTest(TestCase):
         self.assertEqual(transaccion.moneda_destino, self.moneda_destino)
         self.assertEqual(transaccion.tasa_usada, Decimal("7100.0"))
         self.assertEqual(transaccion.tasa_ref, self.tasa)
+        self.assertEqual(transaccion.metodo_pago, self.metodo_pago)  # ← VERIFICAR
 
     def test_str_method(self):
         """El método __str__ devuelve el string esperado"""
@@ -80,7 +90,8 @@ class TransaccionModelTest(TestCase):
             moneda_origen=self.moneda_origen,
             moneda_destino=self.moneda_destino,
             tasa_usada=Decimal("7100.0"),
-            tasa_ref=self.tasa
+            tasa_ref=self.tasa,
+            metodo_pago=self.metodo_pago  # ← AGREGAR ESTE CAMPO
         )
 
         expected_str = f"Transacción {transaccion.id} - VENTA 1000 {self.moneda_origen} -> {self.moneda_destino} [confirmada]"

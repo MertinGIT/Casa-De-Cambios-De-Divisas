@@ -10,6 +10,7 @@ from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
 from clientes.models import Cliente
 from cliente_segmentacion.models import Segmentacion
+from metodos_pagos.models import MetodoPago  # ← AGREGAR IMPORT
 
 User = get_user_model()
 
@@ -65,17 +66,25 @@ class HistorialTransaccionesViewsTests(TestCase):
             estado="activo"
         )
 
+        # ← CREAR MÉTODO DE PAGO
+        cls.metodo_pago = MetodoPago.objects.create(
+            nombre="Efectivo Test",
+            descripcion="Método de pago para tests",
+            activo=True
+        )
+
         # Crear transacción con los campos CORRECTOS según operaciones/models.py
         cls.tx = Transaccion.objects.create(
             usuario=cls.user,
             cliente=cls.cliente,
-            monto=Decimal("100000"),           # ✅ campo correcto
-            tipo="venta",                       # ✅ campo correcto (no tipo_operacion)
+            monto=Decimal("100000"),
+            tipo="venta",
             estado="confirmada",
             moneda_origen=cls.pyg,
             moneda_destino=cls.usd,
-            tasa_usada=Decimal("7250"),        # ✅ campo correcto (no tasa_aplicada)
-            tasa_ref=cls.tasa,                 # ✅ campo correcto (no tasa)
+            tasa_usada=Decimal("7250"),
+            tasa_ref=cls.tasa,
+            metodo_pago=cls.metodo_pago,  # ← AGREGAR ESTE CAMPO
             fecha=now
         )
 
