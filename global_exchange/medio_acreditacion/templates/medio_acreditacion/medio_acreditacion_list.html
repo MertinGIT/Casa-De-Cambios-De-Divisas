@@ -1,4 +1,5 @@
-{% extends 'baseDashboardUsuario.html' %} {% load static %} {% load humanize %}
+{% extends 'baseDashboardUsuario.html' %} 
+{% load humanize %}
 {% block dashboard_content %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -201,7 +202,6 @@ body {
   padding: 6px 12px;
   border-radius: 4px;
   font-size: 12px;
-  font-weight: 500;
   border: none;
   cursor: pointer;
   text-decoration: none;
@@ -209,23 +209,28 @@ body {
   margin-right: 4px;
   transition: all 0.2s;
 }
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: 0.25rem;
+}
 
 .btn-primary {
-  background-color: #5D5FEF;
+  background-color: #0d6efd;
   color: white;
 }
 
 .btn-primary:hover {
-  background-color: #4338ca;
+  background-color: #0b5ed7;
 }
 
 .btn-danger {
-  background-color: #ef4444;
+  background-color: #dc3545;
   color: white;
 }
 
 .btn-danger:hover {
-  background-color: #dc2626;
+  background-color: #a52834;
 }
 
 .pagination-wrapper {

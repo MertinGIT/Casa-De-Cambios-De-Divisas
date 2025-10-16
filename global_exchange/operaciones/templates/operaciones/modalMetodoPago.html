@@ -242,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', () => {
     const tipoTarjetaSelect = document.getElementById('tipo-tarjeta');
     tipoTarjetaSelect.addEventListener("change", (e) => {
-    window.metodoSeleccionado = "tarjeta";      // ya lo tienes
+    window.metodoSeleccionadoNombre = "tarjeta";      // ya lo tienes
     window.tipoTarjetaSeleccionada = e.target.value; // <-- guardar aquí
     });
 
@@ -367,11 +367,13 @@ window.procesarPagoNacional = async function(datosNacional) {
 function initModalMetodoPago() {
     console.log("Inicializando modal método de pago");
     
-    // Event delegation para los radio buttons
+// Event delegation para los radio buttons
     document.addEventListener('change', function(e) {
         if (e.target.matches('input[name="metodo"]')) {
             console.log("Método seleccionado:", e.target.value);
-            handleMetodoChange(e.target.value);
+            const radio = document.querySelector('input[name="metodo"]:checked');
+    const formId = radio.dataset.form; // 'tarjeta', 'billetera', etc.
+            handleMetodoChange(formId);
         }
     });
 
