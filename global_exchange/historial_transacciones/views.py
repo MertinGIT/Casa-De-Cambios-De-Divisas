@@ -11,6 +11,24 @@ from clientes.models import Cliente
 
 @login_required
 def historial_usuario(request):
+    """
+    Muestra el historial de transacciones del usuario autenticado.
+
+    Permite filtrar las transacciones por ID, estado, tipo, moneda y rango de fechas.
+    También obtiene información de segmentación y descuentos según el cliente operativo
+    asociado al usuario actual.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP con posibles parámetros GET:
+            - q: texto de búsqueda.
+            - campo: campo por el cual buscar (id / estado / tipo).
+            - moneda o moneda_sel: abreviación de la moneda.
+            - fecha_inicio y fecha_fin: fechas para filtrar el rango.
+
+    Retorna:
+        HttpResponse: Página renderizada con la lista filtrada de transacciones,
+                      monedas disponibles y detalles de segmentación del usuario.
+    """
     from operaciones.models import Transaccion
     from monedas.models import Moneda
 
@@ -88,6 +106,19 @@ def historial_usuario(request):
 
 @login_required
 def detalle_transaccion(request, transaccion_id):
+    """
+    Muestra el detalle de una transacción específica del usuario.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+        transaccion_id (int): Identificador de la transacción a visualizar.
+
+    Retorna:
+        HttpResponse: Página renderizada con los datos completos de la transacción.
+
+    Excepciones:
+        Http404: Si la transacción no existe o no pertenece al usuario autenticado.
+    """
     from operaciones.models import Transaccion
     transaccion = get_object_or_404(Transaccion, id=transaccion_id, usuario=request.user)
     return render(request, 'historial_transacciones/detalle_transaccion.html', {
@@ -96,6 +127,21 @@ def detalle_transaccion(request, transaccion_id):
 
 @login_required
 def exportar_historial_excel(request):
+    """
+    Exporta el historial de transacciones del usuario en formato Excel (.xlsx).
+
+    Genera un archivo Excel con columnas como ID, fecha, monto, monedas, tipo, tasa usada
+    y estado, utilizando la librería `openpyxl`.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+
+    Retorna:
+        HttpResponse: Archivo Excel para descarga directa por el navegador.
+
+    Excepciones:
+        ImportError: Si la librería `openpyxl` no está instalada.
+    """
     try:
         import openpyxl
         from openpyxl.utils import get_column_letter
@@ -137,6 +183,21 @@ def exportar_historial_excel(request):
 
 @login_required
 def exportar_historial_pdf(request):
+    """
+    Exporta el historial de transacciones del usuario en formato PDF.
+
+    Genera un documento PDF con las transacciones ordenadas por fecha, mostrando sus
+    detalles principales en formato de tabla. Utiliza la librería `reportlab`.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP.
+
+    Retorna:
+        HttpResponse: Archivo PDF para descarga directa.
+
+    Excepciones:
+        ImportError: Si la librería `reportlab` no está instalada.
+    """
     try:
         from reportlab.lib.pagesizes import A4
         from reportlab.pdfgen import canvas
@@ -207,9 +268,20 @@ def exportar_historial_pdf(request):
 
 def obtener_clientes_usuario(user,request):
     """
-    Devuelve:
-        - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+    Obtiene los clientes asociados a un usuario y determina cuál está operativo.
+
+    Busca todos los clientes activos relacionados con el usuario mediante el modelo
+    `Usuario_Cliente`, e identifica el cliente operativo según lo guardado en sesión.
+    Si no hay uno guardado, selecciona el primero de la lista.
+
+    Parámetros:
+        user (User): Usuario autenticado.
+        request (HttpRequest): Objeto de solicitud HTTP con sesión activa.
+
+    Retorna:
+        tuple:
+            - clientes_asociados (list): Lista de instancias de `Cliente` asociados al usuario.
+            - cliente_operativo (Cliente | None): Cliente actualmente seleccionado.
     """
 
      # Solo clientes activos
@@ -236,8 +308,23 @@ def obtener_clientes_usuario(user,request):
 @login_required
 def set_cliente_operativo(request):
     """
-    Guarda en sesión el cliente operativo seleccionado y devuelve JSON
-    con segmento y descuento para actualizar el front sin recargar.
+    Define el cliente operativo activo para el usuario autenticado.
+
+    Guarda el cliente seleccionado en la sesión y devuelve en formato JSON los datos
+    asociados a su segmentación (nombre y descuento) para actualizar el front-end sin
+    recargar la página.
+
+    Parámetros:
+        request (HttpRequest): Objeto de solicitud HTTP con datos POST:
+            - cliente_id: ID del cliente a establecer como operativo.
+
+    Retorna:
+        JsonResponse:
+            - En caso de éxito: información del cliente, nombre de segmento y descuento.
+            - En caso de error: mensaje indicando el motivo (cliente no encontrado o petición inválida).
+
+    Excepciones:
+        Cliente.DoesNotExist: Si el cliente no existe o está inactivo.
     """
     cliente_id = request.POST.get('cliente_id')
 

@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-let stripe = Stripe("pk_test_51SEYwwBDAdm72UDMIQSFyXxmCQ7INpiaAx1Qd7bquMBw0CDB22Xcxpqi9GgrFknPcRIZM1aMT9sOlmBXaN7o73Bi00SNq8v4y4");
+let stripe = Stripe("pk_test_51RrUN1CO0V6WNYaMFcjDceJDXCRqCid7MkIU8AlTrxiEohmpgETIGVJgcnaxvFfGiEApfNmNUIEdqqCx03JS4z2y00mljgmsKl");
 let elements = stripe.elements();
 let cardElement = null;
 
@@ -1147,7 +1147,18 @@ async function confirmarMetodoPago() {
     
     // Continuar con el flujo (modal acreditación o PIN)
     if (typeof mostrarModalAcreditacion === 'function') {
-        mostrarModalAcreditacion();
+        console.log("antes de mostrarModalAcreditacion 1152");
+        verificarTasaActualizada(function(tasaActualizada) {
+            if (tasaActualizada) {
+                console.log("Tasa mostrarModalAcreditacion 1155, procediendo a método de pago");
+                mostrarModalAcreditacion();
+              //$("#modal-confirmacion").fadeOut();
+              //$("#modal-metodo").fadeIn().css("display", "flex");
+              
+            }
+            
+        });
+        
     } else {
         const modalPin = document.getElementById('modal-pin');
         if (modalPin) {
