@@ -5,9 +5,11 @@ from cliente_usuario.models import Usuario_Cliente
 from usuarios.models import CustomUser
 from cliente_segmentacion.models import Segmentacion
 from clientes.models import Cliente
+from cliente_usuario.models import Usuario_Cliente  # ← Importar este modelo
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
 from operaciones.models import Transaccion
+from metodos_pagos.models import MetodoPago  # ← AGREGAR IMPORT
 from decimal import Decimal
 from django.utils import timezone
 from django.core import mail
@@ -32,9 +34,12 @@ class OperacionesViewsTest(TestCase):
             estado="activo"
         )
 
-        # Asociar cliente al usuario
-        Usuario_Cliente.objects.create(id_usuario=self.user, id_cliente=self.cliente)
-    
+        # ← AGREGAR ESTA RELACIÓN Usuario_Cliente
+        Usuario_Cliente.objects.create(
+            id_usuario=self.user,
+            id_cliente=self.cliente
+        )
+
         self.client = Client()
         self.client.login(username="testuser", password="12345")
         session = self.client.session
@@ -47,17 +52,21 @@ class OperacionesViewsTest(TestCase):
         self.tasa = TasaDeCambio.objects.create(
             moneda_origen=self.moneda_usd,
             moneda_destino=self.moneda_pyg,
-            precio_base=Decimal("7200"),
-            comision_compra=Decimal("50"),
-            comision_venta=Decimal("50"),
-            estado=True,
-            vigencia=timezone.now()
+            precio_base=Decimal("7400.00"),
+            comision_compra=Decimal("0.00"),
+            comision_venta=Decimal("0.00"),
+        )
+
+        # ← CREAR MÉTODO DE PAGO
+        self.metodo_pago = MetodoPago.objects.create(
+            nombre="Efectivo Test",
+            descripcion="Pago en efectivo para tests",
+            activo=True
         )
 
     def test_simulador_operaciones_get(self):
-        url = reverse("operaciones")  # sin namespace
+        url = reverse("operaciones")
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
         self.assertEqual(response.status_code, 200)
 
     def test_simulador_operaciones_post_venta(self):
@@ -73,17 +82,17 @@ class OperacionesViewsTest(TestCase):
         self.assertIn("ganancia_total", data)
 
     def test_guardar_transaccion(self):
-        url = reverse("guardar_transaccion")  # sin namespace
+        url = reverse("guardar_transaccion")
         payload = {
             "monto": "100",
             "tipo": "compra",
             "estado": "pendiente",
-            "moneda_origen_id": self.moneda_usd.id,
-            "moneda_destino_id": self.moneda_pyg.id,
-            "tasa_usada": "7200",
+            "moneda_origen_id": self.moneda_pyg.id,
+            "moneda_destino_id": self.moneda_usd.id,
+            "tasa_usada": "7300",
             "tasa_ref_id": self.tasa.id,
             "cliente_id": self.cliente.id,
-            "ganancia": "10"
+            "metodo_pago_id": self.metodo_pago.id  # ← AGREGAR ESTE CAMPO
         }
         response = self.client.post(url, data=payload, content_type="application/json")
         self.assertEqual(response.status_code, 200)

@@ -1,5 +1,7 @@
 from django.db import models
+from django.utils import timezone
 from monedas.models import Moneda
+from decimal import Decimal, ROUND_HALF_UP
 
 
 class TasaDeCambio(models.Model):
@@ -70,12 +72,10 @@ class TasaDeCambio(models.Model):
     """
     moneda_origen = models.ForeignKey(Moneda,related_name="tasas_origen",on_delete=models.CASCADE)
     moneda_destino = models.ForeignKey(Moneda,related_name="tasas_destino",on_delete=models.CASCADE)
-    precio_base = models.DecimalField(max_digits=23, decimal_places=8)  # 👈 nuevo campo
-    #monto_compra = models.DecimalField(max_digits=23, decimal_places=8)
-    #monto_venta = models.DecimalField(max_digits=23, decimal_places=8)
-    comision_compra = models.DecimalField(max_digits=23,decimal_places=8,default=0)
-    comision_venta = models.DecimalField(max_digits=23,decimal_places=8,default=0)
-    vigencia = models.DateTimeField()
+    precio_base = models.DecimalField(max_digits=12, decimal_places=2)  # 👈 nuevo campo
+    comision_compra = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    comision_venta = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    vigencia = models.DateTimeField(default=timezone.now)  # antes: sin default / null=False
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     estado = models.BooleanField(default=True)
     
@@ -96,3 +96,18 @@ class TasaDeCambio(models.Model):
                 f"Compra: {self.monto_compra} (Com: {self.comision_compra}) "
                 f"Venta: {self.monto_venta} (Com: {self.comision_venta})")
     """
+
+    # Compatibilidad retro: exponer monto_compra / monto_venta como propiedades
+    @property
+    def monto_compra(self) -> Decimal:
+        base = self.precio_base or Decimal('0')
+        com = self.comision_compra or Decimal('0')
+        valor = base - com
+        return (valor if valor >= 0 else Decimal('0')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    @property
+    def monto_venta(self) -> Decimal:
+        base = self.precio_base or Decimal('0')
+        com = self.comision_venta or Decimal('0')
+        valor = base + com
+        return valor.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
