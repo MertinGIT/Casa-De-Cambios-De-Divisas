@@ -5,6 +5,23 @@ from cliente_usuario.models import Usuario_Cliente
 from django.http import JsonResponse
 import json
 def configuracion_view_usuario(request):
+    """    
+    Renderiza la página principal de configuración del usuario autenticado, 
+    mostrando su cliente operativo, segmento y descuento correspondiente.
+
+    Parámetros:
+        request (HttpRequest): Objeto HTTP con la información de la petición.
+
+    Devuelve:
+        Renderiza la plantilla 'configuracion_usuario/configuracion_home_usuario.html' con el contexto:
+            - segmento: nombre del segmento del cliente operativo (o “Sin segmentación”).
+            - clientes_asociados: lista de clientes vinculados al usuario.
+            - cliente_operativo: cliente actualmente seleccionado.
+            - descuento: porcentaje de descuento del segmento, si aplica.
+
+    Tipo del valor devuelto:
+        HttpResponse
+    """
     # === Segmentación según usuario ===
     descuento = 0
     segmento_nombre = "Sin segmentación"
@@ -24,10 +41,15 @@ def configuracion_view_usuario(request):
 
 
 def obtener_clientes_usuario(user,request):
-    """
+    """    
+    Devuelve los clientes asociados a un usuario autenticado y determina cuál es el cliente operativo actual.
+
     Devuelve:
-        - clientes_asociados: lista de todos los clientes asociados al usuario
-        - cliente_operativo: cliente actualmente seleccionado (desde sesión si existe)
+        clientes_asociados: lista de todos los clientes asociados al usuario.
+        cliente_operativo: cliente actualmente seleccionado (desde sesión si existe).
+
+    Tipo del valor devuelto:
+        tuple (list[Cliente], Cliente | None)
     """
 
      # Solo clientes activos
@@ -52,16 +74,20 @@ def obtener_clientes_usuario(user,request):
 
 @login_required
 def set_cliente_operativo(request):
-    """
+    """    
     Establece en sesión el cliente operativo para el usuario autenticado.
 
-    Permite cambiar el cliente activo en el contexto de las operaciones.
+    Permite cambiar el cliente activo en el contexto de las operaciones. 
     Devuelve información de segmentación y descuento del cliente seleccionado.
 
-    :param request: Objeto HTTP con la información de la petición.
-    :type request: HttpRequest
-    :return: JsonResponse con los datos del cliente operativo o error.
-    :rtype: JsonResponse
+    Parámetros:
+        request (HttpRequest): Objeto HTTP con la información de la petición.
+
+    Devuelve:
+        JsonResponse con los datos del cliente operativo o error.
+
+    Tipo del valor devuelto:
+        JsonResponse
     """
     cliente_id = request.POST.get('cliente_id')
     if cliente_id:
@@ -88,7 +114,23 @@ def set_cliente_operativo(request):
 
 @login_required
 def mfa_configuration(request):
-    """Configuración de autenticación multifactor"""
+    """    
+    Configuración de autenticación multifactor (MFA) para el usuario autenticado.
+
+    Permite activar o desactivar la autenticación multifactor desde una petición 
+    AJAX o POST normal, y muestra información de segmentación del cliente operativo.
+
+    Parámetros:
+        request (HttpRequest): Objeto HTTP con la información de la petición.
+
+    Devuelve:
+        - Si es una petición AJAX POST: JsonResponse con el resultado de la actualización.
+        - Si es una petición POST normal: redirección a la vista de configuración MFA.
+        - Si es una petición GET: renderiza la plantilla 'configuracion_usuario/mfa_configuration.html'.
+
+    Tipo del valor devuelto:
+        JsonResponse | HttpResponseRedirect | HttpResponse
+    """
     user = request.user
 
     segmento_nombre = "Sin Segmentación"

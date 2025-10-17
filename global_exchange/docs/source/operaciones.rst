@@ -25,6 +25,8 @@ Vistas basadas en función
 .. autofunction:: operaciones.views.crear_pago_stripe
 .. autofunction:: operaciones.views.enviar_pin
 .. autofunction:: operaciones.views.validar_pin 
+.. autofunction:: operaciones.views.obtener_metodos_pago 
+.. autofunction:: operaciones.views.verificar_limites 
 
 
 
