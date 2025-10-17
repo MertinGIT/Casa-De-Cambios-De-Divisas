@@ -3,6 +3,8 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
+from django.contrib.auth.models import Group, Permission
 from unittest import skipIf
 
 from monedas.models import Moneda
@@ -32,6 +34,9 @@ class HistorialTransaccionesViewsTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.get(username="superadmin")
+        user_group, _ = Group.objects.get_or_create(name="Usuario Asociado")
+        cls.user.groups.add(user_group)
+
 
         cls.pyg = Moneda.objects.create(abreviacion="PYG", nombre="Guaraní", estado=True)
         cls.usd = Moneda.objects.create(abreviacion="USD", nombre="Dólar", estado=True)
