@@ -1,10 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
+from roles_permisos.middleware import require_permission
 from django.contrib.auth.models import Group, Permission
 from django.core.paginator import Paginator
 from .forms import RolForm
 
-
+@require_permission('view_customuser')
 def rol_lista(request):
     """
     Vista que lista todos los roles y permisos disponibles.

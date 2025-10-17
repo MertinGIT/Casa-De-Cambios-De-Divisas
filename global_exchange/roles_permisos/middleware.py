@@ -105,7 +105,12 @@ def require_permission(permission_codename):
     def decorator(view_func):
         @login_required
         def wrapped_view(request, *args, **kwargs):
-            if request.user.has_perm(permission_codename):
+            grupos_activos = request.user.groups.filter(profile__estado="Activo")
+            for group in grupos_activos:
+                if group.permissions.filter(codename=permission_codename).exists():
+                    return view_func(request, *args, **kwargs)
+
+            if request.user.user_permissions.filter(codename=permission_codename).exists():
                 return view_func(request, *args, **kwargs)
             else:
                 return render(request, "403.html", status=403)

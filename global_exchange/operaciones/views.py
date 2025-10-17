@@ -38,9 +38,10 @@ from django.db.models import Sum, Case, When, F, DecimalField
 import random
 from django.core.mail import send_mail
 import datetime
-
+from roles_permisos.middleware import require_permission
 
 @login_required
+@require_permission('add_transaccion')
 def simulador_operaciones(request):
     """
     Simula operaciones de compra/venta de monedas.
