@@ -1,14 +1,18 @@
+{% load permisos_activos %}
+
 <div class="contenedor-principal">
   <main class="main-container">
 
     <div class="modules">
 
       <a href="{% url 'notificaciones' %}" class="module-btn {% if request.resolver_match.url_name == 'notificaciones' %}active-config{% endif %}">🔔 Notificación</a>
-
+      {% if request.user|has_active_group_perm:'medio_acreditacion.view_medioacreditacion' %}
       <a href="{% url 'medio_acreditacion_list' %}" class="module-btn {% if request.resolver_match.url_name == 'medio_acreditacion_list' %}active-config{% endif %}"> 🏦 Medios de Acreditación</a>
-
+      {% endif %}
+      {% if request.user|has_active_group_perm:'operaciones.add_transaccion' %}
       <a href="{% url 'mfa_configuration' %}" class="module-btn {% if request.resolver_match.url_name == 'mfa_configuration' %}active-config{% endif %}">🔐 Seguridad MFA</a>
-      
+      {% endif %}
+
 
     </div>
 

@@ -31,7 +31,7 @@
         <div class="title">Segmentación</div>
         <p class="desc">Gestión de clientes VIP, minoristas, etc.</p>
       </a>
-    {% if request.user|has_active_group_perm:'usuarios.view_customuser' %}
+    {% if request.user|has_active_group_perm:'usuarios.add_customuser' %}
       <a href="{% url 'user_roles_lista' %}" class="module-card">
         <div class="icon">🔒</div>
         <div class="title">Seguridad</div>
