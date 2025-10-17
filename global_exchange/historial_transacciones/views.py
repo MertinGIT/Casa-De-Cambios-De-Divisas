@@ -5,11 +5,12 @@ from django.db.models import Q
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-
+from roles_permisos.middleware import require_permission
 from cliente_usuario.models import Usuario_Cliente
 from clientes.models import Cliente
 
 @login_required
+@require_permission('add_transaccion')
 def historial_usuario(request):
     """
     Muestra el historial de transacciones del usuario autenticado.
