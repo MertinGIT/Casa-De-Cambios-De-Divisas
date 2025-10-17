@@ -21,7 +21,7 @@ class RoleBasedMiddleware:
         self.get_response = get_response
         # Reglas de acceso por ruta
         self.access_rules = {
-            # Solo superusuarios pueden acceder a estas rutas
+            # Solo ADMIN y Analista pueden acceder a estas rutas
              r"^/admin/.*$": ['ADMIN', 'Analista'], 
              r"^/clientes/.*$": ['ADMIN','Analista'], 
             
@@ -29,7 +29,10 @@ class RoleBasedMiddleware:
             '/home/': ['Usuario', 'Usuario Asociado', 'Usuario'],
             '/editarperfil/': ['Usuario Asociado', 'Usuario'],
             '/operaciones/': ['Usuario Asociado'],
-
+            '/historial/': ['Usuario Asociado'],
+            '/medios_acreditacion/': ['Usuario Asociado'],
+            '/medios_acreditacion/': ['Usuario Asociado'],
+            '/configuracion/mfa_configuration/': ['Usuario Asociado'],
         }
 
     def __call__(self, request):

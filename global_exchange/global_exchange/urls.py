@@ -81,9 +81,7 @@ def error_403_view(request, exception=None):
     user = request.user
     if user.is_authenticated:
         if user.groups.filter(name='ADMIN').exists() or user.groups.filter(name='Analista').exists():
-            return redirect('admin_dashboard')
-        else:
-            return redirect('home')
+            return render(request, '403_admin.html', status=403)
     return render(request, '403.html', status=403)
 
 handler404 = custom_404_view

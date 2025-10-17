@@ -1,6 +1,7 @@
 {% extends 'baseDashboardUsuario.html' %}
 {% block dashboard_content %}
 {% load static %}
+{% load permisos_activos %}
 {% include 'notificaciones/modalNotificacion.html' %}
 <main class="main-container-grid flex items-center justify-center min-h-screen bg-gray-50">
 
@@ -13,16 +14,20 @@
         <div class="title">Notificación</div>
         <p class="desc">Elige monedas a notificar.</p>
       </a>
+    {% if request.user|has_active_group_perm:'medio_acreditacion.view_medioacreditacion' %}
       <a href="{% url 'medio_acreditacion_list' %}" class="module-card">
         <div class="icon">🏦</div>
         <div class="title">Medios de Acreditación</div>
         <p class="desc">Gestiona y consulta tus medios de acreditación.</p>
       </a>
+    {% endif %}
+    {% if request.user|has_active_group_perm:'operaciones.add_transaccion' %}
       <a href="{% url 'mfa_configuration' %}" class="module-card">
     <div class="icon">🔐</div>
     <div class="title">Seguridad MFA</div>
     <p class="desc">Activa o desactiva la verificación en transacciones.</p>
   </a>
+  {% endif %}
     </div>
     
   </div>
