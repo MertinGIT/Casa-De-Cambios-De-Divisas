@@ -37,7 +37,7 @@ class Denominacion(models.Model):
         verbose_name_plural = "Denominaciones"
     
     def __str__(self):
-        return f"{self.moneda.codigo} {self.valor}"
+        return f"{self.moneda.abreviacion} {self.valor}"
 
 
 class StockTauser(models.Model):

@@ -141,7 +141,7 @@ def atm_depositar(request):
 
                 messages.success(
                     request,
-                    f'Depósito confirmado: {transaccion.monto} {transaccion.moneda_origen.codigo}'
+                    f'Depósito confirmado: {transaccion.monto} {transaccion.moneda_origen.abreviacion}'
                 )
                 return redirect('atm_dashboard')
         else:
@@ -160,12 +160,11 @@ def atm_depositar(request):
         messages.error(request, 'Sesión inválida')
         return redirect('atm_login')
 
-
 def atm_extraer(request):
     """
     Vista para extraer dinero.
     EXTRAER = Cliente COMPRA divisas (tipo='compra')
-    Muestra transacciones de COMPRA pendientes y permite retirar en efectivo o transferencia
+    Muestra transacciones de COMPRA pendientes agrupadas por moneda
     """
     cliente_id = request.session.get('atm_cliente_id')
     if not cliente_id:
@@ -181,17 +180,40 @@ def atm_extraer(request):
             estado='completada'
         ).select_related('moneda_origen', 'moneda_destino').order_by('-fecha')
         
-        # Calcular disponibilidad de billetes para cada transacción
-        transacciones_con_detalle = []
+        # Agrupar por moneda destino
+        monedas_agrupadas = {}
+        
         for trans in transacciones_pendientes:
-            # El monto a retirar es en moneda_destino (la que compró)
-            monto_retirar = trans.monto * trans.tasa_usada
-            moneda_retirar = trans.moneda_destino
+            moneda_destino = trans.moneda_destino
+            monto_retirar = trans.monto / trans.tasa_usada
             
-            # Calcular billetes óptimos
+            # Inicializar moneda si no existe
+            if moneda_destino.id not in monedas_agrupadas:
+                monedas_agrupadas[moneda_destino.id] = {
+                    'moneda': moneda_destino,
+                    'total_disponible': 0,
+                    'transacciones': []
+                }
+            
+            # Acumular total
+            monedas_agrupadas[moneda_destino.id]['total_disponible'] += monto_retirar
+            
+            # Agregar transacción con sus detalles
+            monedas_agrupadas[moneda_destino.id]['transacciones'].append({
+                'transaccion': trans,
+                'monto_retirar': monto_retirar
+            })
+        
+        # Calcular billetes disponibles para cada moneda
+        monedas_con_detalle = []
+        for moneda_data in monedas_agrupadas.values():
+            total = moneda_data['total_disponible']
+            moneda = moneda_data['moneda']
+            
+            # Calcular billetes óptimos para el total
             billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
-                monto_retirar, 
-                moneda_retirar
+                total, 
+                moneda
             )
             
             # Obtener detalles de billetes
@@ -201,88 +223,105 @@ def atm_extraer(request):
                 detalles_billetes.append({
                     'denominacion': stock.denominacion,
                     'cantidad': cantidad,
-                    'subtotal': stock.denominacion.valor * cantidad
+                    'subtotal': stock.denominacion.valor / cantidad
                 })
             
-            transacciones_con_detalle.append({
-                'transaccion': trans,
-                'monto_retirar': monto_retirar,
+            monedas_con_detalle.append({
+                'moneda': moneda,
+                'total_disponible': total,
                 'monto_entregado': monto_entregado,
                 'diferencia': diferencia,
                 'posible_efectivo': posible,
-                'billetes': detalles_billetes
+                'billetes': detalles_billetes,
+                'transacciones': moneda_data['transacciones'],
+                'cantidad_transacciones': len(moneda_data['transacciones'])
             })
         
         if request.method == 'POST':
-            form = SeleccionarTransaccionForm(request.POST)
-            if form.is_valid():
-                transaccion_id = form.cleaned_data['transaccion_id']
-                metodo_pago = form.cleaned_data['metodo_pago']
-                
-                transaccion = get_object_or_404(
-                    Transaccion,
-                    id=transaccion_id,
-                    cliente=cliente,
-                    tipo='compra',
-                    estado='pendiente'
+            moneda_id = request.POST.get('moneda_id')
+            
+            if not moneda_id:
+                messages.error(request, 'Datos incompletos')
+                return redirect('atm_extraer')
+            
+            # Obtener todas las transacciones de esa moneda
+            transacciones_moneda = Transaccion.objects.filter(
+                cliente=cliente,
+                tipo='compra',
+                estado='completada',
+                moneda_destino_id=moneda_id
+            )
+            
+            if not transacciones_moneda.exists():
+                messages.error(request, 'No hay transacciones para esta moneda')
+                return redirect('atm_extraer')
+            
+            # Calcular monto total
+            monto_total = sum(t.monto / t.tasa_usada for t in transacciones_moneda)
+            moneda = transacciones_moneda.first().moneda_destino
+            
+            with db_transaction.atomic():
+                # Calcular billetes disponibles
+                billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
+                    monto_total,
+                    moneda
                 )
                 
-                monto_retirar = transaccion.monto * transaccion.tasa_usada
-                moneda_retirar = transaccion.moneda_destino
+                if monto_entregado == 0:
+                    messages.error(
+                        request,
+                        f'No hay billetes disponibles para entregar. Intenta más tarde.'
+                    )
+                    return redirect('atm_extraer')
                 
-                with db_transaction.atomic():
-                    if metodo_pago == 'efectivo':
-                        # Verificar disponibilidad de billetes
-                        billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
-                            monto_retirar,
-                            moneda_retirar
-                        )
-                        
-                        if not posible:
-                            messages.warning(
-                                request,
-                                f'No se puede entregar el monto completo. '
-                                f'Se puede entregar: {monto_entregado} {moneda_retirar.codigo}. '
-                                f'Diferencia: {diferencia} {moneda_retirar.codigo}'
-                            )
-                            # Aquí podrías preguntar si acepta el monto parcial o prefiere transferencia
-                            return redirect('atm_extraer')
-                        
-                        # Registrar el retiro y actualizar stock
-                        GestorStockTauser.registrar_retiro(
-                            transaccion,
-                            billetes,
-                            monto_retirar,
-                            monto_entregado,
-                            diferencia
-                        )
-                        
-                        transaccion.estado = 'confirmada'
-                        transaccion.save()
-                        
-                        messages.success(
-                            request,
-                            f'Retiro en efectivo confirmado: {monto_entregado} {moneda_retirar.codigo}'
-                        )
+                # Actualizar stock de billetes
+                for denom_id, cantidad in billetes.items():
+                    stock = StockTauser.objects.get(denominacion_id=denom_id)
+                    stock.cantidad -= cantidad
+                    stock.save()
+                
+                # Calcular cuánto se retira de cada transacción proporcionalmente
+                monto_restante_entregar = monto_entregado
+                
+                for transaccion in transacciones_moneda:
+                    monto_transaccion = transaccion.monto / transaccion.tasa_usada
                     
-                    elif metodo_pago == 'transferencia':
-                        # Para transferencia no necesita stock físico
+                    if monto_restante_entregar >= monto_transaccion:
+                        # Se puede retirar completa
                         transaccion.estado = 'confirmada'
-                        transaccion.save()
-                        
-                        messages.success(
-                            request,
-                            f'Retiro por transferencia confirmado: {monto_retirar} {moneda_retirar.codigo}'
-                        )
+                        monto_restante_entregar -= monto_transaccion
+                    else:
+                        # Se retira parcial, queda pendiente
+                        if monto_restante_entregar > 0:
+                            # Crear nueva transacción por lo retirado
+                            proporcion_retirada = monto_restante_entregar / monto_transaccion
+                            
+                            # Actualizar la transacción original (reducir monto)
+                            transaccion.monto = transaccion.monto * (1 - proporcion_retirada)
+                            transaccion.save()
+                            
+                            monto_restante_entregar = 0
+                        # Si ya no queda nada por entregar, esta transacción queda pendiente completa
+                    
+                    transaccion.save()
                 
-                return redirect('atm_dashboard')
-        else:
-            form = SeleccionarTransaccionForm()
+                if diferencia > 0:
+                    messages.success(
+                        request,
+                        f'✓ Retiro confirmado: {monto_entregado:.2f} {moneda.abreviacion}. '
+                        f'Quedó pendiente: {diferencia:.2f} {moneda.abreviacion} (disponible para próximo retiro)'
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f'✓ Retiro completo confirmado: {monto_entregado:.2f} {moneda.abreviacion}'
+                    )
+            
+            return redirect('atm_extraer')
         
         context = {
             'cliente': cliente,
-            'transacciones': transacciones_con_detalle,
-            'form': form,
+            'monedas': monedas_con_detalle,
         }
         
         return render(request, 'tauser/extraer.html', context)
@@ -291,5 +330,3 @@ def atm_extraer(request):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
         return redirect('atm_login')
-
-
