@@ -481,16 +481,14 @@ function procesarTransaccion() {
       .then(updateResp => {
         console.log("updateResp",updateResp)
         if (updateResp.success) {
-          if (estadoFinal === "confirmada") {
-            // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
+          // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
+          // Primero generar la factura automática
+          generarFacturaAutomatica(window.transaccionIdParaDescargaFactura).then(() => {
             $("#modal-pin").fadeOut();
             $("#modal-exito").fadeIn().css("display", "flex");
-            
-          } else {
-            mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
-          }
+          });
         } else {
-          mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");
+          mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
         }
       })
       .catch(err => {
@@ -621,7 +619,7 @@ function enviarPin() {
   */    
 
 
-  // Cerrar modal con ESC
+  // Cerrar modal with ESC
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       cerrarModalPin();

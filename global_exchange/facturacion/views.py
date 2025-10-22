@@ -2,6 +2,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.http import FileResponse, Http404
+
 import json
 from .services import FacturaSeguraService
 from .models import Factura, RangoFacturacion
@@ -41,7 +43,7 @@ def generar_factura_transaccion(request):
             'email': cliente.email,
             'cedula': cliente.cedula,
             'ruc': getattr(cliente, 'ruc', None),
-            'dv_ruc': getattr(cliente, 'dv_ruc', None),
+            'dv_ruc': getattr(cliente, 'dv_ruc', "3"),
         }
 
         print("cliente_data:", cliente_data, flush=True)
@@ -269,8 +271,8 @@ def factura_resumida(factura):
         "iTiOpe": "1",
         "cPaisRec": "PRY",
         "iTiContRec": "2",
-        "dRucRec": getattr(factura.cliente, "ruc", "0"),
-        "dDVRec": getattr(factura.cliente, "dv_ruc", "0"),
+        "dRucRec": getattr(factura.cliente, "cedula", "0"),
+        "dDVRec": getattr(factura.cliente, "dv_ruc", "3"),
         "iTipIDRec": "1",
         "dNumIDRec": factura.cliente.cedula,
         "dNomRec": factura.cliente.nombre,
@@ -310,3 +312,34 @@ def factura_resumida(factura):
     }
 
     return data
+
+@require_http_methods(["GET"])
+def descargar_factura(request):
+    """
+    Descarga el KuDE (PDF) de la factura usando el CDC y el RUC emisor.
+    Espera los parámetros GET: cdc y transaccion_id
+    """
+    cdc = request.GET.get('cdc')
+    transaccion_id = request.GET.get('transaccion_id')
+    if not cdc or not transaccion_id:
+        return JsonResponse({'success': False, 'error': 'Faltan parámetros'}, status=400)
+
+    # Busca la factura asociada a la transacción
+    try:
+        factura = Factura.objects.get(transaccion_id=transaccion_id, cdc=cdc)
+    except Factura.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
+
+    # Llama al service para descargar el PDF
+    service = FacturaSeguraService()
+    ruc_emisor = service.config['RUC_EMISOR']
+    output_path = f'/tmp/kude_{cdc}.pdf'
+    ok = service.descargar_kude(cdc, ruc_emisor, output_path)
+    if not ok:
+        return JsonResponse({'success': False, 'error': 'No se pudo descargar el KuDE'}, status=500)
+
+    # Devuelve el archivo PDF
+    try:
+        return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'factura_{cdc}.pdf')
+    except Exception:
+        raise Http404("Archivo no encontrado")

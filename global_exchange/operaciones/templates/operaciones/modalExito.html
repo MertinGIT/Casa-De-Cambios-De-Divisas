@@ -247,12 +247,26 @@
             });
         }
     }
-
-
+    
     function descargarFactura() {
-        generarFacturaAutomatica(window.transaccionIdParaDescargaFactura);
-        cerrarModalExito();
-    }
+    // Obtén el CDC y el ID de transacción
+    const transaccionId = window.transaccionIdParaDescargaFactura;
+    // Puedes obtener el CDC llamando a tu endpoint de estado de factura
+    fetch(`/facturacion/consultar-factura/?transaccion_id=${transaccionId}`)
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success && data.cdc) {
+                // Redirige a la descarga del PDF
+                window.location.href = `/facturacion/descargar-factura/?cdc=${data.cdc}&transaccion_id=${transaccionId}`;
+                cerrarModalExito();
+            } else {
+                Swal.fire('Error', 'No se pudo obtener el CDC para la descarga.', 'error');
+            }
+        })
+        .catch(() => {
+            Swal.fire('Error', 'No se pudo conectar al servidor de facturación.', 'error');
+        });
+}
 
     function descargarComprobante() {
         // Simular descarga de comprobante
