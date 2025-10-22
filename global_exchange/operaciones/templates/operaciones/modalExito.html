@@ -66,8 +66,10 @@
         
         // Generar ID de transacción único
         const datos = window.transaccionActual;
+        console.log("Datos de transacción para modal éxito:", datos);
         const transactionId = datos.referencia;
         document.getElementById('transaction-id').textContent = transactionId;
+        window.transaccionIdParaDescargaFactura = datos.transaccionId;
     }
 
     function cerrarModalExito() {
@@ -170,7 +172,7 @@
 
     async function consultarEstadoFactura(transaccionId) {
         try {
-            console.log(`🔍 Consultando estado de factura para transacción ${transaccionId}...`);
+            console.log(`🔍 Consultando estado de factura para transacción ${window.transaccionIdParaDescargaFactura}...`);
             
             Swal.fire({
                 title: 'Consultando SIFEN',
@@ -183,7 +185,7 @@
                 }
             });
             
-            const response = await fetch(`/facturacion/consultar-factura/?transaccion_id=${transaccionId}`, {
+            const response = await fetch(`/facturacion/consultar-factura/?transaccion_id=${window.transaccionIdParaDescargaFactura}`, {
                 method: 'GET',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken')
@@ -329,7 +331,8 @@
                 backdrop: false,
             }).then((result) => {
                 if (result.isConfirmed) {
-                    consultarEstadoFactura(data.transaccion_id);
+                    console.log("Consultando estado de la factura desde el modal...", data);
+                    consultarEstadoFactura(data.cdc);
                 }
             });
         } else {

@@ -114,12 +114,18 @@ def generar_factura_transaccion(request):
 
 
 @require_http_methods(["GET"])
-def consultar_estado_factura(request, factura_id):
-    """
-    Consulta estado de factura en SIFEN
-    """
+def consultar_estado_factura(request):
+    transaccion_id = request.GET.get("transaccion_id")
+    
+    if not transaccion_id:
+        return JsonResponse({
+            "success": False,
+            "error": "Se requiere transaccion_id"
+        }, status=400)
+    
     try:
-        factura = Factura.objects.get(id=factura_id)
+        # Buscar factura por la transacción
+        factura = Factura.objects.get(transaccion__id=transaccion_id)
         
         service = FacturaSeguraService()
         estado = service.consultar_estado(
@@ -142,19 +148,22 @@ def consultar_estado_factura(request, factura_id):
             
             return JsonResponse({
                 'success': True,
-                'estado': estado
+                'estado': estado,
+                'cdc': factura.cdc,
+                'numero_factura': factura.numero_completo
             })
         else:
             return JsonResponse({
                 'success': False,
                 'error': 'No se pudo consultar estado'
             }, status=400)
-            
+    
     except Factura.DoesNotExist:
         return JsonResponse({
             'success': False,
             'error': 'Factura no encontrada'
         }, status=404)
+    
     except Exception as e:
         return JsonResponse({
             'success': False,
@@ -230,6 +239,16 @@ def factura_resumida(factura):
     Devuelve un diccionario con los datos resumidos de la factura.
     """
     from datetime import datetime
+    
+    # Usar RUC si existe, sino cédula
+    ruc_cliente = factura.cliente.ruc or factura.cliente.cedula or "0"
+
+    # Separar dígito verificador si hay guion
+    if ruc_cliente and '-' in ruc_cliente:
+        numero_ruc_cliente, dv_cliente = ruc_cliente.split('-')
+    else:
+        numero_ruc_cliente = ruc_cliente
+        dv_cliente = getattr(factura.cliente, "dv_ruc", "3")
 
     data = {
         "iTipEmi": "1",
@@ -271,8 +290,8 @@ def factura_resumida(factura):
         "iTiOpe": "1",
         "cPaisRec": "PRY",
         "iTiContRec": "2",
-        "dRucRec": getattr(factura.cliente, "cedula", "0"),
-        "dDVRec": getattr(factura.cliente, "dv_ruc", "3"),
+        "dRucRec": numero_ruc_cliente,
+        "dDVRec": dv_cliente,
         "iTipIDRec": "1",
         "dNumIDRec": factura.cliente.cedula,
         "dNomRec": factura.cliente.nombre,

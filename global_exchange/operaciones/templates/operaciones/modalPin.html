@@ -357,6 +357,7 @@ function procesarTransaccion() {
     }
 
     const transaccionData = {
+      transaccionId: localResp.id,
       email: "{{ email_cliente_operativo }}",
       monto: montoParaBanco,
       moneda: monedaParaBanco,

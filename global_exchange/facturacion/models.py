@@ -83,7 +83,6 @@ class Factura(models.Model):
         ('rechazado', 'Rechazado'),
         ('cancelado', 'Cancelado'),
     ]
-    
     numero = models.CharField(max_length=20, unique=True)  # Aumentado para 001-003-0000001
     cdc = models.CharField(max_length=44, unique=True, null=True, blank=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.PROTECT)

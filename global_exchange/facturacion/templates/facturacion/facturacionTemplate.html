@@ -18,6 +18,7 @@ async function generarFactura(transaccionId) {
         const data = await response.json();
         
         if (data.success) {
+            console.log('Factura generada data global:', data);
             console.log('Factura generada:', data.cdc);
             
             // Esperar 1 minuto y consultar estado
