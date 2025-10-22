@@ -60,7 +60,6 @@ def generar_factura_transaccion(request):
             
             # Guardar factura - el método save() generará automáticamente el campo 'numero'
             factura = Factura.objects.create(
-                # ❌ NO establecer 'numero' aquí, se genera automáticamente
                 establecimiento=partes[0],  # "001"
                 punto_expedicion=partes[1],  # "003"
                 numero_documento=partes[2],  # "0000001"
