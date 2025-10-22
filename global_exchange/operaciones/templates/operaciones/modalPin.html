@@ -62,8 +62,10 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  
   function mostrarModalPin() {
     console.log("mostrarModalPinnnnnnnnnnnnnnnnn");
     enviarPin();
@@ -255,6 +257,7 @@ function ocultarLoaderTransaccion() {
 }
 
 
+
 // Función separada para procesar y guardar la transacción
 function procesarTransaccion() {
   console.log("Procesando transacción en modalPin");
@@ -341,7 +344,7 @@ function procesarTransaccion() {
 
 
     const transaccionId = localResp.id;
-
+    window.transaccionIdParaDescargaFactura = localResp.id;
     // PASO 2: Enviar al banco
     let montoParaBanco, monedaParaBanco;
     
@@ -375,10 +378,10 @@ function procesarTransaccion() {
       return v === undefined || v === null || v === "";
     });
     if (valoresInvalidos.length > 0) {
-  console.error("❌ Transacción inválida, faltan datos:", valoresInvalidos);
-  mostrarMensaje("⚠️ Error", "La transacción no se pudo enviar. Faltan datos obligatorios.");
-  return; // 🔥 Detener aquí
-}
+      console.error("❌ Transacción inválida, faltan datos:", valoresInvalidos);
+      mostrarMensaje("⚠️ Error", "La transacción no se pudo enviar. Faltan datos obligatorios.");
+      return; // 🔥 Detener aquí
+    }
 
     console.log("🏦 Enviando al banco:", transaccionData);
 
@@ -389,12 +392,12 @@ function procesarTransaccion() {
     })
     .then(resp => resp.json())
     .then(async data => { // 🔥 async aquí
-      console.log("Respuesta del banco:", data);
+      console.log("Respuesta del banco en modalPin:", data);
       ocultarLoaderTransaccion(); // Ocultar loader al recibir respuesta
 
       let estadoFinal = "pendiente";
-      
       if (data.estado === "ok"){
+        
         estadoFinal = "confirmada";
         
         // Guardar transacción globalmente
@@ -450,6 +453,7 @@ function procesarTransaccion() {
             
             return; // 🔥 Detener aquí
           }
+
           
           console.log("✅ Pago con tarjeta exitoso");
         }
@@ -481,6 +485,7 @@ function procesarTransaccion() {
             // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
             $("#modal-pin").fadeOut();
             $("#modal-exito").fadeIn().css("display", "flex");
+            
           } else {
             mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
           }
@@ -569,9 +574,10 @@ function enviarPin() {
 }
 
   // Funcionalidad PIN
+  /*
   document.addEventListener("DOMContentLoaded", function () {
     const pinInputs = document.querySelectorAll(".pin-digit");
-
+    
     pinInputs.forEach((input, index) => {
       input.addEventListener("input", function () {
         // Solo permitir números
@@ -612,6 +618,8 @@ function enviarPin() {
       });
     });
   });
+  */    
+
 
   // Cerrar modal con ESC
   document.addEventListener("keydown", function (e) {
@@ -619,6 +627,7 @@ function enviarPin() {
       cerrarModalPin();
     }
   });
+  
 </script>
 
 <style>

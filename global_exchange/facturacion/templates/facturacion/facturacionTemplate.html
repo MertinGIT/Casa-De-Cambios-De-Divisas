@@ -1,0 +1,50 @@
+
+
+<script>
+// Después de crear la transacción exitosamente
+async function generarFactura(transaccionId) {
+    try {
+        const response = await fetch('/facturas/generar/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                transaccion_id: transaccionId
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('Factura generada:', data.cdc);
+            
+            // Esperar 1 minuto y consultar estado
+            setTimeout(() => {
+                consultarEstadoFactura(data.factura_id);
+            }, 60000);
+        } else {
+            console.error('Error:', data.error);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+async function consultarEstadoFactura(facturaId) {
+    try {
+        const response = await fetch(`/facturas/estado/${facturaId}/`);
+        const data = await response.json();
+        
+        if (data.success) {
+            console.log('Estado:', data.estado.estado_sifen);
+            if (data.estado.estado_sifen === 'Aprobado') {
+                alert('¡Factura aprobada por SIFEN!');
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+</script>
