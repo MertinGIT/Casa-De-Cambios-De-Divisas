@@ -36,7 +36,7 @@
                     <span class="btn-icon">📄</span>
                     <span>Descargar Factura</span>
                 </button>
-                <button class="btn-modal-exito primary" onclick="cerrarModalExito()">
+                <button class="btn-modal-exito primary" onclick="mostrarMensajeFactura()">
                     <span>Continuar</span>
                 </button>
             </div>
@@ -45,15 +45,20 @@
 
 <script>
     function mostrarModalExito() {
+        console.log("Mostrando modal de éxito");
         const modal = document.getElementById('modal-exito');
         modal.style.display = 'flex';
         
         // Animación de entrada
         const content = modal.querySelector('.modal-content-exito');
+        content.style.transition = 'none';
         content.style.transform = 'scale(0.7) translateY(-50px)';
         content.style.opacity = '0';
+
+        void content.offsetWidth; // Forzar reflow
         
         requestAnimationFrame(() => {
+            console.log("Iniciando animación de entrada del modal de éxito");
             content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
             content.style.transform = 'scale(1) translateY(0)';
             content.style.opacity = '1';
@@ -107,6 +112,7 @@
             console.log(`Generando factura para transacción ${transaccionId}...`);
             
             // Mostrar mensaje de carga
+            /*
             Swal.fire({
                 title: 'Generando Factura',
                 text: 'Por favor espera...',
@@ -117,6 +123,7 @@
                     Swal.showLoading();
                 }
             });
+            */
             
             const response = await fetch('/facturacion/generar-factura/', {
                 method: 'POST',
@@ -134,27 +141,7 @@
             
             if (data.success) {
                 console.log('✅ Factura generada:', data);
-                
-                // Mostrar éxito con datos de la factura
-                Swal.fire({
-                    title: '¡Factura Generada!',
-                    html: `
-                        <div class="factura-info">
-                            <p><strong>Número de Factura:</strong> ${data.numero_factura}</p>
-                            <p><strong>CDC:</strong> <code>${data.cdc}</code></p>
-                            <p><small>Números restantes en el rango: ${data.numeros_restantes}</small></p>
-                        </div>
-                    `,
-                    icon: 'success',
-                    confirmButtonText: 'Consultar Estado',
-                    showCancelButton: true,
-                    cancelButtonText: 'Cerrar'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        consultarEstadoFactura(transaccionId);
-                    }
-                });
-                
+                window.facturaGenerada = data;
                 return data;
             } else {
                 console.error('❌ Error al generar factura:', data.error);
@@ -259,6 +246,7 @@
                 // Redirige a la descarga del PDF
                 window.location.href = `/facturacion/descargar-factura/?cdc=${data.cdc}&transaccion_id=${transaccionId}`;
                 cerrarModalExito();
+                mostrarMensajeFactura();
             } else {
                 Swal.fire('Error', 'No se pudo obtener el CDC para la descarga.', 'error');
             }
@@ -315,6 +303,40 @@
         // Cleanup
         URL.revokeObjectURL(link.href);
     }
+
+    function mostrarMensajeFactura() {
+    cerrarModalExito();
+
+    // Esperar un poquito para que el cierre se vea bien (opcional)
+    setTimeout(() => {
+        if (window.facturaGenerada) {
+            const data = window.facturaGenerada;
+
+            Swal.fire({
+                title: '¡Factura Generada!',
+                html: `
+                    <div class="factura-info">
+                        <p><strong>Número de Factura:</strong> ${data.numero_factura}</p>
+                        <p><strong>CDC:</strong> <code>${data.cdc}</code></p>
+                        <p><small>Números restantes en el rango: ${data.numeros_restantes}</small></p>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'Consultar Estado',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+                allowOutsideClick: false,
+                backdrop: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    consultarEstadoFactura(data.transaccion_id);
+                }
+            });
+        } else {
+            console.warn("No se encontró factura generada aún");
+        }
+    }, 300);
+}
 
     // Cerrar modal con ESC
     document.addEventListener('keydown', function(e) {
@@ -382,6 +404,9 @@
         align-items: center;
         z-index: 10000;
         padding: 1rem;
+    }
+    .swal2-container {
+        z-index: 11000 !important; /* modal-exito usa 10000 */
     }
 
     .modal-overlay {

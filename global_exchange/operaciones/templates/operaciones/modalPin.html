@@ -485,7 +485,8 @@ function procesarTransaccion() {
           // Primero generar la factura automática
           generarFacturaAutomatica(window.transaccionIdParaDescargaFactura).then(() => {
             $("#modal-pin").fadeOut();
-            $("#modal-exito").fadeIn().css("display", "flex");
+            //$("#modal-exito").fadeIn().css("display", "flex");
+            mostrarModalExito();
           });
         } else {
           mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
