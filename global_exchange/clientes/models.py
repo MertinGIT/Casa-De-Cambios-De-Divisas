@@ -29,6 +29,7 @@ class Cliente(models.Model):
     """
     nombre = models.CharField(max_length=150)
     cedula = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    ruc = models.CharField(max_length=15, unique=True, blank=True, null=True,help_text="RUC del cliente en formato válido (ej: 8001234-6)")
     email = models.EmailField(unique=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     segmentacion = models.ForeignKey(Segmentacion, on_delete=models.PROTECT)
