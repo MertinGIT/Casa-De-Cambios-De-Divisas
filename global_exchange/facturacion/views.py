@@ -77,6 +77,9 @@ def generar_factura_transaccion(request):
             )
             
             resumen = factura_resumida(factura)
+            # Guardar el resumen dentro del campo json_factura
+            factura.json_factura = resumen
+            factura.save()
             print("Resumen de factura:", resumen, flush=True)
             
             return JsonResponse({
