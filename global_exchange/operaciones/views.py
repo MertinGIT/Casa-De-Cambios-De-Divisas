@@ -208,7 +208,7 @@ def simulador_operaciones(request):
                     COMISION_VTA = ultimo.get("comision_venta", 0)
                     COMISION_COM = ultimo.get("comision_compra", 0)
                     # ahora leemos precio_base directamente
-                    PB_MONEDA = tasa_default.get("precio_base", 0)
+                    PB_MONEDA = ultimo.get("precio_base", 0)
                     #PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
                     print("entra en el else de simulacion de operaciones:", flush=True)
