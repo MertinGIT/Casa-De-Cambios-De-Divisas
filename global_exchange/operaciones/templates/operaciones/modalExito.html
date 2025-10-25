@@ -32,11 +32,11 @@
             </div>
             
             <div class="modal-footer-exito">
-                <button class="btn-modal-exito secondary" onclick="descargarComprobante()">
+                <button class="btn-modal-exito secondary" onclick="descargarFactura()">
                     <span class="btn-icon">📄</span>
-                    <span>Descargar comprobante</span>
+                    <span>Descargar Factura</span>
                 </button>
-                <button class="btn-modal-exito primary" onclick="cerrarModalExito()">
+                <button class="btn-modal-exito primary" onclick="mostrarMensajeFactura()">
                     <span>Continuar</span>
                 </button>
             </div>
@@ -45,15 +45,20 @@
 
 <script>
     function mostrarModalExito() {
+        console.log("Mostrando modal de éxito");
         const modal = document.getElementById('modal-exito');
         modal.style.display = 'flex';
         
         // Animación de entrada
         const content = modal.querySelector('.modal-content-exito');
+        content.style.transition = 'none';
         content.style.transform = 'scale(0.7) translateY(-50px)';
         content.style.opacity = '0';
+
+        void content.offsetWidth; // Forzar reflow
         
         requestAnimationFrame(() => {
+            console.log("Iniciando animación de entrada del modal de éxito");
             content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
             content.style.transform = 'scale(1) translateY(0)';
             content.style.opacity = '1';
@@ -61,8 +66,10 @@
         
         // Generar ID de transacción único
         const datos = window.transaccionActual;
+        console.log("Datos de transacción para modal éxito:", datos);
         const transactionId = datos.referencia;
         document.getElementById('transaction-id').textContent = transactionId;
+        window.transaccionIdParaDescargaFactura = datos.transaccionId;
     }
 
     function cerrarModalExito() {
@@ -77,7 +84,7 @@
             modal.style.display = 'none';
         }, 200);
         console.log("recargando en modalexito:")
-        location.reload();
+        //location.reload();
     }
 
     function getCampos() {
@@ -100,6 +107,156 @@
       };
     }
   }
+  
+
+    async function generarFacturaAutomatica(transaccionId) {
+        try {
+            console.log(`Generando factura para transacción ${transaccionId}...`);
+            
+            // Mostrar mensaje de carga
+            /*
+            Swal.fire({
+                title: 'Generando Factura',
+                text: 'Por favor espera...',
+                icon: 'info',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            */
+            
+            const response = await fetch('/facturacion/generar-factura/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    transaccion_id: transaccionId
+                })
+            });
+            
+            const data = await response.json();
+            console.log("data",data);
+            
+            if (data.success) {
+                console.log('✅ Factura generada:', data);
+                window.facturaGenerada = data;
+                return data;
+            } else {
+                console.error('❌ Error al generar factura:', data.error);
+                Swal.fire({
+                    title: 'Error al Generar Factura',
+                    text: data.error,
+                    icon: 'error',
+                    confirmButtonText: 'Entendido'
+                });
+                
+                return null;
+            }
+        } catch (error) {
+            console.error('💥Error en generarFacturaAutomatica:', error);
+            
+            Swal.fire({
+                title: 'Error de Conexión',
+                text: 'No se pudo conectar con el servidor de facturación',
+                icon: 'error',
+                confirmButtonText: 'Entendido'
+            });
+            
+            return null;
+        }
+    }
+
+    async function consultarEstadoFactura(transaccionId) {
+        try {
+            console.log(`🔍 Consultando estado de factura para transacción ${window.transaccionIdParaDescargaFactura}...`);
+            
+            Swal.fire({
+                title: 'Consultando SIFEN',
+                text: 'Verificando estado de la factura...',
+                icon: 'info',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            const response = await fetch(`/facturacion/consultar-factura/?transaccion_id=${window.transaccionIdParaDescargaFactura}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                const estado = data.estado;
+                
+                let iconEstado = 'info';
+                if (estado.estado_sifen === 'Aprobado') {
+                    iconEstado = 'success';
+                } else if (estado.estado_sifen === 'Rechazado') {
+                    iconEstado = 'error';
+                }
+                
+                Swal.fire({
+                    title: 'Estado de la Factura',
+                    html: `
+                        <div class="estado-factura">
+                            <p><strong>Estado SIFEN:</strong> ${estado.estado_sifen}</p>
+                            <p><strong>Descripción:</strong> ${estado.desc_sifen}</p>
+                            <p><strong>Número:</strong> ${data.numero_factura}</p>
+                            <p><strong>CDC:</strong> <code>${data.cdc}</code></p>
+                            ${estado.error_sifen ? `<p class="text-danger"><strong>Error:</strong> ${estado.error_sifen}</p>` : ''}
+                        </div>
+                    `,
+                    icon: iconEstado,
+                    confirmButtonText: 'Cerrar'
+                });
+            } else {
+                Swal.fire({
+                    title: 'Error',
+                    text: data.error,
+                    icon: 'error',
+                    confirmButtonText: 'Cerrar'
+                });
+            }
+        } catch (error) {
+            console.error('💥 Error al consultar estado:', error);
+            Swal.fire({
+                title: 'Error',
+                text: 'No se pudo consultar el estado de la factura',
+                icon: 'error',
+                confirmButtonText: 'Cerrar'
+            });
+        }
+    }
+    
+    function descargarFactura() {
+    // Obtén el CDC y el ID de transacción
+    const transaccionId = window.transaccionIdParaDescargaFactura;
+    // Puedes obtener el CDC llamando a tu endpoint de estado de factura
+    fetch(`/facturacion/consultar-factura/?transaccion_id=${transaccionId}`)
+        .then(resp => resp.json())
+        .then(data => {
+            if (data.success && data.cdc) {
+                // Redirige a la descarga del PDF
+                window.location.href = `/facturacion/descargar-factura/?cdc=${data.cdc}&transaccion_id=${transaccionId}`;
+                cerrarModalExito();
+                mostrarMensajeFactura();
+            } else {
+                Swal.fire('Error', 'No se pudo obtener el CDC para la descarga.', 'error');
+            }
+        })
+        .catch(() => {
+            Swal.fire('Error', 'No se pudo conectar al servidor de facturación.', 'error');
+        });
+}
 
     function descargarComprobante() {
         // Simular descarga de comprobante
@@ -117,27 +274,27 @@
         =========================================
         COMPROBANTE DE TRANSACCIÓN
         =========================================
-ID de Transacción: ${transactionId}
-Fecha: ${new Date().toLocaleString('es-PY')}
+        ID de Transacción: ${transactionId}
+        Fecha: ${new Date().toLocaleString('es-PY')}
 
------------------------------------------
-           DETALLES DE OPERACIÓN
------------------------------------------
-Tipo de operación: ${datos.tipo}
-Monto entregado: ${campos.$valor.val()} ${campos.$origen.val()} 
-Monto recibido: ${campos.$resultado.val()} ${campos.$destino.val()}
-Tasa aplicada: ${datos.tasa}
-Descuento: ${datos.descuento}
-Motivo: ${datos.motivo || 'N/A'}
- 
+        -----------------------------------------
+                DETALLES DE OPERACIÓN
+        -----------------------------------------
+        Tipo de operación: ${datos.tipo}
+        Monto entregado: ${campos.$valor.val()} ${campos.$origen.val()} 
+        Monto recibido: ${campos.$resultado.val()} ${campos.$destino.val()}
+        Tasa aplicada: ${datos.tasa}
+        Descuento: ${datos.descuento}
+        Motivo: ${datos.motivo || 'N/A'}
+        
 
------------------------------------------
-              INFORMACIÓN
------------------------------------------
-Estado: Procesando
-Tiempo estimado: 2-3 minutos
+        -----------------------------------------
+                    INFORMACIÓN
+        -----------------------------------------
+        Estado: Procesando
+        Tiempo estimado: 2-3 minutos
 
-¡Gracias por usar nuestros servicios!
+        ¡Gracias por usar nuestros servicios!
         `;
         
         const blob = new Blob([comprobanteContent], { type: 'text/plain' });
@@ -148,6 +305,41 @@ Tiempo estimado: 2-3 minutos
         // Cleanup
         URL.revokeObjectURL(link.href);
     }
+
+    function mostrarMensajeFactura() {
+    cerrarModalExito();
+
+    // Esperar un poquito para que el cierre se vea bien (opcional)
+    setTimeout(() => {
+        if (window.facturaGenerada) {
+            const data = window.facturaGenerada;
+
+            Swal.fire({
+                title: '¡Factura Generada!',
+                html: `
+                    <div class="factura-info">
+                        <p><strong>Número de Factura:</strong> ${data.numero_factura}</p>
+                        <p><strong>CDC:</strong> <code>${data.cdc}</code></p>
+                        <p><small>Números restantes en el rango: ${data.numeros_restantes}</small></p>
+                    </div>
+                `,
+                icon: 'success',
+                confirmButtonText: 'Consultar Estado',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+                allowOutsideClick: false,
+                backdrop: false,
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    console.log("Consultando estado de la factura desde el modal...", data);
+                    consultarEstadoFactura(data.cdc);
+                }
+            });
+        } else {
+            console.warn("No se encontró factura generada aún");
+        }
+    }, 300);
+}
 
     // Cerrar modal con ESC
     document.addEventListener('keydown', function(e) {
@@ -215,6 +407,9 @@ Tiempo estimado: 2-3 minutos
         align-items: center;
         z-index: 10000;
         padding: 1rem;
+    }
+    .swal2-container {
+        z-index: 11000 !important; /* modal-exito usa 10000 */
     }
 
     .modal-overlay {

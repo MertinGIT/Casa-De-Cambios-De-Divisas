@@ -12,12 +12,14 @@ Mantiene la lógica existente; se agregan docstrings y comentarios aclaratorios.
 """
 import os
 from django.views.decorators.http import require_POST
-
+from django.db import transaction as db_transaction
 from decimal import Decimal
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from datetime import datetime
+from facturacion.models import Factura, RangoFacturacion
+from facturacion.services import FacturaSeguraService
 from medio_acreditacion.models import MedioAcreditacion, TipoEntidadFinanciera  # ya estaba MedioAcreditacion
 from operaciones.models import Transaccion
 from monedas.models import Moneda
@@ -712,7 +714,6 @@ def guardar_transaccion(request):
 
 def actualizar_estado_transaccion(request):
 
-
     """
     Actualiza el estado de una transacción existente.
 
@@ -886,4 +887,5 @@ def validar_pin(request):
             return JsonResponse({"success": True})
         else:
             return JsonResponse({"success": False, "message": "PIN incorrecto"})
+
 

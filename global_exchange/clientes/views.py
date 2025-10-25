@@ -176,6 +176,7 @@ def cliente_detalle(request, pk):
     cliente = get_object_or_404(Cliente, pk=pk)
     return JsonResponse({
         "cedula": cliente.cedula,  
+        "ruc": cliente.ruc,  
         "nombre": cliente.nombre,
         "email": cliente.email,
         "telefono": cliente.telefono,
@@ -204,3 +205,23 @@ def check_cedula(request):
 
         exists = query.exists()
         return JsonResponse(not exists, safe=False)
+
+import re
+def check_ruc(request):
+    ruc = request.POST.get("ruc")
+    obj_id = request.POST.get("obj_id")
+
+    print("RUC recibido:", ruc, flush=True)
+    print("obj_id recibido:", obj_id, flush=True)
+
+    # Validar formato correcto del RUC (ej: 80012345-2)
+    if not ruc or not re.match(r'^\d{3,9}-\d{1,3}$', ruc):
+        return JsonResponse(False, safe=False)
+
+    # Verificar duplicado
+    if obj_id and obj_id.isdigit():
+        exists = Cliente.objects.filter(ruc=ruc).exclude(id=int(obj_id)).exists()
+    else:
+        exists = Cliente.objects.filter(ruc=ruc).exists()
+
+    return JsonResponse(not exists, safe=False)

@@ -105,9 +105,23 @@ INSTALLED_APPS = [
     'notificaciones',
     'configuracion_usuario',
     'admin_transacciones',
-    'tauser'
+    'tauser',
+    'facturacion'
 ]
 
+
+# Configuración Factura Segura
+FACTURA_SEGURA = {
+    'AMBIENTE': 'test',  
+    'API_URL': 'https://apitest.facturasegura.com.py/misife00/v1/esi',
+    'TOKEN': 'eyJ2ZXIiOiI1IiwidWlkIjoiMWVlOTRiNmI3MDgyNDBhMDhiY2E5YTgwZWExODJhOTgiLCJzaWQiOjAsImV4cCI6MH0.aPfwVQ.tcnm1XzTnrCnhXyVaOKP9ljPxfo',
+    'RUC_EMISOR': '2595733',
+    'DV_EMISOR': '3',
+    'TIMBRADO': '80143335',
+    'FECHA_INICIO_TIMBRADO': '2023-12-27',
+    'ESTABLECIMIENTO': '001',
+    'PUNTO_EXPEDICION': '003',
+}
 
 # Configuración ASGI (reemplaza WSGI para WebSockets)
 ASGI_APPLICATION = 'global_exchange.asgi.application'

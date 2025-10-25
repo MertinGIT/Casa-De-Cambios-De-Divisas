@@ -51,7 +51,7 @@ urlpatterns = [
     path('notificaciones/', include('notificaciones.urls')),
     path('configuracion/', include("configuracion_usuario.urls")),
     path('tauser/', include('tauser.urls')),
-
+    path('facturacion/', include('facturacion.urls')),
     
     
     # Rutas solo para administradores
