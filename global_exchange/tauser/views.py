@@ -135,7 +135,7 @@ def atm_depositar(request):
                     
                     GestorStockTauser.registrar_deposito(transaccion)
 
-                    transaccion.estado = 'completada'
+                    transaccion.estado = 'confirmada'
                     transaccion.save(update_fields=['estado'])
 
 
@@ -177,7 +177,7 @@ def atm_extraer(request):
         transacciones_pendientes = Transaccion.objects.filter(
             cliente=cliente,
             tipo='compra',
-            estado='completada'
+            estado='confirmada'
         ).select_related('moneda_origen', 'moneda_destino').order_by('-fecha')
         
         # Agrupar por moneda destino
@@ -248,7 +248,7 @@ def atm_extraer(request):
             transacciones_moneda = Transaccion.objects.filter(
                 cliente=cliente,
                 tipo='compra',
-                estado='completada',
+                estado='confirmada',
                 moneda_destino_id=moneda_id
             )
             
