@@ -97,7 +97,8 @@ def atm_transacciones(request):
 
 def atm_depositar(request):
     """
-    Muestra las operaciones que requieren depósito en efectivo (ventas y compras pagadas en efectivo).
+    Muestra las operaciones que requieren depósito en efectivo.
+    Solo transacciones PENDIENTES pagadas en EFECTIVO.
     """
     cliente_id = request.session.get('atm_cliente_id')
     if not cliente_id:
@@ -106,30 +107,26 @@ def atm_depositar(request):
     try:
         cliente = Cliente.objects.get(id=cliente_id)
 
-        # 1️⃣ Total ya depositado (solo confirmadas)
-        total_confirmadas = Transaccion.objects.filter(
-            cliente=cliente,
-            estado='confirmada'
-        ).aggregate(total=Sum('monto'))['total'] or 0
-
-        # 2️⃣ Transacciones pendientes que requieren depósito (ventas o compras pagadas en efectivo)
+        # Buscar transacciones pendientes en efectivo
         transacciones_pendientes = Transaccion.objects.filter(
             cliente=cliente,
             estado='pendiente',
-            metodo_pago_id=3,  # efectivo
-        ).select_related('moneda_origen', 'moneda_destino').order_by('-fecha')
+            metodo_pago__nombre__iexact='efectivo'
+        ).select_related('moneda_origen', 'moneda_destino', 'metodo_pago').order_by('-fecha')
 
         if request.method == 'POST':
-            form = SeleccionarTransaccionForm(request.POST)
-            if form.is_valid():
-                transaccion_id = form.cleaned_data['transaccion_id']
-                transaccion = get_object_or_404(
-                    Transaccion,
-                    id=transaccion_id,
-                    cliente=cliente,
-                    estado='pendiente',
-                    metodo_pago_id=3
-                )
+            transaccion_id = request.POST.get('transaccion_id')
+            
+            if not transaccion_id:
+                messages.error(request, 'No se especificó la transacción')
+                return redirect('atm_depositar')
+            
+            transaccion = get_object_or_404(
+                Transaccion,
+                id=transaccion_id,
+                cliente=cliente,
+                estado='pendiente'
+            )
 
                 with db_transaction.atomic():
                     
@@ -138,20 +135,15 @@ def atm_depositar(request):
                     transaccion.estado = 'confirmada'
                     transaccion.save(update_fields=['estado'])
 
-
-                messages.success(
-                    request,
-                    f'Depósito confirmado: {transaccion.monto} {transaccion.moneda_origen.abreviacion}'
-                )
-                return redirect('atm_dashboard')
-        else:
-            form = SeleccionarTransaccionForm()
+            messages.success(
+                request,
+                f'✓ Depósito exitoso: {transaccion.monto:.2f} {transaccion.moneda_origen.abreviacion}'
+            )
+            return redirect('atm_depositar')
 
         context = {
             'cliente': cliente,
             'transacciones': transacciones_pendientes,
-            'total_confirmadas': total_confirmadas,
-            'form': form,
         }
         return render(request, 'tauser/depositar.html', context)
 
@@ -177,6 +169,7 @@ def atm_extraer(request):
         transacciones_pendientes = Transaccion.objects.filter(
             cliente=cliente,
             tipo='compra',
+            estado='confirmada'
             estado='confirmada'
         ).select_related('moneda_origen', 'moneda_destino').order_by('-fecha')
         
