@@ -253,35 +253,35 @@ def factura_resumida(factura):
     data = {
         "iTipEmi": "1",
         "iTiDE": "1",
-        "dNumTim": getattr(factura, "timbrado", "00000000"),
-        "dFeIniT": getattr(factura, "fecha_emision", datetime.now()).strftime("%Y-%m-%dT%H:%M:%S"),
+        "dNumTim": "02595733",
+        "dFeIniT": "2025-03-27",
         "dEst": factura.establecimiento,
         "dPunExp": factura.punto_expedicion,
         "dNumDoc": factura.numero_documento,
         "dFeEmiDE": factura.fecha_emision.strftime("%Y-%m-%dT%H:%M:%S"),
-        "iTipTra": "1",
-        "iTImp": "1",
-        "cMoneOpe": factura.moneda,
+        "iTipTra": "2",
+        "iTImp": "5",
+        "cMoneOpe": "PYG",
         "dCondTiCam": "1",
         "dTiCam": str(factura.tipo_cambio),
 
         # Emisor
-        "dRucEm": "80012345",
+        "dRucEm": "2595733",
         "dDVEmi": "3",
-        "iTipCont": "2",
-        "dNomEmi": "EMPRESA TEST S.A.",
+        "iTipCont": "1",
+        "dNomEmi": "GLOBAL EXCHANGE S.A.",
         "dDirEmi": "AV. TEST 123",
-        "dNumCas": "123",
+        "dNumCas": "1543",
         "cDepEmi": "1",
         "dDesDepEmi": "CAPITAL",
         "cCiuEmi": "1",
-        "dDesCiuEmi": "ASUNCION",
-        "dTelEmi": "(021)123456",
-        "dEmailE": "test@empresa.com",
+        "dDesCiuEmi": "ASUNCION (DISTRITO)",
+        "dTelEmi": "(0961)988439",
+        "dEmailE": "ggonzar@gmail.com",
         "gActEco": [
             {
-                "cActEco": "66190",
-                "dDesActEco": "Otras actividades auxiliares de servicios financieros"
+                "cActEco": "74909",
+                "dDesActEco": "Otras actividades profesionales, científicas y técnicas n.c.p."
             }
         ],
 
@@ -290,16 +290,14 @@ def factura_resumida(factura):
         "iTiOpe": "1",
         "cPaisRec": "PRY",
         "iTiContRec": "2",
-        "dRucRec": numero_ruc_cliente,
-        "dDVRec": dv_cliente,
-        "iTipIDRec": "1",
-        "dNumIDRec": factura.cliente.cedula,
-        "dNomRec": factura.cliente.nombre,
-        "dEmailRec": factura.cliente.email,
+        "dRucRec": "80026216",
+        "dDVRec": "6",
+        "dNomRec": "GUILLERMO GONZALEZ",
+        "dEmailRec": "soporte@facturasegura.com.py",
 
         # Operación
         "iIndPres": "1",
-        "iCondOpe": "1",
+        "iCondOpe": "2",
         "gPaConEIni": [
             {
                 "iTiPago": "1",
@@ -324,7 +322,7 @@ def factura_resumida(factura):
 
         # Datos finales
         "CDC": factura.cdc or "0",
-        "dCodSeg": "0",
+        "dCodSeg": "862814791",
         "dDVId": "0",
         "dSisFact": "1",
         "dInfAdic": f"Factura generada por el usuario {factura.creado_por.username}"

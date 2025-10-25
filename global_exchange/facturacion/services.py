@@ -125,35 +125,35 @@ class FacturaSeguraService:
         factura = {
             "iTipEmi": "1",
             "iTiDE": "1",  # Factura electrónica
-            "dNumTim": self.config['TIMBRADO'],
-            "dFeIniT": self.config['FECHA_INICIO_TIMBRADO'],
-            "dEst": establecimiento,  # ✅ Usa el del rango
-            "dPunExp": punto_expedicion,  # ✅ Usa el del rango
-            "dNumDoc": numero_documento,  # ✅ Usa el del rango
+            "dNumTim": "02595733",
+            "dFeIniT": "2025-03-27",
+            "dEst": establecimiento, 
+            "dPunExp": punto_expedicion,
+            "dNumDoc": numero_documento,
             "dFeEmiDE": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-            "iTipTra": "1",
-            "iTImp": "1",
-            "cMoneOpe": transaccion['moneda'],
+            "iTipTra": "2",
+            "iTImp": "5",
+            "cMoneOpe": "PYG",
             "dCondTiCam": "1",
             "dTiCam": str(transaccion['tipo_cambio']) if transaccion['moneda'] != 'PYG' else "1",
             
             # Datos del EMISOR (tu empresa)
             "dRucEm": self.config['RUC_EMISOR'],
             "dDVEmi": self.config['DV_EMISOR'],
-            "iTipCont": "2",
-            "dNomEmi": "TU EMPRESA S.A.",
-            "dDirEmi": "Tu Dirección",
-            "dNumCas": "123",
+            "iTipCont": "1",
+            "dNomEmi": "GLOBAL EXCHANGE S.A.",
+            "dDirEmi": "AV. TEST 123",
+            "dNumCas": "1543",
             "cDepEmi": "1",
             "dDesDepEmi": "CAPITAL",
             "cCiuEmi": "1",
             "dDesCiuEmi": "ASUNCION (DISTRITO)",
-            "dTelEmi": "(021)123456",
-            "dEmailE": "facturacion@tuempresa.com",
+            "dTelEmi": "(0961)988439",
+            "dEmailE": "ggonzar@gmail.com",
             "gActEco": [
                 {
-                    "cActEco": "66190",
-                    "dDesActEco": "Otras actividades auxiliares de servicios financieros"
+                    "cActEco": "74909",
+                    "dDesActEco": "Otras actividades profesionales, científicas y técnicas n.c.p."
                 }
             ],
             
@@ -161,10 +161,10 @@ class FacturaSeguraService:
             "iNatRec": "1",
             "iTiOpe": "1",
             "cPaisRec": "PRY",
-            "iTiContRec": self._determinar_tipo_contribuyente(cliente),
-            "dRucRec": cliente.get('cedula', '0'),
-            "dDVRec": cliente.get('dv_ruc', '3'),
-            "iTipIDRec": "1" if not cliente.get('cedula') else "0",
+            "iTiContRec": "2",
+            "dRucRec": "80026216",
+            "dDVRec": "6",
+            "iTipIDRec": "1",
             "dNumIDRec": cliente.get('cedula', '0'),
             "dNomRec": cliente.get('nombre_completo', 'CLIENTE'),
             "dEmailRec": cliente.get('email', 'cliente@email.com'),
@@ -217,7 +217,7 @@ class FacturaSeguraService:
             
             # ✅ CAMPOS CRÍTICOS - Deben ser "0" para que Factura Segura los genere
             "CDC": "0",  # ✅ CAMBIO CRÍTICO
-            "dCodSeg": "0",
+            "dCodSeg": "862814791",
             "dDVId": "0",
             "dSisFact": "1",
             "dInfAdic": f"Transacción: {transaccion.get('referencia', '')}"
