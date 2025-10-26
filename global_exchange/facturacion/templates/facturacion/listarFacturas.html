@@ -1,0 +1,1985 @@
+{% extends 'baseDashboardUsuario.html' %}
+{% load humanize %}
+{% load static %}
+{% block dashboard_content %}
+{% include 'notificaciones/modalNotificacion.html' %}
+<div class="facturacion-container">
+    <!-- Header -->
+    <div class="facturacion-header">
+        <div class="header-content">
+            <div class="header-info">
+                <h1 class="header-title">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                    Mis Facturas Electrónicas
+                </h1>
+                <p class="header-subtitle">Gestiona y descarga tus comprobantes</p>
+            </div>
+            <div class="header-user">
+                <p class="user-name-facturas">Usuario: <span>{{ user.username }}</span></p>
+                <p class="user-count">{{ total }} factura{{ total|pluralize }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="estadisticas-grid">
+        <div class="stat-card stat-total">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Total</p>
+                    <p class="stat-value">{{ total }}</p>
+                </div>
+                <div class="stat-icon stat-icon-blue">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-approved">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Aprobadas</p>
+                    <p class="stat-value">{{ aprobadas }}</p>
+                </div>
+                <div class="stat-icon stat-icon-green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-pending">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Pendientes</p>
+                    <p class="stat-value">{{ pendientes }}</p>
+                </div>
+                <div class="stat-icon stat-icon-yellow">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card stat-rejected">
+            <div class="stat-content">
+                <div class="stat-info">
+                    <p class="stat-label">Rechazadas</p>
+                    <p class="stat-value">{{ rechazadas }}</p>
+                </div>
+                <div class="stat-icon stat-icon-red">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-container">
+        <div class="filtros-header">
+            <h2 class="filtros-title">
+                <i class="fas fa-filter"></i>
+                Filtros de Búsqueda
+            </h2>
+            <button onclick="limpiarFiltros()" class="btn-limpiar-filtros">
+                <i class="fas fa-eraser"></i>
+                Limpiar Filtros
+            </button>
+        </div>
+        
+        <form id="filtrosForm" method="get" class="filtros-grid">
+            <!-- Búsqueda por texto 
+            <div class="filtro-item filtro-full">
+                <label class="filtro-label">
+                    <i class="fas fa-search"></i>
+                    Búsqueda rápida
+                </label>
+                <input 
+                    type="text" 
+                    name="busqueda" 
+                    id="busqueda"
+                    class="filtro-input" 
+                    placeholder="Cliente, CDC, número de factura..."
+                    value="{{ request.GET.busqueda }}"
+                >
+            </div>
+            -->
+            <!-- Estado -->
+            <div class="filtro-item">
+                <label class="filtro-label">
+                    <i class="fas fa-info-circle"></i>
+                    Estado
+                </label>
+                <select name="estado" id="estado" class="filtro-select">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente" {% if request.GET.estado == 'pendiente' %}selected{% endif %}>Pendiente</option>
+                    <option value="aprobado" {% if request.GET.estado == 'aprobado' %}selected{% endif %}>Aprobado</option>
+                    <option value="rechazado" {% if request.GET.estado == 'rechazado' %}selected{% endif %}>Rechazado</option>
+                    <option value="cancelado" {% if request.GET.estado == 'cancelado' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </div>
+
+            <!-- Cliente -->
+            <div class="filtro-item">
+                <label class="filtro-label">
+                    <i class="fas fa-user"></i>
+                    Cliente
+                </label>
+                <input 
+                    type="text" 
+                    name="cliente" 
+                    id="cliente"
+                    class="filtro-input" 
+                    placeholder="Nombre del cliente"
+                    value="{{ request.GET.cliente }}"
+                >
+            </div>
+
+            <!-- CDC -->
+            <div class="filtro-item">
+                <label class="filtro-label">
+                    <i class="fas fa-barcode"></i>
+                    CDC
+                </label>
+                <input 
+                    type="text" 
+                    name="cdc" 
+                    id="cdc"
+                    class="filtro-input" 
+                    placeholder="Código CDC"
+                    value="{{ request.GET.cdc }}"
+                >
+            </div>
+
+            <!-- Fecha desde -->
+            <div class="filtro-item">
+                <label class="filtro-label">
+                    <i class="fas fa-calendar-alt"></i>
+                    Fecha desde
+                </label>
+                <input 
+                    type="date" 
+                    name="fecha_desde" 
+                    id="fecha_desde"
+                    class="filtro-input" 
+                    value="{{ request.GET.fecha_desde }}"
+                >
+            </div>
+
+            <!-- Fecha hasta -->
+            <div class="filtro-item">
+                <label class="filtro-label">
+                    <i class="fas fa-calendar-alt"></i>
+                    Fecha hasta
+                </label>
+                <input 
+                    type="date" 
+                    name="fecha_hasta" 
+                    id="fecha_hasta"
+                    class="filtro-input" 
+                    value="{{ request.GET.fecha_hasta }}"
+                >
+            </div>
+
+            <!-- Transacción ID -->
+            <div class="filtro-item">
+                <label class="filtro-label">
+                    <i class="fas fa-exchange-alt"></i>
+                    ID Transacción
+                </label>
+                <input 
+                    type="number" 
+                    name="transaccion_id" 
+                    id="transaccion_id"
+                    class="filtro-input" 
+                    placeholder="ID de transacción"
+                    value="{{ request.GET.transaccion_id }}"
+                >
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="filtro-item filtro-actions">
+                <button type="submit" class="btn-filtrar">
+                    <i class="fas fa-search"></i>
+                    Filtrar
+                </button>
+            </div>
+        </form>
+
+        <!-- Resultados del filtro -->
+        {% if request.GET %}
+        <div class="filtro-resultados">
+            <p class="filtro-resultados-text">
+                <i class="fas fa-check-circle"></i>
+                Se encontraron <strong>{{ facturas|length }}</strong> factura{{ facturas|length|pluralize }}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Listado de Facturas -->
+    {% if facturas %}
+    <div class="facturas-list">
+        {% for factura in facturas %}
+        <div class="factura-card">
+            <div class="factura-content">
+                <!-- Información Principal -->
+                <div class="factura-main">
+                    <div class="factura-header-section">
+                        <div class="factura-number-section">
+                            <h3 class="factura-number">
+                                <i class="fas fa-hashtag"></i>
+                                {{ factura.numero_completo }}
+                            </h3>
+                            <p class="factura-date">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ factura.fecha_emision|date:"d/m/Y H:i" }}
+                            </p>
+                        </div>
+                        
+                        <!-- Estado Badge -->
+                        <div class="status-badge-container">
+                            {% if factura.estado == 'aprobado' %}
+                            <span class="status-badge status-approved">
+                                <i class="fas fa-check-circle"></i>APROBADO
+                            </span>
+                            {% elif factura.estado == 'rechazado' %}
+                            <span class="status-badge status-rejected">
+                                <i class="fas fa-times-circle"></i>RECHAZADO
+                            </span>
+                            {% elif factura.estado == 'pendiente' %}
+                            <span class="status-badge status-pending">
+                                <i class="fas fa-clock"></i>PENDIENTE
+                            </span>
+                            {% else %}
+                            <span class="status-badge status-processing">
+                                <i class="fas fa-spinner"></i>EN PROCESO
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Detalles -->
+                    <div class="factura-details-grid">
+                        <div class="detail-box">
+                            <p class="detail-label">Cliente</p>
+                            <p class="detail-value">{{ factura.cliente.nombre }}</p>
+                            <p class="detail-subtitle">{{ factura.cliente.cedula }}</p>
+                        </div>
+                        
+                        <div class="detail-box">
+                            <p class="detail-label">Monto</p>
+                            <p class="detail-amount">{{ factura.moneda }} {{ factura.monto_total|floatformat:0 }}</p>
+                        </div>
+                        
+                        <div class="detail-box">
+                            <p class="detail-label">CDC</p>
+                            <p class="detail-cdc">{{ factura.cdc|default:"No disponible" }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Estado SIFEN -->
+                    {% if factura.estado_sifen %}
+                    <div class="sifen-info">
+                        <p class="sifen-title">
+                            <i class="fas fa-info-circle"></i>
+                            Estado SIFEN: {{ factura.estado_sifen }}
+                        </p>
+                        {% if factura.descripcion_sifen %}
+                        <p class="sifen-description">{{ factura.descripcion_sifen }}</p>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="factura-actions">
+                    <button 
+                        onclick="consultarEstado({{ factura.id }}, '{{ factura.cdc }}')" 
+                        class="btn btn-consultar"
+                    >
+                        <i class="fas fa-sync-alt"></i>
+                        Consultar Estado
+                    </button>
+
+                    {% if factura.estado == 'aprobado' %}
+                    <button 
+                        onclick="descargarFactura('{{ factura.cdc }}', {{ factura.transaccion.id }})" 
+                        class="btn btn-descargar"
+                    >
+                        <i class="fas fa-download"></i>
+                        Descargar PDF
+                    </button>
+                    {% else %}
+                    <button 
+                        disabled
+                        class="btn btn-disabled"
+                        title="Solo disponible para facturas aprobadas"
+                    >
+                        <i class="fas fa-lock"></i>
+                        Descargar PDF
+                    </button>
+                    {% endif %}
+
+                    <button 
+                        onclick="verDetalles({{ factura.id }})" 
+                        class="btn btn-detalles"
+                    >
+                        <i class="fas fa-eye"></i>
+                        Ver Detalles
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">
+            <i class="fas fa-file-invoice"></i>
+        </div>
+        <h3 class="empty-title">No hay facturas disponibles</h3>
+        <p class="empty-text">Las facturas generadas aparecerán aquí</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de Notificación -->
+<div id="notificationModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <button onclick="cerrarModal()" class="modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="modalContent" class="modal-body"></div>
+        <div class="modal-footer">
+            <button onclick="cerrarModal()" class="btn btn-modal-close">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p class="loading-title">Procesando...</p>
+        <p class="loading-subtitle">Por favor espere</p>
+    </div>
+</div>
+
+<script>
+    // Variables globales para URLs
+    const URLS = {
+        consultarEstado: function(facturaId) {
+            return '{% url "consultar_estado" 999999 %}'.replace('999999', facturaId);
+        },
+        descargarFactura: '{% url "descargar_factura" %}'
+    };
+
+    // Función para mostrar loading
+    function showLoading() {
+        document.getElementById('loadingOverlay').classList.add('active');
+    }
+
+    // Función para ocultar loading
+    function hideLoading() {
+        document.getElementById('loadingOverlay').classList.remove('active');
+    }
+
+    // Función para mostrar modal
+    function mostrarModal(titulo, contenido, tipo) {
+        const modal = document.getElementById('notificationModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalContent = document.getElementById('modalContent');
+        
+        modalTitle.textContent = titulo;
+        
+        let icon = '';
+        if (tipo === 'success') {
+            icon = '<i class="fas fa-check-circle modal-icon icon-success"></i>';
+        } else if (tipo === 'error') {
+            icon = '<i class="fas fa-exclamation-circle modal-icon icon-error"></i>';
+        } else if (tipo === 'warning') {
+            icon = '<i class="fas fa-exclamation-triangle modal-icon icon-warning"></i>';
+        } else {
+            icon = '<i class="fas fa-info-circle modal-icon icon-info"></i>';
+        }
+        
+        modalContent.innerHTML = icon + contenido;
+        modal.classList.add('active');
+    }
+
+    // Función para cerrar modal
+    function cerrarModal() {
+        document.getElementById('notificationModal').classList.remove('active');
+    }
+
+    // Función para consultar estado de factura
+    async function consultarEstado(facturaId, cdc) {
+        showLoading();
+        
+        try {
+            const url = URLS.consultarEstado(facturaId);
+            console.log('Consultando estado en:', url);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error('Error HTTP: ' + response.status);
+            }
+            
+            const data = await response.json();
+            
+            hideLoading();
+            
+            if (data.success) {
+                let estadoHTML = '<div class="estado-details">';
+                
+                estadoHTML += '<div class="estado-item">';
+                estadoHTML += '<p class="estado-label">Número de Factura</p>';
+                estadoHTML += '<p class="estado-value">' + data.numero_factura + '</p>';
+                estadoHTML += '</div>';
+                
+                estadoHTML += '<div class="estado-item">';
+                estadoHTML += '<p class="estado-label">CDC</p>';
+                estadoHTML += '<p class="estado-cdc">' + data.cdc + '</p>';
+                estadoHTML += '</div>';
+                
+                estadoHTML += '<div class="estado-item">';
+                estadoHTML += '<p class="estado-label">Estado</p>';
+                estadoHTML += '<p class="estado-value estado-' + data.estado.toLowerCase() + '">' + data.estado.toUpperCase() + '</p>';
+                estadoHTML += '</div>';
+                
+                if (data.estado_sifen) {
+                    estadoHTML += '<div class="estado-item estado-sifen">';
+                    estadoHTML += '<p class="estado-label">Estado SIFEN</p>';
+                    estadoHTML += '<p class="estado-value">' + data.estado_sifen + '</p>';
+                    estadoHTML += '</div>';
+                }
+                
+                if (data.descripcion_sifen) {
+                    estadoHTML += '<div class="estado-item">';
+                    estadoHTML += '<p class="estado-label">Descripción</p>';
+                    estadoHTML += '<p class="estado-description">' + data.descripcion_sifen + '</p>';
+                    estadoHTML += '</div>';
+                }
+                
+                if (data.fecha_aprobacion) {
+                    const fecha = new Date(data.fecha_aprobacion);
+                    estadoHTML += '<div class="estado-item estado-aprobacion">';
+                    estadoHTML += '<p class="estado-label">Fecha de Aprobación</p>';
+                    estadoHTML += '<p class="estado-fecha">' + fecha.toLocaleString('es-PY') + '</p>';
+                    estadoHTML += '</div>';
+                }
+                
+                estadoHTML += '</div>';
+                
+                mostrarModal('Estado de Factura', estadoHTML, 'success');
+                
+            } else {
+                mostrarModal('Error', '<p>' + (data.error || 'No se pudo consultar el estado') + '</p>', 'error');
+            }
+        } catch (error) {
+            hideLoading();
+            console.error('Error completo:', error);
+            mostrarModal('Error', '<p>Error al consultar el estado de la factura: ' + error.message + '</p>', 'error');
+        }
+    }
+
+    function recargarPagina() {
+        location.reload();
+    }
+
+    // Función para descargar factura
+    async function descargarFactura(cdc, transaccionId) {
+        showLoading();
+        
+        try {
+            const url = URLS.descargarFactura + '?cdc=' + encodeURIComponent(cdc) + '&transaccion_id=' + transaccionId;
+            console.log('Descargando factura desde:', url);
+            
+            // Usar window.location para forzar la descarga
+            window.location.href = url;
+            
+            // Esperar un poco antes de ocultar el loading
+            setTimeout(function() {
+                hideLoading();
+                mostrarModal(
+                    'Descarga Iniciada', 
+                    '<p class="text-center">La descarga de tu factura ha comenzado. Si no se descarga automáticamente, verifica los permisos de tu navegador.</p>',
+                    'success'
+                );
+            }, 1000);
+            
+        } catch (error) {
+            hideLoading();
+            console.error('Error completo:', error);
+            mostrarModal('Error', '<p>Error al descargar la factura: ' + error.message + '</p>', 'error');
+        }
+    }
+
+    function verDetalles(facturaId) {
+        // Buscar la factura en el DOM
+        const facturaCard = event.target.closest('.factura-card');
+        
+        if (!facturaCard) {
+            mostrarModal('Error', '<p>No se pudo cargar la información de la factura</p>', 'error');
+            return;
+        }
+
+        // Extraer información del DOM
+        const numeroFactura = facturaCard.querySelector('.factura-number').textContent.trim();
+        const fechaEmision = facturaCard.querySelector('.factura-date').textContent.trim();
+        const cliente = facturaCard.querySelector('.detail-value').textContent;
+        const cedula = facturaCard.querySelector('.detail-subtitle').textContent;
+        const monto = facturaCard.querySelector('.detail-amount').textContent;
+        const cdc = facturaCard.querySelector('.detail-cdc').textContent;
+        const estadoBadge = facturaCard.querySelector('.status-badge').textContent.trim();
+        
+        // Verificar si hay info SIFEN
+        const sifenInfo = facturaCard.querySelector('.sifen-info');
+        let estadoSifen = '';
+        let descripcionSifen = '';
+        
+        if (sifenInfo) {
+            const sifenTitle = sifenInfo.querySelector('.sifen-title');
+            const sifenDesc = sifenInfo.querySelector('.sifen-description');
+            if (sifenTitle) estadoSifen = sifenTitle.textContent;
+            if (sifenDesc) descripcionSifen = sifenDesc.textContent;
+        }
+
+        // Construir HTML detallado
+        let detallesHTML = '<div class="detalles-factura-completo">';
+        
+        // Sección: Información de la Factura
+        detallesHTML += '<div class="detalle-seccion">';
+        detallesHTML += '<h4 class="detalle-seccion-titulo"><i class="fas fa-file-invoice"></i> Información de la Factura</h4>';
+        detallesHTML += '<div class="detalle-grid">';
+        
+        detallesHTML += '<div class="detalle-campo">';
+        detallesHTML += '<span class="detalle-campo-label">Número de Factura:</span>';
+        detallesHTML += '<span class="detalle-campo-valor">' + numeroFactura + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '<div class="detalle-campo">';
+        detallesHTML += '<span class="detalle-campo-label">Fecha de Emisión:</span>';
+        detallesHTML += '<span class="detalle-campo-valor">' + fechaEmision + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '<div class="detalle-campo">';
+        detallesHTML += '<span class="detalle-campo-label">Estado Actual:</span>';
+        detallesHTML += '<span class="detalle-campo-valor detalle-estado">' + estadoBadge + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '<div class="detalle-campo detalle-campo-full">';
+        detallesHTML += '<span class="detalle-campo-label">CDC:</span>';
+        detallesHTML += '<span class="detalle-campo-valor detalle-cdc-full">' + cdc + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '</div>';
+        detallesHTML += '</div>';
+        
+        // Sección: Información del Cliente
+        detallesHTML += '<div class="detalle-seccion">';
+        detallesHTML += '<h4 class="detalle-seccion-titulo"><i class="fas fa-user"></i> Información del Cliente</h4>';
+        detallesHTML += '<div class="detalle-grid">';
+        
+        detallesHTML += '<div class="detalle-campo">';
+        detallesHTML += '<span class="detalle-campo-label">Nombre:</span>';
+        detallesHTML += '<span class="detalle-campo-valor">' + cliente + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '<div class="detalle-campo">';
+        detallesHTML += '<span class="detalle-campo-label">Cédula/RUC:</span>';
+        detallesHTML += '<span class="detalle-campo-valor">' + cedula + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '</div>';
+        detallesHTML += '</div>';
+        
+        // Sección: Información Monetaria
+        detallesHTML += '<div class="detalle-seccion">';
+        detallesHTML += '<h4 class="detalle-seccion-titulo"><i class="fas fa-dollar-sign"></i> Información Monetaria</h4>';
+        detallesHTML += '<div class="detalle-grid">';
+        
+        detallesHTML += '<div class="detalle-campo detalle-monto-destacado">';
+        detallesHTML += '<span class="detalle-campo-label">Monto Total:</span>';
+        detallesHTML += '<span class="detalle-campo-valor detalle-monto">' + monto + '</span>';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '</div>';
+        detallesHTML += '</div>';
+        
+        // Sección: Estado SIFEN (si existe)
+        if (estadoSifen) {
+            detallesHTML += '<div class="detalle-seccion detalle-sifen">';
+            detallesHTML += '<h4 class="detalle-seccion-titulo"><i class="fas fa-server"></i> Estado SIFEN</h4>';
+            detallesHTML += '<div class="detalle-grid">';
+            
+            detallesHTML += '<div class="detalle-campo detalle-campo-full">';
+            detallesHTML += '<span class="detalle-campo-label">Estado:</span>';
+            detallesHTML += '<span class="detalle-campo-valor">' + estadoSifen + '</span>';
+            detallesHTML += '</div>';
+            
+            if (descripcionSifen) {
+                detallesHTML += '<div class="detalle-campo detalle-campo-full">';
+                detallesHTML += '<span class="detalle-campo-label">Descripción:</span>';
+                detallesHTML += '<span class="detalle-campo-valor">' + descripcionSifen + '</span>';
+                detallesHTML += '</div>';
+            }
+            
+            detallesHTML += '</div>';
+            detallesHTML += '</div>';
+        }
+        
+        // Nota informativa
+        detallesHTML += '<div class="detalle-nota">';
+        detallesHTML += '<i class="fas fa-info-circle"></i> ';
+        detallesHTML += 'Esta información corresponde al estado actual de la factura en el sistema.';
+        detallesHTML += '</div>';
+        
+        detallesHTML += '</div>';
+        
+        mostrarModal('Detalles Completos de la Factura', detallesHTML, 'info');
+    }
+
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        document.getElementById('filtrosForm').reset();
+        window.location.href = window.location.pathname;
+    }
+
+    // Cerrar modal al hacer clic fuera
+    document.getElementById('notificationModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            cerrarModal();
+        }
+    });
+
+    // Auto-actualizar facturas pendientes cada 30 segundos
+    setInterval(function() {
+        const pendingBadges = document.querySelectorAll('.status-pending');
+        if (pendingBadges.length > 0) {
+            console.log('Hay ' + pendingBadges.length + ' facturas pendientes...');
+        }
+    }, 30000);
+
+    // Debug: Mostrar URLs en consola al cargar
+    console.log('URLs configuradas:', URLS);
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Contenedor principal */
+.facturacion-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* Header */
+.facturacion-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.header-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: white;
+    margin: 0 0 8px 0;
+}
+
+.header-title i {
+    margin-right: 12px;
+}
+
+.header-subtitle {
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    font-size: 14px;
+}
+
+.header-user {
+    text-align: right;
+}
+
+.user-name-facturas {
+    color: white;
+    font-size: 14px;
+    margin: 0 0 4px 0;
+}
+
+.user-name-facturas span {
+    font-weight: 600;
+}
+
+.user-count {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 12px;
+    margin: 0;
+}
+
+/* Filtros */
+.filtros-container {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    border: 1px solid #e5e7eb;
+}
+
+.filtros-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.filtros-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filtros-title i {
+    color: #667eea;
+}
+
+.btn-limpiar-filtros {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+}
+
+.btn-limpiar-filtros:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+}
+
+.filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    align-items: end;
+}
+
+.filtro-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.filtro-full {
+    grid-column: 1 / -1;
+}
+
+.filtro-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filtro-label i {
+    color: #667eea;
+    font-size: 12px;
+}
+
+.filtro-input,
+.filtro-select {
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #1f2937;
+    transition: all 0.3s ease;
+    background: white;
+    width: 100%;
+}
+
+.filtro-input:focus,
+.filtro-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.filtro-select {
+    cursor: pointer;
+}
+
+.filtro-actions {
+    display: flex;
+    align-items: flex-end;
+}
+
+.btn-filtrar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-filtrar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.filtro-resultados {
+    margin-top: 20px;
+    padding: 12px 16px;
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    border-radius: 4px;
+}
+
+.filtro-resultados-text {
+    color: #1e40af;
+    font-size: 14px;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filtro-resultados-text i {
+    color: #3b82f6;
+}
+
+
+/* Estadísticas */
+.estadisticas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+}
+
+.stat-total { border-left: 4px solid #3b82f6; }
+.stat-approved { border-left: 4px solid #10b981; }
+.stat-pending { border-left: 4px solid #f59e0b; }
+.stat-rejected { border-left: 4px solid #ef4444; }
+
+.stat-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 500;
+    margin: 0 0 8px 0;
+}
+
+.stat-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.stat-icon-blue {
+    background: #dbeafe;
+    color: #3b82f6;
+}
+
+.stat-icon-green {
+    background: #d1fae5;
+    color: #10b981;
+}
+
+.stat-icon-yellow {
+    background: #fef3c7;
+    color: #f59e0b;
+}
+
+.stat-icon-red {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+/* Listado de facturas */
+.facturas-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.factura-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: slideIn 0.5s ease-out;
+}
+
+.factura-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.factura-content {
+    padding: 24px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.factura-main {
+    flex: 1;
+    min-width: 300px;
+}
+
+.factura-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.factura-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 8px 0;
+}
+
+.factura-number i {
+    color: #667eea;
+    margin-right: 8px;
+}
+
+.factura-date {
+    color: #6b7280;
+    font-size: 13px;
+    margin: 0;
+}
+
+.factura-date i {
+    margin-right: 6px;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.status-approved {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+}
+
+.status-rejected {
+    background: linear-gradient(135deg, #f87171 0%, #ef4444 100%);
+}
+
+.status-pending {
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.status-processing {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Detalles de factura */
+.factura-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.detail-box {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.detail-label {
+    color: #6b7280;
+    font-size: 12px;
+    margin: 0 0 6px 0;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0;
+    font-size: 15px;
+}
+
+.detail-subtitle {
+    color: #9ca3af;
+    font-size: 12px;
+    margin: 4px 0 0 0;
+}
+
+.detail-amount {
+    font-weight: 700;
+    color: #667eea;
+    font-size: 18px;
+    margin: 0;
+}
+
+.detail-cdc {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #4b5563;
+    margin: 0;
+    word-break: break-all;
+}
+
+/* Info SIFEN */
+.sifen-info {
+    margin-top: 16px;
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+    padding: 12px 16px;
+    border-radius: 4px;
+}
+
+.sifen-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e40af;
+    margin: 0 0 4px 0;
+}
+
+.sifen-title i {
+    margin-right: 6px;
+}
+
+.sifen-description {
+    font-size: 12px;
+    color: #2563eb;
+    margin: 0;
+}
+
+/* Acciones */
+.factura-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 200px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-consultar {
+    background: linear-gradient(135deg, #3b82f6 0%, #667eea 100%);
+    color: white;
+}
+
+.btn-descargar {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+}
+
+.btn-detalles {
+    background: linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+    color: white;
+}
+
+.btn-disabled {
+    background: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-disabled:hover {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Empty state */
+.empty-state {
+    background: white;
+    border-radius: 12px;
+    padding: 60px 40px;
+    text-align: center;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+}
+
+.empty-icon {
+    display: inline-block;
+    background: #f3f4f6;
+    border-radius: 50%;
+    padding: 30px;
+    margin-bottom: 24px;
+}
+
+.empty-icon i {
+    font-size: 64px;
+    color: #9ca3af;
+}
+
+.empty-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #374151;
+    margin: 0 0 8px 0;
+}
+
+.empty-text {
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    overflow-y: auto; /* Permitir scroll en el overlay */
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3);
+    max-width: 600px;
+    max-height: 90vh; /* Limitar altura máxima */
+    width: 100%;
+    padding: 24px;
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    margin: auto; /* Centrar vertical y horizontalmente */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0; /* No se comprime */
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #9ca3af;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+}
+
+.modal-close:hover {
+    color: #4b5563;
+}
+
+.modal-body {
+    color: #4b5563;
+    margin-bottom: 20px;
+    overflow-y: auto; /* Scroll solo en el contenido */
+    flex: 1; /* Toma el espacio disponible */
+}
+
+/* Scrollbar personalizada para el modal body */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.modal-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    display: block;
+    text-align: center;
+}
+
+.icon-success { color: #10b981; }
+.icon-error { color: #ef4444; }
+.icon-warning { color: #f59e0b; }
+.icon-info { color: #3b82f6; }
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    flex-shrink: 0; /* No se comprime */
+}
+
+.btn-modal-close {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-modal-close:hover {
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    transform: translateY(-2px);
+}
+
+/* Loading */
+.loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.loading-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3);
+    padding: 40px;
+    text-align: center;
+}
+
+.loading-spinner {
+    width: 64px;
+    height: 64px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #374151;
+    margin: 0 0 8px 0;
+}
+
+.loading-subtitle {
+    font-size: 14px;
+    color: #6b7280;
+    margin: 0;
+}
+
+/* Estilos para detalles de estado en modal */
+.estado-details {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: left;
+}
+
+.estado-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.estado-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin: 0 0 8px 0;
+    font-weight: 500;
+}
+
+.estado-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.estado-cdc {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #4b5563;
+    margin: 0;
+    word-break: break-all;
+}
+
+.estado-description {
+    font-size: 14px;
+    color: #4b5563;
+    margin: 0;
+}
+
+.estado-fecha {
+    font-size: 15px;
+    font-weight: 600;
+    color: #059669;
+    margin: 0;
+}
+
+.estado-sifen {
+    background: #eff6ff;
+    border-left: 4px solid #3b82f6;
+}
+
+.estado-aprobacion {
+    background: #d1fae5;
+    border-left: 4px solid #10b981;
+}
+
+.estado-aprobado {
+    color: #059669;
+}
+
+.estado-rechazado {
+    color: #dc2626;
+}
+
+.estado-pendiente {
+    color: #2563eb;
+}
+
+.text-center {
+    text-align: center;
+}
+* Estilos para detalles de factura en modal - COMPACTO */
+.detalles-factura-completo {
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* Reducido de 20px */
+}
+
+.detalle-seccion {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 12px 16px; /* Reducido padding */
+    border-left: 3px solid #667eea; /* Reducido de 4px */
+}
+
+.detalle-seccion-titulo {
+    font-size: 14px; /* Reducido de 16px */
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0 0 12px 0; /* Reducido margen inferior */
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.detalle-seccion-titulo i {
+    color: #667eea;
+    font-size: 14px; /* Reducido de 18px */
+}
+
+.detalle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Siempre 2 columnas */
+    gap: 12px;
+}
+
+.detalle-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: white;
+    padding: 10px; /* Reducido de implícito */
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.detalle-campo-full {
+    grid-column: 1 / -1;
+}
+
+.detalle-campo-label {
+    font-size: 11px; /* Reducido de 12px */
+    color: #6b7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detalle-campo-valor {
+    font-size: 13px; /* Reducido de 14px */
+    color: #1f2937;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.detalle-estado {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.detalle-cdc-full {
+    font-family: 'Courier New', monospace;
+    font-size: 10px; /* Reducido de 11px */
+    word-break: break-all;
+    background: #f3f4f6;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #e5e7eb;
+    line-height: 1.4;
+}
+
+.detalle-monto-destacado {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 14px; /* Reducido de 16px */
+    border-radius: 8px;
+    grid-column: 1 / -1;
+    border: none;
+}
+
+.detalle-monto-destacado .detalle-campo-label {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+}
+
+.detalle-monto {
+    color: white;
+    font-size: 20px; /* Reducido de 24px */
+    font-weight: 700;
+}
+
+.detalle-sifen {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+}
+
+.detalle-sifen .detalle-seccion-titulo {
+    color: #1e40af;
+}
+
+.detalle-sifen .detalle-seccion-titulo i {
+    color: #3b82f6;
+}
+
+.detalle-nota {
+    background: #fef3c7;
+    border-left: 3px solid #f59e0b;
+    padding: 10px 12px; /* Reducido */
+    border-radius: 4px;
+    font-size: 12px; /* Reducido de 13px */
+    color: #92400e;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+.detalle-nota i {
+    color: #f59e0b;
+    font-size: 14px;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Estilos para detalles de estado en modal - COMPACTO */
+.estado-details {
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* Reducido de 16px */
+    text-align: left;
+}
+
+.estado-item {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 12px; /* Reducido de 16px */
+}
+
+.estado-label {
+    font-size: 11px; /* Reducido de 12px */
+    color: #6b7280;
+    margin: 0 0 6px 0;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.estado-value {
+    font-size: 14px; /* Reducido de 16px */
+    font-weight: 700;
+    color: #1f2937;
+    margin: 0;
+}
+
+.estado-cdc {
+    font-family: 'Courier New', monospace;
+    font-size: 10px; /* Reducido de 11px */
+    color: #4b5563;
+    margin: 0;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.estado-description {
+    font-size: 13px; /* Reducido de 14px */
+    color: #4b5563;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.estado-fecha {
+    font-size: 14px; /* Reducido de 15px */
+    font-weight: 600;
+    color: #059669;
+    margin: 0;
+}
+
+.estado-sifen {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+}
+
+.estado-aprobacion {
+    background: #d1fae5;
+    border-left: 3px solid #10b981;
+}
+
+.estado-aprobado {
+    color: #059669;
+}
+
+.estado-rechazado {
+    color: #dc2626;
+}
+
+.estado-pendiente {
+    color: #2563eb;
+}
+
+.text-center {
+    text-align: center;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .facturacion-container {
+        padding: 15px;
+    }
+    
+    .facturacion-header {
+        padding: 20px;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .header-user {
+        text-align: left;
+    }
+    
+    .header-title {
+        font-size: 22px;
+    }
+
+    /* Filtros responsive */
+    .filtros-container {
+        padding: 16px;
+    }
+
+    .filtros-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .filtros-title {
+        font-size: 18px;
+    }
+
+    .btn-limpiar-filtros {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .filtros-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .filtro-item {
+        width: 100%;
+    }
+
+    .btn-filtrar {
+        width: 100%;
+    }
+    
+    .estadisticas-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+    }
+    
+    .stat-card {
+        padding: 16px;
+    }
+    
+    .stat-value {
+        font-size: 28px;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 20px;
+    }
+    
+    .factura-content {
+        flex-direction: column;
+        padding: 16px;
+    }
+    
+    .factura-main {
+        min-width: 100%;
+    }
+    
+    .factura-actions {
+        width: 100%;
+    }
+    
+    .factura-header-section {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .factura-details-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        margin: 20px;
+        padding: 20px;
+    }
+    
+    .modal-title {
+        font-size: 18px;
+    }
+    .detalle-grid {
+        grid-template-columns: 1fr; /* Una columna en móvil */
+        gap: 10px;
+    }
+
+    .detalle-seccion {
+        padding: 10px 12px;
+    }
+
+    .detalle-seccion-titulo {
+        font-size: 13px;
+    }
+
+    .detalle-campo {
+        padding: 8px;
+    }
+
+    .detalle-campo-label {
+        font-size: 10px;
+    }
+
+    .detalle-campo-valor {
+        font-size: 12px;
+    }
+
+    .detalle-monto {
+        font-size: 18px;
+    }
+
+    .modal-icon {
+        font-size: 40px;
+    }
+
+    .detalle-nota {
+        font-size: 11px;
+        padding: 8px 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-title {
+        font-size: 20px;
+    }
+    
+    .header-title i {
+        display: block;
+        margin-bottom: 8px;
+    }
+    
+    .estadisticas-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stat-content {
+        flex-direction: row;
+    }
+    
+    .factura-number {
+        font-size: 16px;
+    }
+    
+    .btn {
+        font-size: 13px;
+        padding: 10px 16px;
+    }
+    
+    .empty-state {
+        padding: 40px 20px;
+    }
+    
+    .empty-icon {
+        padding: 20px;
+    }
+    
+    .empty-icon i {
+        font-size: 48px;
+    }
+    .detalles-factura-completo {
+        gap: 12px;
+    }
+
+    .detalle-seccion-titulo {
+        font-size: 12px;
+    }
+}
+
+/* Print styles */
+@media print {
+    .facturacion-header,
+    .estadisticas-grid,
+    .factura-actions,
+    .modal-overlay,
+    .loading-overlay {
+        display: none !important;
+    }
+    
+    .factura-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+
+/* Animaciones adicionales */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.factura-card:nth-child(1) { animation-delay: 0.1s; }
+.factura-card:nth-child(2) { animation-delay: 0.2s; }
+.factura-card:nth-child(3) { animation-delay: 0.3s; }
+.factura-card:nth-child(4) { animation-delay: 0.4s; }
+.factura-card:nth-child(5) { animation-delay: 0.5s; }
+
+/* Mejoras de accesibilidad */
+.btn:focus,
+.modal-close:focus {
+    outline: 2px solid #667eea;
+    outline-offset: 2px;
+}
+
+.btn:focus:not(:focus-visible),
+.modal-close:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Estados hover mejorados */
+.detail-box:hover {
+    background: #f3f4f6;
+    transition: background 0.2s ease;
+}
+
+.factura-number:hover {
+    color: #667eea;
+    transition: color 0.2s ease;
+}
+
+/* Scrollbar personalizada */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+</style>
+{% endblock %}
