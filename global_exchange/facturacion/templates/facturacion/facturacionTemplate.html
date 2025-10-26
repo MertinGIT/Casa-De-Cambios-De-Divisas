@@ -4,7 +4,7 @@
 // Después de crear la transacción exitosamente
 async function generarFactura(transaccionId) {
     try {
-        const response = await fetch('/facturas/generar/', {
+        const response = await fetch('/facturas/generar-factura/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

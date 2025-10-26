@@ -619,7 +619,7 @@
         try {
             console.log(`🧾 Generando factura para transacción ${transaccionId}...`);
             
-            const response = await fetch('/facturacion/generar-factura/', {
+            const response = await fetch('/facturas/generar-factura/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -665,7 +665,7 @@
             span.textContent = '📧 Enviando...';
             btn.disabled = true;
             
-            const response = await fetch('/facturacion/enviar-email/', {
+            const response = await fetch('/facturas/enviar-email/', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
