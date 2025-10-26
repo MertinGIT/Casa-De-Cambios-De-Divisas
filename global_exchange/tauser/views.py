@@ -173,7 +173,8 @@ def atm_extraer(request):
         transacciones_pendientes = Transaccion.objects.filter(
             cliente=cliente,
             tipo='compra',
-            estado='confirmada'
+            estado='confirmada',
+            medio_acreditacion=0,
         ).select_related('moneda_origen', 'moneda_destino').order_by('-fecha')
         
         # Agrupar por moneda destino

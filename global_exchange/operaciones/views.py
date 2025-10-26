@@ -322,6 +322,16 @@ def simulador_operaciones(request):
                     {'label': campo['label'], 'value': campo['value']} for campo in medio.dynamic_fields
                 ]
             })
+    if not any(m['entidad']['nombre'].strip().lower() == 'tauser' for m in medios_acreditacion):
+        medios_acreditacion.append({
+            'id': 0,  
+            'entidad': {
+                'id': 0,  # id de Tauser en tipoentidadfinanciera
+                'nombre': 'Tauser',
+                'tipo': 'OTRO',
+            },
+            'campos': []  # sin campos
+        })
 
     # Obtener entidades financieras activas
     entidades = TipoEntidadFinanciera.objects.filter(estado=True)
@@ -655,6 +665,7 @@ def guardar_transaccion(request):
         tasa_ref_id = data.get("tasa_ref_id")
         cliente_id = data.get("cliente_id")
         metodo_pago_id = data.get("metodo_pago_id")
+        medio_acreditacion_id = data.get("medio_acreditacion_id")
         ganancia = Decimal(str(data.get("ganancia", "0")))
 
         # Validación de campos obligatorios
@@ -666,6 +677,7 @@ def guardar_transaccion(request):
         moneda_destino = Moneda.objects.get(id=moneda_destino_id)
         tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
         cliente = Cliente.objects.get(id=cliente_id, estado="activo")
+        medio_acreditacion = MedioAcreditacion.objects.get(id=medio_acreditacion_id, cliente=cliente, estado=True)
 
         # Validar que el cliente pertenece al usuario
         if usuario:
@@ -691,6 +703,7 @@ def guardar_transaccion(request):
             tasa_ref=tasa_ref,
             cliente=cliente,
             metodo_pago_id=metodo_pago_id,
+            medio_acreditacion=medio_acreditacion,
             ganancia=ganancia,
         )
 

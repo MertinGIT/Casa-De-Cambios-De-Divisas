@@ -85,23 +85,32 @@
     }
 
     function cargarMediosAcreditacion() {
-        const container = document.getElementById('medios-acreditacion-container');
-        const sinMedios = document.getElementById('sin-medios');
+    const container = document.getElementById('medios-acreditacion-container');
+    const sinMedios = document.getElementById('sin-medios');
 
-        if (mediosAcreditacionData.length === 0) {
-            container.style.display = 'none';
-            sinMedios.style.display = 'block';
-            return;
-        }
+    if (mediosAcreditacionData.length === 0) {
+        container.style.display = 'none';
+        sinMedios.style.display = 'block';
+        return;
+    }
 
-        container.innerHTML = '';
-        sinMedios.style.display = 'none';
-
-        mediosAcreditacionData.forEach(medio => {
+    container.innerHTML = '';
+    sinMedios.style.display = 'none';
+console.log("Medios de acreditacion: ",mediosAcreditacionData);
+    mediosAcreditacionData.forEach(medio => {
+        // ✅ Mostrar aunque no tenga campos, si el nombre es "tauser"
+        if (medio.entidad.nombre.trim().toLowerCase() === 'tauser' || (medio.campos && medio.campos.length > 0)) {
             const medioElement = createMedioElement(medio);
             container.appendChild(medioElement);
-        });
+        }
+    });
+
+    // Si después de filtrar no quedó ninguno visible
+    if (!container.hasChildNodes()) {
+        container.style.display = 'none';
+        sinMedios.style.display = 'block';
     }
+}
 
     function createMedioElement(medio) {
         const div = document.createElement('div');
@@ -151,19 +160,20 @@
     }
 
     function seleccionarMedio(medio) {
-        medioSeleccionado = medio;
-        console.log("entra a la funcion");
+    medioSeleccionado = medio;
 
-        // Mostrar información del medio seleccionado
-        const infoAcreditacion = document.getElementById('info-acreditacion');
-        infoAcreditacion.style.display = 'block';
+    const infoAcreditacion = document.getElementById('info-acreditacion');
+    infoAcreditacion.style.display = 'block';
 
-        // Mostrar todos los campos dinámicos en el detalle
-        const detalleEntidad = document.getElementById('detalle-entidad');
+    const detalleEntidad = document.getElementById('detalle-entidad');
+    const infoDetalle = document.querySelector('.info-detalle');
+
+    // Si el medio es Tauser, mostrar mensaje fijo
+    if (medio.entidad.nombre.trim().toLowerCase() === 'tauser') {
+        detalleEntidad.textContent = 'Tauser';
+        infoDetalle.innerHTML = '<div>Puede retirar sus fondos en su Tauser más cercano.</div>';
+    } else {
         detalleEntidad.textContent = medio.entidad.nombre;
-
-        // Limpiar y mostrar campos dinámicos
-        const infoDetalle = document.querySelector('.info-detalle');
         infoDetalle.innerHTML = '';
         medio.campos.forEach(campo => {
             const row = document.createElement('div');
@@ -171,20 +181,21 @@
             row.innerHTML = `<span class="detalle-label">${campo.label}:</span><span class="detalle-valor">${campo.value}</span>`;
             infoDetalle.appendChild(row);
         });
-        console.log("LLEGA HASTA ACA");
-        // Habilitar botón de confirmar
-        document.getElementById('btn-confirmar-acreditacion').disabled = false;
-
-        // Animación suave
-        infoAcreditacion.style.opacity = '0';
-        infoAcreditacion.style.transform = 'translateY(-10px)';
-
-        setTimeout(() => {
-            infoAcreditacion.style.transition = 'all 0.3s ease';
-            infoAcreditacion.style.opacity = '1';
-            infoAcreditacion.style.transform = 'translateY(0)';
-        }, 10);
     }
+
+    // Habilitar botón de confirmar
+    document.getElementById('btn-confirmar-acreditacion').disabled = false;
+
+    // Animación suave
+    infoAcreditacion.style.opacity = '0';
+    infoAcreditacion.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+        infoAcreditacion.style.transition = 'all 0.3s ease';
+        infoAcreditacion.style.opacity = '1';
+        infoAcreditacion.style.transform = 'translateY(0)';
+    }, 10);
+}
+
 
     function confirmarAcreditacion() {
         verificarTasaActualizada(function(tasaActualizada) {
@@ -200,11 +211,7 @@
             }
             
 
-            // 🚨 Si no hay ningún campo definido
-            if (!medioSeleccionado.campos || medioSeleccionado.campos.length === 0) {
-                window.mostrarMensajeModal("Error","El medio seleccionado no tiene datos configurados. Debe completar los datos de acreditación en la Configuracion.");
-                return;
-            }
+ 
 
             // Validar que todos los campos requeridos tengan valor
             const camposFaltantes = medioSeleccionado.campos.filter(campo => {

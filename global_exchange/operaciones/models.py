@@ -14,6 +14,7 @@ Campos clave:
 """
 
 from django.db import models
+from medio_acreditacion.models import MedioAcreditacion
 from usuarios.models import CustomUser
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
@@ -146,6 +147,14 @@ class Transaccion(models.Model):
         on_delete=models.PROTECT,  # evita que se elimine un método usado en transacciones
         related_name="transacciones",
         help_text="Método de pago utilizado en la transacción (ej: efectivo, transferencia)."
+    )
+
+    medio_acreditacion = models.ForeignKey(
+        MedioAcreditacion,
+        on_delete=models.PROTECT,  # evita que se elimine un método usado en transacciones
+        related_name="medio_acreditacion",
+        help_text="Medio de acreditacion utilizado para acreditar la transacción (ej: efectivo, transferencia).",
+        null=True
     )
     ganancia = models.DecimalField(
         max_digits=23,
