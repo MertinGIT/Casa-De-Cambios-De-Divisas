@@ -128,12 +128,13 @@ def atm_depositar(request):
                 estado='pendiente'
             )
 
-                with db_transaction.atomic():
-                    
-                    GestorStockTauser.registrar_deposito(transaccion)
+            with db_transaction.atomic():
+                GestorStockTauser.registrar_deposito(transaccion)
+                transaccion.estado = 'confirmada'
+                transaccion.save(update_fields=['estado'])
 
-                    transaccion.estado = 'confirmada'
-                    transaccion.save(update_fields=['estado'])
+            # ✅ Guardar el ID en la sesión para usarlo en el modal
+            request.session['ultima_transaccion_id'] = transaccion_id
 
             messages.success(
                 request,
@@ -144,6 +145,8 @@ def atm_depositar(request):
         context = {
             'cliente': cliente,
             'transacciones': transacciones_pendientes,
+            # ✅ Pasar el ID de la última transacción si existe
+            'ultima_transaccion_id': request.session.pop('ultima_transaccion_id', None)
         }
         return render(request, 'tauser/depositar.html', context)
 
@@ -151,6 +154,7 @@ def atm_depositar(request):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
         return redirect('atm_login')
+
 
 def atm_extraer(request):
     """
@@ -169,7 +173,6 @@ def atm_extraer(request):
         transacciones_pendientes = Transaccion.objects.filter(
             cliente=cliente,
             tipo='compra',
-            estado='confirmada'
             estado='confirmada'
         ).select_related('moneda_origen', 'moneda_destino').order_by('-fecha')
         

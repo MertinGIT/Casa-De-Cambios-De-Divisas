@@ -363,3 +363,93 @@ def descargar_factura(request):
         return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'factura_{cdc}.pdf')
     except Exception:
         raise Http404("Archivo no encontrado")
+    
+from django.core.mail import EmailMessage
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+import os
+@require_http_methods(["POST"])
+def enviar_factura_email(request):
+    """
+    Envía una factura YA GENERADA por correo electrónico.
+    Recibe: { "transaccion_id": 123 }
+    """
+    try:
+        data = json.loads(request.body)
+        transaccion_id = data.get('transaccion_id')
+        
+        if not transaccion_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'Se requiere transaccion_id'
+            })
+        
+        # Buscar la factura que ya existe
+        factura = Factura.objects.get(transaccion_id=transaccion_id)
+        cliente = factura.cliente
+        
+        # Descargar el PDF temporalmente
+        service = FacturaSeguraService()
+        ruc_emisor = service.config['RUC_EMISOR']
+        output_path = f'/tmp/kude_{factura.cdc}.pdf'
+        
+        ok = service.descargar_kude(factura.cdc, ruc_emisor, output_path)
+        
+        if not ok:
+            return JsonResponse({
+                'success': False,
+                'message': 'No se pudo descargar el PDF de la factura'
+            })
+        
+        # Preparar y enviar el correo
+        asunto = f"Factura Electrónica N° {factura.numero_completo}"
+        
+        mensaje = f"""Estimado/a {cliente.nombre},
+
+Adjuntamos su factura electrónica correspondiente a la transacción realizada.
+
+Detalles de la factura:
+- Número: {factura.numero_completo}
+- CDC: {factura.cdc}
+- Fecha: {factura.fecha_emision.strftime('%d/%m/%Y %H:%M')}
+- Monto: {factura.monto_total} {factura.moneda}
+
+Gracias por su preferencia.
+
+Atentamente,
+GLOBAL EXCHANGE S.A.
+"""
+        
+        email = EmailMessage(
+            subject=asunto,
+            body=mensaje,
+            from_email=None,  # Usa EMAIL_HOST_USER por defecto
+            to=[cliente.email]
+        )
+        
+        # Adjuntar el PDF
+        email.attach_file(output_path)
+        email.send()
+        
+        # Limpiar archivo temporal
+        try:
+            os.remove(output_path)
+        except:
+            pass
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Factura enviada exitosamente a {cliente.email}'
+        })
+        
+    except Factura.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'message': 'No se encontró la factura para esta transacción'
+        })
+    except Exception as e:
+        print(f"Error al enviar correo: {str(e)}", flush=True)
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al enviar el correo: {str(e)}'
+        })
