@@ -440,11 +440,11 @@
             {% endif %}
             
             {% if transacciones %}
-                {% for transaccion in transacciones %}
+                {% for item in transacciones %}
                 <div class="transaction-card">
+                    {% with transaccion=item.transaccion %}
                     <div class="transaction-header">
                         <span class="transaction-id">Transacción #{{ transaccion.id }}</span>
-                        
                     </div>
                     
                     <div class="transaction-details">
@@ -465,15 +465,9 @@
                         
                         <div class="detail-item">
                             <span class="detail-label">Recibirás</span>
-                        <span class="detail-value" style="color: #10b981;">
-                            {% if transaccion.tipo == 'venta' %}
-                                {{ transaccion.monto|floatformat:2 }} x {{ transaccion.tasa_usada|floatformat:2 }} =
-                                {% widthratio transaccion.monto 1 transaccion.tasa_usada as total %}
-                                {{ total|floatformat:2 }} {{ transaccion.moneda_destino.codigo }}
-                            {% else %}
-                                {{ transaccion.monto|floatformat:2 }} {{ transaccion.moneda_origen.codigo }}
-                            {% endif %}
-                        </span>
+                            <span class="detail-value" style="color: #10b981;">
+                                {{ item.monto_recibir }} {{ transaccion.moneda_destino.abreviacion }}
+                            </span>
                         </div>
                     </div>
                     
@@ -492,6 +486,7 @@
                             ✓ Confirmar Depósito
                         </button>
                     </form>
+                    {% endwith %}
                 </div>
                 {% endfor %}
             {% else %}
@@ -703,7 +698,7 @@
 
     function cerrarModalDeposito() {
         const modal = document.getElementById('modal-deposito');
-        const content = modal.querySelector('.modal-content-deposito');
+        const content = modal.querySelector('.modal-content-deposito');  // ✅ CORREGIDO: guion medio
         
         content.style.transition = 'all 0.2s ease-out';
         content.style.transform = 'scale(0.7) translateY(-50px)';
@@ -716,6 +711,9 @@
             document.getElementById('estado-procesando').style.display = 'block';
             document.getElementById('estado-exito').style.display = 'none';
             document.getElementById('footer-deposito').style.display = 'none';
+            
+            // Limpiar ID de transacción
+            transaccionIdActual = null;
             
             // Recargar página
             location.reload();

@@ -205,8 +205,15 @@ class Transaccion(models.Model):
         blank=True,
         related_name='transacciones_procesadas'
     )
-
     
+    monto_recibir = models.DecimalField(
+        max_digits=20,
+        decimal_places=8,
+        null=True,
+        blank=True,
+        help_text="Monto exacto que recibirá el cliente (ya con descuento aplicado)"
+    )
+
     def __str__(self):
         """
         Devuelve una representación legible de la transacción.

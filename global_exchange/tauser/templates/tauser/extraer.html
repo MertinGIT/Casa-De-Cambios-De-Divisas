@@ -8,15 +8,14 @@
     <style>
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
+            min-height: 100vh;
             padding: 0;
             margin: 0;
-            overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         .atm-container {
-            height: 100vh;
+            min-height: 100vh;
             display: flex;
             flex-direction: column;
             background: white;
@@ -142,255 +141,195 @@
             color: #666;
         }
         
-        .total-section {
+        .saldo-section {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             color: white;
-            padding: 20px;
+            padding: 25px;
             border-radius: 12px;
             margin-bottom: 20px;
             text-align: center;
         }
         
-        .total-label {
-            font-size: 12px;
+        .saldo-label {
+            font-size: 14px;
             opacity: 0.9;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         
-        .total-amount {
-            font-size: 36px;
+        .saldo-amount {
+            font-size: 42px;
             font-weight: 700;
-        }
-        
-        .transaction-count-badge {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            margin-top: 8px;
-            display: inline-block;
-        }
-        
-        .transactions-list {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            max-height: 120px;
-            overflow-y: auto;
-        }
-        
-        .transactions-title {
-            font-size: 13px;
-            font-weight: 700;
-            color: #333;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
-        
-        .transaction-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 12px;
-            background: white;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 13px;
-        }
-        
-        .trans-id {
-            font-weight: 600;
-            color: #666;
-        }
-        
-        .trans-amount {
-            font-weight: 700;
-            color: #10b981;
         }
         
         .billetes-section {
             background: #f8f9fa;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
-            margin-bottom: 15px;
-            max-height: 150px;
-            overflow-y: auto;
+            margin-bottom: 20px;
         }
         
         .billetes-title {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 700;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            text-align: center;
         }
         
-        .billete-item {
+        .billete-stock-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
+            padding: 12px 15px;
             background: white;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            font-size: 13px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
         }
         
         .billete-denom {
+            font-weight: 700;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .billete-stock {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        
+        .retiro-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid #ffc107;
+        }
+        
+        .retiro-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #856404;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .billete-retiro-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .billete-retiro-valor {
             font-weight: 600;
             color: #333;
         }
         
-        .billete-cantidad {
-            color: #667eea;
+        .billete-retiro-cantidad {
+            color: #dc3545;
             font-weight: 700;
-        }
-        
-        .billete-subtotal {
-            color: #666;
-            font-size: 12px;
+            font-size: 18px;
         }
         
         .delivery-box {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
             margin-bottom: 15px;
             text-align: center;
         }
         
         .delivery-label {
-            font-size: 12px;
+            font-size: 14px;
             opacity: 0.9;
+            margin-bottom: 8px;
         }
         
         .delivery-amount {
-            font-size: 28px;
+            font-size: 36px;
             font-weight: 700;
+        }
+        
+        .btn-group-retiro {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn-retiro {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 50px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-retiro-total {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-retiro-total:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-retiro-parcial {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-retiro-parcial:hover {
+            background: #d97706;
+            transform: translateY(-2px);
+        }
+        
+        .btn-retiro:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
         
         .alert-warning-custom {
             background: #fef3c7;
             border: 2px solid #fbbf24;
             color: #92400e;
-            padding: 12px;
+            padding: 15px;
             border-radius: 8px;
             margin-bottom: 15px;
-            font-size: 12px;
-            line-height: 1.5;
+            font-size: 13px;
+            line-height: 1.6;
         }
         
-        .payment-methods {
-            margin-bottom: 15px;
-            display: none;
-        }
-        
-        .payment-option {
-            display: flex;
-            align-items: center;
-            padding: 12px;
-            background: #f8f9fa;
-            border: 2px solid #e0e0e0;
+        .alert-info-custom {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            color: #1e3a8a;
+            padding: 15px;
             border-radius: 8px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
+            margin-bottom: 15px;
+            font-size: 13px;
+            line-height: 1.6;
         }
         
-        .payment-option:hover {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-        
-        .payment-option input[type="radio"] {
-            margin-right: 12px;
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        
-        .payment-label {
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .payment-desc {
-            font-size: 11px;
-            color: #666;
-            margin-top: 2px;
-        }
-        
-        .confirm-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
-            color: white;
-            padding: 14px 30px;
-            border-radius: 50px;
-            font-size: 15px;
-            font-weight: 600;
-            transition: all 0.3s;
-            cursor: pointer;
-            width: 100%;
-        }
-        
-        .confirm-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .no-transactions {
+        .no-saldo {
             text-align: center;
             padding: 60px 20px;
             color: #666;
         }
         
-        .no-transactions svg {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 20px;
-            opacity: 0.3;
-        }
-        
-        .no-transactions h3 {
-            font-size: 20px;
-            margin-bottom: 8px;
-        }
-        
-        .no-transactions p {
-            font-size: 14px;
-        }
-        
-        /* Scrollbar personalizado */
-        .body-content::-webkit-scrollbar,
-        .transactions-list::-webkit-scrollbar,
-        .billetes-section::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .body-content::-webkit-scrollbar-track,
-        .transactions-list::-webkit-scrollbar-track,
-        .billetes-section::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        
-        .body-content::-webkit-scrollbar-thumb,
-        .transactions-list::-webkit-scrollbar-thumb,
-        .billetes-section::-webkit-scrollbar-thumb {
-            background: #888;
-            border-radius: 10px;
-        }
-        
-        .body-content::-webkit-scrollbar-thumb:hover,
-        .transactions-list::-webkit-scrollbar-thumb:hover,
-        .billetes-section::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        /* Modal/Popup */
+        /* Modal */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -402,6 +341,8 @@
             z-index: 9999;
             align-items: center;
             justify-content: center;
+            overflow-y: auto;
+            padding: 20px;
         }
         
         .modal-overlay.active {
@@ -411,10 +352,10 @@
         .modal-content {
             background: white;
             border-radius: 20px;
-            padding: 40px;
-            max-width: 500px;
-            width: 90%;
-            max-height: 80vh;
+            padding: 30px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 90vh;
             overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             animation: modalSlideIn 0.3s ease-out;
@@ -433,62 +374,62 @@
         
         .modal-header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         
         .modal-icon {
-            font-size: 80px;
-            margin-bottom: 15px;
-        }
-        
-        .modal-title {
-            font-size: 28px;
-            font-weight: 700;
-            color: #333;
+            font-size: 60px;
             margin-bottom: 10px;
         }
         
-        .modal-subtitle {
-            font-size: 14px;
-            color: #666;
-        }
-        
-        .modal-total {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-        
-        .modal-total-label {
-            font-size: 14px;
-            opacity: 0.9;
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #333;
             margin-bottom: 8px;
         }
         
-        .modal-total-amount {
-            font-size: 48px;
+        .modal-subtitle {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .modal-saldo-box {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-saldo-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .modal-saldo-amount {
+            font-size: 32px;
             font-weight: 700;
         }
         
-        .modal-billetes {
+        .modal-billetes-form {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 12px;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
-        .modal-billetes-title {
-            font-size: 16px;
+        .modal-form-title {
+            font-size: 15px;
             font-weight: 700;
             color: #333;
             margin-bottom: 15px;
             text-align: center;
         }
         
-        .modal-billete-item {
+        .modal-billete-input {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -499,35 +440,82 @@
             border: 2px solid #e0e0e0;
         }
         
-        .modal-billete-denom {
-            font-weight: 600;
+        .modal-billete-left {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-billete-valor {
+            font-weight: 700;
             color: #333;
             font-size: 15px;
         }
         
-        .modal-billete-cantidad {
-            color: #667eea;
-            font-weight: 700;
-            font-size: 18px;
+        .modal-billete-disponible {
+            font-size: 11px;
+            color: #666;
         }
         
-        .modal-billete-subtotal {
-            color: #10b981;
-            font-size: 15px;
+        .modal-billete-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .modal-input-cantidad {
+            width: 80px;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: 600;
+            text-align: center;
+        }
+        
+        .modal-input-cantidad:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .modal-subtotal {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 15px;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .modal-total-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-total-label {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+        
+        .modal-total-amount {
+            font-size: 36px;
+            font-weight: 700;
         }
         
         .modal-actions {
             display: flex;
-            gap: 15px;
+            gap: 10px;
         }
         
         .modal-btn {
             flex: 1;
-            padding: 15px;
+            padding: 14px;
             border: none;
             border-radius: 50px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s;
@@ -552,15 +540,130 @@
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
         
-        .modal-btn-ok {
-            width: 100%;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
+        .modal-btn-confirm:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
         
-        .modal-btn-ok:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+        .modal-input-monto {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .modal-input-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .input-monto-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .input-monto {
+            width: 100%;
+            padding: 16px 60px 16px 20px;
+            font-size: 24px;
+            font-weight: 700;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .input-monto:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        }
+        
+        .input-currency {
+            position: absolute;
+            right: 20px;
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .quick-amounts {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .quick-amount-btn {
+            padding: 8px 16px;
+            background: #f3f4f6;
+            border: 2px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-amount-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .modal-billetes-preview {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .modal-preview-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .preview-billete-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .preview-billete-valor {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .preview-billete-cantidad {
+            color: #667eea;
+            font-weight: 700;
+            font-size: 16px;
+        }
+        
+        .modal-warning {
+            background: #fef3c7;
+            border: 2px solid #fbbf24;
+            color: #92400e;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            text-align: center;
         }
     </style>
 </head>
@@ -581,12 +684,17 @@
                         {% if item.moneda.abreviacion == 'USD' %}💵
                         {% elif item.moneda.abreviacion == 'EUR' %}💶
                         {% elif item.moneda.abreviacion == 'PYG' %}💴
-                        {% else %}💰
-                        {% endif %}
+                        {% else %}💰{% endif %}
                     </span>
                     <div>
                         <div>{{ item.moneda.abreviacion }}</div>
-                        <div class="tab-amount">{{ item.total_disponible|floatformat:2 }}</div>
+                        <div class="tab-amount">
+                            {% if item.moneda.abreviacion == 'PYG' %}
+                                {{ item.saldo_disponible|floatformat:0 }}
+                            {% else %}
+                                {{ item.saldo_disponible|floatformat:2 }}
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 {% endfor %}
@@ -612,220 +720,640 @@
                             {% if item.moneda.abreviacion == 'USD' %}💵
                             {% elif item.moneda.abreviacion == 'EUR' %}💶
                             {% elif item.moneda.abreviacion == 'PYG' %}💴
-                            {% else %}💰
-                            {% endif %}
+                            {% else %}💰{% endif %}
                         </div>
                         <div class="currency-name">{{ item.moneda.nombre }}</div>
-                        <div class="currency-code">{{ item.moneda.abreviacion }} • {{ item.moneda.abreviacion }}</div>
+                        <div class="currency-code">{{ item.moneda.abreviacion }}</div>
                     </div>
                     
-                    <div class="total-section">
-                        <div class="total-label">Total Disponible</div>
-                        <div class="total-amount">{{ item.total_disponible|floatformat:2 }}</div>
-                        <div class="transaction-count-badge">
-                            {{ item.cantidad_transacciones }} transacción{% if item.cantidad_transacciones != 1 %}es{% endif %}
+                    <div class="saldo-section">
+                        <div class="saldo-label">💰 Tu Saldo Disponible</div>
+                        <div class="saldo-amount">
+                            {% if item.moneda.abreviacion == 'PYG' %}
+                                {{ item.saldo_disponible|floatformat:0 }}
+                            {% else %}
+                                {{ item.saldo_disponible|floatformat:2 }}
+                            {% endif %}
                         </div>
+                        <div class="saldo-subtitle">{{ item.moneda.abreviacion }} en tu cuenta Tauser</div>
                     </div>
                     
-                    <div class="transactions-list">
-                        <div class="transactions-title">📋 Transacciones</div>
-                        {% for trans in item.transacciones %}
-                            <div class="transaction-item">
-                                <span class="trans-id">
-                                    #{{ trans.transaccion.id }} • {{ trans.transaccion.fecha|date:"d/m/Y H:i" }}
-                                </span>
-                                <span class="trans-amount">{{ trans.monto_retirar|floatformat:2 }}</span>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    
-                    {% if item.billetes %}
+                    {% if item.billetes_disponibles %}
                         <div class="billetes-section">
-                            <div class="billetes-title">💵 Billetes Disponibles</div>
-                            {% for billete in item.billetes %}
-                                <div class="billete-item">
+                            <div class="billetes-title">🏦 Stock de Billetes en el ATM</div>
+                            {% for billete in item.billetes_disponibles %}
+                                <div class="billete-stock-item">
                                     <span class="billete-denom">
-                                        {{ billete.denominacion.valor|floatformat:0 }} {{ billete.denominacion.moneda.abreviacion }}
+                                        {% if item.moneda.abreviacion == 'PYG' %}
+                                            {{ billete.valor|floatformat:0 }}
+                                        {% else %}
+                                            {{ billete.valor|floatformat:2 }}
+                                        {% endif %}
+                                        {{ billete.moneda_abrev }}
                                     </span>
-                                    <span class="billete-cantidad">× {{ billete.cantidad }}</span>
-                                    <span class="billete-subtotal">{{ billete.subtotal|floatformat:2 }}</span>
+                                    <span class="billete-stock">{{ billete.cantidad_disponible }} disponibles</span>
                                 </div>
                             {% endfor %}
                         </div>
                         
-                        <div class="delivery-box">
-                            <div class="delivery-label">Puedes Retirar Ahora</div>
-                            <div class="delivery-amount">{{ item.monto_entregado|floatformat:2 }}</div>
-                        </div>
-                        
-                        {% if not item.posible_efectivo %}
-                        <div class="alert-warning-custom">
-                            <strong>ℹ️ Retiro Parcial</strong>
-                            <br>Se entregará: <strong>{{ item.monto_entregado|floatformat:2 }} {{ item.moneda.abreviacion }}</strong>
-                            <br>Quedará pendiente: <strong>{{ item.diferencia|floatformat:2 }} {{ item.moneda.abreviacion }}</strong>
-                            <br><br>El saldo pendiente estará disponible para tu próximo retiro.
-                        </div>
-                        {% endif %}
-                        
-                        <form method="post" id="form-{{ item.moneda.id }}">
-                            {% csrf_token %}
-                            <input type="hidden" name="moneda_id" value="{{ item.moneda.id }}">
+                        {% if item.billetes_retiro_total %}
+                            <div class="retiro-section">
+                                <div class="retiro-title">📋 Billetes para Retiro Total Automático</div>
+                                {% for billete in item.billetes_retiro_total %}
+                                    <div class="billete-retiro-item">
+                                        <span class="billete-retiro-valor">
+                                            {% if item.moneda.abreviacion == 'PYG' %}
+                                                {{ billete.valor|floatformat:0 }}
+                                            {% else %}
+                                                {{ billete.valor|floatformat:2 }}
+                                            {% endif %}
+                                            {{ item.moneda.abreviacion }}
+                                        </span>
+                                        <span class="billete-retiro-cantidad">× {{ billete.cantidad }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
                             
-                            <button type="button" class="confirm-btn" 
-                                    data-moneda-id="{{ item.moneda.id }}"
-                                    data-abreviacion="{{ item.moneda.abreviacion }}"
-                                    data-monto="{{ item.monto_entregado|floatformat:2 }}"
-                                    onclick="showConfirmModal(this)">
-                                💵 Retirar {{ item.monto_entregado|floatformat:2 }} {{ item.moneda.abreviacion }} en Efectivo
+                            <div class="delivery-box">
+                                <div class="delivery-label">💵 Retiro Total Disponible</div>
+                                <div class="delivery-amount">
+                                    {% if item.moneda.abreviacion == 'PYG' %}
+                                        {{ item.monto_entregado|floatformat:0 }}
+                                    {% else %}
+                                        {{ item.monto_entregado|floatformat:2 }}
+                                    {% endif %}
+                                </div>
+                                <div class="delivery-subtitle">{{ item.moneda.abreviacion }}</div>
+                            </div>
+                            
+                            {% if not item.posible_efectivo %}
+                            <div class="alert-warning-custom">
+                                <strong>ℹ️ Retiro Parcial Automático</strong><br>
+                                Se entregará: <strong>
+                                {% if item.moneda.abreviacion == 'PYG' %}
+                                    {{ item.monto_entregado|floatformat:0 }}
+                                {% else %}
+                                    {{ item.monto_entregado|floatformat:2 }}
+                                {% endif %}
+                                {{ item.moneda.abreviacion }}</strong><br>
+                                Quedará en tu saldo: <strong>
+                                {% if item.moneda.abreviacion == 'PYG' %}
+                                    {{ item.diferencia|floatformat:0 }}
+                                {% else %}
+                                    {{ item.diferencia|floatformat:2 }}
+                                {% endif %}
+                                {{ item.moneda.abreviacion }}</strong>
+                            </div>
+                            {% else %}
+                            <div class="alert-info-custom">
+                                <strong>✅ Retiro Completo</strong><br>
+                                Podrás retirar todo tu saldo disponible.
+                            </div>
+                            {% endif %}
+                            
+                            <div class="btn-group-retiro">
+                                <form method="post" style="flex: 1;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="moneda_id" value="{{ item.moneda.id }}">
+                                    <input type="hidden" name="tipo_retiro" value="total">
+                                    <button type="submit" class="btn-retiro btn-retiro-total">
+                                        💵 Retiro Total Automático
+                                    </button>
+                                </form>
+                                
+                                <button type="button" class="btn-retiro btn-retiro-parcial" 
+                                        onclick="showParcialModal('{{ item.moneda.id }}', '{{ item.moneda.abreviacion }}', {{ item.saldo_disponible }})">
+                                    🎯 Retiro Personalizado
+                                </button>
+                            </div>
+                        {% else %}
+                            <div class="alert-warning-custom">
+                                <strong>⚠️ Sin Combinación Automática</strong><br>
+                                No se puede calcular retiro automático, pero puedes usar <strong>Retiro Personalizado</strong>.
+                            </div>
+                            
+                            <button type="button" class="btn-retiro btn-retiro-parcial" style="width: 100%;"
+                                    onclick="showParcialModal('{{ item.moneda.id }}', '{{ item.moneda.abreviacion }}', {{ item.saldo_disponible }})">
+                                🎯 Retiro Personalizado
                             </button>
-                        </form>
+                        {% endif %}
                     {% else %}
                         <div class="alert-warning-custom">
-                            <strong>⚠️ Sin Billetes Disponibles</strong>
-                            <br>No hay billetes en stock para esta moneda en este momento.
-                            <br><br>Tu saldo de <strong>{{ item.total_disponible|floatformat:2 }} {{ item.moneda.abreviacion }}</strong> quedará disponible cuando haya stock.
+                            <strong>⚠️ Sin Billetes Disponibles</strong><br>
+                            No hay billetes en stock en el ATM para esta moneda.
                         </div>
                     {% endif %}
                 </div>
                 {% endfor %}
             {% else %}
-                <div class="no-transactions">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="no-saldo">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 80px; height: 80px; margin-bottom: 20px; opacity: 0.3;">
                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
                         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
                     </svg>
-                    <h3>No hay compras pendientes</h3>
-                    <p>No tienes transacciones pendientes de retiro</p>
+                    <h3>No tienes saldo disponible</h3>
+                    <p>Realiza un depósito o una transacción para tener saldo en tu cuenta Tauser</p>
                 </div>
             {% endif %}
         </div>
     </div>
     
-    <!-- Modal de Confirmación -->
+    <!-- Modal de Retiro Personalizado -->
+    <div class="modal-overlay" id="parcialModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-icon">🎯</div>
+                <div class="modal-title">Retiro Personalizado</div>
+                <div class="modal-subtitle">Ingresa el monto que deseas retirar</div>
+            </div>
+            
+            <div class="modal-saldo-box">
+                <div class="modal-saldo-label">Saldo Disponible</div>
+                <div class="modal-saldo-amount" id="modalSaldoDisponible"></div>
+            </div>
+            
+            <form method="post" id="formParcial" onsubmit="return prepararFormulario()">
+                {% csrf_token %}
+                <input type="hidden" name="moneda_id" id="modalMonedaId">
+                <input type="hidden" name="tipo_retiro" value="parcial">
+                
+                <div class="modal-input-monto">
+                    <div class="modal-input-label">💰 Monto a Retirar</div>
+                    <div class="input-monto-wrapper">
+                        <input type="number" 
+                               id="inputMontoRetirar" 
+                               class="input-monto" 
+                               placeholder="0.00"
+                               step="any"
+                               min="0"
+                               oninput="calcularBilletes()">
+                        <span class="input-currency" id="inputCurrency"></span>
+                    </div>
+                    <div class="quick-amounts" id="quickAmounts"></div>
+                </div>
+                
+                <div id="modalBilletesPreview" style="display: none;">
+                    <div class="modal-billetes-preview">
+                        <div class="modal-preview-title">📋 Billetes que Recibirás</div>
+                        <div id="previewBilletesContent"></div>
+                    </div>
+                </div>
+                
+                <div class="modal-total-box" id="modalTotalBox" style="display: none;">
+                    <div class="modal-total-label">Total Calculado</div>
+                    <div class="modal-total-amount" id="modalTotalRetirar">0.00</div>
+                </div>
+                
+                <div id="modalValidation"></div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn modal-btn-cancel" onclick="closeParcialModal()">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="modal-btn modal-btn-confirm" id="btnConfirmarParcial" disabled>
+                        ✓ Confirmar Retiro
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal de Confirmación de Retiro -->
     <div class="modal-overlay" id="confirmModal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-icon">💵</div>
-                <div class="modal-title">Confirmar Retiro</div>
-                <div class="modal-subtitle">Revisa el detalle de tu retiro</div>
+                <div class="modal-icon">⚠️</div>
+                <div class="modal-title">¿Confirmar Retiro?</div>
+                <div class="modal-subtitle">Revisa los detalles antes de continuar</div>
             </div>
             
-            <div class="modal-total">
-                <div class="modal-total-label">Total a Retirar</div>
-                <div class="modal-total-amount" id="modalTotalAmount"></div>
+            <div class="modal-saldo-box">
+                <div class="modal-saldo-label">Monto a Retirar</div>
+                <div class="modal-saldo-amount" id="confirmMontoRetirar"></div>
             </div>
             
-            <div class="modal-billetes" id="modalBilletes">
-                <div class="modal-billetes-title">📋 Billetes que Recibirás</div>
-                <div id="modalBilletesContent"></div>
+            <div id="confirmBilletesPreview" style="display: none;">
+                <div class="modal-billetes-preview">
+                    <div class="modal-preview-title">📋 Billetes que Recibirás</div>
+                    <div id="confirmBilletesContent"></div>
+                </div>
+            </div>
+            
+            <div id="confirmWarning"></div>
+            
+            <div class="alert-info-custom" style="margin-bottom: 20px;">
+                <strong>ℹ️ Importante:</strong><br>
+                Una vez confirmado, los billetes se entregarán inmediatamente y el saldo se actualizará.
             </div>
             
             <div class="modal-actions">
-                <button class="modal-btn modal-btn-cancel" onclick="closeModal()">
-                    Cancelar
+                <button type="button" class="modal-btn modal-btn-cancel" onclick="closeConfirmModal()">
+                    ✗ Cancelar
                 </button>
-                <button class="modal-btn modal-btn-confirm" onclick="confirmRetiro()">
-                    ✓ Confirmar
+                <button type="button" class="modal-btn modal-btn-confirm" id="btnConfirmarRetiro">
+                    ✓ Sí, Retirar
                 </button>
             </div>
         </div>
     </div>
-    
-    <!-- Modal de Éxito -->
-    <div class="modal-overlay" id="successModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-icon">✅</div>
-                <div class="modal-title">¡Retiro Exitoso!</div>
-                <div class="modal-subtitle">Tu dinero ha sido entregado</div>
-            </div>
-            
-            <div class="modal-total">
-                <div class="modal-total-label">Entregado</div>
-                <div class="modal-total-amount" id="successTotalAmount"></div>
-            </div>
-            
-            <div class="modal-billetes" id="successBilletes">
-                <div class="modal-billetes-title">💵 Billetes Entregados</div>
-                <div id="successBilletesContent"></div>
-            </div>
-            
-            <button class="modal-btn modal-btn-ok" onclick="closeSuccessModal()">
-                ✓ Entendido
-            </button>
-        </div>
-    </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        let currentMonedaId = null;
-        let currentAbreviacion = '';
-        let currentMonto = '';
+        let currentMonedaAbrev = '';
+        let currentSaldoMax = 0;
+        let billetesData = [];
+        let billetesCalculados = {};
+        let tipoRetiroActual = ''; // 'total' o 'parcial'
+        let formRetiroTotal = null;
         
         function showCurrency(currencyId, tabElement) {
             document.querySelectorAll('.currency-content').forEach(content => {
                 content.classList.remove('active');
             });
-            
             document.querySelectorAll('.currency-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
-            
             document.getElementById(currencyId).classList.add('active');
             tabElement.classList.add('active');
         }
         
-        function showConfirmModal(button) {
-            currentMonedaId = button.getAttribute('data-moneda-id');
-            currentAbreviacion = button.getAttribute('data-abreviacion');
-            currentMonto = button.getAttribute('data-monto');
+        function formatNumber(num, abreviacion) {
+            const number = parseFloat(num);
+            if (abreviacion === 'PYG') {
+                return Math.floor(number).toLocaleString('es-PY');
+            }
+            return number.toLocaleString('es-PY', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        // ✅ Interceptar envío de formularios de retiro total
+        document.addEventListener('DOMContentLoaded', function() {
+            const formsTotales = document.querySelectorAll('form[method="post"]');
+            formsTotales.forEach(form => {
+                const tipoRetiroInput = form.querySelector('input[name="tipo_retiro"]');
+                if (tipoRetiroInput && tipoRetiroInput.value === 'total') {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        formRetiroTotal = this;
+                        
+                        const monedaId = this.querySelector('input[name="moneda_id"]').value;
+                        const currencyDiv = document.getElementById('currency-' + monedaId);
+                        
+                        // Obtener datos de la moneda
+                        const monedaAbrev = currencyDiv.querySelector('.currency-code').textContent;
+                        const montoEntregado = currencyDiv.querySelector('.delivery-amount').textContent.trim();
+                        
+                        // Obtener billetes
+                        const billetesItems = currencyDiv.querySelectorAll('.billete-retiro-item');
+                        const billetesList = [];
+                        
+                        billetesItems.forEach(item => {
+                            const valor = item.querySelector('.billete-retiro-valor').textContent.trim();
+                            const cantidad = item.querySelector('.billete-retiro-cantidad').textContent.replace('×', '').trim();
+                            billetesList.push({ valor, cantidad });
+                        });
+                        
+                        // Verificar si es retiro parcial
+                        const alertWarning = currencyDiv.querySelector('.alert-warning-custom');
+                        let diferencia = null;
+                        if (alertWarning && alertWarning.textContent.includes('Quedará en tu saldo')) {
+                            const match = alertWarning.innerHTML.match(/Quedará en tu saldo:.*?<strong>(.*?)<\/strong>/);
+                            if (match) {
+                                diferencia = match[1].trim();
+                            }
+                        }
+                        
+                        showConfirmModal('total', monedaAbrev, montoEntregado, billetesList, diferencia);
+                    });
+                }
+            });
+        });
+        
+        function showParcialModal(monedaId, abreviacion, saldoMax) {
+            currentMonedaAbrev = abreviacion;
+            currentSaldoMax = parseFloat(saldoMax);
             
-            document.getElementById('modalTotalAmount').textContent = currentMonto + ' ' + currentAbreviacion;
+            document.getElementById('modalMonedaId').value = monedaId;
+            document.getElementById('modalSaldoDisponible').textContent = 
+                formatNumber(saldoMax, abreviacion) + ' ' + abreviacion;
+            document.getElementById('inputCurrency').textContent = abreviacion;
             
-            const billetesContent = document.getElementById('modalBilletesContent');
-            billetesContent.innerHTML = '';
+            // Obtener billetes disponibles
+            const currencyContent = document.getElementById('currency-' + monedaId);
+            const stockItems = currencyContent.querySelectorAll('.billete-stock-item');
             
-            const currencyContent = document.getElementById('currency-' + currentMonedaId);
-            const billeteItems = currencyContent.querySelectorAll('.billete-item');
-            
-            billeteItems.forEach(item => {
-                const denom = item.querySelector('.billete-denom').textContent.trim();
-                const cantidad = item.querySelector('.billete-cantidad').textContent.trim();
-                const subtotal = item.querySelector('.billete-subtotal').textContent.trim();
+            billetesData = [];
+            stockItems.forEach(item => {
+                const denomText = item.querySelector('.billete-denom').textContent.trim();
+                const stockText = item.querySelector('.billete-stock').textContent.trim();
                 
-                const billeteDiv = document.createElement('div');
-                billeteDiv.className = 'modal-billete-item';
-                billeteDiv.innerHTML = `
-                    <span class="modal-billete-denom">${denom}</span>
-                    <span class="modal-billete-cantidad">${cantidad}</span>
-                    <span class="modal-billete-subtotal">${subtotal}</span>
-                `;
-                billetesContent.appendChild(billeteDiv);
+                const valor = parseFloat(denomText.split(' ')[0].replace(/\./g, '').replace(',', '.'));
+                const cantidadDisponible = parseInt(stockText.split(' ')[0]);
+                
+                const dataFromContext = {% for item in monedas %}
+                    {% if forloop.first %}
+                    {{ item.billetes_disponibles|safe }}
+                    {% endif %}
+                {% endfor %};
+                
+                const billeteInfo = dataFromContext.find(b => parseFloat(b.valor) === valor);
+                const denomId = billeteInfo ? billeteInfo.denominacion_id : null;
+                
+                if (denomId) {
+                    billetesData.push({
+                        denominacion_id: denomId,
+                        valor: valor,
+                        cantidad_disponible: cantidadDisponible
+                    });
+                }
             });
             
+            // Ordenar billetes por valor descendente
+            billetesData.sort((a, b) => b.valor - a.valor);
+            
+            // Crear botones de montos rápidos
+            generarMontosRapidos();
+            
+            // Resetear formulario
+            document.getElementById('inputMontoRetirar').value = '';
+            document.getElementById('modalBilletesPreview').style.display = 'none';
+            document.getElementById('modalTotalBox').style.display = 'none';
+            document.getElementById('modalValidation').innerHTML = '';
+            document.getElementById('btnConfirmarParcial').disabled = true;
+            
+            document.getElementById('parcialModal').classList.add('active');
+        }
+        
+        function generarMontosRapidos() {
+            const quickAmountsDiv = document.getElementById('quickAmounts');
+            quickAmountsDiv.innerHTML = '';
+            
+            let sugerencias = [];
+            if (currentMonedaAbrev === 'PYG') {
+                sugerencias = [50000, 100000, 200000, 500000, 1000000];
+            } else {
+                sugerencias = [10, 20, 50, 100, 500];
+            }
+            
+            sugerencias.forEach(monto => {
+                if (monto <= currentSaldoMax) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'quick-amount-btn';
+                    btn.textContent = formatNumber(monto, currentMonedaAbrev);
+                    btn.onclick = () => {
+                        document.getElementById('inputMontoRetirar').value = monto;
+                        calcularBilletes();
+                    };
+                    quickAmountsDiv.appendChild(btn);
+                }
+            });
+            
+            // Botón para el saldo completo
+            const btnMax = document.createElement('button');
+            btnMax.type = 'button';
+            btnMax.className = 'quick-amount-btn';
+            btnMax.textContent = 'Máximo';
+            btnMax.style.background = '#667eea';
+            btnMax.style.color = 'white';
+            btnMax.style.borderColor = '#667eea';
+            btnMax.onclick = () => {
+                document.getElementById('inputMontoRetirar').value = currentSaldoMax;
+                calcularBilletes();
+            };
+            quickAmountsDiv.appendChild(btnMax);
+        }
+        
+        function calcularBilletes() {
+            const montoSolicitado = parseFloat(document.getElementById('inputMontoRetirar').value) || 0;
+            const validationDiv = document.getElementById('modalValidation');
+            const btnConfirmar = document.getElementById('btnConfirmarParcial');
+            const previewDiv = document.getElementById('modalBilletesPreview');
+            const totalBox = document.getElementById('modalTotalBox');
+            
+            // Validar que el monto no sea 0
+            if (montoSolicitado <= 0) {
+                validationDiv.innerHTML = '<div class="alert-info-custom" style="margin-top: 15px;">Ingresa un monto mayor a 0 para continuar.</div>';
+                btnConfirmar.disabled = true;
+                previewDiv.style.display = 'none';
+                totalBox.style.display = 'none';
+                billetesCalculados = {};
+                return;
+            }
+            
+            // Validar que no exceda el saldo
+            if (montoSolicitado > currentSaldoMax) {
+                validationDiv.innerHTML = `<div class="alert-warning-custom" style="margin-top: 15px;"><strong>⚠️ Error:</strong> El monto solicitado (${formatNumber(montoSolicitado, currentMonedaAbrev)}) excede tu saldo disponible.</div>`;
+                btnConfirmar.disabled = true;
+                previewDiv.style.display = 'none';
+                totalBox.style.display = 'none';
+                billetesCalculados = {};
+                return;
+            }
+            
+            // Calcular billetes usando algoritmo voraz
+            billetesCalculados = {};
+            let montoRestante = montoSolicitado;
+            
+            for (let billete of billetesData) {
+                const cantidadNecesaria = Math.floor(montoRestante / billete.valor);
+                const cantidadAUsar = Math.min(cantidadNecesaria, billete.cantidad_disponible);
+                
+                if (cantidadAUsar > 0) {
+                    billetesCalculados[billete.denominacion_id] = cantidadAUsar;
+                    montoRestante -= cantidadAUsar * billete.valor;
+                }
+            }
+            
+            const montoEntregado = montoSolicitado - montoRestante;
+            const diferencia = Math.round(montoRestante * 100) / 100;
+            
+            // Mostrar preview de billetes
+            if (Object.keys(billetesCalculados).length > 0) {
+                const previewContent = document.getElementById('previewBilletesContent');
+                previewContent.innerHTML = '';
+                
+                for (let denomId in billetesCalculados) {
+                    const billete = billetesData.find(b => b.denominacion_id == denomId);
+                    const cantidad = billetesCalculados[denomId];
+                    
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'preview-billete-item';
+                    itemDiv.innerHTML = `
+                        <span class="preview-billete-valor">
+                            ${formatNumber(billete.valor, currentMonedaAbrev)} ${currentMonedaAbrev}
+                        </span>
+                        <span class="preview-billete-cantidad">× ${cantidad}</span>
+                    `;
+                    previewContent.appendChild(itemDiv);
+                }
+                
+                previewDiv.style.display = 'block';
+                totalBox.style.display = 'block';
+                document.getElementById('modalTotalRetirar').textContent = 
+                    formatNumber(montoEntregado, currentMonedaAbrev) + ' ' + currentMonedaAbrev;
+            } else {
+                previewDiv.style.display = 'none';
+                totalBox.style.display = 'none';
+            }
+            
+            // Validaciones finales
+            if (diferencia > 0.01) {
+                const saldoDespuesRetiro = currentSaldoMax - montoEntregado;
+                
+                validationDiv.innerHTML = `
+                    <div class="modal-warning">
+                        <strong>⚠️ Retiro Parcial</strong><br>
+                        Solicitaste: <strong>${formatNumber(montoSolicitado, currentMonedaAbrev)} ${currentMonedaAbrev}</strong><br>
+                        Se entregará: <strong>${formatNumber(montoEntregado, currentMonedaAbrev)} ${currentMonedaAbrev}</strong><br>
+                        Diferencia: <strong>${formatNumber(diferencia, currentMonedaAbrev)} ${currentMonedaAbrev}</strong> (no hay billetes disponibles)
+                    </div>
+                    <div class="alert-info-custom" style="margin-top: 10px;">
+                        <strong>✅ Saldo después del retiro:</strong><br>
+                        Tu saldo quedará en: <strong>${formatNumber(saldoDespuesRetiro, currentMonedaAbrev)} ${currentMonedaAbrev}</strong><br>
+                        <small>(Puedes confirmar y la diferencia quedará disponible para tu próximo retiro)</small>
+                    </div>
+                `;
+                btnConfirmar.disabled = false;
+            } else if (Object.keys(billetesCalculados).length === 0) {
+                validationDiv.innerHTML = '<div class="alert-warning-custom" style="margin-top: 15px;"><strong>⚠️ Error:</strong> No hay billetes disponibles para entregar este monto.</div>';
+                btnConfirmar.disabled = true;
+            } else {
+                const saldoDespuesRetiro = currentSaldoMax - montoEntregado;
+                
+                if (saldoDespuesRetiro > 0.01) {
+                    validationDiv.innerHTML = `
+                        <div class="alert-info-custom" style="margin-top: 15px;">
+                            <strong>✅ Listo para confirmar</strong><br>
+                            Retirarás: <strong>${formatNumber(montoEntregado, currentMonedaAbrev)} ${currentMonedaAbrev}</strong><br>
+                            Saldo restante: <strong>${formatNumber(saldoDespuesRetiro, currentMonedaAbrev)} ${currentMonedaAbrev}</strong>
+                        </div>
+                    `;
+                } else {
+                    validationDiv.innerHTML = '<div class="alert-info-custom" style="margin-top: 15px;"><strong>✅ Listo:</strong> Retirarás todo tu saldo disponible.</div>';
+                }
+                btnConfirmar.disabled = false;
+            }
+        }
+        
+        function prepararFormulario() {
+            // En lugar de enviar directamente, mostrar modal de confirmación
+            const montoSolicitado = parseFloat(document.getElementById('inputMontoRetirar').value) || 0;
+            
+            // Calcular monto entregado y diferencia
+            let montoRestante = montoSolicitado;
+            for (let billete of billetesData) {
+                const cantidadNecesaria = Math.floor(montoRestante / billete.valor);
+                const cantidadAUsar = Math.min(cantidadNecesaria, billete.cantidad_disponible);
+                if (cantidadAUsar > 0) {
+                    montoRestante -= cantidadAUsar * billete.valor;
+                }
+            }
+            
+            const montoEntregado = montoSolicitado - montoRestante;
+            const diferencia = Math.round(montoRestante * 100) / 100;
+            
+            // Preparar billetes para mostrar
+            const billetesList = [];
+            for (let denomId in billetesCalculados) {
+                const billete = billetesData.find(b => b.denominacion_id == denomId);
+                const cantidad = billetesCalculados[denomId];
+                billetesList.push({
+                    valor: formatNumber(billete.valor, currentMonedaAbrev) + ' ' + currentMonedaAbrev,
+                    cantidad: cantidad
+                });
+            }
+            
+            const diferenciaTexto = diferencia > 0.01 ? 
+                formatNumber(diferencia, currentMonedaAbrev) + ' ' + currentMonedaAbrev : null;
+            
+            showConfirmModal('parcial', currentMonedaAbrev, 
+                formatNumber(montoEntregado, currentMonedaAbrev) + ' ' + currentMonedaAbrev,
+                billetesList, diferenciaTexto);
+            
+            return false; // No enviar el formulario aún
+        }
+        
+        function showConfirmModal(tipo, moneda, montoRetirar, billetes, diferencia) {
+            tipoRetiroActual = tipo;
+            
+            document.getElementById('confirmMontoRetirar').textContent = montoRetirar;
+            
+            // Mostrar billetes
+            const billetesContent = document.getElementById('confirmBilletesContent');
+            billetesContent.innerHTML = '';
+            
+            billetes.forEach(billete => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'preview-billete-item';
+                itemDiv.innerHTML = `
+                    <span class="preview-billete-valor">${billete.valor}</span>
+                    <span class="preview-billete-cantidad">× ${billete.cantidad}</span>
+                `;
+                billetesContent.appendChild(itemDiv);
+            });
+            
+            document.getElementById('confirmBilletesPreview').style.display = 'block';
+            
+            // Mostrar advertencia si hay diferencia
+            const warningDiv = document.getElementById('confirmWarning');
+            if (diferencia) {
+                warningDiv.innerHTML = `
+                    <div class="modal-warning" style="margin-bottom: 15px;">
+                        <strong>⚠️ Retiro Parcial</strong><br>
+                        Quedará en tu saldo: <strong>${diferencia}</strong><br>
+                        <small>No hay billetes disponibles para entregar el monto completo</small>
+                    </div>
+                `;
+            } else {
+                warningDiv.innerHTML = '';
+            }
+            
+            // Configurar botón de confirmación
+            const btnConfirmar = document.getElementById('btnConfirmarRetiro');
+            btnConfirmar.onclick = confirmarRetiro;
+            
+            // Cerrar modal anterior si existe
+            closeParcialModal();
+            
+            // Mostrar modal de confirmación
             document.getElementById('confirmModal').classList.add('active');
         }
         
-        function closeModal() {
+        function confirmarRetiro() {
+            if (tipoRetiroActual === 'total') {
+                // Enviar formulario de retiro total
+                if (formRetiroTotal) {
+                    formRetiroTotal.submit();
+                }
+            } else {
+                // Enviar formulario de retiro parcial
+                const form = document.getElementById('formParcial');
+                
+                // Agregar inputs hidden con las cantidades de billetes calculadas
+                const oldInputs = form.querySelectorAll('input[name^="billete_"]');
+                oldInputs.forEach(input => input.remove());
+                
+                for (let denomId in billetesCalculados) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = `billete_${denomId}`;
+                    input.value = billetesCalculados[denomId];
+                    form.appendChild(input);
+                }
+                
+                form.submit();
+            }
+        }
+        
+        function closeConfirmModal() {
             document.getElementById('confirmModal').classList.remove('active');
         }
         
-        function confirmRetiro() {
-            closeModal();
-            
-            document.getElementById('successTotalAmount').textContent = currentMonto + ' ' + currentAbreviacion;
-            document.getElementById('successBilletesContent').innerHTML = 
-                document.getElementById('modalBilletesContent').innerHTML;
-            
-            document.getElementById('successModal').classList.add('active');
-            
-            setTimeout(() => {
-                document.getElementById('form-' + currentMonedaId).submit();
-            }, 2000);
-        }
-        
-        function closeSuccessModal() {
-            document.getElementById('successModal').classList.remove('active');
+        function closeParcialModal() {
+            document.getElementById('parcialModal').classList.remove('active');
         }
     </script>
 </body>

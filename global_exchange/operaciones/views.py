@@ -640,14 +640,10 @@ def guardar_metodo_pago(request):
 def guardar_transaccion(request):
     """
     Guarda una transacción en la base de datos.
-
-    Recibe los datos en JSON: monto, tipo, monedas, tasa, estado y cliente.
-    Asocia la transacción con el usuario autenticado y el cliente operativo.
-
-    :param request: Objeto HTTP con los datos de la transacción.
-    :type request: HttpRequest
-    :return: JsonResponse con la información de la transacción guardada o error.
-    :rtype: JsonResponse
+    Calcula el monto a recibir usando la MISMA lógica que el simulador.
+    
+    COMPRA: Cliente COMPRA moneda extranjera → entrega PYG, recibe USD/EUR
+    VENTA: Cliente VENDE moneda extranjera → entrega USD/EUR, recibe PYG
     """
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -670,16 +666,22 @@ def guardar_transaccion(request):
 
         # Validación de campos obligatorios
         if not (moneda_origen_id and moneda_destino_id and tasa_ref_id and cliente_id):
-            return JsonResponse({"success": False, "error": "Faltan campos obligatorios (incluye cliente_id)"}, status=400)
+            return JsonResponse({"success": False, "error": "Faltan campos obligatorios"}, status=400)
 
         # Obtener instancias de los modelos
         moneda_origen = Moneda.objects.get(id=moneda_origen_id)
         moneda_destino = Moneda.objects.get(id=moneda_destino_id)
         tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
         cliente = Cliente.objects.get(id=cliente_id, estado="activo")
-        medio_acreditacion = MedioAcreditacion.objects.get(id=medio_acreditacion_id, cliente=cliente, estado=True)
+        
+        medio_acreditacion = MedioAcreditacion.objects.get(
+            id=medio_acreditacion_id, 
+            cliente=cliente, 
+            estado=True
+        )
+        entidad_id = medio_acreditacion.entidad_id
 
-        # Validar que el cliente pertenece al usuario
+        # Validar relación usuario-cliente
         if usuario:
             relacion = Usuario_Cliente.objects.filter(
                 id_usuario=usuario, 
@@ -691,21 +693,130 @@ def guardar_transaccion(request):
                     "error": "El cliente no está asociado al usuario"
                 }, status=403)
 
-        # Crear la transacción
-        transaccion = Transaccion.objects.create(
-            usuario=usuario,
-            monto=monto,
-            tipo=tipo,
-            estado=estado,
-            moneda_origen=moneda_origen,
-            moneda_destino=moneda_destino,
-            tasa_usada=tasa_usada,
-            tasa_ref=tasa_ref,
-            cliente=cliente,
-            metodo_pago_id=metodo_pago_id,
-            medio_acreditacion=medio_acreditacion,
-            ganancia=ganancia,
-        )
+        # ✅ OBTENER DESCUENTO DEL CLIENTE (igual que en simulador)
+        descuento = Decimal('0')
+        if cliente.segmentacion and cliente.segmentacion.estado == "activo":
+            descuento = Decimal(str(cliente.segmentacion.descuento or 0))
+
+        # ✅ OBTENER DATOS DE LA TASA (igual que en simulador)
+        COMISION_VTA = Decimal(str(tasa_ref.comision_venta))
+        COMISION_COM = Decimal(str(tasa_ref.comision_compra))
+        PB_MONEDA = Decimal(str(tasa_ref.precio_base))
+
+        print(f"📊 Datos de cálculo:", flush=True)
+        print(f"   Precio base: {PB_MONEDA}", flush=True)
+        print(f"   Comisión venta: {COMISION_VTA}", flush=True)
+        print(f"   Comisión compra: {COMISION_COM}", flush=True)
+        print(f"   Descuento cliente: {descuento}%", flush=True)
+
+        # ✅ CALCULAR MONTO A RECIBIR (ALINEADO CON SIMULADOR)
+        # IMPORTANTE: En el simulador "venta" = cliente COMPRA (entrega PYG, recibe USD)
+        #            Aquí "venta" = cliente VENDE (entrega USD, recibe PYG)
+        #            Por eso la lógica está INVERTIDA
+        
+        if tipo.lower() == 'compra':
+            # COMPRA: Cliente COMPRA USD/EUR → entrega PYG, recibe USD/EUR
+            # En simulador esto es "operacion == venta"
+            TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / Decimal('100'))
+            monto_recibir = monto / TC_VTA  # PYG / tasa = USD
+            moneda_recibir = moneda_destino
+            
+            print(f"🔄 COMPRA (guardar):", flush=True)
+            print(f"   PB_MONEDA: {PB_MONEDA}", flush=True)
+            print(f"   COMISION_VTA: {COMISION_VTA}", flush=True)
+            print(f"   descuento: {descuento}%", flush=True)
+            print(f"   TC_VTA: {TC_VTA}", flush=True)
+            print(f"   Cálculo: {monto} / {TC_VTA} = {monto_recibir}", flush=True)
+            
+        else:  # venta
+            # VENTA: Cliente VENDE USD/EUR → entrega USD/EUR, recibe PYG
+            # En simulador esto es "operacion == compra"
+            TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / Decimal('100')))
+            monto_recibir = monto * TC_COMP  # USD * tasa = PYG
+            moneda_recibir = moneda_destino
+            
+            print(f"🔄 VENTA (guardar):", flush=True)
+            print(f"   PB_MONEDA: {PB_MONEDA}", flush=True)
+            print(f"   COMISION_COM: {COMISION_COM}", flush=True)
+            print(f"   descuento: {descuento}%", flush=True)
+            print(f"   TC_COMP: {TC_COMP}", flush=True)
+            print(f"   Cálculo: {monto} * {TC_COMP} = {monto_recibir}", flush=True)
+
+        # Redondear a 2 decimales (igual que simulador)
+        monto_recibir = round(float(monto_recibir), 2)
+        monto_recibir = Decimal(str(monto_recibir))
+
+        # Determinar estado
+        es_efectivo = int(metodo_pago_id) == 1
+        es_tauser = int(medio_acreditacion_id) == 0  # ✅ Tauser siempre ID=0
+
+        print(f"📌 Método de pago ID: {metodo_pago_id}", flush=True)
+        print(f"📌 Medio de acreditación ID: {medio_acreditacion_id}", flush=True)
+        print(f"📌 Es efectivo: {es_efectivo}", flush=True)
+        print(f"📌 Es Tauser: {es_tauser}", flush=True)
+
+        if es_efectivo:
+            estado_final = 'pendiente'
+            actualizar_saldo_ahora = False
+            print("🔴 EFECTIVO → Estado: PENDIENTE (sin actualizar saldo)", flush=True)
+        else:
+            # ✅ CUALQUIER MÉTODO DIGITAL actualiza el saldo
+            estado_final = 'confirmada'
+            actualizar_saldo_ahora = es_tauser  # ❌ AQUÍ ESTABA EL ERROR
+            
+            # ✅ CORRECCIÓN: Actualizar saldo para TODOS los métodos digitales
+            actualizar_saldo_ahora = True  # ✅ Siempre actualizar si NO es efectivo
+            
+            if es_tauser:
+                print("🟢 TAUSER DIGITAL → Estado: CONFIRMADA (actualizará saldo)", flush=True)
+            else:
+                print("🟢 MÉTODO DIGITAL (no Tauser) → Estado: CONFIRMADA (actualizará saldo)", flush=True)
+
+        # ✅ TRANSACCIÓN ATÓMICA
+        with db_transaction.atomic():
+            # Crear la transacción con el monto_recibir calculado
+            transaccion = Transaccion.objects.create(
+                usuario=usuario,
+                monto=monto,
+                tipo=tipo,
+                estado=estado_final,
+                moneda_origen=moneda_origen,
+                moneda_destino=moneda_destino,
+                tasa_usada=tasa_usada,
+                tasa_ref=tasa_ref,
+                cliente=cliente,
+                metodo_pago_id=metodo_pago_id,
+                medio_acreditacion_id=entidad_id,
+                ganancia=ganancia,
+                monto_recibir=monto_recibir,
+            )
+
+            # ✅ ACTUALIZAR SALDO PARA CUALQUIER MÉTODO DIGITAL (no solo Tauser)
+            if actualizar_saldo_ahora:
+                from clientes.models import SaldoCliente
+                
+                print(f"💰 Actualizando saldo (método digital):", flush=True)
+                print(f"   Cliente: {cliente.nombre}", flush=True)
+                print(f"   Moneda a recibir: {moneda_recibir.abreviacion}", flush=True)
+                print(f"   Monto: {monto_recibir}", flush=True)
+                print(f"   Método: {'Tauser' if es_tauser else 'Otro digital'}", flush=True)
+                
+                # Obtener o crear el saldo en la moneda que RECIBE el cliente
+                saldo, created = SaldoCliente.objects.get_or_create(
+                    cliente=cliente,
+                    moneda=moneda_recibir,
+                    defaults={'saldo': Decimal('0')}
+                )
+                
+                # Incrementar saldo con el monto exacto calculado
+                saldo_anterior = saldo.saldo
+                saldo.saldo += monto_recibir
+                saldo.save()
+                
+                print(f"✅ Saldo actualizado:", flush=True)
+                print(f"   Saldo anterior: {saldo_anterior:.2f} {moneda_recibir.abreviacion}", flush=True)
+                print(f"   Monto agregado: {monto_recibir:.2f} {moneda_recibir.abreviacion}", flush=True)
+                print(f"   Saldo nuevo: {saldo.saldo:.2f} {moneda_recibir.abreviacion}", flush=True)
 
         return JsonResponse({
             "success": True,
@@ -713,6 +824,11 @@ def guardar_transaccion(request):
             "estado": transaccion.estado,
             "fecha": transaccion.fecha.strftime("%d/%m/%Y %H:%M"),
             "cliente_nombre": cliente.nombre,
+            "entidad_id": entidad_id,
+            "saldo_actualizado": actualizar_saldo_ahora,
+            "requiere_deposito": es_efectivo,
+            "es_tauser": es_tauser,
+            "monto_recibir": float(monto_recibir),
         })
 
     except Moneda.DoesNotExist:
@@ -721,7 +837,12 @@ def guardar_transaccion(request):
         return JsonResponse({"success": False, "error": "Tasa de cambio no encontrada"}, status=404)
     except Cliente.DoesNotExist:
         return JsonResponse({"success": False, "error": "Cliente no encontrado o inactivo"}, status=404)
+    except MedioAcreditacion.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Medio de acreditación no encontrado o inactivo"}, status=404)
     except Exception as e:
+        print(f"❌ Error en guardar_transaccion: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         return JsonResponse({"success": False, "error": "Error al guardar", "detail": str(e)}, status=500)
 
 

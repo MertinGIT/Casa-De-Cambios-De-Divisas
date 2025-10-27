@@ -1,4 +1,3 @@
-
 from decimal import Decimal
 from django.db import transaction
 from .models import StockTauser, Denominacion, MovimientoStock, RetiroEfectivo, DetalleRetiroEfectivo
@@ -227,3 +226,74 @@ class GestorStockTauser:
             )
 
         return True
+    
+    @staticmethod
+    @transaction.atomic
+    def registrar_deposito_efectivo(monto, moneda):
+        """
+        Registra un depósito en efectivo incrementando el stock de billetes.
+        Distribuye el monto en las denominaciones disponibles siguiendo un orden específico.
+        
+        Args:
+            monto: Monto total depositado
+            moneda: Objeto Moneda
+        """
+        from decimal import Decimal
+        
+        # Definir el orden de denominaciones por moneda
+        ORDEN_DENOMINACIONES = {
+            'PYG': [100000, 50000, 20000, 10000, 5000, 2000],  # Mayor a menor
+            'USD': [100, 50, 20, 10, 5, 1],
+            'EUR': [500, 200, 100, 50, 20, 10, 5],
+        }
+        
+        orden = ORDEN_DENOMINACIONES.get(moneda.abreviacion, [])
+        
+        if not orden:
+            raise ValueError(f"No hay orden de denominaciones configurado para {moneda.abreviacion}")
+        
+        # Obtener las denominaciones existentes para esta moneda
+        denominaciones_disponibles = Denominacion.objects.filter(
+            moneda=moneda,
+            activo=True
+        ).select_related('moneda')
+        
+        if not denominaciones_disponibles.exists():
+            raise ValueError(f"No hay denominaciones configuradas para {moneda.abreviacion}")
+        
+        # Crear dict de denominaciones por valor
+        denoms_dict = {float(d.valor): d for d in denominaciones_disponibles}
+        
+        # Algoritmo greedy: usar billetes más grandes primero
+        monto_restante = Decimal(str(monto))
+        billetes_depositados = {}
+        
+        for valor in orden:
+            if valor not in denoms_dict:
+                continue
+                
+            denominacion = denoms_dict[valor]
+            valor_decimal = Decimal(str(valor))
+            
+            # Calcular cuántos billetes de esta denominación caben
+            cantidad_billetes = int(monto_restante / valor_decimal)
+            
+            if cantidad_billetes > 0:
+                billetes_depositados[denominacion.id] = cantidad_billetes
+                monto_restante -= valor_decimal * cantidad_billetes
+                
+                # Actualizar stock
+                stock, created = StockTauser.objects.get_or_create(
+                    denominacion=denominacion,
+                    defaults={'cantidad': 0}
+                )
+                stock.cantidad += cantidad_billetes
+                stock.save()
+                
+                print(f"Depositado: {cantidad_billetes} x {valor} {moneda.abreviacion}")
+        
+        # Si sobra algo (por ejemplo, centavos), lo ignoramos o lanzamos error
+        if monto_restante > Decimal('0.01'):
+            print(f"Advertencia: Sobró {monto_restante} {moneda.abreviacion} sin asignar")
+        
+        return billetes_depositados
