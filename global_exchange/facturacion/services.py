@@ -135,25 +135,25 @@ class FacturaSeguraService:
             "iTImp": "5",
             "cMoneOpe": "PYG",
             "dCondTiCam": "1",
-            "dTiCam": str(transaccion['tipo_cambio']) if transaccion['moneda'] != 'PYG' else "1",
+            "dTiCam": str(transaccion['tasa_usada']) if transaccion['abreviacion_origen'] != 'PYG' else "1",
             
             # Datos del EMISOR (tu empresa)
             "dRucEm": self.config['RUC_EMISOR'],
             "dDVEmi": self.config['DV_EMISOR'],
             "iTipCont": "1",
             "dNomEmi": "GLOBAL EXCHANGE S.A.",
-            "dDirEmi": "AV. TEST 123",
+            "dDirEmi": "AV. EUSEBIO AYALA KM 4.5",
             "dNumCas": "1543",
             "cDepEmi": "1",
             "dDesDepEmi": "CAPITAL",
-            "cCiuEmi": "1",
-            "dDesCiuEmi": "ASUNCION (DISTRITO)",
+            "cCiuEmi": "101",
+            "dDesCiuEmi": "Asunción, Paraguay",
             "dTelEmi": "(0961)988439",
-            "dEmailE": "ggonzar@gmail.com",
+            "dEmailE": "facturacion@globalexchange.com.py",
             "gActEco": [
                 {
-                    "cActEco": "74909",
-                    "dDesActEco": "Otras actividades profesionales, científicas y técnicas n.c.p."
+                    "cActEco": "6419",
+                    "dDesActEco": "Otros tipos de intermediación monetaria"
                 }
             ],
             
@@ -176,9 +176,9 @@ class FacturaSeguraService:
             # Forma de pago
             "gPaConEIni": [
                 {
-                    "iTiPago": self._mapear_metodo_pago(transaccion['metodo_pago_id']),
+                    "iTiPago": self._mapear_metodo_pago(transaccion['metodo_pago']),
                     "dMonTiPag": str(int(transaccion['monto'] + comision)),
-                    "cMoneTiPag": transaccion['moneda'],
+                    "cMoneTiPag": transaccion['abreviacion_origen'],
                     "dTiCamTiPag": "1"
                 }
             ],
@@ -187,7 +187,14 @@ class FacturaSeguraService:
             "gCamItem": [
                 {
                     "dCodInt": "CAMBIO-001",
-                    "dDesProSer": f"Servicio de cambio {transaccion.get('motivo', '')}",
+                    "dDesProSer": f"Servicio de {transaccion['tipo']} de divisas - "
+                    f"({transaccion['abreviacion_origen']}) → "
+                    f"({transaccion['abreviacion_destino'] }) | "
+                    f"Tasa: {transaccion['tasa_usada']}",
+                    "dInfItem": (
+                        f"Tasa utilizada: {transaccion['tasa_usada']} "
+                        f"{transaccion['abreviacion_origen']}/{transaccion['abreviacion_destino']}"
+                    ),
                     "cUniMed": "77",
                     "dCantProSer": "1",
                     "dPUniProSer": str(transaccion['monto']),
@@ -220,7 +227,7 @@ class FacturaSeguraService:
             "dCodSeg": "862814791",
             "dDVId": "0",
             "dSisFact": "1",
-            "dInfAdic": f"Transacción: {transaccion.get('referencia', '')}"
+            #"dInfAdic": f"Transacción: {transaccion.get('referencia', '')}"
         }
         return factura
     
