@@ -293,6 +293,8 @@ def atm_extraer(request):
             # Ordenar por valor descendente
             detalles_billetes.sort(key=lambda x: x['valor'], reverse=True)
             
+            print(f"💰 Moneda: {moneda.abreviacion}", flush=True)
+            print(f"   Saldo disponible: {float(saldo_disponible)}", flush=True)
             monedas_con_detalle.append({
                 'moneda': moneda,
                 'saldo_disponible': float(saldo_disponible),
@@ -303,7 +305,7 @@ def atm_extraer(request):
                 'posible_efectivo': posible,
                 'saldo_obj': saldo_obj
             })
-        
+        print("monedas_con_detalle",monedas_con_detalle ,flush=True)
         if request.method == 'POST':
             moneda_id = request.POST.get('moneda_id')
             tipo_retiro = request.POST.get('tipo_retiro')  # 'total' o 'parcial'
@@ -431,6 +433,7 @@ def atm_extraer(request):
             
             return redirect('atm_extraer')
         
+        print("monedas_con_detalle",monedas_con_detalle ,flush=True)
         context = {
             'cliente': cliente,
             'monedas': monedas_con_detalle,
