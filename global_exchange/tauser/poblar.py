@@ -1,4 +1,16 @@
 from decimal import Decimal
+import os
+import django
+import sys
+
+# --- AÑADIR LA RUTA RAÍZ DEL PROYECTO ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
+# --- Configuración del entorno Django ---
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'global_exchange.settings')
+django.setup()
+
 from monedas.models import Moneda
 from tauser.models import Denominacion, StockTauser
 

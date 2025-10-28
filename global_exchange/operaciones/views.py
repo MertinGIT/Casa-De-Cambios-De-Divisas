@@ -748,7 +748,7 @@ def guardar_transaccion(request):
 
         # Determinar estado
         es_efectivo = int(metodo_pago_id) == 1
-        es_tauser = int(medio_acreditacion_id) == 0  # ✅ Tauser siempre ID=0
+        es_tauser = medio_acreditacion.entidad.nombre.strip().lower() == "tauser"  # ✅ Tauser siempre ID=0
 
         print(f"📌 Método de pago ID: {metodo_pago_id}", flush=True)
         print(f"📌 Medio de acreditación ID: {medio_acreditacion_id}", flush=True)
@@ -786,7 +786,7 @@ def guardar_transaccion(request):
                 tasa_ref=tasa_ref,
                 cliente=cliente,
                 metodo_pago_id=metodo_pago_id,
-                medio_acreditacion_id=entidad_id,
+                medio_acreditacion_id=medio_acreditacion_id,
                 ganancia=ganancia,
                 monto_recibir=monto_recibir,
             )

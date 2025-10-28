@@ -159,8 +159,12 @@ def atm_depositar(request):
                     messages.error(request, f'Error al procesar el depósito: {str(e)}')
                     return redirect('atm_depositar')
 
-                # ✅ ACTUALIZAR SALDO (solo si medio de acreditación es Tauser ID=0)
-                es_tauser = transaccion.medio_acreditacion_id == 0
+                es_tauser = (
+                    transaccion.medio_acreditacion is not None 
+                    and transaccion.medio_acreditacion.entidad is not None 
+                    and transaccion.medio_acreditacion.entidad.nombre.strip().lower() == "tauser"
+                )
+
                 
                 if es_tauser:
                     from clientes.models import SaldoCliente
