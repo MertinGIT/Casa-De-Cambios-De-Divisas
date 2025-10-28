@@ -146,14 +146,14 @@ class FacturaSeguraService:
             "dNumCas": "1543",
             "cDepEmi": "1",
             "dDesDepEmi": "CAPITAL",
-            "cCiuEmi": "101",
-            "dDesCiuEmi": "Asunción, Paraguay",
+            "cCiuEmi": "1",
+            "dDesCiuEmi": "ASUNCION (DISTRITO)",
             "dTelEmi": "(0961)988439",
             "dEmailE": "facturacion@globalexchange.com.py",
             "gActEco": [
                 {
-                    "cActEco": "6419",
-                    "dDesActEco": "Otros tipos de intermediación monetaria"
+                    "cActEco": "74909",
+                    "dDesActEco": "Otras actividades profesionales, científicas y técnicas n.c.p."
                 }
             ],
             

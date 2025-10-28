@@ -364,7 +364,7 @@ def factura_resumida(factura):
         "cDepEmi": "1",
         "dDesDepEmi": "CAPITAL",
         "cCiuEmi": "1",
-        "dDesCiuEmi": "Asunción, Paraguay",
+        "dDesCiuEmi": "ASUNCION (DISTRITO)",
         "dTelEmi": "(0961)988439",
         "dEmailE": "facturacion@globalexchange.com.py",
         "gActEco": [
