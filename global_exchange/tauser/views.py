@@ -460,11 +460,33 @@ def atm_depositar(request):
                         factura = factura_existente
                     else:
                         # ✅ Generar nueva factura SOLO si no existe
-                        factura = FacturaSeguraService.generar_factura(
-                            transaccion=transaccion,
-                            cliente=cliente,
-                            usuario=request.user if hasattr(request, 'user') and request.user.is_authenticated else None
+                        # Construir los datos esperados
+                        transaccion_data = {
+                            'monto': float(transaccion.monto),
+                            'moneda_origen': transaccion.moneda_origen.abreviacion,
+                            'moneda_destino': transaccion.moneda_destino.abreviacion,
+                            'tasa_usada': float(transaccion.tasa_ref.valor) if getattr(transaccion, 'tasa_ref', None) else None,
+                            'referencia': transaccion.id,
+                            'metodo_pago': transaccion.metodo_pago.nombre if getattr(transaccion, 'metodo_pago', None) else None,
+                            'tipo': transaccion.tipo,
+                            'moneda': transaccion.moneda_destino.abreviacion,  # 👈 ESTE es el campo que faltaba
+                        }
+
+                        cliente_data = {
+                            'nombre_completo': cliente.nombre,
+                            'email': cliente.email,
+                            'cedula': cliente.cedula,
+                            'ruc': cliente.ruc,
+                            'dv_ruc': getattr(cliente, 'dv_ruc', None),
+                        }
+
+                        # Llamada corregida
+                        factura = FacturaSeguraService.generar_factura_cambio(
+                            transaccion_data,
+                            cliente_data,
+                            usuario=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
                         )
+
                         print(f"✅ Factura generada: {factura.numero_factura}", flush=True)
                     
                 except Exception as e:

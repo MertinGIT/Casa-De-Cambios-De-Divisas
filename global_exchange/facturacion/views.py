@@ -1,10 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
-from django.http import FileResponse, Http404
 import json
 from django.db.models import Q
 from cliente_usuario.models import Usuario_Cliente
@@ -16,32 +15,12 @@ from clientes.models import Cliente
 
 @login_required
 def facturacion_view(request):
-    """
-    Muestra el listado de **facturas electrónicas emitidas por el usuario actual**.
-
-    Permite aplicar filtros por cliente, CDC, estado, fechas y transacción.  
-    También calcula estadísticas por estado (aprobadas, pendientes, rechazadas)
-    y detecta la **segmentación activa** del cliente operativo.
-
-    **Parámetros:**
-
-    - **request (HttpRequest):**  
-      Solicitud HTTP con los filtros de búsqueda.
-
-    **Retorna:**
-
-    - **HttpResponse:**  
-      Página HTML con la lista filtrada de facturas y sus métricas.
-    """
+    """Vista principal de listado de facturas"""
     facturas = Factura.objects.filter(creado_por=request.user).select_related(
-        'transaccion', 
-        'cliente', 
-        'rango_utilizado'
+        'transaccion', 'cliente', 'rango_utilizado'
     )
     
-    # === APLICAR FILTROS ===
-    
-    # Filtro por búsqueda general (busca en varios campos)
+    # Filtros
     busqueda = request.GET.get('busqueda', '').strip()
     if busqueda:
         facturas = facturas.filter(
@@ -51,62 +30,55 @@ def facturacion_view(request):
             Q(numero__icontains=busqueda)
         )
     
-    # Filtro por estado
     estado = request.GET.get('estado', '').strip()
     if estado:
         facturas = facturas.filter(estado=estado)
     
-    # Filtro por cliente (nombre)
     cliente = request.GET.get('cliente', '').strip()
     if cliente:
         facturas = facturas.filter(cliente__nombre__icontains=cliente)
     
-    # Filtro por CDC
     cdc = request.GET.get('cdc', '').strip()
     if cdc:
         facturas = facturas.filter(cdc__icontains=cdc)
     
-    # Filtro por rango de fechas
     fecha_desde = request.GET.get('fecha_desde', '').strip()
     fecha_hasta = request.GET.get('fecha_hasta', '').strip()
     
     if fecha_desde:
         facturas = facturas.filter(fecha_emision__date__gte=fecha_desde)
-    
     if fecha_hasta:
         facturas = facturas.filter(fecha_emision__date__lte=fecha_hasta)
     
-    # Filtro por ID de transacción
     transaccion_id = request.GET.get('transaccion_id', '').strip()
     if transaccion_id:
         try:
             transaccion_id = int(transaccion_id)
             facturas = facturas.filter(transaccion_id=transaccion_id)
         except ValueError:
-            pass  # Ignorar si no es un número válido
+            pass
     
-    # Ordenar por fecha de emisión descendente
     facturas = facturas.order_by('-fecha_emision')
     
-
     # Contadores
     total = facturas.count()
     aprobadas = facturas.filter(estado='aprobado').count()
     pendientes = facturas.filter(estado='pendiente').count()
     rechazadas = facturas.filter(estado='rechazado').count()
     
-    # === Segmentación según usuario ===
+    # Segmentación
     descuento = 0
     segmento_nombre = "Sin segmentación"
-    # === SEGMENTACIÓN SEGÚN USUARIO ===
-    if request.user.is_authenticated:  # solo si está logueado
+    clientes_asociados = []
+    cliente_operativo = None
+    
+    if request.user.is_authenticated:
         clientes_asociados, cliente_operativo = obtener_clientes_usuario(request.user, request)
-
-        if (cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo"):
+        if (cliente_operativo and cliente_operativo.segmentacion and 
+            cliente_operativo.segmentacion.estado == "activo"):
             descuento = float(cliente_operativo.segmentacion.descuento)
             segmento_nombre = cliente_operativo.segmentacion.nombre
 
-    # Pasamos todo al template
     context = {
         "facturas": facturas,
         "total": total,
@@ -115,7 +87,8 @@ def facturacion_view(request):
         "rechazadas": rechazadas,
         "segmento": segmento_nombre,
         "clientes_asociados": clientes_asociados,
-        "cliente_operativo": cliente_operativo,'descuento': descuento,
+        "cliente_operativo": cliente_operativo,
+        'descuento': descuento,
     }
 
     return render(request, "facturacion/listarFacturas.html", context)
@@ -125,29 +98,18 @@ def facturacion_view(request):
 @require_http_methods(["POST"])
 def generar_factura_transaccion(request):
     """
-    Genera una **factura electrónica** asociada a una transacción.
-
-    Recibe un JSON con el `transaccion_id`, obtiene la información del cliente y
-    usa el servicio `FacturaSeguraService` para emitir la factura ante SIFEN.
-
-    **Parámetros:**
-
-    - **request (HttpRequest):**  
-      Solicitud HTTP POST con JSON `{ "transaccion_id": int }`.
-
-    **Retorna:**
-
-    - **JsonResponse:**  
-      Resultado con éxito o error y datos de la factura generada.
+    ✅ FUNCIÓN PRINCIPAL - Genera factura y hace TODO automáticamente:
+    1. Crea la factura en BD
+    2. Envía a SIFEN
+    3. Consulta estado automáticamente
+    4. Envía email si está aprobada (lo hace FacturaSegura)
     """
     try:
         data = json.loads(request.body)
         transaccion_id = data.get('transaccion_id')
-        print("transaccion_id:", transaccion_id, flush=True)
+        print(f"🧾 [GENERAR] Iniciando para transacción #{transaccion_id}", flush=True)
         
-        # Obtener transacción
         transaccion = Transaccion.objects.get(id=transaccion_id)
-        print("transaccion:", transaccion, flush=True)
         cliente = transaccion.cliente
         
         # Preparar datos
@@ -159,10 +121,7 @@ def generar_factura_transaccion(request):
             'referencia': transaccion.id,
             'metodo_pago': transaccion.metodo_pago.nombre,
             'tipo': transaccion.tipo,
-
         }
-
-        print("transaccion_data:", transaccion_data, flush=True)
 
         cliente_data = {
             'nombre_completo': cliente.nombre,
@@ -171,18 +130,14 @@ def generar_factura_transaccion(request):
             'ruc': getattr(cliente, 'ruc', None),
             'dv_ruc': getattr(cliente, 'dv_ruc', "3"),
         }
-
-        print("cliente_data:", cliente_data, flush=True)
         
-        # Generar factura
+        # ✅ Esta función YA hace todo (generar + consultar + email)
         service = FacturaSeguraService()
         resultado = service.generar_factura_cambio(transaccion_data, cliente_data, usuario=request.user)
-        print("resultado factura views facturacion:", resultado, flush=True)
+        print(f"✅ [GENERAR] Resultado: {resultado}", flush=True)
         
         if resultado.get('success'):
             rango = RangoFacturacion.objects.get(id=resultado['rango_id'])
-            
-            # Extraer el número del resultado
             numero_completo = resultado['numero_completo']
             partes = numero_completo.split('-')
             
@@ -205,7 +160,6 @@ def generar_factura_transaccion(request):
             resumen = factura_resumida(factura)
             factura.json_factura = resumen
             factura.save()
-            print("Resumen de factura:", resumen, flush=True)
             
             return JsonResponse({
                 'success': True,
@@ -234,12 +188,11 @@ def generar_factura_transaccion(request):
         }, status=400)
     except Exception as e:
         import traceback
-        print(f"Error completo: {traceback.format_exc()}", flush=True)
+        print(f"❌ Error: {traceback.format_exc()}", flush=True)
         return JsonResponse({
             'success': False,
             'error': str(e)
         }, status=500)
-
 
 @require_http_methods(["GET"])
 def consultar_estado_factura(request, factura_id):
@@ -307,22 +260,11 @@ def consultar_estado_factura(request, factura_id):
             'success': False,
             'error': str(e)
         }, status=500)
-
-
+        
 @require_http_methods(["GET"])
 def consultar_estado_factura_transaccion(request):
     """
-    Consulta el estado SIFEN de la **factura vinculada a una transacción**.
-
-    **Parámetros:**
-
-    - **request (HttpRequest):**  
-      Solicitud GET con `transaccion_id`.
-
-    **Retorna:**
-
-    - **JsonResponse:**  
-      Estado de la factura o error.
+    ✅ SOLO CONSULTA - No genera nada, solo verifica el estado actual
     """
     try:
         transaccion_id = request.GET.get('transaccion_id')
@@ -377,24 +319,36 @@ def consultar_estado_factura_transaccion(request):
         }, status=500)
 
 
-def factura_resumida(factura):
-    """
-    Genera un **resumen estructurado en JSON** con los datos principales de una factura.
-
-    Este formato se utiliza para almacenar internamente y para integrarse con SIFEN.
-
-    **Parámetros:**
-
-    - **factura (Factura):**  
-      Objeto de la factura emitida.
-
-    **Retorna:**
-
-    - **dict:**  
-      Datos resumidos y formateados para la API SIFEN.
-    """
-    from datetime import datetime
+@require_http_methods(["GET"])
+def descargar_factura(request):
+    """Descarga el PDF (KuDE) de una factura"""
+    cdc = request.GET.get('cdc')
+    transaccion_id = request.GET.get('transaccion_id')
     
+    if not cdc or not transaccion_id:
+        return JsonResponse({'success': False, 'error': 'Faltan parámetros'}, status=400)
+
+    try:
+        factura = Factura.objects.get(transaccion_id=transaccion_id, cdc=cdc, creado_por=request.user)
+    except Factura.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
+
+    service = FacturaSeguraService()
+    ruc_emisor = service.config['RUC_EMISOR']
+    output_path = f'/tmp/kude_{cdc}.pdf'
+    ok = service.descargar_kude(cdc, ruc_emisor, output_path)
+    
+    if not ok:
+        return JsonResponse({'success': False, 'error': 'No se pudo descargar el KuDE'}, status=500)
+
+    try:
+        return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'factura_{cdc}.pdf')
+    except Exception:
+        raise Http404("Archivo no encontrado")
+
+
+def factura_resumida(factura):
+    """Genera resumen JSON de la factura"""
     ruc_cliente = factura.cliente.ruc or factura.cliente.cedula or "0"
 
     if ruc_cliente and '-' in ruc_cliente:
@@ -439,10 +393,10 @@ def factura_resumida(factura):
         "iTiOpe": "1",
         "cPaisRec": "PRY",
         "iTiContRec": "2",
-        "dRucRec": "80026216",
-        "dDVRec": "6",
-        "dNomRec": "GUILLERMO GONZALEZ",
-        "dEmailRec": "soporte@facturasegura.com.py",
+        "dRucRec": numero_ruc_cliente,
+        "dDVRec": dv_cliente,
+        "dNomRec": factura.cliente.nombre,
+        "dEmailRec": factura.cliente.email,
         "iIndPres": "1",
         "iCondOpe": "2",
         "gPaConEIni": [
@@ -456,7 +410,7 @@ def factura_resumida(factura):
         "gCamItem": [
             {
                 "dCodInt": "SERV001",
-                "dDesProSer": f"Servicio de ",
+                "dDesProSer": f"Servicio de cambio de divisas",
                 "cUniMed": "77",
                 "dCantProSer": "1",
                 "dPUniProSer": str(factura.monto_total),
@@ -474,165 +428,8 @@ def factura_resumida(factura):
     return data
 
 
-@require_http_methods(["GET"])
-def descargar_factura(request):
-    """
-    Descarga el **KuDE (PDF)** de una factura emitida.
-
-    **Parámetros:**
-
-    - **request (HttpRequest):**  
-      Solicitud GET con parámetros `cdc` y `transaccion_id`.
-
-    **Retorna:**
-
-    - **FileResponse:** Archivo PDF.  
-    - **JsonResponse:** Mensaje de error en caso de fallo.
-    """
-    cdc = request.GET.get('cdc')
-    transaccion_id = request.GET.get('transaccion_id')
-    
-    if not cdc or not transaccion_id:
-        return JsonResponse({'success': False, 'error': 'Faltan parámetros'}, status=400)
-
-    try:
-        factura = Factura.objects.get(transaccion_id=transaccion_id, cdc=cdc, creado_por=request.user)
-    except Factura.DoesNotExist:
-        return JsonResponse({'success': False, 'error': 'Factura no encontrada'}, status=404)
-
-    service = FacturaSeguraService()
-    ruc_emisor = service.config['RUC_EMISOR']
-    output_path = f'/tmp/kude_{cdc}.pdf'
-    ok = service.descargar_kude(cdc, ruc_emisor, output_path)
-    
-    if not ok:
-        return JsonResponse({'success': False, 'error': 'No se pudo descargar el KuDE'}, status=500)
-
-    try:
-        return FileResponse(open(output_path, 'rb'), as_attachment=True, filename=f'factura_{cdc}.pdf')
-    except Exception:
-        raise Http404("Archivo no encontrado")
-    
-from django.core.mail import EmailMessage
-from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
-import os
-@require_http_methods(["POST"])
-def enviar_factura_email(request):
-    """
-    Envía por **correo electrónico** el PDF (KuDE) de una factura generada.
-
-    **Parámetros:**
-
-    - **request (HttpRequest):**  
-      Solicitud POST con JSON `{ "transaccion_id": int }`.
-
-    **Retorna:**
-
-    - **JsonResponse:**  
-      Confirmación de envío o error.
-    """
-    try:
-        data = json.loads(request.body)
-        transaccion_id = data.get('transaccion_id')
-        
-        if not transaccion_id:
-            return JsonResponse({
-                'success': False,
-                'message': 'Se requiere transaccion_id'
-            })
-        
-        # Buscar la factura que ya existe
-        factura = Factura.objects.get(transaccion_id=transaccion_id)
-        cliente = factura.cliente
-        
-        # Descargar el PDF temporalmente
-        service = FacturaSeguraService()
-        ruc_emisor = service.config['RUC_EMISOR']
-        output_path = f'/tmp/kude_{factura.cdc}.pdf'
-        
-        ok = service.descargar_kude(factura.cdc, ruc_emisor, output_path)
-        
-        if not ok:
-            return JsonResponse({
-                'success': False,
-                'message': 'No se pudo descargar el PDF de la factura'
-            })
-        
-        # Preparar y enviar el correo
-        asunto = f"Factura Electrónica N° {factura.numero_completo}"
-        
-        mensaje = f"""Estimado/a {cliente.nombre},
-
-Adjuntamos su factura electrónica correspondiente a la transacción realizada.
-
-Detalles de la factura:
-- Número: {factura.numero_completo}
-- CDC: {factura.cdc}
-- Fecha: {factura.fecha_emision.strftime('%d/%m/%Y %H:%M')}
-- Monto: {factura.monto_total} {factura.moneda}
-
-Gracias por su preferencia.
-
-Atentamente,
-GLOBAL EXCHANGE S.A.
-"""
-        
-        email = EmailMessage(
-            subject=asunto,
-            body=mensaje,
-            from_email=None,  # Usa EMAIL_HOST_USER por defecto
-            to=[cliente.email]
-        )
-        
-        # Adjuntar el PDF
-        email.attach_file(output_path)
-        email.send()
-        
-        # Limpiar archivo temporal
-        try:
-            os.remove(output_path)
-        except:
-            pass
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Factura enviada exitosamente a {cliente.email}'
-        })
-        
-    except Factura.DoesNotExist:
-        return JsonResponse({
-            'success': False,
-            'message': 'No se encontró la factura para esta transacción'
-        })
-    except Exception as e:
-        print(f"Error al enviar correo: {str(e)}", flush=True)
-        return JsonResponse({
-            'success': False,
-            'message': f'Error al enviar el correo: {str(e)}'
-        })
-
-def obtener_clientes_usuario(user,request):
-    """
-    Obtiene los **clientes asociados** a un usuario y el cliente operativo actual.
-
-    Si existe un cliente operativo en sesión, se devuelve ese; de lo contrario, el primero.
-
-    **Parámetros:**
-
-    - **user (User):**  
-      Usuario autenticado.
-
-    - **request (HttpRequest):**  
-      Solicitud actual.
-
-    **Retorna:**
-
-    - **tuple[list[Cliente], Cliente | None]:**  
-      Lista de clientes asociados y el cliente operativo.
-    """
-
-    # Solo clientes activos
+def obtener_clientes_usuario(user, request):
+    """Obtiene clientes asociados al usuario"""
     usuarios_clientes = (
         Usuario_Cliente.objects
         .select_related("id_cliente__segmentacion")
@@ -642,34 +439,18 @@ def obtener_clientes_usuario(user,request):
     clientes_asociados = [uc.id_cliente for uc in usuarios_clientes if uc.id_cliente]
     cliente_operativo = None
 
-    # Tomar de la sesión si existe
     if request and request.session.get('cliente_operativo_id'):
         cliente_operativo = next((c for c in clientes_asociados if c.id == request.session['cliente_operativo_id']), None)
 
-    # Si no hay sesión o ID no válido, tomar el primero
     if not cliente_operativo and clientes_asociados:
         cliente_operativo = clientes_asociados[0]
 
     return clientes_asociados, cliente_operativo
 
+
 @login_required
 def set_cliente_operativo(request):
-    """
-    Define el **cliente operativo** en sesión para el usuario autenticado.
-
-    Permite alternar entre los clientes asociados y retorna la segmentación activa.
-
-    **Parámetros:**
-
-    - **request (HttpRequest):**  
-      Solicitud POST con `cliente_id`.
-
-    **Retorna:**
-
-    - **JsonResponse:**  
-      Información del cliente seleccionado o error.
-    """
-    
+    """Define el cliente operativo en sesión"""
     cliente_id = request.POST.get('cliente_id')
     if cliente_id:
         try:
