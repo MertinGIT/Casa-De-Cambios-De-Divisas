@@ -807,12 +807,12 @@ def guardar_transaccion(request):
                 print(f"   Monto: {monto_recibir}", flush=True)
                 print(f"   Método: {'Tauser' if es_tauser else 'Otro digital'}", flush=True)
                 
-               
                 # Obtener o crear el saldo en la moneda que RECIBE el cliente
                 saldo, created = SaldoCliente.objects.get_or_create(
                     cliente=cliente,
                     moneda=moneda_recibir,
-                    defaults={'saldo': Decimal('0')}
+                    defaults={'saldo': Decimal('0')},
+                    localidad=medio_acreditacion.localidad
                 )
                 
                 # Incrementar saldo con el monto exacto calculado

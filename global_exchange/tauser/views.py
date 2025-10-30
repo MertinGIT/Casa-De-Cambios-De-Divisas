@@ -444,6 +444,37 @@ def atm_depositar(request):
                 transaccion.estado = 'confirmada'
                 transaccion.save(update_fields=['estado'])
 
+                # ✅ 5. GENERAR FACTURA (SIN DUPLICAR RANGOS)
+                try:
+                    from facturacion.services import FacturaSeguraService
+                    
+                    print(f"🧾 Generando factura para transacción #{transaccion.id}", flush=True)
+                    
+                    # ✅ VERIFICAR SI YA EXISTE UNA FACTURA PARA ESTA TRANSACCIÓN
+                    from facturacion.models import Factura
+                    
+                    factura_existente = Factura.objects.filter(transaccion=transaccion).first()
+                    
+                    if factura_existente:
+                        print(f"⚠️ Factura ya existe: {factura_existente.numero_factura}", flush=True)
+                        factura = factura_existente
+                    else:
+                        # ✅ Generar nueva factura SOLO si no existe
+                        factura = FacturaSeguraService.generar_factura(
+                            transaccion=transaccion,
+                            cliente=cliente,
+                            usuario=request.user if hasattr(request, 'user') and request.user.is_authenticated else None
+                        )
+                        print(f"✅ Factura generada: {factura.numero_factura}", flush=True)
+                    
+                except Exception as e:
+                    # ❌ NO FALLAR si hay error en facturación
+                    print(f"⚠️ Error al generar factura (continuando): {str(e)}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    # NO hacer return aquí, continuar con el depósito
+
+                # ✅ 6. Mensaje de éxito
                 mensaje_exito = f'✓ Depósito exitoso: {transaccion.monto:.2f} {transaccion.moneda_origen.abreviacion}'
                 
                 if es_tauser:
