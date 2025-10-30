@@ -211,3 +211,32 @@ class DetalleRetiroEfectivo(models.Model):
     def subtotal(self):
         return self.denominacion.valor * self.cantidad
 
+class ReservaTauser(models.Model):
+    """
+    Representa una reserva temporal de efectivo en el TAUSER para una transacción en proceso.
+    No descuenta del stock real hasta que se confirma.
+    """
+    transaccion = models.OneToOneField(
+        'operaciones.Transaccion',
+        on_delete=models.CASCADE,
+        related_name='reserva_tauser'
+    )
+    moneda = models.ForeignKey('monedas.Moneda', on_delete=models.CASCADE)
+    monto_total = models.DecimalField(max_digits=12, decimal_places=2)
+    creado_en = models.DateTimeField(auto_now_add=True)
+    expiracion = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Fecha/hora en la que expira la reserva (opcional)"
+    )
+    activa = models.BooleanField(default=True)
+
+
+class DetalleReservaTauser(models.Model):
+    reserva = models.ForeignKey(
+        ReservaTauser,
+        on_delete=models.CASCADE,
+        related_name='detalles'
+    )
+    denominacion = models.ForeignKey(Denominacion, on_delete=models.CASCADE)
+    cantidad_reservada = models.IntegerField()
+
