@@ -12,8 +12,17 @@ from django.utils import timezone  # Importar timezone
 
 def atm_seleccionar_localidad(request):
     """
-    PASO 1: Seleccionar la localidad del TAUSER antes de hacer login.
-    Esta es la primera pantalla que ve el usuario.
+    Paso 1: Selección de la localidad (TAUSER) antes del inicio de sesión.
+
+    Permite al usuario seleccionar el TAUSER (localidad) con el que desea operar.
+    - Si el método es POST: guarda la localidad seleccionada en la sesión y redirige al login.
+    - Si el método es GET: muestra todas las localidades activas disponibles.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza la plantilla de selección de localidad o redirige al login.
     """
     if request.method == 'POST':
         localidad_id = request.POST.get('localidad_id')
@@ -46,7 +55,18 @@ def atm_seleccionar_localidad(request):
     return render(request, 'tauser/seleccionar_localidad.html', context)
 
 def atm_login(request):
-    """Vista de login para terminal de autoservicio"""
+    """
+    Vista de inicio de sesión del terminal de autoservicio (ATM).
+
+    Permite al cliente autenticarse ingresando su número de cédula.
+    Requiere que previamente se haya seleccionado una localidad TAUSER.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza el formulario de login o redirige al dashboard.
+    """
     # Verificar que haya seleccionado una localidad
     localidad_id = request.session.get('atm_localidad_id')
     if not localidad_id:
@@ -84,7 +104,18 @@ def atm_login(request):
     return render(request, 'tauser/login_tauser.html',context)
 
 def atm_dashboard(request):
-    """Dashboard principal del ATM - Menú de opciones"""
+    """
+    Dashboard principal del ATM.
+
+    Muestra el menú principal de operaciones del cliente autenticado.
+    Si la sesión es inválida, redirige a la selección de localidad.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza la vista de menú principal.
+    """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
     if not cliente_id or not localidad_id:
@@ -107,7 +138,17 @@ def atm_dashboard(request):
         return redirect('atm_seleccionar_localidad')
     
 def atm_logout(request):
-    """Cerrar sesión del ATM"""
+    """
+    Cierre de sesión en el terminal TAUSER.
+
+    Elimina todas las variables de sesión del ATM y redirige a la selección de localidad.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponseRedirect: Redirige al inicio del ATM.
+    """
     # Limpiar solo las variables de sesión del ATM
     request.session.pop('atm_cliente_id', None)
     request.session.pop('atm_cedula', None)
@@ -118,7 +159,18 @@ def atm_logout(request):
 
 
 def atm_transacciones(request):
-    """Vista para ver historial de transacciones del cliente"""
+    """
+    Muestra el historial de transacciones del cliente.
+
+    Recupera las transacciones realizadas por el cliente actual en el sistema,
+    ordenadas por fecha descendente.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza la vista de historial de transacciones.
+    """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
     if not cliente_id or not localidad_id:
@@ -152,9 +204,17 @@ def atm_transacciones(request):
 
 def atm_depositar(request):
     """
-    Muestra las operaciones que requieren depósito en efectivo.
-    Solo transacciones PENDIENTES pagadas en EFECTIVO.
-    Después del depósito, actualiza el saldo del cliente considerando su segmentación.
+    Procesa depósitos en efectivo del cliente en el TAUSER.
+
+    - Muestra las transacciones pendientes de pago en efectivo.
+    - Permite registrar el depósito físico y actualizar el saldo del cliente.
+    - Si el medio de acreditación es "TAUSER", el saldo se incrementa automáticamente.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza la vista de depósito o redirige tras completar el proceso.
     """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
@@ -283,8 +343,17 @@ def atm_depositar(request):
 
 def atm_extraer(request):
     """
-    Vista para extraer dinero desde el saldo de Tauser.
-    Permite retiro total automático o retiro parcial personalizado.
+    Permite la extracción (retiro) de dinero del saldo TAUSER del cliente.
+
+    - Opción de retiro total automático o retiro parcial personalizado.
+    - Calcula los billetes óptimos según el stock disponible.
+    - Actualiza el saldo del cliente y el stock de billetes de la localidad.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza la vista de extracción o redirige tras confirmar el retiro.
     """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')

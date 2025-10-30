@@ -11,9 +11,23 @@ from decimal import Decimal
 
 class Denominacion(models.Model):
     """
-    Representa las denominaciones disponibles para cada moneda.
-    Ejemplo: Para USD pueden ser 1, 5, 10, 20, 50, 100
-    Para PYG pueden ser 2000, 5000, 10000, 20000, 50000, 100000
+    Representa las denominaciones de billetes o monedas disponibles para cada tipo de moneda.
+
+    **Ejemplos:**
+
+    - USD → 1, 5, 10, 20, 50, 100  
+    - PYG → 2000, 5000, 10000, 20000, 50000, 100000  
+
+    **Atributos:**
+
+    - **moneda (ForeignKey):**  
+      Referencia a la moneda a la que pertenece la denominación.
+
+    - **valor (DecimalField):**  
+      Valor del billete o moneda.
+
+    - **activo (BooleanField):**  
+      Indica si la denominación está habilitada para operaciones.
     """
     moneda = models.ForeignKey(
         Moneda,
@@ -41,7 +55,18 @@ class Denominacion(models.Model):
 
 class Localidad(models.Model):
     """
-    Representa las ubicaciones físicas de los TAUSER
+    Representa una ubicación física de un TAUSER (terminal de autoservicio).
+
+    **Atributos:**
+
+    - **nombre (CharField):**  
+      Nombre de la localidad (único).
+
+    - **direccion (CharField):**  
+      Dirección física (opcional).
+
+    - **activo (BooleanField):**  
+      Indica si la localidad está activa.
     """
     nombre = models.CharField(max_length=100, unique=True)
     direccion = models.CharField(max_length=255, blank=True)
@@ -57,9 +82,27 @@ class Localidad(models.Model):
     
 class StockTauser(models.Model):
     """
-    Stock de billetes por denominación en el TAUSER.
-    Controla cuántos billetes de cada denominación hay disponibles.
-    Cada localidad tiene su propio stock independiente.
+    Controla el stock de billetes por denominación en el TAUSER.
+
+    Cada localidad mantiene su propio stock independiente para cada denominación.
+    Se utiliza para verificar disponibilidad antes de retiros y registrar depósitos.
+
+    **Atributos:**
+
+    - **localidad (ForeignKey):**  
+      Localidad donde se encuentra el stock.
+
+    - **denominacion (ForeignKey):**  
+      Denominación del billete.
+
+    - **cantidad (IntegerField):**  
+      Cantidad actual disponible.
+
+    - **cantidad_minima (IntegerField):**  
+      Umbral mínimo de alerta.
+
+    - **actualizado_en (DateTimeField):**  
+      Última fecha de actualización.
     """
     localidad = models.ForeignKey(
         Localidad,
@@ -103,7 +146,35 @@ class StockTauser(models.Model):
 class MovimientoStock(models.Model):
     """
     Historial de movimientos de stock del TAUSER.
-    Registra cargas (aprovisionar) y retiros de billetes.
+
+    Registra toda modificación de stock: cargas, retiros o ajustes manuales.  
+    Permite auditoría y trazabilidad de los cambios.
+
+    **Atributos:**
+
+    - **denominacion (ForeignKey):**  
+      Denominación afectada.
+
+    - **tipo (CharField):**  
+      Tipo de movimiento (`"carga"`, `"retiro"` o `"ajuste"`).
+
+    - **cantidad (IntegerField):**  
+      Cantidad movida (positiva o negativa).
+
+    - **stock_anterior (IntegerField):**  
+      Cantidad antes del movimiento.
+
+    - **stock_posterior (IntegerField):**  
+      Cantidad después del movimiento.
+
+    - **transaccion (ForeignKey):**  
+      Transacción asociada (si aplica).
+
+    - **observaciones (TextField):**  
+      Detalle o motivo del movimiento.
+
+    - **fecha (DateTimeField):**  
+      Fecha del registro.
     """
     TIPO_MOVIMIENTO = [
         ('carga', 'Carga/Aprovisionamiento'),
@@ -144,8 +215,33 @@ class MovimientoStock(models.Model):
 
 class RetiroEfectivo(models.Model):
     """
-    Detalle de cómo se entregó el efectivo en una transacción.
-    Guarda qué denominaciones y cantidades se usaron.
+    Registra un retiro de efectivo realizado en una transacción.
+
+    Guarda la información del monto solicitado, monto efectivamente entregado y las posibles
+    diferencias debido a disponibilidad limitada de billetes.
+
+    **Atributos:**
+
+    - **transaccion (OneToOneField):**  
+      Transacción asociada.
+
+    - **localidad (ForeignKey):**  
+      Localidad del TAUSER donde se realiza el retiro.
+
+    - **monto_total (DecimalField):**  
+      Monto solicitado por el cliente.
+
+    - **monto_entregado (DecimalField):**  
+      Monto realmente entregado.
+
+    - **diferencia (DecimalField):**  
+      Monto no entregado (si no se pudieron cubrir todas las denominaciones).
+
+    - **metodo_pago (CharField):**  
+      Medio de entrega (`"efectivo"` o `"transferencia"`).
+
+    - **fecha (DateTimeField):**  
+      Fecha de ejecución del retiro.
     """
     transaccion = models.OneToOneField(
         'operaciones.Transaccion',
@@ -186,8 +282,20 @@ class RetiroEfectivo(models.Model):
 
 class DetalleRetiroEfectivo(models.Model):
     """
-    Detalle de las denominaciones usadas en un retiro específico.
-    Ejemplo: 7 billetes de 100, 1 billete de 20, etc.
+    Representa las denominaciones utilizadas en un retiro específico.
+
+    Permite registrar cuántos billetes de cada denominación se entregaron.
+
+    **Atributos:**
+
+    - **retiro (ForeignKey):**  
+      Retiro de efectivo al que pertenece.
+
+    - **denominacion (ForeignKey):**  
+      Denominación de billetes entregados.
+
+    - **cantidad (IntegerField):**  
+      Número de billetes entregados.
     """
     retiro = models.ForeignKey(
         RetiroEfectivo,
@@ -213,8 +321,30 @@ class DetalleRetiroEfectivo(models.Model):
 
 class ReservaTauser(models.Model):
     """
-    Representa una reserva temporal de efectivo en el TAUSER para una transacción en proceso.
-    No descuenta del stock real hasta que se confirma.
+    Reserva temporal de efectivo en un TAUSER para una transacción en proceso.
+
+    Se utiliza cuando una transacción aún no ha sido confirmada.  
+    Una vez confirmada o expirada, la reserva se libera o descuenta del stock.
+
+    **Atributos:**
+
+    - **transaccion (OneToOneField):**  
+      Transacción asociada.
+
+    - **moneda (ForeignKey):**  
+      Moneda de la reserva.
+
+    - **monto_total (DecimalField):**  
+      Monto total reservado.
+
+    - **creado_en (DateTimeField):**  
+      Fecha de creación.
+
+    - **expiracion (DateTimeField):**  
+      Fecha y hora de expiración (opcional).
+
+    - **activa (BooleanField):**  
+      Indica si la reserva sigue vigente.
     """
     transaccion = models.OneToOneField(
         'operaciones.Transaccion',
@@ -232,6 +362,20 @@ class ReservaTauser(models.Model):
 
 
 class DetalleReservaTauser(models.Model):
+    """
+    Detalla las denominaciones reservadas en una ReservaTauser.
+
+    **Atributos:**
+
+    - **reserva (ForeignKey):**  
+      Reserva a la que pertenece.
+
+    - **denominacion (ForeignKey):**  
+      Denominación de billetes reservada.
+
+    - **cantidad_reservada (IntegerField):**  
+      Cantidad de billetes reservados.
+    """
     reserva = models.ForeignKey(
         ReservaTauser,
         on_delete=models.CASCADE,

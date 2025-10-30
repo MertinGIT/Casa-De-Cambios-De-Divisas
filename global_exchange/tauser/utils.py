@@ -10,15 +10,36 @@ from .models import ReservaTauser
 
 class GestorStockTauser:
     """
-    Clase para manejar la lógica de stock del TAUSER
+    Clase encargada de gestionar el stock de efectivo (billetes) en el TAUSER.
+
+    Contiene métodos para reservar, liberar, retirar y aprovisionar efectivo,
+    así como para registrar depósitos y movimientos asociados al stock.
+    Todos los procesos críticos usan transacciones atómicas para garantizar
+    la consistencia de datos.
     """
 
     @staticmethod
     @transaction.atomic
     def reservar_efectivo(transaccion_obj, monto, moneda, duracion_minutos=15):
         """
-        Reserva billetes para una operación en efectivo pendiente de confirmación.
-        Usa solo la parte entera para calcular los billetes, pero guarda el monto decimal completo.
+        Reserva billetes para una operación pendiente de confirmación.
+
+        Calcula la combinación óptima de billetes para cubrir el monto solicitado
+        (solo usa la parte entera del monto para la reserva física), descuenta
+        temporalmente el stock y guarda la reserva en la base de datos.
+
+        Args:
+            transaccion_obj (Transaccion): Objeto de la transacción asociada.
+            monto (Decimal | float): Monto total a reservar.
+            moneda (Moneda): Moneda de la reserva.
+            duracion_minutos (int, opcional): Tiempo de expiración de la reserva.
+                Por defecto, 15 minutos.
+
+        Returns:
+            ReservaTauser: Objeto de reserva creado.
+
+        Raises:
+            ValueError: Si no hay suficiente stock para cubrir la reserva.
         """
         print(f"💸 Iniciando reserva TAUSER para {monto} {moneda.abreviacion}", flush=True)
 
@@ -73,7 +94,13 @@ class GestorStockTauser:
     @transaction.atomic
     def liberar_reserva(transaccion_obj):
         """
-        Libera una reserva de efectivo (por cancelación o expiración).
+        Libera una reserva activa (por cancelación o expiración).
+
+        Args:
+            transaccion_obj (Transaccion): Objeto de la transacción asociada.
+
+        Returns:
+            bool: True si se liberó una reserva activa, False si no existía.
         """
         try:
             reserva = ReservaTauser.objects.select_for_update().get(
@@ -89,15 +116,22 @@ class GestorStockTauser:
     @staticmethod
     def calcular_billetes_optimo(monto, moneda,localidad):
         """
-        Calcula la combinación óptima de billetes para entregar un monto.
-        Usa algoritmo greedy: siempre intenta usar las denominaciones más grandes primero.
-        
+        Calcula la combinación óptima de billetes disponibles para entregar un monto.
+
+        Usa un algoritmo "greedy" (voraz) que prioriza denominaciones más grandes
+        hasta cubrir el monto deseado o agotar el stock disponible.
+
+        Args:
+            monto (Decimal | float): Monto solicitado.
+            moneda (Moneda): Moneda del monto.
+            localidad (Localidad): Localidad del TAUSER.
+
         Returns:
-            tuple: (billetes_dict, monto_entregado, diferencia, posible)
-            - billetes_dict: {denominacion_id: cantidad}
-            - monto_entregado: monto real que se puede entregar
-            - diferencia: monto que no se pudo entregar
-            - posible: True si se puede entregar el monto completo
+            tuple:
+                - billetes_dict (dict): {denominacion_id: cantidad}
+                - monto_entregado (Decimal): Monto efectivamente cubierto.
+                - diferencia (Decimal): Monto restante no entregado.
+                - posible (bool): True si se pudo cubrir el monto completo.
         """
         # Obtener denominaciones disponibles ordenadas de mayor a menor
         stocks = StockTauser.objects.filter(
@@ -139,13 +173,21 @@ class GestorStockTauser:
     def registrar_retiro(transaccion_obj, billetes_dict, monto_total, monto_entregado, diferencia):
         """
         Registra un retiro de efectivo y actualiza el stock.
-        
+
+        Crea los registros correspondientes en las tablas:
+        - RetiroEfectivo
+        - DetalleRetiroEfectivo
+        - MovimientoStock
+
         Args:
-            transaccion_obj: Objeto Transaccion
-            billetes_dict: Diccionario {denominacion_id: cantidad}
-            monto_total: Monto solicitado
-            monto_entregado: Monto realmente entregado
-            diferencia: Diferencia no entregada
+            transaccion_obj (Transaccion): Transacción asociada al retiro.
+            billetes_dict (dict): Diccionario {denominacion_id: cantidad}.
+            monto_total (Decimal): Monto solicitado por el cliente.
+            monto_entregado (Decimal): Monto realmente entregado.
+            diferencia (Decimal): Diferencia no entregada (por falta de billetes).
+
+        Returns:
+            RetiroEfectivo: Objeto del retiro registrado.
         """
         # Crear el registro de retiro
         retiro = RetiroEfectivo.objects.create(
@@ -190,7 +232,17 @@ class GestorStockTauser:
     @transaction.atomic
     def aprovisionar(denominacion_id, cantidad, observaciones=''):
         """
-        Carga/aprovisiona billetes en el TAUSER.
+        Carga o reaprovisiona billetes en el TAUSER.
+
+        Incrementa el stock de una denominación específica y registra el movimiento.
+
+        Args:
+            denominacion_id (int): ID de la denominación.
+            cantidad (int): Número de billetes agregados.
+            observaciones (str, opcional): Nota descriptiva del movimiento.
+
+        Returns:
+            StockTauser: Objeto de stock actualizado.
         """
         denominacion = Denominacion.objects.get(id=denominacion_id)
         stock, created = StockTauser.objects.get_or_create(
@@ -216,7 +268,13 @@ class GestorStockTauser:
     @staticmethod
     def obtener_stock_por_moneda(moneda):
         """
-        Obtiene el stock disponible de todas las denominaciones de una moneda.
+        Obtiene todas las denominaciones activas y su stock disponible para una moneda.
+
+        Args:
+            moneda (Moneda): Moneda a consultar.
+
+        Returns:
+            QuerySet[StockTauser]: Lista de stocks ordenados por valor descendente.
         """
         return StockTauser.objects.filter(
             denominacion__moneda=moneda,
@@ -226,7 +284,16 @@ class GestorStockTauser:
     @staticmethod
     def verificar_stock_suficiente(monto, moneda):
         """
-        Verifica si hay stock suficiente para entregar un monto.
+        Verifica si existe stock suficiente para cubrir un monto solicitado.
+
+        Args:
+            monto (Decimal): Monto solicitado.
+            moneda (Moneda): Moneda del monto.
+
+        Returns:
+            tuple:
+                - posible (bool): True si puede cubrirse completamente.
+                - diferencia (Decimal): Monto faltante en caso contrario.
         """
         billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(monto, moneda)
         return posible, diferencia
@@ -236,12 +303,20 @@ class GestorStockTauser:
     @transaction.atomic
     def registrar_deposito(transaccion_obj, monto=None):
         """
-        Registra un depósito en efectivo en el TAUSER y actualiza el stock.
-        Si no se pasa un monto, se calcula automáticamente según el tipo de transacción.
-        
+        Registra un depósito en efectivo y actualiza el stock.
+
+        Distribuye el monto en las denominaciones de la moneda correspondiente
+        y registra los movimientos de stock asociados.
+
         Args:
-            transaccion_obj: objeto Transaccion
-            monto: monto depositado (opcional)
+            transaccion_obj (Transaccion): Objeto de la transacción asociada.
+            monto (Decimal | None): Monto depositado. Si es None, se calcula automáticamente.
+
+        Returns:
+            bool: True si el depósito se registró correctamente.
+
+        Raises:
+            ValueError: Si no hay denominaciones configuradas para la moneda.
         """
         # Determinar monto a depositar
         if monto is None:
@@ -311,11 +386,20 @@ class GestorStockTauser:
     def registrar_deposito_efectivo(monto, moneda,localidad):
         """
         Registra un depósito en efectivo incrementando el stock de billetes.
-        Distribuye el monto en las denominaciones disponibles siguiendo un orden específico.
-        
+
+        Distribuye el monto total en las denominaciones disponibles según un
+        orden predefinido (de mayor a menor) y actualiza los registros de stock.
+
         Args:
-            monto: Monto total depositado
-            moneda: Objeto Moneda
+            monto (Decimal | float): Monto total depositado.
+            moneda (Moneda): Moneda del depósito.
+            localidad (Localidad): Localidad del TAUSER.
+
+        Returns:
+            dict: {denominacion_id: cantidad} con los billetes agregados.
+
+        Raises:
+            ValueError: Si no existen denominaciones o el orden no está configurado.
         """
         from decimal import Decimal
         

@@ -17,7 +17,21 @@ from clientes.models import Cliente
 @login_required
 def facturacion_view(request):
     """
-    Vista para mostrar el resumen de facturas y sus estados
+    Muestra el listado de **facturas electrónicas emitidas por el usuario actual**.
+
+    Permite aplicar filtros por cliente, CDC, estado, fechas y transacción.  
+    También calcula estadísticas por estado (aprobadas, pendientes, rechazadas)
+    y detecta la **segmentación activa** del cliente operativo.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud HTTP con los filtros de búsqueda.
+
+    **Retorna:**
+
+    - **HttpResponse:**  
+      Página HTML con la lista filtrada de facturas y sus métricas.
     """
     facturas = Factura.objects.filter(creado_por=request.user).select_related(
         'transaccion', 
@@ -111,7 +125,20 @@ def facturacion_view(request):
 @require_http_methods(["POST"])
 def generar_factura_transaccion(request):
     """
-    Genera factura para una transacción
+    Genera una **factura electrónica** asociada a una transacción.
+
+    Recibe un JSON con el `transaccion_id`, obtiene la información del cliente y
+    usa el servicio `FacturaSeguraService` para emitir la factura ante SIFEN.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud HTTP POST con JSON `{ "transaccion_id": int }`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Resultado con éxito o error y datos de la factura generada.
     """
     try:
         data = json.loads(request.body)
@@ -215,7 +242,20 @@ def generar_factura_transaccion(request):
 @require_http_methods(["GET"])
 def consultar_estado_factura(request, factura_id):
     """
-    Consulta el estado de una factura específica en SIFEN
+    Consulta el **estado en SIFEN** de una factura específica y actualiza su estado local.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud HTTP.
+
+    - **factura_id (int):**  
+      ID de la factura a consultar.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Estado actualizado o mensaje de error.
     """
     try:
         factura = Factura.objects.get(id=factura_id, creado_por=request.user)
@@ -270,7 +310,17 @@ def consultar_estado_factura(request, factura_id):
 @require_http_methods(["GET"])
 def consultar_estado_factura_transaccion(request):
     """
-    Consulta el estado de la factura asociada a una transacción en SIFEN.
+    Consulta el estado SIFEN de la **factura vinculada a una transacción**.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud GET con `transaccion_id`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Estado de la factura o error.
     """
     try:
         transaccion_id = request.GET.get('transaccion_id')
@@ -327,7 +377,19 @@ def consultar_estado_factura_transaccion(request):
 
 def factura_resumida(factura):
     """
-    Devuelve un diccionario con los datos resumidos de la factura.
+    Genera un **resumen estructurado en JSON** con los datos principales de una factura.
+
+    Este formato se utiliza para almacenar internamente y para integrarse con SIFEN.
+
+    **Parámetros:**
+
+    - **factura (Factura):**  
+      Objeto de la factura emitida.
+
+    **Retorna:**
+
+    - **dict:**  
+      Datos resumidos y formateados para la API SIFEN.
     """
     from datetime import datetime
     
@@ -413,7 +475,17 @@ def factura_resumida(factura):
 @require_http_methods(["GET"])
 def descargar_factura(request):
     """
-    Descarga el KuDE (PDF) de la factura usando el CDC y el RUC emisor.
+    Descarga el **KuDE (PDF)** de una factura emitida.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud GET con parámetros `cdc` y `transaccion_id`.
+
+    **Retorna:**
+
+    - **FileResponse:** Archivo PDF.  
+    - **JsonResponse:** Mensaje de error en caso de fallo.
     """
     cdc = request.GET.get('cdc')
     transaccion_id = request.GET.get('transaccion_id')
@@ -446,8 +518,17 @@ import os
 @require_http_methods(["POST"])
 def enviar_factura_email(request):
     """
-    Envía una factura YA GENERADA por correo electrónico.
-    Recibe: { "transaccion_id": 123 }
+    Envía por **correo electrónico** el PDF (KuDE) de una factura generada.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud POST con JSON `{ "transaccion_id": int }`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Confirmación de envío o error.
     """
     try:
         data = json.loads(request.body)
@@ -530,18 +611,26 @@ GLOBAL EXCHANGE S.A.
         })
 
 def obtener_clientes_usuario(user,request):
-    """    
-    Devuelve los clientes asociados a un usuario autenticado y determina cuál es el cliente operativo actual.
+    """
+    Obtiene los **clientes asociados** a un usuario y el cliente operativo actual.
 
-    Devuelve:
-        clientes_asociados: lista de todos los clientes asociados al usuario.
-        cliente_operativo: cliente actualmente seleccionado (desde sesión si existe).
+    Si existe un cliente operativo en sesión, se devuelve ese; de lo contrario, el primero.
 
-    Tipo del valor devuelto:
-        tuple (list[Cliente], Cliente | None)
+    **Parámetros:**
+
+    - **user (User):**  
+      Usuario autenticado.
+
+    - **request (HttpRequest):**  
+      Solicitud actual.
+
+    **Retorna:**
+
+    - **tuple[list[Cliente], Cliente | None]:**  
+      Lista de clientes asociados y el cliente operativo.
     """
 
-     # Solo clientes activos
+    # Solo clientes activos
     usuarios_clientes = (
         Usuario_Cliente.objects
         .select_related("id_cliente__segmentacion")
@@ -563,21 +652,22 @@ def obtener_clientes_usuario(user,request):
 
 @login_required
 def set_cliente_operativo(request):
-    """    
-    Establece en sesión el cliente operativo para el usuario autenticado.
-
-    Permite cambiar el cliente activo en el contexto de las operaciones. 
-    Devuelve información de segmentación y descuento del cliente seleccionado.
-
-    Parámetros:
-        request (HttpRequest): Objeto HTTP con la información de la petición.
-
-    Devuelve:
-        JsonResponse con los datos del cliente operativo o error.
-
-    Tipo del valor devuelto:
-        JsonResponse
     """
+    Define el **cliente operativo** en sesión para el usuario autenticado.
+
+    Permite alternar entre los clientes asociados y retorna la segmentación activa.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud POST con `cliente_id`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Información del cliente seleccionado o error.
+    """
+    
     cliente_id = request.POST.get('cliente_id')
     if cliente_id:
         try:
