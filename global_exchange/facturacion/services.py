@@ -183,7 +183,7 @@ class FacturaSeguraService:
             "iTipEmi": "1",
             "iTiDE": "1",  # Factura electrónica
             "dNumTim": "02595733",
-            "dFeIniT": "2025-03-27",
+            "dFeIniT": "2025-08-27",
             "dEst": establecimiento, 
             "dPunExp": punto_expedicion,
             "dNumDoc": numero_documento,
