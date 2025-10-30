@@ -127,6 +127,32 @@
             margin-right: 5px;
             vertical-align: middle;
         }
+        .localidad-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            margin-top: 15px;
+            display: inline-block;
+            font-size: 14px;
+        }
+        
+        .btn-cambiar-localidad {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-top: 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        
+        .btn-cambiar-localidad:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -140,6 +166,12 @@
             </div>
             <h1>Bienvenido</h1>
             <p>Terminal de Autoservicio</p>
+            <div class="localidad-badge">
+                📍 {{ localidad_nombre }}
+            </div>
+            <a href="{% url 'atm_seleccionar_localidad' %}" class="btn-cambiar-localidad">
+                Cambiar localidad
+            </a>
         </div>
         
         <div class="atm-body">

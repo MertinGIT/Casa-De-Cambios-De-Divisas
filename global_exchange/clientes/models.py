@@ -80,6 +80,12 @@ class SaldoCliente(models.Model):
         on_delete=models.PROTECT,
         related_name='saldos_clientes'
     )
+    localidad = models.ForeignKey(  # AGREGAR ESTE CAMPO
+        'tauser.Localidad',
+        on_delete=models.PROTECT,
+        related_name='saldos_clientes',
+        help_text="Localidad/sucursal donde está disponible este saldo"
+    )
     saldo = models.DecimalField(
         max_digits=25,  # ✅ Total de dígitos (antes y después del punto)
         decimal_places=8,  # ✅ Máximo 8 decimales
@@ -89,19 +95,19 @@ class SaldoCliente(models.Model):
     ultima_actualizacion = models.DateTimeField(auto_now=True)
     
     class Meta:
-        unique_together = ('cliente', 'moneda')
+        unique_together = ('cliente', 'moneda', 'localidad')
         verbose_name = 'Saldo de Cliente'
         verbose_name_plural = 'Saldos de Clientes'
         indexes = [
-            models.Index(fields=['cliente', 'moneda']),
+            models.Index(fields=['cliente', 'moneda', 'localidad']),
         ]
     
     def __str__(self):
         # ✅ Mostrar sin decimales si es PYG, con decimales si es otra moneda
         if self.moneda.abreviacion.upper() == 'PYG':
-            return f"{self.cliente.nombre} - {int(self.saldo):,} {self.moneda.abreviacion}"
+            return f"{self.cliente.nombre} - {self.localidad.nombre} - {int(self.saldo):,} {self.moneda.abreviacion}"
         else:
-            return f"{self.cliente.nombre} - {self.saldo:.2f} {self.moneda.abreviacion}"
+            return f"{self.cliente.nombre} - {self.localidad.nombre} - {self.saldo:.2f} {self.moneda.abreviacion}"
     
     def saldo_formateado(self):
         """

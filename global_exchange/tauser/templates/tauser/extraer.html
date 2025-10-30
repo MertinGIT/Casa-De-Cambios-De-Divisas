@@ -665,12 +665,28 @@
             font-size: 12px;
             text-align: center;
         }
+        .nav-tabs .nav-link {
+        color: #666;
+        font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            border-color: #667eea #667eea #fff;
+        }
+        
+        .list-group-item {
+            border-left: 3px solid #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="atm-container">
         <div class="atm-header">
             <h1>💰 Extraer Dinero</h1>
+            <div style="margin-top: 8px; font-size: 14px; opacity: 0.9;">
+    📍 {{ localidad.nombre }}
+</div>
             <a href="{% url 'atm_dashboard' %}" class="back-btn">← Volver</a>
         </div>
         
@@ -739,22 +755,22 @@
                     </div>
                     
                     {% if item.billetes_disponibles %}
-                        <div class="billetes-section">
-                            <div class="billetes-title">🏦 Stock de Billetes en el ATM</div>
-                            {% for billete in item.billetes_disponibles %}
-                                <div class="billete-stock-item">
-                                    <span class="billete-denom">
-                                        {% if item.moneda.abreviacion == 'PYG' %}
-                                            {{ billete.valor|floatformat:0 }}
-                                        {% else %}
-                                            {{ billete.valor|floatformat:2 }}
-                                        {% endif %}
-                                        {{ billete.moneda_abrev }}
-                                    </span>
-                                    <span class="billete-stock">{{ billete.cantidad_disponible }} disponibles</span>
-                                </div>
-                            {% endfor %}
-                        </div>
+    <div class="billetes-section">
+        <div class="billetes-title">🏦 Stock de Billetes en el ATM</div>
+        {% for billete in item.billetes_disponibles %}
+            <div class="billete-stock-item" data-denom-id="{{ billete.denominacion_id }}">
+                <span class="billete-denom">
+                    {% if item.moneda.abreviacion == 'PYG' %}
+                        {{ billete.valor|floatformat:0 }}
+                    {% else %}
+                        {{ billete.valor|floatformat:2 }}
+                    {% endif %}
+                    {{ billete.moneda_abrev }}
+                </span>
+                <span class="billete-stock">{{ billete.cantidad_disponible }} disponibles</span>
+            </div>
+        {% endfor %}
+    </div>
                         
                         {% if item.billetes_retiro_total %}
                             <div class="retiro-section">
@@ -1040,7 +1056,7 @@
                 formatNumber(saldoMax, abreviacion) + ' ' + abreviacion;
             document.getElementById('inputCurrency').textContent = abreviacion;
             
-            // Obtener billetes disponibles
+            // Obtener billetes disponibles directamente desde el DOM
             const currencyContent = document.getElementById('currency-' + monedaId);
             const stockItems = currencyContent.querySelectorAll('.billete-stock-item');
             
@@ -1049,21 +1065,18 @@
                 const denomText = item.querySelector('.billete-denom').textContent.trim();
                 const stockText = item.querySelector('.billete-stock').textContent.trim();
                 
-                const valor = parseFloat(denomText.split(' ')[0].replace(/\./g, '').replace(',', '.'));
+                // Limpiar y parsear el valor (remover puntos de miles y comas decimales)
+                const valorTexto = denomText.split(' ')[0];
+                const valor = parseFloat(valorTexto.replace(/\./g, '').replace(',', '.'));
                 const cantidadDisponible = parseInt(stockText.split(' ')[0]);
                 
-                const dataFromContext = {% for item in monedas %}
-                    {% if forloop.first %}
-                    {{ item.billetes_disponibles|safe }}
-                    {% endif %}
-                {% endfor %};
+                // Guardar el ID de denominación en un atributo data
+                // Necesitamos agregarlo desde el template
+                const denomId = item.getAttribute('data-denom-id');
                 
-                const billeteInfo = dataFromContext.find(b => parseFloat(b.valor) === valor);
-                const denomId = billeteInfo ? billeteInfo.denominacion_id : null;
-                
-                if (denomId) {
+                if (denomId && !isNaN(valor) && !isNaN(cantidadDisponible)) {
                     billetesData.push({
-                        denominacion_id: denomId,
+                        denominacion_id: parseInt(denomId),
                         valor: valor,
                         cantidad_disponible: cantidadDisponible
                     });
@@ -1072,6 +1085,8 @@
             
             // Ordenar billetes por valor descendente
             billetesData.sort((a, b) => b.valor - a.valor);
+            
+            console.log('Billetes cargados:', billetesData); // Para debug
             
             // Crear botones de montos rápidos
             generarMontosRapidos();
@@ -1157,6 +1172,7 @@
             billetesCalculados = {};
             let montoRestante = montoSolicitado;
             
+            console.log("billetesData",billetesData);
             for (let billete of billetesData) {
                 const cantidadNecesaria = Math.floor(montoRestante / billete.valor);
                 const cantidadAUsar = Math.min(cantidadNecesaria, billete.cantidad_disponible);
@@ -1167,6 +1183,9 @@
                 }
             }
             
+            console.log("billetesCalculados",billetesCalculados);
+            console.log("montoRestante",montoRestante);
+            console.log("montoSolicitado",montoSolicitado);
             const montoEntregado = montoSolicitado - montoRestante;
             const diferencia = Math.round(montoRestante * 100) / 100;
             

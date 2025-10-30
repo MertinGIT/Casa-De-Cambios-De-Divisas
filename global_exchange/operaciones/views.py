@@ -40,6 +40,7 @@ from django.db.models import Sum, Case, When, F, DecimalField
 import random
 from django.core.mail import send_mail
 import datetime
+from tauser.models import Localidad
 from roles_permisos.middleware import require_permission
 
 @login_required
@@ -307,11 +308,11 @@ def simulador_operaciones(request):
     # Obtener medios de acreditación del cliente operativo (como queryset para el template)
     medios_acreditacion = []
     if cliente_operativo:
-        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True).select_related('entidad')
+        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True).select_related('entidad', 'localidad')
         # Serializar para JS: entidad, tipo, campos dinámicos
         medios_acreditacion = []
         for medio in medios_qs:
-            medios_acreditacion.append({
+            medio_data= {
                 'id': medio.id,
                 'entidad': {
                     'id': medio.entidad.id,
@@ -321,17 +322,16 @@ def simulador_operaciones(request):
                 'campos': [
                     {'label': campo['label'], 'value': campo['value']} for campo in medio.dynamic_fields
                 ]
-            })
-    if not any(m['entidad']['nombre'].strip().lower() == 'tauser' for m in medios_acreditacion):
-        medios_acreditacion.append({
-            'id': 0,  
-            'entidad': {
-                'id': 0,  # id de Tauser en tipoentidadfinanciera
-                'nombre': 'Tauser',
-                'tipo': 'OTRO',
-            },
-            'campos': []  # sin campos
-        })
+            }
+            
+            if medio.localidad:
+                medio_data['localidad'] = {
+                    'id': medio.localidad.id,
+                    'nombre': medio.localidad.nombre,
+                    'direccion': medio.localidad.direccion
+                }
+        
+            medios_acreditacion.append(medio_data)
 
     # Obtener entidades financieras activas
     entidades = TipoEntidadFinanciera.objects.filter(estado=True)
@@ -681,6 +681,12 @@ def guardar_transaccion(request):
         )
         entidad_id = medio_acreditacion.entidad_id
 
+        es_tauser = medio_acreditacion.entidad.nombre.strip().lower() == "tauser"
+        if es_tauser and not medio_acreditacion.localidad:
+            return JsonResponse({
+                "success": False, 
+                "error": "El medio Tauser debe tener una localidad asociada"
+            }, status=400)
         # Validar relación usuario-cliente
         if usuario:
             relacion = Usuario_Cliente.objects.filter(
@@ -748,7 +754,7 @@ def guardar_transaccion(request):
 
         # Determinar estado
         es_efectivo = int(metodo_pago_id) == 1
-        es_tauser = int(medio_acreditacion_id) == 0  # ✅ Tauser siempre ID=0
+        es_tauser = medio_acreditacion.entidad.nombre.strip().lower() == "tauser"  # ✅ Tauser siempre ID=0
 
         print(f"📌 Método de pago ID: {metodo_pago_id}", flush=True)
         print(f"📌 Medio de acreditación ID: {medio_acreditacion_id}", flush=True)
@@ -786,7 +792,7 @@ def guardar_transaccion(request):
                 tasa_ref=tasa_ref,
                 cliente=cliente,
                 metodo_pago_id=metodo_pago_id,
-                medio_acreditacion_id=entidad_id,
+                medio_acreditacion_id=medio_acreditacion_id,
                 ganancia=ganancia,
                 monto_recibir=monto_recibir,
             )
@@ -1023,3 +1029,79 @@ def validar_pin(request):
             return JsonResponse({"success": False, "message": "PIN incorrecto"})
 
 
+def obtener_localidades_tauser(request):
+    """Devuelve localidades activas de TAUSER"""
+    localidades = Localidad.objects.filter(activo=True).values('id', 'nombre', 'direccion')
+    return JsonResponse(list(localidades), safe=False)
+
+@require_POST
+def obtener_medio_tauser(request):
+    """
+    Obtiene o crea un medio de acreditación TAUSER para un cliente y localidad específicos.
+    """
+    try:
+        data = json.loads(request.body)
+        cliente_id = data.get('cliente_id')
+        localidad_id = data.get('localidad_id')
+        
+        if not cliente_id or not localidad_id:
+            return JsonResponse({'success': False, 'error': 'Faltan datos'}, status=400)
+        
+        # Obtener cliente y localidad
+        cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id)
+        
+        # Obtener la entidad TAUSER
+        entidad_tauser = TipoEntidadFinanciera.objects.get(nombre__iexact='tauser')
+        
+        # Buscar o crear medio de acreditación
+        medio, created = MedioAcreditacion.objects.get_or_create(
+            cliente=cliente,
+            entidad=entidad_tauser,
+            localidad=localidad,
+            defaults={'estado': True}
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'medio_id': medio.id,
+            'entidad_id': entidad_tauser.id,
+            'created': created
+        })
+        
+    except Cliente.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+    except Localidad.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Localidad no encontrada'}, status=404)
+    except TipoEntidadFinanciera.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Entidad TAUSER no configurada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    """Crea un medio de acreditación Tauser con localidad"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        cliente_id = data.get('cliente_id')
+        localidad_id = data.get('localidad_id')
+        
+        cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id, activo=True)
+        entidad_tauser = TipoEntidadFinanciera.objects.get(nombre__iexact='tauser')
+        
+        # Crear o actualizar medio
+        medio, created = MedioAcreditacion.objects.update_or_create(
+            cliente=cliente,
+            entidad=entidad_tauser,
+            defaults={'localidad': localidad, 'estado': True}
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'medio_id': medio.id,
+            'created': created
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

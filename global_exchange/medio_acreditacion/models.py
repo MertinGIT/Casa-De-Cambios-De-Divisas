@@ -44,6 +44,16 @@ class MedioAcreditacion(models.Model):
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='medios_acreditacion')
     entidad = models.ForeignKey(TipoEntidadFinanciera, on_delete=models.CASCADE)
     
+    # Localidad para medios Tauser
+    localidad = models.ForeignKey(
+        'tauser.Localidad',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='medios_acreditacion',
+        help_text="Localidad TAUSER donde se reservan los billetes (solo aplica si entidad es Tauser)"
+    )
+    
     # Estado y metadatos
     estado = models.BooleanField(default=True)
 
@@ -57,7 +67,8 @@ class MedioAcreditacion(models.Model):
 
         :return: String con formato "Cliente - Entidad (ID)".
         """
-        return f"{self.cliente.nombre} - {self.entidad.nombre} (ID: {self.id})"
+        localidad_str = f" - {self.localidad.nombre}" if self.localidad else ""
+        return f"{self.cliente.nombre} - {self.entidad.nombre}{localidad_str}"
 
     @property
     def dynamic_fields(self):

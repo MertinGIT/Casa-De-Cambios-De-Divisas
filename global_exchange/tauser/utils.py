@@ -87,7 +87,7 @@ class GestorStockTauser:
         return True
     
     @staticmethod
-    def calcular_billetes_optimo(monto, moneda):
+    def calcular_billetes_optimo(monto, moneda,localidad):
         """
         Calcula la combinación óptima de billetes para entregar un monto.
         Usa algoritmo greedy: siempre intenta usar las denominaciones más grandes primero.
@@ -101,6 +101,7 @@ class GestorStockTauser:
         """
         # Obtener denominaciones disponibles ordenadas de mayor a menor
         stocks = StockTauser.objects.filter(
+            localidad=localidad,
             denominacion__moneda=moneda,
             denominacion__activo=True,
             cantidad__gt=0
@@ -307,7 +308,7 @@ class GestorStockTauser:
     
     @staticmethod
     @transaction.atomic
-    def registrar_deposito_efectivo(monto, moneda):
+    def registrar_deposito_efectivo(monto, moneda,localidad):
         """
         Registra un depósito en efectivo incrementando el stock de billetes.
         Distribuye el monto en las denominaciones disponibles siguiendo un orden específico.
@@ -363,12 +364,13 @@ class GestorStockTauser:
                 # Actualizar stock
                 stock, created = StockTauser.objects.get_or_create(
                     denominacion=denominacion,
+                    localidad=localidad,
                     defaults={'cantidad': 0}
                 )
                 stock.cantidad += cantidad_billetes
                 stock.save()
                 
-                print(f"Depositado: {cantidad_billetes} x {valor} {moneda.abreviacion}")
+                print(f"Depositado en {localidad.nombre}: {cantidad_billetes} x {valor} {moneda.abreviacion}")
         
         # Si sobra algo (por ejemplo, centavos), lo ignoramos o lanzamos error
         if monto_restante > Decimal('0.01'):
