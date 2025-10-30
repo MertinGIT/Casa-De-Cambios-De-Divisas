@@ -156,6 +156,7 @@ def medio_acreditacion_list(request):
     if cliente_operativo:
         cliente = cliente_operativo
     medios_qs = MedioAcreditacion.objects.select_related('cliente', 'entidad').all()
+    print(f"medios_qs:",medios_qs, flush=True)
     if cliente:
         medios_qs = medios_qs.filter(cliente_id=cliente.id)
     if cliente_operativo and cliente_operativo.segmentacion and cliente_operativo.segmentacion.estado == "activo":
@@ -176,6 +177,8 @@ def medio_acreditacion_list(request):
         ('entidad', 'Entidad'),
         ('estado', 'Estado'),
     ]
+    for medio in medios:
+        print("medioos:",medio, flush=True)
     entidades = TipoEntidadFinanciera.objects.filter(estado=True).annotate(num_campos=Count('campos')).filter(num_campos__gt=0)
     print(f"ENTIDADES: {entidades}", flush=True)
     return render(request, 'medio_acreditacion/medio_acreditacion_list.html', {
@@ -418,17 +421,29 @@ def medio_acreditacion_dinamico(request, entidad_id, cliente_id):
                     else:
                         ValorCampoMedioAcreditacion.objects.create(medio=medio, campo=campo, valor=valores.get(campo.id, ''))
             else:
-                medio = MedioAcreditacion.objects.create(
+                # Buscar si ya existe un medio para este cliente y entidad
+                medio, created = MedioAcreditacion.objects.get_or_create(
                     cliente=cliente,
                     entidad=entidad,
-                    estado=True
+                    defaults={'estado': True}
                 )
-                for campo in campos:
-                    ValorCampoMedioAcreditacion.objects.create(
-                        medio=medio,
-                        campo=campo,
-                        valor=valores.get(campo.id, '')
-                    )
+                
+                # Si se creó nuevo, agregar los valores
+                if created:
+                    for campo in campos:
+                        ValorCampoMedioAcreditacion.objects.create(
+                            medio=medio,
+                            campo=campo,
+                            valor=valores.get(campo.id, '')
+                        )
+                else:
+                    # Si ya existía, actualizar sus valores
+                    for campo in campos:
+                        ValorCampoMedioAcreditacion.objects.update_or_create(
+                            medio=medio,
+                            campo=campo,
+                            defaults={'valor': valores.get(campo.id, '')}
+                        )
         html = '<div class="success-message">Medio de acreditación guardado correctamente.</div>'
         return JsonResponse({'success': True, 'html': html})
     # GET: retornar formulario vacío o con valores actuales

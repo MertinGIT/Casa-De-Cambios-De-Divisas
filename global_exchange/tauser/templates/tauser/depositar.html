@@ -553,7 +553,7 @@
                 </button>
               <button class="btn-generar-factura primary" 
             id="btn-enviar-factura"
-            onclick="enviarFacturaPorCorreo()">
+            onclick="enviarFacturaPorCorreo(window.transaccionIdActual)">
         <span>📧 Enviar Factura por Email</span>
     </button>
 
@@ -563,222 +563,558 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // ✅ Variable global para el ID de transacción
-    let transaccionIdActual = null;
+// ==================== SISTEMA DE FACTURACIÓN PARA TAUSER ====================
+console.log('🚀 [TAUSER] Inicializando sistema de facturación...');
 
-    function mostrarModalDeposito(monto, moneda, transaccionId) {
-        // Guardar el ID de la transacción
-        transaccionIdActual = transaccionId;
+// ✅ Variable global para el ID de transacción
+window.transaccionIdActual = null;
+window.facturaGenerada = null;
+
+// ==================== FUNCIONES PRINCIPALES ====================
+
+/**
+ * Genera una factura automáticamente después de confirmar un depósito
+ */
+async function generarFacturaAutomatica(transaccionId) {
+    // Validación estricta del ID
+    if (!transaccionId || transaccionId === 'undefined' || transaccionId === 'null') {
+        console.error('❌ [FACTURA] ID de transacción inválido:', transaccionId);
+        console.error('❌ [FACTURA] Tipo:', typeof transaccionId);
+        console.error('❌ [FACTURA] window.transaccionIdActual:', window.transaccionIdActual);
+        return null;
+    }
+
+    // Convertir a número si viene como string
+    const transaccionIdNum = parseInt(transaccionId, 10);
+    if (isNaN(transaccionIdNum)) {
+        console.error('❌ [FACTURA] No se pudo convertir a número:', transaccionId);
+        return null;
+    }
+
+    try {
+        console.log(`🧾 [TAUSER] Generando factura para transacción #${transaccionIdNum}...`);
         
-        const modal = document.getElementById('modal-deposito');
-        modal.style.display = 'flex';
+        const payload = {
+            transaccion_id: transaccionIdNum
+        };
         
-        // Animación de entrada
-        const content = modal.querySelector('.modal-content-deposito');
-        content.style.transform = 'scale(0.7) translateY(-50px)';
-        content.style.opacity = '0';
+        console.log('📤 [FACTURA] Enviando payload:', JSON.stringify(payload, null, 2));
         
-        requestAnimationFrame(() => {
-            content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            content.style.transform = 'scale(1) translateY(0)';
-            content.style.opacity = '1';
+        const response = await fetch('/facturas/generar-factura/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(payload)
         });
         
-        // Simular procesamiento (2 segundos)
-        setTimeout(async () => {
-            mostrarExitoDeposito(monto, moneda);
-            
-            // ✅ GENERAR FACTURA AUTOMÁTICAMENTE después de mostrar éxito
-            //await generarFacturaAutomatica(transaccionId);
-        }, 2000);
-    }
-
-    function mostrarExitoDeposito(monto, moneda) {
-        // Ocultar estado procesando
-        document.getElementById('estado-procesando').style.display = 'none';
+        console.log('📥 [FACTURA] Response status:', response.status);
         
-        // Mostrar estado éxito
-        const estadoExito = document.getElementById('estado-exito');
-        estadoExito.style.display = 'block';
-        
-        // Actualizar datos
-        document.getElementById('monto-depositado').textContent = monto;
-        document.getElementById('moneda-depositada').textContent = moneda;
-        
-        // Mostrar footer con botones
-        document.getElementById('footer-deposito').style.display = 'flex';
-    }
-
-    // ✅ Función para generar factura automáticamente
-    async function generarFacturaAutomatica(transaccionId) {
-        try {
-            console.log(`🧾 Generando factura para transacción ${transaccionId}...`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ [FACTURA] Error response:', errorText);
             
-            const response = await fetch('/facturas/generar-factura/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    transaccion_id: transaccionId
-                })
-            });
-            
-            const data = await response.json();
-            console.log("✅ Factura generada:", data);
-            
-            if (data.success) {
-                console.log('📄 CDC:', data.cdc);
-                console.log('🔢 Número:', data.numero_factura);
-                return data;
-            } else {
-                console.error('❌ Error al generar factura:', data.error);
-                alert('⚠️ Depósito exitoso, pero hubo un error al generar la factura: ' + data.error);
-                return null;
+            try {
+                const errorData = JSON.parse(errorText);
+                console.error('❌ [FACTURA] Error data:', errorData);
+                throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+            } catch (e) {
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
             }
-        } catch (error) {
-            console.error('💥 Error en generarFacturaAutomatica:', error);
-            alert('⚠️ Depósito exitoso, pero hubo un error de conexión al generar la factura');
+        }
+        
+        const data = await response.json();
+        console.log("✅ [TAUSER] Respuesta de facturación:", data);
+        
+        if (data.success) {
+            console.log('📄 CDC:', data.cdc);
+            console.log('🔢 Número:', data.numero_factura);
+            console.log('🆔 ID Factura:', data.factura_id);
+            
+            // Guardar datos globales
+            window.facturaGenerada = {
+                id: data.factura_id,
+                cdc: data.cdc,
+                numero: data.numero_factura,
+                transaccion_id: transaccionIdNum
+            };
+            
+            console.log('✅ [TAUSER] Factura generada y guardada globalmente');
+            return data;
+        } else {
+            console.error('❌ Error al generar factura:', data.error);
             return null;
         }
+    } catch (error) {
+        console.error('💥 Error en generarFacturaAutomatica:', error);
+        console.error('💥 Stack:', error.stack);
+        return null;
+    }
+}
+
+/**
+ * Consulta el estado de una factura en SIFEN
+ */
+async function consultarEstadoFacturaTauser(facturaId) {
+    if (!facturaId) {
+        console.error('❌ No se proporcionó ID de factura');
+        return null;
     }
 
-    // ✅ Función para enviar factura por correo
-    async function enviarFacturaPorCorreo() {
-        if (!transaccionIdActual) {
-            alert('❌ No se encontró el ID de transacción');
-            return;
+    try {
+        console.log(`🔍 [TAUSER] Consultando estado de factura #${facturaId}...`);
+        
+        const response = await fetch(`/facturas/estado/${facturaId}/`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        try {
-            const btn = document.getElementById('btn-enviar-factura');
-            const span = btn.querySelector('span');
-            const textoOriginal = span.textContent;
-            
-            // Mostrar loading
-            span.textContent = '📧 Enviando...';
-            btn.disabled = true;
-            
-            const response = await fetch('/facturas/enviar-email/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
-                },
-                body: JSON.stringify({
-                    transaccion_id: transaccionIdActual
-                })
-            });
-            
-            const data = await response.json();
-            
-            // Restaurar botón
-            span.textContent = textoOriginal;
-            btn.disabled = false;
-            
-            if (data.success) {
-                alert('✅ ' + data.message);
-                cerrarModalDeposito();
-            } else {
-                alert('❌ ' + data.message);
-            }
-            
-        } catch (error) {
-            console.error('Error:', error);
-            alert('❌ Error al enviar la factura por correo');
-            
-            const btn = document.getElementById('btn-enviar-factura');
-            if (btn) {
-                btn.querySelector('span').textContent = '📧 Enviar Factura por Email';
-                btn.disabled = false;
-            }
+        const data = await response.json();
+        console.log("✅ [TAUSER] Estado de factura:", data);
+        
+        if (data.success) {
+            return {
+                estado: data.estado,
+                estado_sifen: data.estado_sifen,
+                descripcion_sifen: data.descripcion_sifen,
+                cdc: data.cdc,
+                numero_factura: data.numero_factura,
+                fecha_aprobacion: data.fecha_aprobacion
+            };
+        } else {
+            console.error('❌ Error al consultar estado:', data.error);
+            return null;
         }
+    } catch (error) {
+        console.error('💥 Error en consultarEstadoFacturaTauser:', error);
+        return null;
+    }
+}
+
+/**
+ * Descarga el PDF (KuDE) de una factura
+ */
+async function descargarFacturaTauser(cdc, transaccionId) {
+    if (!cdc || !transaccionId) {
+        alert('❌ Faltan datos para descargar la factura');
+        return;
     }
 
-    function cerrarModalDeposito() {
-        const modal = document.getElementById('modal-deposito');
-        const content = modal.querySelector('.modal-content-deposito');  // ✅ CORREGIDO: guion medio
+    try {
+        console.log(`📥 [TAUSER] Descargando factura CDC: ${cdc}...`);
         
-        content.style.transition = 'all 0.2s ease-out';
-        content.style.transform = 'scale(0.7) translateY(-50px)';
-        content.style.opacity = '0';
+        const url = `/facturas/descargar-factura/?cdc=${encodeURIComponent(cdc)}&transaccion_id=${transaccionId}`;
+        
+        // Usar window.location para forzar descarga
+        window.location.href = url;
+        
+        console.log('✅ [TAUSER] Descarga iniciada');
         
         setTimeout(() => {
-            modal.style.display = 'none';
-            
-            // Reset modal
-            document.getElementById('estado-procesando').style.display = 'block';
-            document.getElementById('estado-exito').style.display = 'none';
-            document.getElementById('footer-deposito').style.display = 'none';
-            
-            // Limpiar ID de transacción
-            transaccionIdActual = null;
-            
-            // Recargar página
-            location.reload();
-        }, 200);
+            alert('✅ Descarga de factura iniciada. Revisa tu carpeta de descargas.');
+        }, 500);
+        
+    } catch (error) {
+        console.error('💥 Error al descargar factura:', error);
+        alert('❌ Error al descargar la factura. Intente nuevamente.');
+    }
+}
+
+/**
+ * Envía la factura por correo electrónico (consulta estado en SIFEN)
+ * FacturaSegura enviará automáticamente el email si está aprobada
+ */
+async function enviarFacturaPorCorreo(transaccionId) {
+    console.log('📧 [EMAIL] Función llamada con transaccionId:', transaccionId);
+    
+    if (!transaccionId) {
+        transaccionId = window.transaccionIdActual || window.facturaGenerada?.transaccion_id;
+        console.log('📧 [EMAIL] Obteniendo ID de variable global:', transaccionId);
     }
 
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+    if (!transaccionId) {
+        alert('❌ No se encontró el ID de transacción.');
+        return false;
+    }
+    
+    try {
+        const btn = document.getElementById('btn-enviar-factura-dinamico') || document.getElementById('btn-enviar-factura');
+        if (btn) {
+            const span = btn.querySelector('span');
+            span.textContent = '🔄 Consultando SIFEN...';
+            btn.disabled = true;
+        }
+        
+        console.log(`📧 [TAUSER] Consultando estado en SIFEN para transacción #${transaccionId}...`);
+        
+        // ✅ ESTA ES LA LÍNEA CORRECTA - USA EL ENDPOINT QUE YA EXISTE
+        const response = await fetch(`/facturas/consultar-factura/?transaccion_id=${transaccionId}`, {
+            method: 'GET',  // ✅ GET, no POST
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (btn) {
+            const span = btn.querySelector('span');
+            span.textContent = '📧 Consultar Estado';
+            btn.disabled = false;
+        }
+        
+        if (data.success) {
+            const estado = data.estado;
+            let mensaje = `Estado SIFEN: ${estado.estado_sifen}\n${estado.desc_sifen}`;
+            
+            // Si está aprobada, informar que el email ya fue enviado por FacturaSegura
+            if (estado.estado_sifen === 'Aprobado') {
+                mensaje += '\n\n✅ La factura fue aprobada.\n📧 FacturaSegura ya envió el email automáticamente al cliente y al emisor.';
+            } else if (estado.estado_sifen === 'Rechazado') {
+                mensaje += '\n\n❌ La factura fue rechazada por SIFEN.';
+            } else {
+                mensaje += '\n\n⏳ La factura está en proceso de aprobación.';
+            }
+            
+            alert(mensaje);
+            return true;
+        } else {
+            alert('❌ ' + (data.error || 'Error al consultar el estado'));
+            return false;
+        }
+        
+    } catch (error) {
+        console.error('💥 Error al consultar estado:', error);
+        alert('❌ Error al consultar el estado: ' + error.message);
+        
+        const btn = document.getElementById('btn-enviar-factura-dinamico') || document.getElementById('btn-enviar-factura');
+        if (btn) {
+            btn.querySelector('span').textContent = '📧 Consultar Estado';
+            btn.disabled = false;
+        }
+        
+        return false;
+    }
+}
+
+/**
+ * Actualiza el modal con el botón de enviar factura
+ */
+function actualizarModalConFactura() {
+    const footerDeposito = document.getElementById('footer-deposito');
+    
+    if (!footerDeposito) {
+        console.error('❌ No se encontró footer del modal');
+        return;
+    }
+
+    // Verificar si ya existe el botón (con ID único)
+    if (document.getElementById('btn-enviar-factura-dinamico')) {
+        console.log('ℹ️ Botón de factura ya existe');
+        return;
+    }
+
+    // Remover el botón estático si existe
+    const btnEstatico = document.getElementById('btn-enviar-factura');
+    if (btnEstatico) {
+        btnEstatico.remove();
+        console.log('🗑️ Botón estático removido');
+    }
+
+    // Crear y agregar botón dinámico
+    const btnEnviarFactura = document.createElement('button');
+    btnEnviarFactura.id = 'btn-enviar-factura-dinamico';
+    btnEnviarFactura.className = 'btn-generar-factura';
+    btnEnviarFactura.onclick = () => {
+        const transId = window.transaccionIdActual || window.facturaGenerada?.transaccion_id;
+        console.log('🔘 [BOTÓN] Click con transaccionId:', transId);
+        enviarFacturaPorCorreo(transId);
+    };
+    btnEnviarFactura.innerHTML = '<span>📧 Enviar Factura por Email</span>';
+    
+    footerDeposito.appendChild(btnEnviarFactura);
+    
+    console.log('✅ [TAUSER] Modal actualizado con opciones de factura');
+}
+
+// ==================== OVERRIDE DE FUNCIONES EXISTENTES ====================
+
+/**
+ * Modifica mostrarModalDeposito para incluir facturación
+ */
+const mostrarModalDepositoOriginal = window.mostrarModalDeposito;
+
+window.mostrarModalDeposito = function(monto, moneda, transaccionId) {
+    console.log('🎬 [MODAL] Iniciando modal de depósito');
+    console.log('📋 [MODAL] Datos:', { monto, moneda, transaccionId });
+    
+    // Validar y guardar transaccionId
+    if (!transaccionId) {
+        console.error('❌ [MODAL] No se proporcionó transaccionId');
+        alert('Error: No se pudo identificar la transacción');
+        return;
+    }
+    
+    window.transaccionIdActual = transaccionId;
+    console.log('✅ [MODAL] TransaccionId guardado:', transaccionId);
+    
+    const modal = document.getElementById('modal-deposito');
+    if (!modal) {
+        console.error('❌ [MODAL] No se encontró el modal');
+        return;
+    }
+    
+    modal.style.display = 'flex';
+    
+    // Animación de entrada
+    const content = modal.querySelector('.modal-content-deposito');
+    content.style.transform = 'scale(0.7) translateY(-50px)';
+    content.style.opacity = '0';
+    
+    requestAnimationFrame(() => {
+        content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        content.style.transform = 'scale(1) translateY(0)';
+        content.style.opacity = '1';
+    });
+    
+    // Simular procesamiento
+    setTimeout(async () => {
+        console.log('⏱️ [MODAL] Timeout completado, mostrando éxito...');
+        
+        // Mostrar éxito del depósito
+        document.getElementById('estado-procesando').style.display = 'none';
+        const estadoExito = document.getElementById('estado-exito');
+        estadoExito.style.display = 'block';
+        document.getElementById('monto-depositado').textContent = monto;
+        document.getElementById('moneda-depositada').textContent = moneda;
+        document.getElementById('footer-deposito').style.display = 'flex';
+        
+        // Generar factura
+        console.log('🔄 [MODAL] Iniciando generación de factura...');
+        console.log('📋 [MODAL] Usando transaccionId:', window.transaccionIdActual);
+        
+        if (window.transaccionIdActual) {
+            const resultadoFactura = await generarFacturaAutomatica(window.transaccionIdActual);
+            
+            if (resultadoFactura && resultadoFactura.success) {
+                console.log('✅ [MODAL] Factura generada exitosamente');
+                actualizarModalConFactura();
+            } else {
+                console.warn('⚠️ [MODAL] No se pudo generar la factura');
+            }
+        } else {
+            console.error('❌ [MODAL] transaccionIdActual es undefined');
+        }
+    }, 2000);
+};
+
+/**
+ * Modifica cerrarModalDeposito
+ */
+window.cerrarModalDeposito = function() {
+    const modal = document.getElementById('modal-deposito');
+    const content = modal.querySelector('.modal-content-deposito');
+    
+    content.style.transition = 'all 0.2s ease-out';
+    content.style.transform = 'scale(0.7) translateY(-50px)';
+    content.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+        
+        // Reset modal
+        document.getElementById('estado-procesando').style.display = 'block';
+        document.getElementById('estado-exito').style.display = 'none';
+        document.getElementById('footer-deposito').style.display = 'none';
+        
+        // Limpiar variables globales
+        window.transaccionIdActual = null;
+        window.facturaGenerada = null;
+        
+        // Recargar página
+        location.reload();
+    }, 200);
+};
+
+// ==================== UTILIDADES ====================
+
+/**
+ * Obtiene el valor de una cookie
+ */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
             }
         }
-        return cookieValue;
     }
+    return cookieValue;
+}
 
-    // Modificar los formularios para usar el modal
-    document.addEventListener('DOMContentLoaded', function() {
-        const forms = document.querySelectorAll('form[method="post"]');
-        
-        forms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Obtener ID de la transacción
-                const transaccionId = this.querySelector('input[name="transaccion_id"]').value;
-                
-                // Obtener datos de la transacción desde el HTML
-                const card = this.closest('.transaction-card');
-                const montoItem = card.querySelector('.detail-item:nth-child(2) .detail-value');
-                const montoCompleto = montoItem.textContent.trim();
-                const [monto, moneda] = montoCompleto.split(' ');
-                
-                // Mostrar modal con el ID (esto generará la factura automáticamente)
-                mostrarModalDeposito(monto, moneda, transaccionId);
-                
-                // Enviar formulario en background para confirmar el depósito
-                const formData = new FormData(this);
-                fetch(this.action, {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                }).then(response => {
-                    console.log('✅ Depósito confirmado en el servidor');
-                }).catch(error => {
-                    console.error('❌ Error al confirmar depósito:', error);
-                });
+// ==================== INICIALIZACIÓN ====================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 [TAUSER] DOM Loaded, inicializando formularios...');
+    
+    const forms = document.querySelectorAll('form[method="post"]');
+    console.log(`📋 [TAUSER] Formularios encontrados: ${forms.length}`);
+    
+    forms.forEach((form, index) => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            console.log(`📝 [FORM-${index}] Submit interceptado`);
+            
+            // Obtener ID de transacción
+            const transaccionIdInput = this.querySelector('input[name="transaccion_id"]');
+            if (!transaccionIdInput) {
+                console.error('❌ No se encontró input de transaccion_id');
+                alert('Error: No se pudo identificar la transacción');
+                return;
+            }
+            
+            const transaccionId = transaccionIdInput.value;
+            console.log('✅ [FORM] Transacción ID capturado:', transaccionId);
+            
+            // Guardar globalmente INMEDIATAMENTE
+            window.transaccionIdActual = transaccionId;
+            
+            // Obtener datos de la tarjeta
+            const card = this.closest('.transaction-card');
+            const montoItem = card.querySelector('.detail-item:nth-child(2) .detail-value');
+            const montoCompleto = montoItem.textContent.trim();
+            const [monto, moneda] = montoCompleto.split(' ');
+            
+            console.log('📦 [FORM] Datos capturados:', {
+                transaccionId,
+                monto,
+                moneda
+            });
+            
+            // Mostrar modal
+            mostrarModalDeposito(monto, moneda, transaccionId);
+            
+            // Enviar formulario en background
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                console.log('✅ [FORM] Depósito confirmado en servidor');
+                return response.text();
+            }).then(text => {
+                console.log('📥 [FORM] Respuesta del servidor:', text);
+            }).catch(error => {
+                console.error('❌ [FORM] Error al confirmar depósito:', error);
             });
         });
     });
+    
+    console.log('✅ [TAUSER] Formularios configurados correctamente');
+});
 
-    // Cerrar modal con ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            const modal = document.getElementById('modal-deposito');
-            if (modal.style.display === 'flex') {
-                cerrarModalDeposito();
-            }
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('modal-deposito');
+        if (modal && modal.style.display === 'flex') {
+            cerrarModalDeposito();
         }
-    });
+    }
+});
+
+// ==================== LOG INICIAL ====================
+console.log('✅ [TAUSER] Sistema de facturación cargado correctamente');
+console.log('📋 [TAUSER] Funciones disponibles:');
+console.log('   - generarFacturaAutomatica(transaccionId)');
+console.log('   - consultarEstadoFacturaTauser(facturaId)');
+console.log('   - descargarFacturaTauser(cdc, transaccionId)');
+console.log('   - enviarFacturaPorCorreo(transaccionId)');
+console.log('   - mostrarModalDeposito(monto, moneda, transaccionId)');
+console.log('   - cerrarModalDeposito()');
 </script>
+<style>
+    .btn-generar-factura {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 0.9rem 1.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-generar-factura:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(16, 185, 129, 0.3);
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.btn-generar-factura:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-generar-factura:disabled:hover {
+    box-shadow: none;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Animación para el botón cuando aparece */
+.btn-generar-factura {
+    animation: fadeInUp 0.4s ease-out;
+}
+.btn-descarga {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%) !important;
+}
+
+.btn-descarga:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Ajustes responsive */
+@media (max-width: 480px) {
+    .modal-footer-deposito {
+        flex-direction: column;
+    }
+    
+    .btn-generar-factura,
+    .btn-modal-deposito {
+        width: 100%;
+    }
+}
+</style>

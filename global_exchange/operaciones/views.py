@@ -834,7 +834,7 @@ def guardar_transaccion(request):
                     }, status=500)
 
             # ✅ ACTUALIZAR SALDO PARA CUALQUIER MÉTODO DIGITAL (no solo Tauser)
-            if actualizar_saldo_ahora:
+            if actualizar_saldo_ahora and es_tauser:
                 from clientes.models import SaldoCliente
                 
                 print(f"💰 Actualizando saldo (método digital):", flush=True)
@@ -846,18 +846,20 @@ def guardar_transaccion(request):
                 saldo, created = SaldoCliente.objects.get_or_create(
                     cliente=cliente,
                     moneda=moneda_recibir,
-                    defaults={'saldo': Decimal('0')}
+                    defaults={'saldo': Decimal('0')},
+                    localidad=medio_acreditacion.localidad
                 )
                 
                 saldo_anterior = saldo.saldo
                 saldo.saldo += monto_recibir
                 saldo.save()
-                
+            
                 print(f"✅ Saldo actualizado:", flush=True)
                 print(f"   Saldo anterior: {saldo_anterior:.2f} {moneda_recibir.abreviacion}", flush=True)
                 print(f"   Monto agregado: {monto_recibir:.2f} {moneda_recibir.abreviacion}", flush=True)
                 print(f"   Saldo nuevo: {saldo.saldo:.2f} {moneda_recibir.abreviacion}", flush=True)
-
+            else:
+                print("⚠️ No se actualiza saldo (no es Tauser)", flush=True)
         # ✅ RESPUESTA CON INFO DE RESERVA
         response_data = {
             "success": True,
