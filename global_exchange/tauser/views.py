@@ -5,11 +5,17 @@ from django.db.models import Sum, Q
 from clientes.models import Cliente
 from operaciones.models import Transaccion
 from .forms import LoginATMForm, SeleccionarTransaccionForm
-from tauser.models import StockTauser,Localidad
+from tauser.models import StockTauser, Localidad
 from tauser.utils import GestorStockTauser
-from decimal import Decimal  # Asegúrate de tener este import al inicio
-from django.utils import timezone  # Importar timezone
+from decimal import Decimal
+from django.utils import timezone
+from usuarios.models import CustomUser  # ✅ Importar CustomUser
+from cliente_usuario.models import Usuario_Cliente  # ✅ Importar relación usuario-cliente
 
+
+# ==================== SESIÓN ATM ====================
+
+# 1. Selección de localidad
 def atm_seleccionar_localidad(request):
     """
     Paso 1: Selección de la localidad (TAUSER) antes del inicio de sesión.
@@ -34,7 +40,7 @@ def atm_seleccionar_localidad(request):
         try:
             localidad = Localidad.objects.get(id=localidad_id, activo=True)
             
-            # Guardar localidad en sesión
+            # Guardar localidad en sesión ATM
             request.session['atm_localidad_id'] = localidad.id
             request.session['atm_localidad_nombre'] = localidad.nombre
             
@@ -45,7 +51,6 @@ def atm_seleccionar_localidad(request):
             messages.error(request, 'Localidad no válida')
             return redirect('atm_seleccionar_localidad')
     
-    # GET: Mostrar localidades disponibles
     localidades = Localidad.objects.filter(activo=True).order_by('nombre')
     
     context = {
@@ -54,18 +59,12 @@ def atm_seleccionar_localidad(request):
     
     return render(request, 'tauser/seleccionar_localidad.html', context)
 
+
+# 2. Login
 def atm_login(request):
     """
-    Vista de inicio de sesión del terminal de autoservicio (ATM).
-
-    Permite al cliente autenticarse ingresando su número de cédula.
-    Requiere que previamente se haya seleccionado una localidad TAUSER.
-
-    Args:
-        request (HttpRequest): Solicitud HTTP del cliente.
-
-    Returns:
-        HttpResponse: Renderiza el formulario de login o redirige al dashboard.
+    Login del ATM usando cédula y contraseña del CustomUser.
+    Sesión independiente de la aplicación principal.
     """
     # Verificar que haya seleccionado una localidad
     localidad_id = request.session.get('atm_localidad_id')
@@ -73,36 +72,125 @@ def atm_login(request):
         messages.warning(request, 'Primero debe seleccionar un TAUSER')
         return redirect('atm_seleccionar_localidad')
     
+    # Si ya hay sesión ATM activa con usuario y cliente, redirigir al dashboard
+    if request.session.get('atm_user_id') and request.session.get('atm_cliente_id'):
+        return redirect('atm_dashboard')
+    
+    # Si solo tiene usuario pero no cliente, redirigir a seleccionar cliente
+    if request.session.get('atm_user_id') and not request.session.get('atm_cliente_id'):
+        return redirect('atm_seleccionar_cliente')
+    
     localidad_nombre = request.session.get('atm_localidad_nombre', 'TAUSER')
+    
     if request.method == 'POST':
-        form = LoginATMForm(request.POST)
-        if form.is_valid():
-            cedula = form.cleaned_data['cedula']
-            try:
-                cliente = Cliente.objects.select_related('segmentacion').get(
-                    cedula=cedula, 
-                    estado='activo'
-                )
-                # Guardar el cliente en la sesión
-                request.session['atm_cliente_id'] = cliente.id
-                request.session['atm_cedula'] = cliente.cedula
-                request.session['atm_nombre'] = cliente.nombre
+        cedula = request.POST.get('cedula', '').strip()
+        password = request.POST.get('password', '')
+        
+        if not cedula or not password:
+            messages.error(request, '❌ Debes completar todos los campos')
+            return render(request, 'tauser/login_tauser.html', {'localidad_nombre': localidad_nombre})
+        
+        try:
+            # ✅ Buscar usuario por cédula en CustomUser
+            user = CustomUser.objects.get(cedula=cedula)
+            
+            # ✅ Verificar contraseña
+            if user.check_password(password):
+                # ✅ Crear sesión ATM independiente (NO usar django.contrib.auth.login)
+                request.session['atm_user_id'] = user.id
+                request.session['atm_username'] = user.username
+                request.session['atm_cedula'] = user.cedula
+                request.session['is_atm_session'] = True
                 
-                messages.success(request, f'Bienvenido {cliente.nombre}')
-                return redirect('atm_dashboard')  
+                print(f"✅ Login ATM exitoso: {user.username} (Cédula: {cedula})", flush=True)
                 
-            except Cliente.DoesNotExist:
-                messages.error(request, 'Cliente no encontrado o inactivo')
-    else:
-        form = LoginATMForm()
+                messages.success(request, f'✓ Bienvenido {user.username}')
+                return redirect('atm_seleccionar_cliente')
+            else:
+                messages.error(request, '❌ Contraseña incorrecta')
+                print(f"❌ Contraseña incorrecta para cédula: {cedula}", flush=True)
+                
+        except CustomUser.DoesNotExist:
+            messages.error(request, '❌ Usuario no encontrado')
+            print(f"❌ Usuario no encontrado con cédula: {cedula}", flush=True)
     
     context = {
-        'form': form,
         'localidad_nombre': localidad_nombre,
     }
     
-    return render(request, 'tauser/login_tauser.html',context)
+    return render(request, 'tauser/login_tauser.html', context)
 
+
+# 3. Seleccionar cliente ✅ ESTA FUNCIÓN DEBE EXISTIR
+def atm_seleccionar_cliente(request):
+    """
+    Permite al usuario seleccionar con qué cliente operará en el ATM.
+    """
+    atm_user_id = request.session.get('atm_user_id')
+    localidad_nombre = request.session.get('atm_localidad_nombre', 'TAUSER')
+    
+    if not atm_user_id:
+        messages.warning(request, 'Debes iniciar sesión primero')
+        return redirect('atm_login')
+    
+    try:
+        user = CustomUser.objects.get(id=atm_user_id)
+        
+        # ✅ Obtener clientes asociados al usuario
+        usuarios_clientes = Usuario_Cliente.objects.filter(
+            id_usuario=user,
+            id_cliente__estado="activo"
+        ).select_related('id_cliente')
+        
+        clientes_disponibles = [uc.id_cliente for uc in usuarios_clientes]
+        
+        if not clientes_disponibles:
+            messages.error(request, '❌ No tienes clientes asociados. Contacta al administrador.')
+            return redirect('atm_logout')
+        
+        if request.method == 'POST':
+            cliente_id = request.POST.get('cliente_id')
+            
+            if not cliente_id:
+                messages.error(request, 'Debes seleccionar un cliente')
+                return redirect('atm_seleccionar_cliente')
+            
+            try:
+                cliente = Cliente.objects.get(id=cliente_id, estado="activo")
+                
+                # Validar que el cliente pertenezca al usuario
+                if cliente not in clientes_disponibles:
+                    messages.error(request, '❌ Cliente no autorizado')
+                    return redirect('atm_seleccionar_cliente')
+                
+                # ✅ Guardar cliente operativo en sesión ATM
+                request.session['atm_cliente_id'] = cliente.id
+                request.session['atm_cliente_nombre'] = cliente.nombre
+                request.session['atm_cliente_ruc'] = cliente.ruc
+                request.session['atm_cliente_cedula'] = cliente.cedula
+                
+                print(f"✅ Cliente seleccionado: {cliente.nombre} (ID: {cliente.id})", flush=True)
+                
+                messages.success(request, f'✓ Operando como: {cliente.nombre}')
+                return redirect('atm_dashboard')
+                
+            except Cliente.DoesNotExist:
+                messages.error(request, 'Cliente no encontrado')
+                return redirect('atm_seleccionar_cliente')
+        
+        context = {
+            'user': user,
+            'clientes': clientes_disponibles,
+            'localidad_nombre': localidad_nombre,
+        }
+        return render(request, 'tauser/seleccionar_cliente.html', context)
+        
+    except CustomUser.DoesNotExist:
+        messages.error(request, 'Sesión inválida')
+        return redirect('atm_login')
+
+
+# 4. Dashboard
 def atm_dashboard(request):
     """
     Dashboard principal del ATM.
@@ -116,48 +204,94 @@ def atm_dashboard(request):
     Returns:
         HttpResponse: Renderiza la vista de menú principal.
     """
-    cliente_id = request.session.get('atm_cliente_id')
+    atm_user_id = request.session.get('atm_user_id')
+    atm_cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
-    if not cliente_id or not localidad_id:
+    
+    if not atm_user_id or not atm_cliente_id or not localidad_id:
+        messages.warning(request, 'Sesión incompleta')
         return redirect('atm_seleccionar_localidad')
     
     try:
-        cliente = Cliente.objects.select_related('segmentacion').get(id=cliente_id)
+        user = CustomUser.objects.get(id=atm_user_id)
+        cliente = Cliente.objects.get(id=atm_cliente_id)
         localidad = Localidad.objects.get(id=localidad_id)
         
         context = {
+            'user': user,
             'cliente': cliente,
             'localidad': localidad,
         }
         
         return render(request, 'tauser/menu.html', context)
     
-    except (Cliente.DoesNotExist, Localidad.DoesNotExist):
+    except (CustomUser.DoesNotExist, Cliente.DoesNotExist, Localidad.DoesNotExist):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
         return redirect('atm_seleccionar_localidad')
-    
+
+
+# 5. Logout
 def atm_logout(request):
     """
-    Cierre de sesión en el terminal TAUSER.
-
-    Elimina todas las variables de sesión del ATM y redirige a la selección de localidad.
-
-    Args:
-        request (HttpRequest): Solicitud HTTP del cliente.
-
-    Returns:
-        HttpResponseRedirect: Redirige al inicio del ATM.
+    Cierra SOLO la sesión del ATM, sin afectar la sesión principal.
     """
-    # Limpiar solo las variables de sesión del ATM
-    request.session.pop('atm_cliente_id', None)
-    request.session.pop('atm_cedula', None)
-    request.session.pop('atm_nombre', None)
-    request.session.flush()  # Limpiar toda la sesión
-    messages.info(request, 'Sesión cerrada correctamente')
+    username = request.session.get('atm_username', 'Usuario')
+    
+    # ✅ Eliminar solo las claves de sesión ATM
+    keys_to_delete = [
+        'atm_user_id',
+        'atm_username',
+        'atm_cedula',
+        'atm_cliente_id',
+        'atm_cliente_nombre',
+        'atm_cliente_ruc',
+        'atm_cliente_cedula',
+        'is_atm_session',
+        'atm_localidad_id',
+        'atm_localidad_nombre'
+    ]
+    
+    for key in keys_to_delete:
+        if key in request.session:
+            del request.session[key]
+    
+    print(f"🔴 Logout ATM: {username}", flush=True)
+    
+    messages.success(request, '✓ Sesión del ATM cerrada correctamente')
     return redirect('atm_seleccionar_localidad')
 
 
+# ==================== DECORADOR DE PROTECCIÓN ====================
+
+def require_atm_session(view_func):
+    """
+    Decorador para proteger vistas que requieren sesión ATM activa.
+    """
+    def wrapper(request, *args, **kwargs):
+        atm_user_id = request.session.get('atm_user_id')
+        atm_cliente_id = request.session.get('atm_cliente_id')
+        localidad_id = request.session.get('atm_localidad_id')
+        
+        if not atm_user_id:
+            messages.warning(request, 'Debes iniciar sesión en el ATM')
+            return redirect('atm_login')
+        
+        if not atm_cliente_id:
+            messages.warning(request, 'Debes seleccionar un cliente')
+            return redirect('atm_seleccionar_cliente')
+        
+        if not localidad_id:
+            messages.warning(request, 'Debes seleccionar una localidad')
+            return redirect('atm_seleccionar_localidad')
+        
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+# ==================== VISTAS PROTEGIDAS ====================
+
+@require_atm_session
 def atm_transacciones(request):
     """
     Muestra el historial de transacciones del cliente.
@@ -173,14 +307,11 @@ def atm_transacciones(request):
     """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
-    if not cliente_id or not localidad_id:
-        return redirect('atm_seleccionar_localidad')
     
     try:
         cliente = Cliente.objects.get(id=cliente_id)
         localidad = Localidad.objects.get(id=localidad_id)
         
-        # Obtener todas las transacciones del cliente
         transacciones = Transaccion.objects.filter(
             cliente=cliente
         ).select_related(
@@ -202,6 +333,8 @@ def atm_transacciones(request):
         messages.error(request, 'Sesión inválida')
         return redirect('atm_seleccionar_localidad')
 
+
+@require_atm_session
 def atm_depositar(request):
     """
     Procesa depósitos en efectivo del cliente en el TAUSER.
@@ -219,9 +352,6 @@ def atm_depositar(request):
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
     
-    if not cliente_id or not localidad_id:
-        return redirect('atm_seleccionar_localidad')
-
     try:
         cliente = Cliente.objects.get(id=cliente_id)
         localidad = Localidad.objects.get(id=localidad_id)
@@ -341,6 +471,7 @@ def atm_depositar(request):
         return redirect('atm_seleccionar_localidad')
 
 
+@require_atm_session
 def atm_extraer(request):
     """
     Permite la extracción (retiro) de dinero del saldo TAUSER del cliente.
@@ -357,9 +488,6 @@ def atm_extraer(request):
     """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
-    
-    if not cliente_id or not localidad_id:
-        return redirect('atm_seleccionar_localidad')
     
     try:
         cliente = Cliente.objects.get(id=cliente_id)
