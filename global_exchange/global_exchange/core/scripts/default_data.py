@@ -10,6 +10,7 @@ from medio_acreditacion.models import TipoEntidadFinanciera
 from medio_acreditacion.models import MedioAcreditacion
 from clientes.models import Cliente
 from monedas.models import Moneda
+from tauser.models import Localidad
 
 # --- Moneda por defecto ---
 moneda, created = Moneda.objects.get_or_create(
@@ -55,3 +56,28 @@ if created:
 else:
     print("ℹ️ Entidad financiera 'Tauser' ya existía.")
 
+# ============================================
+# ✅ CREAR LOCALIDADES DE TAUSER
+# ============================================
+print("\n" + "="*50)
+print("CREANDO LOCALIDADES TAUSER")
+print("="*50)
+
+localidades_data = [
+    {'nombre': 'Asunción Centro', 'direccion': 'Palma y Chile'},
+    {'nombre': 'San Lorenzo', 'direccion': 'Av. San Lorenzo y Curupayty'},
+    {'nombre': 'Luque', 'direccion': 'Av. Defensores del Chaco'},
+    {'nombre': 'Fernando de la Mora', 'direccion': 'Av. Mcal. López'},
+    {'nombre': 'Lambaré', 'direccion': 'Cacique Lambaré'},
+]
+
+for loc_data in localidades_data:
+    localidad, created = Localidad.objects.get_or_create(**loc_data)
+    if created:
+        print(f"✅ Localidad creada: {localidad.nombre}")
+    else:
+        print(f"ℹ️ Localidad ya existía: {localidad.nombre}")
+
+print("="*50)
+print("✅ LOCALIDADES CONFIGURADAS")
+print("="*50)

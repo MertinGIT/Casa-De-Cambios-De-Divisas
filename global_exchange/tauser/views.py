@@ -5,13 +5,55 @@ from django.db.models import Sum, Q
 from clientes.models import Cliente
 from operaciones.models import Transaccion
 from .forms import LoginATMForm, SeleccionarTransaccionForm
-from tauser.models import StockTauser
+from tauser.models import StockTauser,Localidad
 from tauser.utils import GestorStockTauser
 from decimal import Decimal  # Asegúrate de tener este import al inicio
 from django.utils import timezone  # Importar timezone
 
+def atm_seleccionar_localidad(request):
+    """
+    PASO 1: Seleccionar la localidad del TAUSER antes de hacer login.
+    Esta es la primera pantalla que ve el usuario.
+    """
+    if request.method == 'POST':
+        localidad_id = request.POST.get('localidad_id')
+        
+        if not localidad_id:
+            messages.error(request, 'Debe seleccionar una localidad')
+            return redirect('atm_seleccionar_localidad')
+        
+        try:
+            localidad = Localidad.objects.get(id=localidad_id, activo=True)
+            
+            # Guardar localidad en sesión
+            request.session['atm_localidad_id'] = localidad.id
+            request.session['atm_localidad_nombre'] = localidad.nombre
+            
+            messages.success(request, f'TAUSER seleccionado: {localidad.nombre}')
+            return redirect('atm_login')
+            
+        except Localidad.DoesNotExist:
+            messages.error(request, 'Localidad no válida')
+            return redirect('atm_seleccionar_localidad')
+    
+    # GET: Mostrar localidades disponibles
+    localidades = Localidad.objects.filter(activo=True).order_by('nombre')
+    
+    context = {
+        'localidades': localidades,
+    }
+    
+    return render(request, 'tauser/seleccionar_localidad.html', context)
+
 def atm_login(request):
     """Vista de login para terminal de autoservicio"""
+    # Verificar que haya seleccionado una localidad
+    localidad_id = request.session.get('atm_localidad_id')
+    if not localidad_id:
+        messages.warning(request, 'Primero debe seleccionar un TAUSER')
+        return redirect('atm_seleccionar_localidad')
+    
+    localidad_nombre = request.session.get('atm_localidad_nombre', 'TAUSER')
     if request.method == 'POST':
         form = LoginATMForm(request.POST)
         if form.is_valid():
@@ -34,27 +76,35 @@ def atm_login(request):
     else:
         form = LoginATMForm()
     
-    return render(request, 'tauser/login_tauser.html', {'form': form})
+    context = {
+        'form': form,
+        'localidad_nombre': localidad_nombre,
+    }
+    
+    return render(request, 'tauser/login_tauser.html',context)
 
 def atm_dashboard(request):
     """Dashboard principal del ATM - Menú de opciones"""
     cliente_id = request.session.get('atm_cliente_id')
-    if not cliente_id:
-        return redirect('atm_login')
+    localidad_id = request.session.get('atm_localidad_id')
+    if not cliente_id or not localidad_id:
+        return redirect('atm_seleccionar_localidad')
     
     try:
         cliente = Cliente.objects.select_related('segmentacion').get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id)
         
         context = {
             'cliente': cliente,
+            'localidad': localidad,
         }
         
         return render(request, 'tauser/menu.html', context)
     
-    except Cliente.DoesNotExist:
+    except (Cliente.DoesNotExist, Localidad.DoesNotExist):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
-        return redirect('atm_login')
+        return redirect('atm_seleccionar_localidad')
     
 def atm_logout(request):
     """Cerrar sesión del ATM"""
@@ -62,19 +112,21 @@ def atm_logout(request):
     request.session.pop('atm_cliente_id', None)
     request.session.pop('atm_cedula', None)
     request.session.pop('atm_nombre', None)
-    
+    request.session.flush()  # Limpiar toda la sesión
     messages.info(request, 'Sesión cerrada correctamente')
-    return redirect('atm_login')
+    return redirect('atm_seleccionar_localidad')
 
 
 def atm_transacciones(request):
     """Vista para ver historial de transacciones del cliente"""
     cliente_id = request.session.get('atm_cliente_id')
-    if not cliente_id:
-        return redirect('atm_login')
+    localidad_id = request.session.get('atm_localidad_id')
+    if not cliente_id or not localidad_id:
+        return redirect('atm_seleccionar_localidad')
     
     try:
         cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id)
         
         # Obtener todas las transacciones del cliente
         transacciones = Transaccion.objects.filter(
@@ -88,14 +140,15 @@ def atm_transacciones(request):
         context = {
             'cliente': cliente,
             'transacciones': transacciones,
+            'localidad': localidad,
         }
         
         return render(request, 'tauser/transacciones.html', context)
     
-    except Cliente.DoesNotExist:
+    except (Cliente.DoesNotExist, Localidad.DoesNotExist):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
-        return redirect('atm_login')
+        return redirect('atm_seleccionar_localidad')
 
 def atm_depositar(request):
     """
@@ -104,11 +157,14 @@ def atm_depositar(request):
     Después del depósito, actualiza el saldo del cliente considerando su segmentación.
     """
     cliente_id = request.session.get('atm_cliente_id')
-    if not cliente_id:
-        return redirect('atm_login')
+    localidad_id = request.session.get('atm_localidad_id')
+    
+    if not cliente_id or not localidad_id:
+        return redirect('atm_seleccionar_localidad')
 
     try:
         cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id)
 
         transacciones_pendientes = Transaccion.objects.filter(
             cliente=cliente,
@@ -151,7 +207,8 @@ def atm_depositar(request):
                     
                     GestorStockTauser.registrar_deposito_efectivo(
                         monto=float(monto_deposito),
-                        moneda=moneda_deposito
+                        moneda=moneda_deposito,
+                        localidad=localidad
                     )
                     
                 except Exception as e:
@@ -177,6 +234,7 @@ def atm_depositar(request):
                     saldo, created = SaldoCliente.objects.get_or_create(
                         cliente=cliente,
                         moneda=moneda_recibir,
+                        localidad=localidad,
                         defaults={'saldo': Decimal('0')}
                     )
                     
@@ -212,14 +270,15 @@ def atm_depositar(request):
 
         context = {
             'cliente': cliente,
+            'localidad': localidad,
             'transacciones': transacciones_con_calculo,
         }
         return render(request, 'tauser/depositar.html', context)
 
-    except Cliente.DoesNotExist:
+    except (Cliente.DoesNotExist, Localidad.DoesNotExist):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
-        return redirect('atm_login')
+        return redirect('atm_seleccionar_localidad')
 
 
 def atm_extraer(request):
@@ -228,17 +287,21 @@ def atm_extraer(request):
     Permite retiro total automático o retiro parcial personalizado.
     """
     cliente_id = request.session.get('atm_cliente_id')
-    if not cliente_id:
-        return redirect('atm_login')
+    localidad_id = request.session.get('atm_localidad_id')
+    
+    if not cliente_id or not localidad_id:
+        return redirect('atm_seleccionar_localidad')
     
     try:
         cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id)
         
         # ✅ Obtener saldos del cliente en Tauser
         from clientes.models import SaldoCliente
         
         saldos_cliente = SaldoCliente.objects.filter(
             cliente=cliente,
+            localidad=localidad,
             saldo__gt=0
         ).select_related('moneda').order_by('-saldo')
         
@@ -250,6 +313,7 @@ def atm_extraer(request):
             
             # ✅ Obtener stock de billetes disponibles en el ATM
             stock_billetes = StockTauser.objects.filter(
+                localidad=localidad,
                 denominacion__moneda=moneda,
                 cantidad__gt=0
             ).select_related('denominacion').order_by('-denominacion__valor')
@@ -267,7 +331,8 @@ def atm_extraer(request):
             try:
                 billetes_optimo, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
                     float(saldo_disponible),
-                    moneda
+                    moneda,
+                    localidad
                 )
             except Exception as e:
                 print(f"ERROR al calcular billetes: {e}")
@@ -280,7 +345,7 @@ def atm_extraer(request):
             detalles_billetes = []
             for denom_id, cantidad in billetes_optimo.items():
                 try:
-                    stock = StockTauser.objects.select_related('denominacion').get(denominacion_id=denom_id)
+                    stock = StockTauser.objects.select_related('denominacion').get(denominacion_id=denom_id,localidad=localidad)
                     detalles_billetes.append({
                         'denominacion_id': denom_id,
                         'valor': float(stock.denominacion.valor),
@@ -306,6 +371,7 @@ def atm_extraer(request):
                 'saldo_obj': saldo_obj
             })
         print("monedas_con_detalle",monedas_con_detalle ,flush=True)
+        
         if request.method == 'POST':
             moneda_id = request.POST.get('moneda_id')
             tipo_retiro = request.POST.get('tipo_retiro')  # 'total' o 'parcial'
@@ -319,6 +385,7 @@ def atm_extraer(request):
                 saldo_obj = SaldoCliente.objects.select_related('moneda').get(
                     cliente=cliente,
                     moneda_id=moneda_id,
+                    localidad=localidad,
                     saldo__gt=0
                 )
             except SaldoCliente.DoesNotExist:
@@ -341,7 +408,7 @@ def atm_extraer(request):
                         
                         if cantidad > 0:
                             try:
-                                stock = StockTauser.objects.get(denominacion_id=denom_id)
+                                stock = StockTauser.objects.get(denominacion_id=denom_id,localidad=localidad)
                                 
                                 # Validar stock disponible
                                 if cantidad > stock.cantidad:
@@ -375,7 +442,8 @@ def atm_extraer(request):
                 # ✅ RETIRO TOTAL AUTOMÁTICO
                 billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
                     float(saldo_obj.saldo),
-                    moneda
+                    moneda,
+                    localidad
                 )
                 
                 if monto_entregado == 0:
@@ -389,7 +457,7 @@ def atm_extraer(request):
             with db_transaction.atomic():
                 # ✅ Actualizar stock de billetes
                 for denom_id, cantidad in billetes.items():
-                    stock = StockTauser.objects.get(denominacion_id=denom_id)
+                    stock = StockTauser.objects.get(denominacion_id=denom_id,localidad=localidad)
                     
                     if stock.cantidad < cantidad:
                         messages.error(request, f'Stock insuficiente de billetes de {stock.denominacion.valor}')
@@ -421,11 +489,11 @@ def atm_extraer(request):
                 
                 # Formatear mensaje
                 if moneda.abreviacion.upper() == 'PYG':
-                    mensaje = f'✓ Retiro exitoso: {int(monto_entregado):,} {moneda.abreviacion}'
+                    mensaje = f'✓ Retiro exitoso en {localidad.nombre}: {int(monto_entregado):,} {moneda.abreviacion}'
                     if saldo_obj.saldo > 0:
                         mensaje += f'. Saldo restante: {int(saldo_obj.saldo):,} {moneda.abreviacion}'
                 else:
-                    mensaje = f'✓ Retiro exitoso: {monto_entregado:,.2f} {moneda.abreviacion}'
+                    mensaje = f'✓ Retiro exitoso en {localidad.nombre}: {monto_entregado:,.2f} {moneda.abreviacion}'
                     if saldo_obj.saldo > 0:
                         mensaje += f'. Saldo restante: {float(saldo_obj.saldo):,.2f} {moneda.abreviacion}'
                 
@@ -436,12 +504,13 @@ def atm_extraer(request):
         print("monedas_con_detalle",monedas_con_detalle ,flush=True)
         context = {
             'cliente': cliente,
+            'localidad': localidad,
             'monedas': monedas_con_detalle,
         }
         
         return render(request, 'tauser/extraer.html', context)
     
-    except Cliente.DoesNotExist:
+    except(Cliente.DoesNotExist, Localidad.DoesNotExist):
         request.session.flush()
         messages.error(request, 'Sesión inválida')
-        return redirect('atm_login')
+        return redirect('atm_seleccionar_localidad')

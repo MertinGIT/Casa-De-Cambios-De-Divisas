@@ -665,12 +665,28 @@
             font-size: 12px;
             text-align: center;
         }
+        .nav-tabs .nav-link {
+        color: #666;
+        font-weight: 600;
+        }
+        
+        .nav-tabs .nav-link.active {
+            color: #667eea;
+            border-color: #667eea #667eea #fff;
+        }
+        
+        .list-group-item {
+            border-left: 3px solid #667eea;
+        }
     </style>
 </head>
 <body>
     <div class="atm-container">
         <div class="atm-header">
             <h1>💰 Extraer Dinero</h1>
+            <div style="margin-top: 8px; font-size: 14px; opacity: 0.9;">
+    📍 {{ localidad.nombre }}
+</div>
             <a href="{% url 'atm_dashboard' %}" class="back-btn">← Volver</a>
         </div>
         

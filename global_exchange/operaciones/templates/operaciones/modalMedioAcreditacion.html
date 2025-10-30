@@ -44,6 +44,218 @@
     </div>
 </div>
 
+<!-- Modal seleccionar localidad TAUSER -->
+<div id="modal-seleccionar-localidad" class="modal-acreditacion" style="display: none;">
+    <div class="modal-overlay" onclick="cerrarModalLocalidad()"></div>
+    <div class="modal-content-acreditacion">
+        <div class="modal-header-acreditacion">
+            <span class="close-btn" onclick="cerrarModalLocalidad()">&times;</span>
+            <h3 class="modal-title">📍 Seleccione sucursal TAUSER</h3>
+            <p class="modal-subtitle">Elija donde desea retirar su dinero</p>
+        </div>
+
+        <div class="modal-body-acreditacion">
+            <div id="localidades-container" class="localidades-grid">
+                <!-- Se llenarán dinámicamente -->
+            </div>
+        </div>
+
+        <div class="modal-footer-acreditacion">
+            <button type="button" class="btn-modal-acreditacion secondary" onclick="cerrarModalLocalidad()">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarModalSeleccionarLocalidad() {
+    // ✅ NO cerrar el modal de acreditación
+    
+    fetch('/operaciones/api/localidades-tauser/')
+        .then(res => res.json())
+        .then(localidades => {
+            const container = document.getElementById('localidades-container');
+            container.innerHTML = '';
+            
+            localidades.forEach(loc => {
+                const card = document.createElement('div');
+                card.className = 'localidad-card-mini';
+                card.innerHTML = `
+                    <div class="localidad-icon">📍</div>
+                    <div class="localidad-nombre">${loc.nombre}</div>
+                    ${loc.direccion ? `<div class="localidad-direccion">${loc.direccion}</div>` : ''}
+                `;
+                card.onclick = () => seleccionarLocalidadTauser(loc);
+                container.appendChild(card);
+            });
+            
+            document.getElementById('modal-seleccionar-localidad').style.display = 'flex';
+        })
+        .catch(err => {
+            alert('Error al cargar localidades');
+            console.error(err);
+        });
+}
+
+function cerrarModalLocalidad() {
+    document.getElementById('modal-seleccionar-localidad').style.display = 'none';
+    //document.getElementById('modal-acreditacion').style.display = 'flex';
+}
+
+function seleccionarLocalidadTauser(localidad) {
+    const clienteId = {{ cliente_operativo_id }};
+    
+    // ✅ Buscar o crear el medio de acreditación TAUSER para esta localidad
+    fetch('/operaciones/api/obtener-medio-tauser/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            cliente_id: clienteId,
+            localidad_id: localidad.id
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert('Error al obtener medio TAUSER: ' + data.error);
+            return;
+        }
+        
+        // ✅ Guardar con el ID real del medio de acreditación
+        medioSeleccionado = {
+            id: data.medio_id,  // ✅ ID del MedioAcreditacion en BD
+            entidad: {
+                nombre: 'Tauser',
+                tipo: 'TAUSER',
+                id: data.entidad_id  // ID de la entidad Tauser
+            },
+            localidad: localidad,
+            localidad_id: localidad.id,
+            campos: [],
+            es_tauser: true
+        };
+        
+        console.log("✅ Medio TAUSER seleccionado:", medioSeleccionado);
+        
+        // Actualizar descripción con botón para cambiar
+        const tauserDesc = document.getElementById('tauser-desc');
+        if (tauserDesc) {
+            tauserDesc.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                    <div>
+                        <strong>📍 Sucursal:</strong> ${localidad.nombre}
+                        ${localidad.direccion ? `<br><span style="font-size: 0.75rem; color: #999;">${localidad.direccion}</span>` : ''}
+                    </div>
+                    <button type="button" 
+                            onclick="event.stopPropagation(); mostrarModalSeleccionarLocalidad();" 
+                            style="background: #5d5fef; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-left: 0.5rem; white-space: nowrap;">
+                        Cambiar
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Cerrar modal de localidades
+        cerrarModalLocalidad();
+        
+        // Mostrar información en el panel inferior
+        const infoAcreditacion = document.getElementById('info-acreditacion');
+        infoAcreditacion.style.display = 'block';
+
+        const detalleEntidad = document.getElementById('detalle-entidad');
+        const infoDetalle = document.querySelector('.info-detalle');
+
+        detalleEntidad.textContent = 'Tauser';
+        infoDetalle.innerHTML = `
+            <div class="detalle-row">
+                <span class="detalle-label">📍 Sucursal:</span>
+                <span class="detalle-valor">${localidad.nombre}</span>
+            </div>
+            ${localidad.direccion ? `
+            <div class="detalle-row">
+                <span class="detalle-label">📌 Dirección:</span>
+                <span class="detalle-valor">${localidad.direccion}</span>
+            </div>
+            ` : ''}
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #e8f5e8; border-radius: 8px; font-size: 0.85rem; color: #047857;">
+                ℹ️ Puede retirar sus fondos en esta sucursal
+            </div>
+            <button type="button" 
+                    onclick="mostrarModalSeleccionarLocalidad()" 
+                    style="width: 100%; margin-top: 1rem; background: #f4f6fb; color: #5d5fef; border: 1px solid #e8ecf7; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                🔄 Cambiar sucursal
+            </button>
+        `;
+
+        // Habilitar botón de confirmar
+        document.getElementById('btn-confirmar-acreditacion').disabled = false;
+
+        // Animación
+        infoAcreditacion.style.opacity = '0';
+        infoAcreditacion.style.transform = 'translateY(-10px)';
+        setTimeout(() => {
+            infoAcreditacion.style.transition = 'all 0.3s ease';
+            infoAcreditacion.style.opacity = '1';
+            infoAcreditacion.style.transform = 'translateY(0)';
+        }, 10);
+    })
+    .catch(err => {
+        alert('Error al conectar con el servidor');
+        console.error(err);
+    });
+}
+</script>
+
+<style>
+.localidades-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.localidad-card-mini {
+    background: white;
+    border: 2px solid #e8ecf7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.localidad-card-mini:hover {
+    border-color: #5d5fef;
+    transform: translateY(-2px);
+}
+
+.btn-crear-tauser {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+/* Estilo para botón de cambiar sucursal dentro del card */
+.medio-desc button:hover {
+    background: #4a4cd9 !important;
+    transform: translateY(-1px);
+}
+
+/* Estilo para botón de cambiar en info-detalle */
+.info-detalle button:hover {
+    background: #e8ecf7 !important;
+    border-color: #5d5fef !important;
+}
+</style>
+
 <script>
     // Datos simulados desde la BD - en tu implementación vendrán del backend
     const mediosAcreditacionData = JSON.parse('{{ medios_acreditacion|escapejs }}');
@@ -88,76 +300,109 @@
     const container = document.getElementById('medios-acreditacion-container');
     const sinMedios = document.getElementById('sin-medios');
 
+    container.innerHTML = '';
+    sinMedios.style.display = 'none';
+
     if (mediosAcreditacionData.length === 0) {
         container.style.display = 'none';
         sinMedios.style.display = 'block';
         return;
     }
 
-    container.innerHTML = '';
-    sinMedios.style.display = 'none';
-console.log("Medios de acreditacion: ",mediosAcreditacionData);
+    // ✅ Card especial para TAUSER
+    const tauserCard = document.createElement('div');
+    tauserCard.className = 'medio-item';
+    tauserCard.innerHTML = `
+        <input type="radio" 
+               id="medio-tauser-new" 
+               name="medio_acreditacion" 
+               value="tauser-new" 
+               class="medio-radio">
+        <label for="medio-tauser-new" class="medio-label">
+            <div class="medio-icon">📍</div>
+            <div class="medio-info">
+                <span class="medio-nombre">Tauser - Retiro en sucursal</span>
+                <span class="medio-desc" id="tauser-desc">Haga clic para seleccionar sucursal</span>
+            </div>
+            <div class="medio-check">✓</div>
+        </label>
+    `;
+    
+    const radioTauser = tauserCard.querySelector('.medio-radio');
+    radioTauser.addEventListener('change', () => {
+        if (radioTauser.checked) {
+            mostrarModalSeleccionarLocalidad();
+        }
+    });
+    
+    container.appendChild(tauserCard);
+
+    // Cargar otros medios
     mediosAcreditacionData.forEach(medio => {
-        // ✅ Mostrar aunque no tenga campos, si el nombre es "tauser"
-        if (medio.entidad.nombre.trim().toLowerCase() === 'tauser' || (medio.campos && medio.campos.length > 0)) {
+        const esTauser = medio.entidad.nombre.trim().toLowerCase() === 'tauser';
+        
+        if (!esTauser && medio.campos && medio.campos.length > 0) {
             const medioElement = createMedioElement(medio);
             container.appendChild(medioElement);
         }
     });
-
-    // Si después de filtrar no quedó ninguno visible
-    if (!container.hasChildNodes()) {
-        container.style.display = 'none';
-        sinMedios.style.display = 'block';
-    }
 }
 
-    function createMedioElement(medio) {
-        const div = document.createElement('div');
-        div.className = 'medio-item';
+function createMedioElement(medio) {
+    const div = document.createElement('div');
+    div.className = 'medio-item';
 
-        // Determinar icono según tipo de entidad
-        let icono = '🏦';
-        switch (medio.entidad.tipo) {
-            case 'BILLETERA':
-                icono = '📱';
-                break;
-            case 'COOPERATIVA':
-                icono = '🏢';
-                break;
-            case 'FINTECH':
-                icono = '💳';
-                break;
-        }
+    // Determinar icono según tipo de entidad
+    let icono = '🏦';
+    switch (medio.entidad.tipo) {
+        case 'BILLETERA':
+            icono = '📱';
+            break;
+        case 'COOPERATIVA':
+            icono = '🏢';
+            break;
+        case 'FINTECH':
+            icono = '💳';
+            break;
+        case 'BANCO':
+            icono = '🏦';
+            break;
+    }
 
-        // Renderizar campos dinámicos
-        let camposHtml = '';
+    // Renderizar campos dinámicos
+    let camposHtml = '';
+    if (medio.campos && medio.campos.length > 0) {
         medio.campos.forEach(campo => {
             camposHtml += `<div><strong>${campo.label}:</strong> ${campo.value}</div>`;
         });
-
-        div.innerHTML = `
-                <input type="radio" id="medio-${medio.id}" name="medio_acreditacion" value="${medio.id}" class="medio-radio">
-                <label for="medio-${medio.id}" class="medio-label">
-                    <div class="medio-icon">${icono}</div>
-                    <div class="medio-info">
-                        <span class="medio-nombre">${medio.entidad.nombre}</span>
-                        <span class="medio-desc">${camposHtml}</span>
-                    </div>
-                    <div class="medio-check">✓</div>
-                </label>
-            `;
-
-        // Agregar event listener
-        const radio = div.querySelector('.medio-radio');
-        radio.addEventListener('change', () => {
-            if (radio.checked) {
-                seleccionarMedio(medio);
-            }
-        });
-
-        return div;
     }
+
+    div.innerHTML = `
+        <input type="radio" 
+               id="medio-${medio.id}" 
+               name="medio_acreditacion" 
+               value="${medio.id}" 
+               class="medio-radio">
+        <label for="medio-${medio.id}" class="medio-label">
+            <div class="medio-icon">${icono}</div>
+            <div class="medio-info">
+                <span class="medio-nombre">${medio.entidad.nombre}</span>
+                <span class="medio-desc">${camposHtml}</span>
+            </div>
+            <div class="medio-check">✓</div>
+        </label>
+    `;
+
+    // Agregar event listener
+    const radio = div.querySelector('.medio-radio');
+    radio.addEventListener('change', () => {
+        if (radio.checked) {
+            seleccionarMedio(medio);
+        }
+    });
+
+    return div;
+}
 
     function seleccionarMedio(medio) {
     medioSeleccionado = medio;
@@ -198,55 +443,32 @@ console.log("Medios de acreditacion: ",mediosAcreditacionData);
 
 
     function confirmarAcreditacion() {
-        verificarTasaActualizada(function(tasaActualizada) {
-        console.log("Tasa actualizada123123:", tasaActualizada);
+    verificarTasaActualizada(function(tasaActualizada) {
         if (tasaActualizada) {
-            console.log("Tasa actualizada123123, procediendo a método de pago");
-            
-        
-            console.log("sale por medioSeleccionado");
             if (!medioSeleccionado) {
                 window.mostrarMensajeModal("Info",'Por favor seleccione un medio de acreditación','info');
                 return;
             }
-            
 
- 
-
-            // Validar que todos los campos requeridos tengan valor
-            const camposFaltantes = medioSeleccionado.campos.filter(campo => {
-                // si "campo" es un input HTML real
-                let valor = campo.value !== undefined ? campo.value : "";
-                valor = valor.toString().trim();
-                return valor === "";
-            });
-
-            console.log("confirmarAcreditacion",camposFaltantes)
-            if (camposFaltantes.length > 0) {
-                let nombres = camposFaltantes.map(c => c.label || c.name || "(campo)").join(", ");
-                alert("⚠️ El medio seleccionado no tiene datos completos. Debe completar: " + nombres);
-                return;
-            }
-
+            // ✅ Ya no necesitas validaciones especiales, medioSeleccionado.id ya es válido
             window.datosAcreditacion = medioSeleccionado;
 
             // Cerrar modal
             cerrarModalAcreditacion();
 
             if (window.mfaTransacciones) {
-                mostrarModalPin();   // pedir PIN
+                mostrarModalPin();
             } else {
-                procesarTransaccion(); // ir directo
+                procesarTransaccion();
             }
-        }else{
-            //$("#modal-exito").hide();
-            mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+        } else {
+            mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente.");
             $("#modal-pin").fadeOut();
             $("#modal-acreditacion").fadeOut();
-            console.log("elseeeeeee");
             return;
         }
-        })}
+    });
+}
 
     function resetearFormularioAcreditacion() {
         // Limpiar selección

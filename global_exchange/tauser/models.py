@@ -39,13 +39,34 @@ class Denominacion(models.Model):
     def __str__(self):
         return f"{self.moneda.abreviacion} {self.valor}"
 
-
+class Localidad(models.Model):
+    """
+    Representa las ubicaciones físicas de los TAUSER
+    """
+    nombre = models.CharField(max_length=100, unique=True)
+    direccion = models.CharField(max_length=255, blank=True)
+    activo = models.BooleanField(default=True)
+    
+    class Meta:
+        ordering = ['nombre']
+        verbose_name = "Localidad"
+        verbose_name_plural = "Localidades"
+    
+    def __str__(self):
+        return self.nombre
+    
 class StockTauser(models.Model):
     """
     Stock de billetes por denominación en el TAUSER.
     Controla cuántos billetes de cada denominación hay disponibles.
+    Cada localidad tiene su propio stock independiente.
     """
-    denominacion = models.OneToOneField(
+    localidad = models.ForeignKey(
+        Localidad,
+        on_delete=models.CASCADE,
+        related_name='stocks'
+    )
+    denominacion = models.ForeignKey(
         Denominacion,
         on_delete=models.CASCADE,
         related_name='stock'
@@ -63,9 +84,10 @@ class StockTauser(models.Model):
     class Meta:
         verbose_name = "Stock TAUSER"
         verbose_name_plural = "Stock TAUSER"
+        unique_together = ['localidad', 'denominacion']
     
     def __str__(self):
-        return f"{self.denominacion} - Stock: {self.cantidad}"
+        return f"{self.localidad.nombre} - {self.denominacion} - Stock: {self.cantidad}"
     
     @property
     def stock_bajo(self):
@@ -129,6 +151,11 @@ class RetiroEfectivo(models.Model):
         'operaciones.Transaccion',
         on_delete=models.CASCADE,
         related_name='retiro_efectivo'
+    )
+    localidad = models.ForeignKey(
+        Localidad,
+        on_delete=models.PROTECT,
+        related_name='retiros'
     )
     monto_total = models.DecimalField(max_digits=12, decimal_places=2)
     monto_entregado = models.DecimalField(
