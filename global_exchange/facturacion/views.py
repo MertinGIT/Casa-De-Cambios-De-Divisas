@@ -153,11 +153,13 @@ def generar_factura_transaccion(request):
         # Preparar datos
         transaccion_data = {
             'monto': float(transaccion.monto),
-            'moneda': transaccion.moneda_origen.abreviacion,  
-            'tipo_cambio': float(transaccion.tasa_usada),
+            'abreviacion_origen': transaccion.moneda_origen.abreviacion,  
+            'abreviacion_destino': transaccion.moneda_destino.abreviacion,  
+            'tasa_usada': float(transaccion.tasa_usada),
             'referencia': transaccion.id,
-            'metodo_pago_id': transaccion.metodo_pago.nombre,
+            'metodo_pago': transaccion.metodo_pago.nombre,
             'tipo': transaccion.tipo,
+
         }
 
         print("transaccion_data:", transaccion_data, flush=True)
@@ -419,14 +421,14 @@ def factura_resumida(factura):
         "dDVEmi": "3",
         "iTipCont": "1",
         "dNomEmi": "GLOBAL EXCHANGE S.A.",
-        "dDirEmi": "AV. TEST 123",
+        "dDirEmi": "AV. EUSEBIO AYALA KM 4.5",
         "dNumCas": "1543",
         "cDepEmi": "1",
         "dDesDepEmi": "CAPITAL",
         "cCiuEmi": "1",
         "dDesCiuEmi": "ASUNCION (DISTRITO)",
         "dTelEmi": "(0961)988439",
-        "dEmailE": "ggonzar@gmail.com",
+        "dEmailE": "facturacion@globalexchange.com.py",
         "gActEco": [
             {
                 "cActEco": "74909",
@@ -454,7 +456,7 @@ def factura_resumida(factura):
         "gCamItem": [
             {
                 "dCodInt": "SERV001",
-                "dDesProSer": "Servicio de cambio de divisas",
+                "dDesProSer": f"Servicio de ",
                 "cUniMed": "77",
                 "dCantProSer": "1",
                 "dPUniProSer": str(factura.monto_total),
