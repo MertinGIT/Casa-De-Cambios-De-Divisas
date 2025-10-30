@@ -1,12 +1,90 @@
 from decimal import Decimal
 from django.db import transaction
-from .models import StockTauser, Denominacion, MovimientoStock, RetiroEfectivo, DetalleRetiroEfectivo
+from .models import StockTauser, Denominacion, MovimientoStock, RetiroEfectivo, DetalleRetiroEfectivo, ReservaTauser, DetalleReservaTauser
+from django.utils import timezone
+from datetime import timedelta
 
+from django.utils import timezone
+from datetime import timedelta
+from .models import ReservaTauser
 
 class GestorStockTauser:
     """
     Clase para manejar la lógica de stock del TAUSER
     """
+
+    @staticmethod
+    @transaction.atomic
+    def reservar_efectivo(transaccion_obj, monto, moneda, duracion_minutos=15):
+        """
+        Reserva billetes para una operación en efectivo pendiente de confirmación.
+        Usa solo la parte entera para calcular los billetes, pero guarda el monto decimal completo.
+        """
+        print(f"💸 Iniciando reserva TAUSER para {monto} {moneda.abreviacion}", flush=True)
+
+        # Tomar solo la parte entera para calcular billetes
+        monto_entero = int(Decimal(monto))
+        print(f"🔹 Monto entero para billetes: {monto_entero}", flush=True)
+
+        # Calcular combinación óptima de billetes
+        billetes_dict, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
+            monto_entero,
+            moneda
+        )
+
+        print(f"🔹 Billetes calculados: {billetes_dict}", flush=True)
+        print(f"🔹 Monto entregable (entero): {monto_entregado}", flush=True)
+        print(f"🔹 Diferencia restante: {diferencia}", flush=True)
+        print(f"🔹 Posible entregar todo el entero?: {posible}", flush=True)
+
+        if not posible:
+            raise ValueError(f"No hay suficiente stock para reservar {monto_entero} {moneda.abreviacion}")
+
+        # Crear la reserva con el monto decimal real
+        reserva = ReservaTauser.objects.create(
+            transaccion=transaccion_obj,
+            moneda=moneda,
+            monto_total=monto,  # aquí guardamos el decimal real
+            expiracion=timezone.now() + timedelta(minutes=duracion_minutos),
+            activa=True
+        )
+        print(f"🔹 Reserva creada: ID {reserva.id}, monto_total {reserva.monto_total}", flush=True)
+
+        # Registrar denominaciones reservadas
+        for denom_id, cantidad in billetes_dict.items():
+            denominacion = Denominacion.objects.get(id=denom_id)
+            DetalleReservaTauser.objects.create(
+                reserva=reserva,
+                denominacion=denominacion,
+                cantidad_reservada=cantidad
+            )
+            print(f"   → Reservados {cantidad} billetes de {denominacion.valor} {moneda.abreviacion}", flush=True)
+
+            # Reducir stock
+            stock = StockTauser.objects.select_for_update().get(denominacion=denominacion)
+            stock.cantidad -= cantidad
+            stock.save()
+            print(f"   → Stock actualizado: {stock.cantidad} billetes restantes", flush=True)
+
+        print(f"✅ Reserva TAUSER finalizada para transacción {transaccion_obj.id}", flush=True)
+        return reserva
+    
+    @staticmethod
+    @transaction.atomic
+    def liberar_reserva(transaccion_obj):
+        """
+        Libera una reserva de efectivo (por cancelación o expiración).
+        """
+        try:
+            reserva = ReservaTauser.objects.select_for_update().get(
+                transaccion=transaccion_obj, activa=True
+            )
+        except ReservaTauser.DoesNotExist:
+            return False
+
+        reserva.activa = False
+        reserva.save()
+        return True
     
     @staticmethod
     def calcular_billetes_optimo(monto, moneda):
