@@ -42,19 +42,19 @@ else:
     print("ℹ️ Método de pago 'Efectivo' ya existía.")
 
 # --- Entidad Financiera por defecto ---
-entidad, created = TipoEntidadFinanciera.objects.get_or_create(
-    id=0,
-    defaults={
-        'nombre': 'Tauser',
-        'tipo': 'OTRO',
-        'estado': True,
-        'comision': Decimal('0.00')
-    }
-)
-if created:
-    print("✅ Entidad financiera 'Tauser' creada.")
-else:
-    print("ℹ️ Entidad financiera 'Tauser' ya existía.")
+#entidad, created = TipoEntidadFinanciera.objects.get_or_create(
+#    id=0,
+ #   defaults={
+ #       'nombre': 'Tauser',
+ #       'tipo': 'OTRO',
+ #       'estado': True,
+  #      'comision': Decimal('0.00')
+  #  }
+#)
+#if created:
+##    print("✅ Entidad financiera 'Tauser' creada.")
+#else:
+ #   print("ℹ️ Entidad financiera 'Tauser' ya existía.")
 
 # ============================================
 # ✅ CREAR LOCALIDADES DE TAUSER
