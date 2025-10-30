@@ -16,4 +16,6 @@ urlpatterns = [
     path('crear_pago_stripe/', views.crear_pago_stripe, name='crear_pago_stripe'),
     path('api/localidades-tauser/', views.obtener_localidades_tauser, name='localidades_tauser'),
     path('api/obtener-medio-tauser/', views.obtener_medio_tauser, name='obtener_medio_tauser'),
+    path('api/verificar-stock-tauser/', views.verificar_stock_tauser, name='verificar_stock_tauser'),
+
 ]

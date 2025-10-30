@@ -69,6 +69,17 @@
 </div>
 
 <script>
+      function mostrarMensaje(titulo, texto,tipo='warning',recargar) {
+    console.log("mostrarMensaje en Pin:", titulo, texto);
+    
+    if (window.mostrarMensajeModal) {
+      // Mostrar mensaje
+      window.mostrarMensajeModal(titulo, texto,tipo,recargar);
+    } else {
+      console.error("Modal mensaje no disponible desde PIN");
+      alert(titulo + ": " + texto);
+    }
+}
 function mostrarModalSeleccionarLocalidad() {
     // ✅ NO cerrar el modal de acreditación
     
@@ -103,108 +114,145 @@ function cerrarModalLocalidad() {
     //document.getElementById('modal-acreditacion').style.display = 'flex';
 }
 
+function getCampos2() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
+    }
+  }
+
 function seleccionarLocalidadTauser(localidad) {
+    const campos = getCampos();
     const clienteId = {{ cliente_operativo_id }};
-    
-    // ✅ Buscar o crear el medio de acreditación TAUSER para esta localidad
-    fetch('/operaciones/api/obtener-medio-tauser/', {
+    const monto = parseFloat(campos.$resultado.val()) || 0;
+    const monedaDestino = campos.$destino.val();
+    // ✅ Primero verificamos stock del TAUSER en esta localidad
+    fetch('/operaciones/api/verificar-stock-tauser/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRFToken': '{{ csrf_token }}'
         },
         body: JSON.stringify({
-            cliente_id: clienteId,
-            localidad_id: localidad.id
+            localidad_id: localidad.id,
+            monto: monto,
+            moneda: monedaDestino
         })
     })
     .then(res => res.json())
-    .then(data => {
-        if (!data.success) {
-            alert('Error al obtener medio TAUSER: ' + data.error);
+    .then(stockData => {
+        if (!stockData.success) {
+            mostrarMensaje("⚠️ Error", "No se pudo verificar stock: " + stockData.error);
             return;
         }
-        
-        // ✅ Guardar con el ID real del medio de acreditación
-        medioSeleccionado = {
-            id: data.medio_id,  // ✅ ID del MedioAcreditacion en BD
-            entidad: {
-                nombre: 'Tauser',
-                tipo: 'TAUSER',
-                id: data.entidad_id  // ID de la entidad Tauser
-            },
-            localidad: localidad,
-            localidad_id: localidad.id,
-            campos: [],
-            es_tauser: true
-        };
-        
-        console.log("✅ Medio TAUSER seleccionado:", medioSeleccionado);
-        
-        // Actualizar descripción con botón para cambiar
-        const tauserDesc = document.getElementById('tauser-desc');
-        if (tauserDesc) {
-            tauserDesc.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-                    <div>
-                        <strong>📍 Sucursal:</strong> ${localidad.nombre}
-                        ${localidad.direccion ? `<br><span style="font-size: 0.75rem; color: #999;">${localidad.direccion}</span>` : ''}
-                    </div>
-                    <button type="button" 
-                            onclick="event.stopPropagation(); mostrarModalSeleccionarLocalidad();" 
-                            style="background: #5d5fef; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.75rem; cursor: pointer; margin-left: 0.5rem; white-space: nowrap;">
-                        Cambiar
-                    </button>
-                </div>
-            `;
+
+        if (stockData.cantidad <= 0) {
+            mostrarMensaje("ℹ️ Sin stock", "Actualmente no hay fondos disponibles en esta sucursal.");
+            return;
         }
-        
-        // Cerrar modal de localidades
-        cerrarModalLocalidad();
-        
-        // Mostrar información en el panel inferior
-        const infoAcreditacion = document.getElementById('info-acreditacion');
-        infoAcreditacion.style.display = 'block';
 
-        const detalleEntidad = document.getElementById('detalle-entidad');
-        const infoDetalle = document.querySelector('.info-detalle');
+        // ✅ Luego buscamos o creamos el medio de acreditación TAUSER
+        fetch('/operaciones/api/obtener-medio-tauser/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                cliente_id: clienteId,
+                localidad_id: localidad.id
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                mostrarMensaje("⚠️ Error", "Error al obtener medio TAUSER: " + data.error);
+                return;
+            }
 
-        detalleEntidad.textContent = 'Tauser';
-        infoDetalle.innerHTML = `
-            <div class="detalle-row">
-                <span class="detalle-label">📍 Sucursal:</span>
-                <span class="detalle-valor">${localidad.nombre}</span>
-            </div>
-            ${localidad.direccion ? `
-            <div class="detalle-row">
-                <span class="detalle-label">📌 Dirección:</span>
-                <span class="detalle-valor">${localidad.direccion}</span>
-            </div>
-            ` : ''}
-            <div style="margin-top: 1rem; padding: 0.75rem; background: #e8f5e8; border-radius: 8px; font-size: 0.85rem; color: #047857;">
-                ℹ️ Puede retirar sus fondos en esta sucursal
-            </div>
-            <button type="button" 
-                    onclick="mostrarModalSeleccionarLocalidad()" 
-                    style="width: 100%; margin-top: 1rem; background: #f4f6fb; color: #5d5fef; border: 1px solid #e8ecf7; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-                🔄 Cambiar sucursal
-            </button>
-        `;
+            // ✅ Guardar con el ID real del medio de acreditación
+            medioSeleccionado = {
+                id: data.medio_id,
+                entidad: {
+                    nombre: 'Tauser',
+                    tipo: 'TAUSER',
+                    id: data.entidad_id
+                },
+                localidad: localidad,
+                localidad_id: localidad.id,
+                campos: [],
+                es_tauser: true
+            };
 
-        // Habilitar botón de confirmar
-        document.getElementById('btn-confirmar-acreditacion').disabled = false;
+            console.log("✅ Medio TAUSER seleccionado:", medioSeleccionado);
 
-        // Animación
-        infoAcreditacion.style.opacity = '0';
-        infoAcreditacion.style.transform = 'translateY(-10px)';
-        setTimeout(() => {
-            infoAcreditacion.style.transition = 'all 0.3s ease';
-            infoAcreditacion.style.opacity = '1';
-            infoAcreditacion.style.transform = 'translateY(0)';
-        }, 10);
+            // Cerrar modal de localidades
+            cerrarModalLocalidad();
+
+            // Mostrar información en el panel inferior
+            const infoAcreditacion = document.getElementById('info-acreditacion');
+            infoAcreditacion.style.display = 'block';
+
+            const detalleEntidad = document.getElementById('detalle-entidad');
+            const infoDetalle = document.querySelector('.info-detalle');
+
+            detalleEntidad.textContent = 'Tauser';
+            infoDetalle.innerHTML = `
+                <div class="detalle-row">
+                    <span class="detalle-label">📍 Sucursal:</span>
+                    <span class="detalle-valor">${localidad.nombre}</span>
+                </div>
+                ${localidad.direccion ? `
+                <div class="detalle-row">
+                    <span class="detalle-label">📌 Dirección:</span>
+                    <span class="detalle-valor">${localidad.direccion}</span>
+                </div>
+                ` : ''}
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #e8f5e8; border-radius: 8px; font-size: 0.85rem; color: #047857;">
+                    ℹ️ Puede retirar sus fondos en esta sucursal. Recuerde que tiene 72 horas para retirar, luego la operación se cancelará.
+                </div>
+                <button type="button" 
+                        onclick="mostrarModalSeleccionarLocalidad()" 
+                        style="width: 100%; margin-top: 1rem; background: #f4f6fb; color: #5d5fef; border: 1px solid #e8ecf7; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    🔄 Cambiar sucursal
+                </button>
+            `;
+
+            // Habilitar botón de confirmar
+            document.getElementById('btn-confirmar-acreditacion').disabled = false;
+
+            // Animación
+            infoAcreditacion.style.opacity = '0';
+            infoAcreditacion.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                infoAcreditacion.style.transition = 'all 0.3s ease';
+                infoAcreditacion.style.opacity = '1';
+                infoAcreditacion.style.transform = 'translateY(0)';
+            }, 10);
+
+        })
+        .catch(err => {
+            mostrarMensaje("⚠️ Error", "Error al conectar con el servidor");
+            console.error(err);
+        });
+
     })
     .catch(err => {
-        alert('Error al conectar con el servidor');
+        mostrarMensaje("⚠️ Error", "Error al verificar stock");
         console.error(err);
     });
 }
