@@ -392,6 +392,7 @@ function seleccionarLocalidadTauser(localidad) {
         
         container.appendChild(tauserCard);
     }
+}
 
 
 function createMedioElement(medio) {
@@ -532,7 +533,7 @@ function createMedioElement(medio) {
     }
 
     function irAConfiguracion() {
-        alert('Redirigir a configuración de medios de acreditación');
+        window.location.href = "http://localhost:8000/medios_acreditacion/";
         // Aquí redirigirías al CRUD de medios de acreditación
     }
 
