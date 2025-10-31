@@ -473,8 +473,8 @@ def factura_resumida(factura):
                 "cUniMed": "77",
                 "dCantProSer": "1",
                 "dPUniProSer": str(factura.monto_total),
-                "iAfecIVA": "1",
-                "dTasaIVA": "10"
+                "iAfecIVA": "3",
+                "dTasaIVA": "0"
             }
         ],
         "CDC": factura.cdc or "0",

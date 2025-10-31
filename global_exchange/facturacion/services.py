@@ -224,7 +224,7 @@ class FacturaSeguraService:
             "iTipIDRec": "1",
             "dNumIDRec": cliente.get('cedula', '0'),
             "dNomRec": cliente.get('nombre_completo', 'CLIENTE'),
-            "dEmailRec": cliente.get('email', 'cliente@email.com'),
+            "dEmailRec": cliente.get('email', 'leandro.f3418@fpuna.edu.py'),
             
             # Condición de operación
             "iIndPres": "1",
@@ -259,9 +259,9 @@ class FacturaSeguraService:
                     "dDescGloItem": "0",
                     "dAntPreUniIt": "0",
                     "dAntGloPreUniIt": "0",
-                    "iAfecIVA": "1",  # Gravado IVA
-                    "dPropIVA": "100",
-                    "dTasaIVA": "10"
+                    "iAfecIVA": "3",  # Gravado IVA
+                    "dPropIVA": "0",
+                    "dTasaIVA": "0"
                 },
                 {
                     "dCodInt": "COMISION-001",
@@ -273,9 +273,9 @@ class FacturaSeguraService:
                     "dDescGloItem": "0",
                     "dAntPreUniIt": "0",
                     "dAntGloPreUniIt": "0",
-                    "iAfecIVA": "1",
-                    "dPropIVA": "100",
-                    "dTasaIVA": "10"
+                    "iAfecIVA": "3",
+                    "dPropIVA": "0",
+                    "dTasaIVA": "0"
                 }
             ],
             

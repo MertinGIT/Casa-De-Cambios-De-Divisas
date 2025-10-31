@@ -94,7 +94,7 @@ def test_calcular_de():
                 "dAntPreUniIt": "0",
                 "dAntGloPreUniIt": "0",
                 "iAfecIVA": "1",
-                "dPropIVA": "100",
+                "dPropIVA": "0",
                 "dTasaIVA": "10"
             }
         ],
