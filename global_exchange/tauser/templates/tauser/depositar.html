@@ -183,7 +183,7 @@
             backdrop-filter: blur(4px);
             justify-content: center;
             align-items: center;
-            z-index: 10000;
+            z-index: 1000;
             padding: 1rem;
         }
 
@@ -1259,7 +1259,7 @@ console.log('   - cerrarModalDeposito()');
 /* Animación para el botón cuando aparece */
 .btn-generar-factura {
     animation: fadeInUp 0.4s ease-out;
-    z-index: 900000;
+    z-index: 99999999;
 }
 .btn-descarga {
     background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%) !important;
@@ -1267,6 +1267,10 @@ console.log('   - cerrarModalDeposito()');
 
 .btn-descarga:hover {
     background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%) !important;
+}
+
+.swal2-container swal2-center swal2-backdrop-show{
+    z-index: 10000000 !important;
 }
 
 @keyframes fadeInUp {
