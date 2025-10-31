@@ -155,8 +155,10 @@ function seleccionarLocalidadTauser(localidad) {
     })
     .then(res => res.json())
     .then(stockData => {
+        console.log("Stock Data ", stockData)
         if (!stockData.success) {
-            mostrarMensaje("⚠️ Error", "No se pudo verificar stock: " + stockData.error);
+            const errorMsg = stockData.mensaje || stockData.error || "No se pudo verificar el stock";
+            mostrarMensaje("⚠️ Sin stock disponible", errorMsg);
             return;
         }
 
@@ -351,50 +353,46 @@ function seleccionarLocalidadTauser(localidad) {
     container.innerHTML = '';
     sinMedios.style.display = 'none';
 
-    if (mediosAcreditacionData.length === 0) {
+    // ✅ Obtener la operación actual
+    const campos = getCampos();
+    const esVenta = campos.op === 'compra'; // compra = cliente vende, entonces NO mostrar TAUSER
+
+    if (mediosAcreditacionData.length === 0 && esVenta) {
         container.style.display = 'none';
         sinMedios.style.display = 'block';
         return;
     }
 
-    // ✅ Card especial para TAUSER
-    const tauserCard = document.createElement('div');
-    tauserCard.className = 'medio-item';
-    tauserCard.innerHTML = `
-        <input type="radio" 
-               id="medio-tauser-new" 
-               name="medio_acreditacion" 
-               value="tauser-new" 
-               class="medio-radio">
-        <label for="medio-tauser-new" class="medio-label">
-            <div class="medio-icon">📍</div>
-            <div class="medio-info">
-                <span class="medio-nombre">Tauser - Retiro en sucursal</span>
-                <span class="medio-desc" id="tauser-desc">Haga clic para seleccionar sucursal</span>
-            </div>
-            <div class="medio-check">✓</div>
-        </label>
-    `;
-    
-    const radioTauser = tauserCard.querySelector('.medio-radio');
-    radioTauser.addEventListener('change', () => {
-        if (radioTauser.checked) {
-            mostrarModalSeleccionarLocalidad();
-        }
-    });
-    
-    container.appendChild(tauserCard);
-
-    // Cargar otros medios
-    mediosAcreditacionData.forEach(medio => {
-        const esTauser = medio.entidad.nombre.trim().toLowerCase() === 'tauser';
+    // ✅ Card especial para TAUSER - SOLO si NO es venta
+    if (!esVenta) {
+        const tauserCard = document.createElement('div');
+        tauserCard.className = 'medio-item';
+        tauserCard.innerHTML = `
+            <input type="radio" 
+                   id="medio-tauser-new" 
+                   name="medio_acreditacion" 
+                   value="tauser-new" 
+                   class="medio-radio">
+            <label for="medio-tauser-new" class="medio-label">
+                <div class="medio-icon">📍</div>
+                <div class="medio-info">
+                    <span class="medio-nombre">Tauser - Retiro en sucursal</span>
+                    <span class="medio-desc" id="tauser-desc">Haga clic para seleccionar sucursal</span>
+                </div>
+                <div class="medio-check">✓</div>
+            </label>
+        `;
         
-        if (!esTauser && medio.campos && medio.campos.length > 0) {
-            const medioElement = createMedioElement(medio);
-            container.appendChild(medioElement);
-        }
-    });
-}
+        const radioTauser = tauserCard.querySelector('.medio-radio');
+        radioTauser.addEventListener('change', () => {
+            if (radioTauser.checked) {
+                mostrarModalSeleccionarLocalidad();
+            }
+        });
+        
+        container.appendChild(tauserCard);
+    }
+
 
 function createMedioElement(medio) {
     const div = document.createElement('div');

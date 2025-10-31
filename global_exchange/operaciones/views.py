@@ -899,22 +899,48 @@ def verificar_stock_tauser(request):
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
 
-    data = json.loads(request.body)
-    localidad_id = data.get("localidad_id")
-    monto = Decimal(data.get("monto", 0))
-    moneda_abrev = data.get("moneda")
-    
-    print("La localidad es: ", localidad_id, flush=True)
-    print(" Monto ", monto, flush=True)
-    print("moneda = ", moneda_abrev,flush=True)
     try:
+        data = json.loads(request.body)
+        localidad_id = data.get("localidad_id")
+        monto_raw = data.get("monto", 0)
+        moneda_abrev = data.get("moneda")
+        
+        # ✅ Redondear el monto a 2 decimales para evitar problemas de precisión
+        monto = Decimal(str(monto_raw)).quantize(Decimal('0.01'))
+        print("La localidad es: ", localidad_id, flush=True)
+        print("Monto redondeado: ", monto, flush=True)
+        print("Moneda: ", moneda_abrev, flush=True)
+        
+        # Validar datos requeridos
+        if not all([localidad_id, monto, moneda_abrev]):
+            return JsonResponse({
+                "success": False, 
+                "error": "Faltan datos requeridos"
+            })
+        
+        # Obtener objetos de la BD
         localidad = Localidad.objects.get(id=localidad_id)
         moneda = Moneda.objects.get(abreviacion=moneda_abrev)
+        
     except (Localidad.DoesNotExist, Moneda.DoesNotExist) as e:
-        return JsonResponse({"success": False, "error": str(e)})
+        return JsonResponse({
+            "success": False, 
+            "error": f"No se encontró: {str(e)}"
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({
+            "success": False, 
+            "error": "JSON inválido"
+        })
+    except Exception as e:
+        return JsonResponse({
+            "success": False, 
+            "error": f"Error inesperado: {str(e)}"
+        })
 
+    # Calcular billetes óptimos
     billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
-        monto=monto,
+        monto=int(monto),
         moneda=moneda,
         localidad=localidad
     )
@@ -922,15 +948,18 @@ def verificar_stock_tauser(request):
     if posible:
         return JsonResponse({
             "success": True,
+            "cantidad": monto_entregado,  # ✅ Campo requerido por el frontend
             "mensaje": "✅ Stock disponible. Recuerde que tiene 72 horas para retirar.",
-            "billetes": billetes
+            "billetes": billetes,
+            "diferencia": str(diferencia)
         })
     else:
         return JsonResponse({
             "success": False,
-            "mensaje": f"⚠️ No hay suficiente stock en {localidad.nombre} para retirar {monto} {moneda.abreviacion}"
+            "cantidad": monto_entregado,  # ✅ Devolver lo que SÍ se puede entregar
+            "mensaje": f"⚠️ No hay suficiente stock en {localidad.nombre} para retirar {monto} {moneda.abreviacion}",
+            "faltante": str(diferencia)
         })
-
 def actualizar_estado_transaccion(request):
 
     """
