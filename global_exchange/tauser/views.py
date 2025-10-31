@@ -770,7 +770,7 @@ def atm_extraer(request):
                         messages.error(request, f'Stock insuficiente de billetes de {stock.denominacion.valor}')
                         return redirect('atm_extraer')
                     
-                    stock.cantidad -= cantidad
+                    #stock.cantidad -= cantidad
                     stock.save()
                     
                     print(f"   📉 Billete {stock.denominacion.valor}: {stock.cantidad + cantidad} → {stock.cantidad}", flush=True)
