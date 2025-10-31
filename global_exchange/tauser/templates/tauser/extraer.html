@@ -836,22 +836,24 @@
                                         💵 Retiro Total Automático
                                     </button>
                                 </form>
-                                
+                                <!--
                                 <button type="button" class="btn-retiro btn-retiro-parcial" 
                                         onclick="showParcialModal('{{ item.moneda.id }}', '{{ item.moneda.abreviacion }}', {{ item.saldo_disponible }})">
                                     🎯 Retiro Personalizado
                                 </button>
+                                -->
                             </div>
                         {% else %}
                             <div class="alert-warning-custom">
                                 <strong>⚠️ Sin Combinación Automática</strong><br>
                                 No se puede calcular retiro automático, pero puedes usar <strong>Retiro Personalizado</strong>.
                             </div>
-                            
+                            <!--
                             <button type="button" class="btn-retiro btn-retiro-parcial" style="width: 100%;"
                                     onclick="showParcialModal('{{ item.moneda.id }}', '{{ item.moneda.abreviacion }}', {{ item.saldo_disponible }})">
                                 🎯 Retiro Personalizado
                             </button>
+                            -->
                         {% endif %}
                     {% else %}
                         <div class="alert-warning-custom">
