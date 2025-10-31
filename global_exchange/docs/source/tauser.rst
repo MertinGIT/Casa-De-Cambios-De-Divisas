@@ -39,4 +39,3 @@ Vistas
 .. autofunction:: tauser.views.atm_transacciones
 .. autofunction:: tauser.views.atm_depositar
 .. autofunction:: tauser.views.atm_extraer
-
