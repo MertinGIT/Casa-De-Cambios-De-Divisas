@@ -585,16 +585,7 @@ def atm_depositar(request):
 def atm_extraer(request):
     """
     Permite la extracción (retiro) de dinero del saldo TAUSER del cliente.
-
-    - Opción de retiro total automático o retiro parcial personalizado.
-    - Calcula los billetes óptimos según el stock disponible.
-    - Actualiza el saldo del cliente y el stock de billetes de la localidad.
-
-    Args:
-        request (HttpRequest): Solicitud HTTP del cliente.
-
-    Returns:
-        HttpResponse: Renderiza la vista de extracción o redirige tras confirmar el retiro.
+    Ahora incluye extracción de decimales acumulados cuando suman un valor entero.
     """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
@@ -603,7 +594,6 @@ def atm_extraer(request):
         cliente = Cliente.objects.get(id=cliente_id)
         localidad = Localidad.objects.get(id=localidad_id)
         
-        # ✅ Obtener saldos del cliente en Tauser
         from clientes.models import SaldoCliente
         
         saldos_cliente = SaldoCliente.objects.filter(
@@ -618,7 +608,16 @@ def atm_extraer(request):
             moneda = saldo_obj.moneda
             saldo_disponible = saldo_obj.saldo
             
-            # ✅ Obtener stock de billetes disponibles en el ATM
+            # ✅ NUEVO: Separar parte entera y decimal
+            saldo_entero = int(saldo_disponible)
+            saldo_decimal = saldo_disponible - Decimal(str(saldo_entero))
+            
+            print(f"💰 Análisis de saldo para {moneda.abreviacion}:", flush=True)
+            print(f"   Saldo total: {saldo_disponible}", flush=True)
+            print(f"   Parte entera: {saldo_entero}", flush=True)
+            print(f"   Parte decimal (colita): {saldo_decimal}", flush=True)
+            
+            # Obtener stock de billetes disponibles
             stock_billetes = StockTauser.objects.filter(
                 localidad=localidad,
                 denominacion__moneda=moneda,
@@ -634,25 +633,28 @@ def atm_extraer(request):
                     'moneda_abrev': stock.denominacion.moneda.abreviacion
                 })
             
-            # Calcular billetes óptimos para retiro total
+            # ✅ CALCULAR billetes para la PARTE ENTERA del saldo
             try:
                 billetes_optimo, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
-                    float(saldo_disponible),
+                    saldo_entero,  # Solo usar parte entera
                     moneda,
                     localidad
                 )
             except Exception as e:
-                print(f"ERROR al calcular billetes: {e}")
+                print(f"ERROR al calcular billetes: {e}", flush=True)
                 billetes_optimo = {}
                 monto_entregado = 0
-                diferencia = float(saldo_disponible)
+                diferencia = saldo_entero
                 posible = False
             
             # Detalles de billetes para retiro total
             detalles_billetes = []
             for denom_id, cantidad in billetes_optimo.items():
                 try:
-                    stock = StockTauser.objects.select_related('denominacion').get(denominacion_id=denom_id,localidad=localidad)
+                    stock = StockTauser.objects.select_related('denominacion').get(
+                        denominacion_id=denom_id,
+                        localidad=localidad
+                    )
                     detalles_billetes.append({
                         'denominacion_id': denom_id,
                         'valor': float(stock.denominacion.valor),
@@ -662,14 +664,13 @@ def atm_extraer(request):
                 except StockTauser.DoesNotExist:
                     continue
             
-            # Ordenar por valor descendente
             detalles_billetes.sort(key=lambda x: x['valor'], reverse=True)
             
-            print(f"💰 Moneda: {moneda.abreviacion}", flush=True)
-            print(f"   Saldo disponible: {float(saldo_disponible)}", flush=True)
             monedas_con_detalle.append({
                 'moneda': moneda,
                 'saldo_disponible': float(saldo_disponible),
+                'saldo_entero': saldo_entero,  # ✅ NUEVO
+                'saldo_decimal': float(saldo_decimal),  # ✅ NUEVO
                 'billetes_disponibles': billetes_disponibles,
                 'billetes_retiro_total': detalles_billetes,
                 'monto_entregado': monto_entregado,
@@ -677,17 +678,15 @@ def atm_extraer(request):
                 'posible_efectivo': posible,
                 'saldo_obj': saldo_obj
             })
-        print("monedas_con_detalle",monedas_con_detalle ,flush=True)
         
         if request.method == 'POST':
             moneda_id = request.POST.get('moneda_id')
-            tipo_retiro = request.POST.get('tipo_retiro')  # 'total' o 'parcial'
+            tipo_retiro = request.POST.get('tipo_retiro')
             
             if not moneda_id:
                 messages.error(request, 'Datos incompletos')
                 return redirect('atm_extraer')
             
-            # Obtener el saldo del cliente
             try:
                 saldo_obj = SaldoCliente.objects.select_related('moneda').get(
                     cliente=cliente,
@@ -701,13 +700,14 @@ def atm_extraer(request):
             
             moneda = saldo_obj.moneda
             
-            # Determinar billetes a entregar
+            # ✅ CALCULAR SOLO SOBRE LA PARTE ENTERA
+            saldo_entero = int(saldo_obj.saldo)
+            
             if tipo_retiro == 'parcial':
-                # ✅ RETIRO PARCIAL PERSONALIZADO
+                # RETIRO PARCIAL PERSONALIZADO
                 billetes_seleccionados = {}
                 monto_total = 0
                 
-                # Leer las cantidades enviadas desde el formulario
                 for key, value in request.POST.items():
                     if key.startswith('billete_'):
                         denom_id = int(key.replace('billete_', ''))
@@ -715,9 +715,11 @@ def atm_extraer(request):
                         
                         if cantidad > 0:
                             try:
-                                stock = StockTauser.objects.get(denominacion_id=denom_id,localidad=localidad)
+                                stock = StockTauser.objects.get(
+                                    denominacion_id=denom_id,
+                                    localidad=localidad
+                                )
                                 
-                                # Validar stock disponible
                                 if cantidad > stock.cantidad:
                                     messages.error(request, f'Stock insuficiente de billetes de {stock.denominacion.valor}')
                                     return redirect('atm_extraer')
@@ -729,9 +731,9 @@ def atm_extraer(request):
                                 messages.error(request, 'Denominación inválida')
                                 return redirect('atm_extraer')
                 
-                # Validar que el monto no exceda el saldo
-                if monto_total > float(saldo_obj.saldo):
-                    messages.error(request, f'El monto seleccionado ({monto_total:.2f}) excede tu saldo disponible ({float(saldo_obj.saldo):.2f})')
+                # ✅ Validar contra PARTE ENTERA del saldo
+                if monto_total > saldo_entero:
+                    messages.error(request, f'El monto seleccionado ({monto_total}) excede la parte extraíble de tu saldo ({saldo_entero})')
                     return redirect('atm_extraer')
                 
                 if monto_total == 0:
@@ -739,16 +741,12 @@ def atm_extraer(request):
                     return redirect('atm_extraer')
                 
                 billetes = billetes_seleccionados
-                monto_entregado = monto_total  # ✅ Este es el monto REAL que se entregará
-                
-                print(f"💵 RETIRO PARCIAL:", flush=True)
-                print(f"   Monto solicitado (input): {request.POST.get('monto_solicitado', 'N/A')}", flush=True)
-                print(f"   Monto calculado (billetes): {monto_entregado}", flush=True)
+                monto_entregado = monto_total
                 
             else:
-                # ✅ RETIRO TOTAL AUTOMÁTICO
+                # RETIRO TOTAL AUTOMÁTICO (solo parte entera)
                 billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
-                    float(saldo_obj.saldo),
+                    saldo_entero,
                     moneda,
                     localidad
                 )
@@ -756,35 +754,57 @@ def atm_extraer(request):
                 if monto_entregado == 0:
                     messages.error(request, 'No hay billetes disponibles en este momento')
                     return redirect('atm_extraer')
-                
-                print(f"💵 RETIRO TOTAL:", flush=True)
-                print(f"   Saldo disponible: {float(saldo_obj.saldo)}", flush=True)
-                print(f"   Monto entregado: {monto_entregado}", flush=True)
             
             with db_transaction.atomic():
-                # ✅ Actualizar stock de billetes
-                for denom_id, cantidad in billetes.items():
-                    stock = StockTauser.objects.get(denominacion_id=denom_id,localidad=localidad)
-                    
-                    if stock.cantidad < cantidad:
-                        messages.error(request, f'Stock insuficiente de billetes de {stock.denominacion.valor}')
-                        return redirect('atm_extraer')
-                    
-                    #stock.cantidad -= cantidad
-                    stock.save()
-                    
-                    print(f"   📉 Billete {stock.denominacion.valor}: {stock.cantidad + cantidad} → {stock.cantidad}", flush=True)
+                # ✅ VERIFICAR SI HAY RESERVA ACTIVA
+                from tauser.models import ReservaTauser, DetalleReservaTauser
                 
-                # ✅ Descontar del saldo del cliente EL MONTO ENTREGADO (no el solicitado)
+                reserva_activa = ReservaTauser.objects.filter(
+                    moneda=moneda,
+                    activa=True
+                ).first()
+                
+                if reserva_activa:
+                    print(f"✅ Reserva encontrada (ID: {reserva_activa.id}), NO se descuenta stock físico", flush=True)
+                    
+                    # ✅ Desactivar la reserva
+                    reserva_activa.activa = False
+                    reserva_activa.save()
+                    
+                    # ✅ NO descontar stock porque ya estaba reservado
+                    
+                else:
+                    print(f"❌ SIN reserva activa, SE DESCUENTA stock físico", flush=True)
+                    
+                    # ✅ DESCONTAR STOCK FÍSICO (solo si NO había reserva)
+                    for denom_id, cantidad in billetes.items():
+                        stock = StockTauser.objects.select_for_update().get(
+                            denominacion_id=denom_id,
+                            localidad=localidad
+                        )
+                        
+                        if stock.cantidad < cantidad:
+                            messages.error(request, f'Stock insuficiente de billetes de {stock.denominacion.valor}')
+                            return redirect('atm_extraer')
+                        
+                        stock_anterior = stock.cantidad
+                        stock.cantidad -= cantidad  # ✅ DESCONTAR FÍSICAMENTE
+                        stock.save()
+                        
+                        print(f"   📉 Billete {stock.denominacion.valor}: {stock_anterior} → {stock.cantidad}", flush=True)
+                
+                # ✅ Descontar del saldo del cliente
                 saldo_anterior = saldo_obj.saldo
-                monto_a_descontar = Decimal(str(monto_entregado))  # ✅ Usar monto_entregado
+                monto_a_descontar = Decimal(str(monto_entregado))
                 
                 if monto_a_descontar > saldo_obj.saldo:
                     messages.error(request, 'Error: El monto a entregar excede el saldo disponible')
                     return redirect('atm_extraer')
                 
-                saldo_obj.saldo -= monto_a_descontar  # ✅ Descontar el monto REAL entregado
+                saldo_obj.saldo -= monto_a_descontar
                 saldo_obj.save()
+                
+                saldo_decimal_restante = saldo_obj.saldo - int(saldo_obj.saldo)
                 
                 print(f"✅ Retiro exitoso ({tipo_retiro}):", flush=True)
                 print(f"   Cliente: {cliente.nombre}", flush=True)
@@ -792,15 +812,19 @@ def atm_extraer(request):
                 print(f"   Saldo anterior: {saldo_anterior}", flush=True)
                 print(f"   Monto entregado: {monto_entregado}", flush=True)
                 print(f"   Saldo nuevo: {saldo_obj.saldo}", flush=True)
-                print(f"   Diferencia que queda: {float(saldo_obj.saldo)}", flush=True)
+                print(f"   Colita restante: {saldo_decimal_restante}", flush=True)
                 
                 # Formatear mensaje
                 if moneda.abreviacion.upper() == 'PYG':
-                    mensaje = f'✓ Retiro exitoso en {localidad.nombre}: {int(monto_entregado):,} {moneda.abreviacion}'
+                    mensaje = f'✓ Retiro exitoso: {int(monto_entregado):,} {moneda.abreviacion}'
                     if saldo_obj.saldo > 0:
-                        mensaje += f'. Saldo restante: {int(saldo_obj.saldo):,} {moneda.abreviacion}'
+                        saldo_entero_nuevo = int(saldo_obj.saldo)
+                        saldo_decimal_nuevo = float(saldo_obj.saldo - Decimal(str(saldo_entero_nuevo)))
+                        mensaje += f'. Saldo: {saldo_entero_nuevo:,} {moneda.abreviacion}'
+                        if saldo_decimal_nuevo > 0.01:
+                            mensaje += f' (+ {saldo_decimal_nuevo:.2f} no extraíbles aún)'
                 else:
-                    mensaje = f'✓ Retiro exitoso en {localidad.nombre}: {monto_entregado:,.2f} {moneda.abreviacion}'
+                    mensaje = f'✓ Retiro exitoso: {monto_entregado:,.2f} {moneda.abreviacion}'
                     if saldo_obj.saldo > 0:
                         mensaje += f'. Saldo restante: {float(saldo_obj.saldo):,.2f} {moneda.abreviacion}'
                 
@@ -808,7 +832,6 @@ def atm_extraer(request):
             
             return redirect('atm_extraer')
         
-        print("monedas_con_detalle",monedas_con_detalle ,flush=True)
         context = {
             'cliente': cliente,
             'localidad': localidad,
