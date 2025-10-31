@@ -420,6 +420,255 @@
             transform: translateY(-1px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
+
+        /* MODAL CONSULTA FACTURA */
+        .modal-consulta {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            padding: 1rem;
+        }
+
+        .modal-overlay-consulta {
+            position: absolute;
+            inset: 0;
+        }
+
+        .modal-content-consulta {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .modal-header-consulta {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header-consulta h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .btn-close-consulta {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .btn-close-consulta:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .modal-body-consulta {
+            padding: 2.5rem 2rem;
+            min-height: 300px;
+        }
+
+        .consulta-estado {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* Spinner */
+        .spinner-consulta {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1.5rem;
+        }
+
+        .spinner-circle-consulta {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #f3f4f6;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .consulta-message {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        /* Icono de estado grande */
+        .estado-icon-container {
+            margin-bottom: 1.5rem;
+        }
+
+        .estado-icon-grande {
+            font-size: 5rem;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin: 0 auto;
+            animation: aparecer 0.5s ease;
+        }
+
+        .estado-icon-grande.aprobado {
+            background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+            border: 4px solid #86efac;
+        }
+
+        .estado-icon-grande.rechazado {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 4px solid #fca5a5;
+        }
+
+        .estado-icon-grande.pendiente {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 4px solid #fcd34d;
+        }
+
+        .estado-icon-grande.error {
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+            border: 4px solid #fca5a5;
+        }
+
+        @keyframes aparecer {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .estado-titulo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 0.75rem;
+        }
+
+        .estado-descripcion {
+            color: #6b7280;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+
+        /* Detalles mini */
+        .factura-detalles-mini {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+        }
+
+        .detalle-mini {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .detalle-mini:last-child {
+            border-bottom: none;
+        }
+
+        .detalle-mini span {
+            color: #6b7280;
+            font-size: 0.85rem;
+        }
+
+        .detalle-mini strong {
+            color: #1f2937;
+            font-size: 0.9rem;
+        }
+
+        .detalle-mini code {
+            background: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            border: 1px solid #d1d5db;
+        }
+
+        /* Footer */
+        .modal-footer-consulta {
+            padding: 1.5rem 2rem;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .btn-modal-consulta {
+            width: 100%;
+            padding: 0.85rem 1.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-modal-consulta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .modal-content-consulta {
+                max-width: 95%;
+            }
+            
+            .modal-header-consulta {
+                padding: 1.25rem 1.5rem;
+            }
+            
+            .modal-body-consulta {
+                padding: 2rem 1.5rem;
+            }
+            
+            .estado-icon-grande {
+                font-size: 4rem;
+                width: 100px;
+                height: 100px;
+            }
+        }
     </style>
 </head>
 
@@ -562,8 +811,177 @@
         </div>
     </div>
 
+    <!-- MODAL CONSULTA ESTADO FACTURA -->
+    <div id="modal-consulta-factura" class="modal-consulta" style="display: none;">
+        <div class="modal-overlay-consulta" onclick="cerrarModalConsulta()"></div>
+        <div class="modal-content-consulta">
+            <div class="modal-header-consulta">
+                <h3>📋 Estado de la Factura</h3>
+                <button class="btn-close-consulta" onclick="cerrarModalConsulta()">×</button>
+            </div>
+            
+            <div class="modal-body-consulta">
+                <!-- Estado: Cargando -->
+                <div id="consulta-loading" class="consulta-estado">
+                    <div class="spinner-consulta">
+                        <div class="spinner-circle-consulta"></div>
+                    </div>
+                    <p class="consulta-message">Consultando estado en SIFEN...</p>
+                </div>
+
+                <!-- Estado: Resultado -->
+                <div id="consulta-resultado" class="consulta-estado" style="display: none;">
+                    <div class="estado-icon-container">
+                        <div id="estado-icon-grande" class="estado-icon-grande">⏳</div>
+                    </div>
+                    <h3 id="estado-titulo" class="estado-titulo">Procesando</h3>
+                    <p id="estado-descripcion" class="estado-descripcion">La factura está siendo procesada por SIFEN</p>
+                    
+                    <div class="factura-detalles-mini">
+                        <div class="detalle-mini">
+                            <span>Número:</span>
+                            <strong id="numero-mini">-</strong>
+                        </div>
+                        <div class="detalle-mini">
+                            <span>CDC:</span>
+                            <code id="cdc-mini">-</code>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer-consulta">
+                <button class="btn-modal-consulta" onclick="cerrarModalConsulta()">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    async function mostrarModalConsulta(transaccionId) {
+    console.log('📋 [CONSULTA] Mostrando modal para transacción:', transaccionId);
+    
+    if (!transaccionId) {
+        transaccionId = window.transaccionIdActual || window.facturaGenerada?.transaccion_id;
+    }
+    
+    if (!transaccionId) {
+        alert('❌ No se encontró el ID de transacción');
+        return;
+    }
+    
+    const modal = document.getElementById('modal-consulta-factura');
+    modal.style.display = 'flex';
+    
+    // Mostrar estado de carga
+    document.getElementById('consulta-loading').style.display = 'flex';
+    document.getElementById('consulta-resultado').style.display = 'none';
+    
+    // Animación de entrada
+    const content = modal.querySelector('.modal-content-consulta');
+    content.style.transform = 'scale(0.9) translateY(-20px)';
+    content.style.opacity = '0';
+    
+    requestAnimationFrame(() => {
+        content.style.transition = 'all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        content.style.transform = 'scale(1) translateY(0)';
+        content.style.opacity = '1';
+    });
+    
+    // Consultar estado
+    try {
+        const response = await fetch(`/facturas/consultar-factura/?transaccion_id=${transaccionId}`, {
+            method: 'GET',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('📥 [CONSULTA] Respuesta recibida:', data);
+        
+        // Ocultar loading y mostrar resultado
+        document.getElementById('consulta-loading').style.display = 'none';
+        document.getElementById('consulta-resultado').style.display = 'flex';
+        
+        if (data.success && data.estado) {
+            const estado = data.estado.estado_sifen;
+            const descripcion = data.estado.desc_sifen;
+            
+            const iconoGrande = document.getElementById('estado-icon-grande');
+            const titulo = document.getElementById('estado-titulo');
+            const desc = document.getElementById('estado-descripcion');
+            
+            // Configurar según estado
+            if (estado === 'Aprobado') {
+                iconoGrande.textContent = '✅';
+                iconoGrande.className = 'estado-icon-grande aprobado';
+                titulo.textContent = '¡Factura Aprobada!';
+                desc.textContent = descripcion || 'La factura ha sido aprobada por SIFEN exitosamente';
+            } else if (estado === 'Rechazado') {
+                iconoGrande.textContent = '❌';
+                iconoGrande.className = 'estado-icon-grande rechazado';
+                titulo.textContent = 'Factura Rechazada';
+                desc.textContent = data.estado.error_sifen || descripcion || 'La factura fue rechazada por SIFEN';
+            } else {
+                iconoGrande.textContent = '⏳';
+                iconoGrande.className = 'estado-icon-grande pendiente';
+                titulo.textContent = 'Factura en Proceso';
+                desc.textContent = descripcion || 'La factura está siendo procesada por SIFEN';
+            }
+            
+            // Actualizar detalles
+            document.getElementById('numero-mini').textContent = data.numero_factura || '-';
+            document.getElementById('cdc-mini').textContent = data.cdc ? data.cdc.substring(0, 20) + '...' : '-';
+            
+        } else {
+            // Error
+            document.getElementById('estado-icon-grande').textContent = '⚠️';
+            document.getElementById('estado-icon-grande').className = 'estado-icon-grande error';
+            document.getElementById('estado-titulo').textContent = 'Error al Consultar';
+            document.getElementById('estado-descripcion').textContent = data.error || 'No se pudo obtener el estado';
+        }
+        
+    } catch (error) {
+        console.error('💥 [CONSULTA] Error:', error);
+        
+        document.getElementById('consulta-loading').style.display = 'none';
+        document.getElementById('consulta-resultado').style.display = 'flex';
+        
+        document.getElementById('estado-icon-grande').textContent = '⚠️';
+        document.getElementById('estado-icon-grande').className = 'estado-icon-grande error';
+        document.getElementById('estado-titulo').textContent = 'Error de Conexión';
+        document.getElementById('estado-descripcion').textContent = 'No se pudo conectar con el servidor';
+    }
+}
+
+/**
+ * Cierra el modal de consulta
+ */
+function cerrarModalConsulta() {
+    const modal = document.getElementById('modal-consulta-factura');
+    const content = modal.querySelector('.modal-content-consulta');
+    
+    content.style.transition = 'all 0.2s ease-out';
+    content.style.transform = 'scale(0.9) translateY(-20px)';
+    content.style.opacity = '0';
+    
+    setTimeout(() => {
+        modal.style.display = 'none';
+        
+        // Reset
+        document.getElementById('consulta-loading').style.display = 'flex';
+        document.getElementById('consulta-resultado').style.display = 'none';
+    }, 200);
+}
+
+
 // ==================== SISTEMA DE FACTURACIÓN PARA TAUSER ====================
 console.log('🚀 [TAUSER] Inicializando sistema de facturación...');
 
@@ -580,12 +998,9 @@ async function generarFacturaAutomatica(transaccionId) {
     // Validación estricta del ID
     if (!transaccionId || transaccionId === 'undefined' || transaccionId === 'null') {
         console.error('❌ [FACTURA] ID de transacción inválido:', transaccionId);
-        console.error('❌ [FACTURA] Tipo:', typeof transaccionId);
-        console.error('❌ [FACTURA] window.transaccionIdActual:', window.transaccionIdActual);
         return null;
     }
 
-    // Convertir a número si viene como string
     const transaccionIdNum = parseInt(transaccionId, 10);
     if (isNaN(transaccionIdNum)) {
         console.error('❌ [FACTURA] No se pudo convertir a número:', transaccionId);
@@ -619,6 +1034,42 @@ async function generarFacturaAutomatica(transaccionId) {
             try {
                 const errorData = JSON.parse(errorText);
                 console.error('❌ [FACTURA] Error data:', errorData);
+                
+                // ✅ MANEJO ESPECIAL: Si la factura ya existe
+                if (errorData.error && errorData.error.includes('NUMDOC_APROBADO')) {
+                    console.warn('⚠️ [FACTURA] La factura ya existe para esta transacción');
+                    
+                    // Intentar obtener la factura existente
+                    const existenteResponse = await fetch(`/facturas/api/obtener-por-transaccion/?transaccion_id=${transaccionIdNum}`, {
+                        method: 'GET',
+                        headers: {
+                            'X-CSRFToken': getCookie('csrftoken')
+                        }
+                    });
+                    
+                    if (existenteResponse.ok) {
+                        const existenteData = await existenteResponse.json();
+                        if (existenteData.success) {
+                            console.log('✅ [FACTURA] Factura existente recuperada');
+                            
+                            window.facturaGenerada = {
+                                id: existenteData.factura_id,
+                                cdc: existenteData.cdc,
+                                numero: existenteData.numero_factura,
+                                transaccion_id: transaccionIdNum
+                            };
+                            
+                            return {
+                                success: true,
+                                factura_id: existenteData.factura_id,
+                                cdc: existenteData.cdc,
+                                numero_factura: existenteData.numero_factura,
+                                ya_existia: true
+                            };
+                        }
+                    }
+                }
+                
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             } catch (e) {
                 throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
@@ -633,7 +1084,6 @@ async function generarFacturaAutomatica(transaccionId) {
             console.log('🔢 Número:', data.numero_factura);
             console.log('🆔 ID Factura:', data.factura_id);
             
-            // Guardar datos globales
             window.facturaGenerada = {
                 id: data.factura_id,
                 cdc: data.cdc,
@@ -745,64 +1195,9 @@ async function enviarFacturaPorCorreo(transaccionId) {
         return false;
     }
     
-    try {
-        const btn = document.getElementById('btn-enviar-factura-dinamico') || document.getElementById('btn-enviar-factura');
-        if (btn) {
-            const span = btn.querySelector('span');
-            span.textContent = '🔄 Consultando SIFEN...';
-            btn.disabled = true;
-        }
-        
-        console.log(`📧 [TAUSER] Consultando estado en SIFEN para transacción #${transaccionId}...`);
-        
-        // ✅ ESTA ES LA LÍNEA CORRECTA - USA EL ENDPOINT QUE YA EXISTE
-        const response = await fetch(`/facturas/consultar-factura/?transaccion_id=${transaccionId}`, {
-            method: 'GET',  // ✅ GET, no POST
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken')
-            }
-        });
-        
-        const data = await response.json();
-        
-        if (btn) {
-            const span = btn.querySelector('span');
-            span.textContent = '📧 Consultar Estado';
-            btn.disabled = false;
-        }
-        
-        if (data.success) {
-            const estado = data.estado;
-            let mensaje = `Estado SIFEN: ${estado.estado_sifen}\n${estado.desc_sifen}`;
-            
-            // Si está aprobada, informar que el email ya fue enviado por FacturaSegura
-            if (estado.estado_sifen === 'Aprobado') {
-                mensaje += '\n\n✅ La factura fue aprobada.\n📧 FacturaSegura ya envió el email automáticamente al cliente y al emisor.';
-            } else if (estado.estado_sifen === 'Rechazado') {
-                mensaje += '\n\n❌ La factura fue rechazada por SIFEN.';
-            } else {
-                mensaje += '\n\n⏳ La factura está en proceso de aprobación.';
-            }
-            
-            alert(mensaje);
-            return true;
-        } else {
-            //alert('❌ ' + (data.error || 'Error al consultar el estado'));
-            return false;
-        }
-        
-    } catch (error) {
-        console.error('💥 Error al consultar estado:', error);
-        //alert('❌ Error al consultar el estado: ' + error.message);
-        
-        const btn = document.getElementById('btn-enviar-factura-dinamico') || document.getElementById('btn-enviar-factura');
-        if (btn) {
-            btn.querySelector('span').textContent = '📧 Consultar Estado';
-            btn.disabled = false;
-        }
-        
-        return false;
-    }
+    // ✅ Mostrar modal directamente
+    mostrarModalConsulta(transaccionId);
+    return true;
 }
 
 
@@ -1007,7 +1402,7 @@ function actualizarModalConFactura() {
         console.log('🔘 [BOTÓN] Click con transaccionId:', transId);
         enviarFacturaPorCorreo(transId);
     };
-    btnEnviarFactura.innerHTML = '<span>📧 Enviar Factura por Email</span>';
+    btnEnviarFactura.innerHTML = '<span>📧 Consultar Estado</span>';
     
     footerDeposito.appendChild(btnEnviarFactura);
     
@@ -1054,7 +1449,7 @@ window.mostrarModalDeposito = function(monto, moneda, transaccionId) {
         content.style.opacity = '1';
     });
     
-    // Simular procesamiento
+    // ✅ SIMULAR PROCESAMIENTO Y GENERAR FACTURA SOLO UNA VEZ AQUÍ
     setTimeout(async () => {
         console.log('⏱️ [MODAL] Timeout completado, mostrando éxito...');
         
@@ -1066,15 +1461,25 @@ window.mostrarModalDeposito = function(monto, moneda, transaccionId) {
         document.getElementById('moneda-depositada').textContent = moneda;
         document.getElementById('footer-deposito').style.display = 'flex';
         
-        // Generar factura
+        // ✅ GENERAR FACTURA SOLO AQUÍ (UNA SOLA VEZ)
         console.log('🔄 [MODAL] Iniciando generación de factura...');
         console.log('📋 [MODAL] Usando transaccionId:', window.transaccionIdActual);
         
         if (window.transaccionIdActual) {
+            // ✅ Verificar si ya existe una factura para evitar duplicados
+            if (window.facturaGenerada) {
+                console.log('⚠️ [MODAL] Factura ya generada previamente, omitiendo...');
+                actualizarModalConFactura();
+                return;
+            }
+            
             const resultadoFactura = await generarFacturaAutomatica(window.transaccionIdActual);
             
             if (resultadoFactura && resultadoFactura.success) {
                 console.log('✅ [MODAL] Factura generada exitosamente');
+                actualizarModalConFactura();
+            } else if (resultadoFactura && resultadoFactura.ya_existia) {
+                console.log('ℹ️ [MODAL] Factura ya existía, recuperada exitosamente');
                 actualizarModalConFactura();
             } else {
                 console.warn('⚠️ [MODAL] No se pudo generar la factura');
@@ -1176,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Mostrar modal
             mostrarModalDeposito(monto, moneda, transaccionId);
             
-            // Enviar formulario en background
+            // ✅ ENVIAR FORMULARIO EN BACKGROUND (SIN GENERAR FACTURA AQUÍ)
             const formData = new FormData(this);
             fetch(this.action, {
                 method: 'POST',
@@ -1186,9 +1591,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }).then(response => {
                 console.log('✅ [FORM] Depósito confirmado en servidor');
-                generarFacturaAutomatica(window.transaccionIdActual).then(() => {
-                    //$("#modal-pin").fadeOut();
-                });
+                // ❌ REMOVIDO: No generar factura aquí
                 return response.text();
             }).then(text => {
                 console.log('📥 [FORM] Respuesta del servidor:', text);
