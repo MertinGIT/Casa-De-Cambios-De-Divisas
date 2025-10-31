@@ -11,6 +11,7 @@ from decimal import Decimal
 from django.utils import timezone
 from usuarios.models import CustomUser  # ✅ Importar CustomUser
 from cliente_usuario.models import Usuario_Cliente  # ✅ Importar relación usuario-cliente
+from functools import wraps
 
 
 # ==================== SESIÓN ATM ====================
@@ -63,8 +64,16 @@ def atm_seleccionar_localidad(request):
 # 2. Login
 def atm_login(request):
     """
-    Login del ATM usando cédula y contraseña del CustomUser.
-    Sesión independiente de la aplicación principal.
+    Vista de inicio de sesión del terminal de autoservicio (ATM).
+
+    Permite al cliente autenticarse ingresando su número de cédula.
+    Requiere que previamente se haya seleccionado una localidad TAUSER.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponse: Renderiza el formulario de login o redirige al dashboard.
     """
     # Verificar que haya seleccionado una localidad
     localidad_id = request.session.get('atm_localidad_id')
@@ -124,7 +133,46 @@ def atm_login(request):
 # 3. Seleccionar cliente ✅ ESTA FUNCIÓN DEBE EXISTIR
 def atm_seleccionar_cliente(request):
     """
-    Permite al usuario seleccionar con qué cliente operará en el ATM.
+    Vista para seleccionar el cliente con el cual operará el usuario en el ATM.
+
+    Esta función valida que el usuario ATM esté autenticado mediante sesión y luego
+    obtiene los clientes asociados al mismo. El usuario debe elegir un cliente activo
+    para continuar operando dentro del sistema ATM.
+
+    Flujo:
+        1. Verifica que exista un usuario ATM autenticado en la sesión.
+        2. Obtiene los clientes asociados al usuario y filtra solo los activos.
+        3. Si no posee clientes asignados, se finaliza la sesión ATM.
+        4. Si es una solicitud POST, valida el cliente seleccionado:
+            - Verifica que el cliente exista y esté activo.
+            - Verifica que pertenezca al usuario ATM.
+            - Guarda los datos del cliente seleccionado en la sesión.
+        5. Si es GET, muestra la vista para seleccionar el cliente.
+
+    Variables de sesión utilizadas:
+        - atm_user_id: ID del usuario ATM autenticado.
+        - atm_localidad_nombre: Nombre de la localidad asignada (por defecto "TAUSER").
+        - atm_cliente_id: ID del cliente seleccionado una vez validado.
+        - atm_cliente_nombre: Nombre del cliente seleccionado.
+        - atm_cliente_ruc: RUC del cliente seleccionado.
+        - atm_cliente_cedula: Cédula del cliente seleccionado.
+
+    Mensajes mostrados:
+        - Advertencia si no hay sesión ATM iniciada.
+        - Error si no posee clientes asignados o selecciona uno inválido.
+        - Confirmación exitosa al seleccionar el cliente.
+
+    Redirecciones:
+        - `atm_login`: Si no existe sesión válida.
+        - `atm_logout`: Si no tiene clientes asociados.
+        - `atm_seleccionar_cliente`: Si hay error de selección.
+        - `atm_dashboard`: Si la selección de cliente es exitosa.
+
+    Retorno:
+        Renderiza la plantilla 'tauser/seleccionar_cliente.html' con:
+            - user: Usuario autenticado.
+            - clientes: Lista de clientes asociados activos.
+            - localidad_nombre: Nombre de la localidad asignada.
     """
     atm_user_id = request.session.get('atm_user_id')
     localidad_nombre = request.session.get('atm_localidad_nombre', 'TAUSER')
@@ -234,7 +282,15 @@ def atm_dashboard(request):
 # 5. Logout
 def atm_logout(request):
     """
-    Cierra SOLO la sesión del ATM, sin afectar la sesión principal.
+    Cierre de sesión en el terminal TAUSER.
+
+    Elimina todas las variables de sesión del ATM y redirige a la selección de localidad.
+
+    Args:
+        request (HttpRequest): Solicitud HTTP del cliente.
+
+    Returns:
+        HttpResponseRedirect: Redirige al inicio del ATM.
     """
     username = request.session.get('atm_username', 'Usuario')
     
@@ -268,6 +324,7 @@ def require_atm_session(view_func):
     """
     Decorador para proteger vistas que requieren sesión ATM activa.
     """
+    @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         atm_user_id = request.session.get('atm_user_id')
         atm_cliente_id = request.session.get('atm_cliente_id')

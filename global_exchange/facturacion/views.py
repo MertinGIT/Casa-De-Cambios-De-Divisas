@@ -15,7 +15,23 @@ from clientes.models import Cliente
 
 @login_required
 def facturacion_view(request):
-    """Vista principal de listado de facturas"""
+    """
+    Muestra el listado de **facturas electrónicas emitidas por el usuario actual**.
+
+    Permite aplicar filtros por cliente, CDC, estado, fechas y transacción.  
+    También calcula estadísticas por estado (aprobadas, pendientes, rechazadas)
+    y detecta la **segmentación activa** del cliente operativo.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud HTTP con los filtros de búsqueda.
+
+    **Retorna:**
+
+    - **HttpResponse:**  
+      Página HTML con la lista filtrada de facturas y sus métricas.
+    """
     facturas = Factura.objects.filter(creado_por=request.user).select_related(
         'transaccion', 'cliente', 'rango_utilizado'
     )
@@ -98,11 +114,20 @@ def facturacion_view(request):
 @require_http_methods(["POST"])
 def generar_factura_transaccion(request):
     """
-    ✅ FUNCIÓN PRINCIPAL - Genera factura y hace TODO automáticamente:
-    1. Crea la factura en BD
-    2. Envía a SIFEN
-    3. Consulta estado automáticamente
-    4. Envía email si está aprobada (lo hace FacturaSegura)
+    Genera una **factura electrónica** asociada a una transacción.
+
+    Recibe un JSON con el `transaccion_id`, obtiene la información del cliente y
+    usa el servicio `FacturaSeguraService` para emitir la factura ante SIFEN.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud HTTP POST con JSON `{ "transaccion_id": int }`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Resultado con éxito o error y datos de la factura generada.
     """
     try:
         data = json.loads(request.body)
@@ -264,7 +289,17 @@ def consultar_estado_factura(request, factura_id):
 @require_http_methods(["GET"])
 def consultar_estado_factura_transaccion(request):
     """
-    ✅ SOLO CONSULTA - No genera nada, solo verifica el estado actual
+    Consulta el estado SIFEN de la **factura vinculada a una transacción**.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud GET con `transaccion_id`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Estado de la factura o error.
     """
     try:
         transaccion_id = request.GET.get('transaccion_id')
@@ -321,7 +356,19 @@ def consultar_estado_factura_transaccion(request):
 
 @require_http_methods(["GET"])
 def descargar_factura(request):
-    """Descarga el PDF (KuDE) de una factura"""
+    """
+    Descarga el **KuDE (PDF)** de una factura emitida.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud GET con parámetros `cdc` y `transaccion_id`.
+
+    **Retorna:**
+
+    - **FileResponse:** Archivo PDF.  
+    - **JsonResponse:** Mensaje de error en caso de fallo.
+    """
     cdc = request.GET.get('cdc')
     transaccion_id = request.GET.get('transaccion_id')
     
@@ -348,7 +395,19 @@ def descargar_factura(request):
 
 
 def factura_resumida(factura):
-    """Genera resumen JSON de la factura"""
+    """
+    Envía por **correo electrónico** el PDF (KuDE) de una factura generada.
+
+    **Parámetros:**
+
+    - **request (HttpRequest):**  
+      Solicitud POST con JSON `{ "transaccion_id": int }`.
+
+    **Retorna:**
+
+    - **JsonResponse:**  
+      Confirmación de envío o error.
+    """
     ruc_cliente = factura.cliente.ruc or factura.cliente.cedula or "0"
 
     if ruc_cliente and '-' in ruc_cliente:
@@ -429,7 +488,23 @@ def factura_resumida(factura):
 
 
 def obtener_clientes_usuario(user, request):
-    """Obtiene clientes asociados al usuario"""
+    """
+    Obtiene los **clientes asociados** a un usuario y el cliente operativo actual.
+
+    Si existe un cliente operativo en sesión, se devuelve ese; de lo contrario, el primero.
+
+    **Parámetros:**
+    - **user (User):**  
+      Usuario autenticado.
+      
+    - **request (HttpRequest):**  
+      Solicitud actual.
+
+    **Retorna:**
+
+    - **tuple[list[Cliente], Cliente | None]:**  
+      Lista de clientes asociados y el cliente operativo.
+    """
     usuarios_clientes = (
         Usuario_Cliente.objects
         .select_related("id_cliente__segmentacion")
@@ -450,7 +525,7 @@ def obtener_clientes_usuario(user, request):
 
 @login_required
 def set_cliente_operativo(request):
-    """Define el cliente operativo en sesión"""
+    """Define el **cliente operativo** en sesión para el usuario autenticado."""
     cliente_id = request.POST.get('cliente_id')
     if cliente_id:
         try:
