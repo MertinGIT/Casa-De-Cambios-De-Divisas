@@ -365,6 +365,7 @@ function seleccionarLocalidadTauser(localidad) {
 
     // ✅ Card especial para TAUSER - SOLO si NO es venta
     if (!esVenta) {
+        
         const tauserCard = document.createElement('div');
         tauserCard.className = 'medio-item';
         tauserCard.innerHTML = `
@@ -392,6 +393,15 @@ function seleccionarLocalidadTauser(localidad) {
         
         container.appendChild(tauserCard);
     }
+    console.log("Medios Acreditacion Data:", mediosAcreditacionData);
+    mediosAcreditacionData.forEach(medio => {
+        console.log("medio", medio);
+        if(medio.entidad.nombre.toLowerCase() != 'tauser'){
+        const medioElement = createMedioElement(medio);
+        container.appendChild(medioElement);
+        }
+    });
+   
 }
 
 
