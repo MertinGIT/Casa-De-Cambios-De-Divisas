@@ -589,10 +589,12 @@ def atm_extraer(request):
     """
     cliente_id = request.session.get('atm_cliente_id')
     localidad_id = request.session.get('atm_localidad_id')
+    user_id = request.session.get('atm_user_id')  # ✅ AGREGAR ESTA LÍNEA
     
     try:
         cliente = Cliente.objects.get(id=cliente_id)
         localidad = Localidad.objects.get(id=localidad_id)
+        user = CustomUser.objects.get(id=user_id)  # ✅ AGREGAR ESTA LÍNEA
         
         from clientes.models import SaldoCliente
         
@@ -836,11 +838,13 @@ def atm_extraer(request):
             'cliente': cliente,
             'localidad': localidad,
             'monedas': monedas_con_detalle,
+            'user': user,  # ✅ AGREGAR
+            'mfa_transacciones': user.mfa_transacciones,  # ✅ AGREGAR
         }
         
         return render(request, 'tauser/extraer.html', context)
     
-    except(Cliente.DoesNotExist, Localidad.DoesNotExist):
+    except(Cliente.DoesNotExist, Localidad.DoesNotExist, CustomUser.DoesNotExist):  # ✅ AGREGAR CustomUser.DoesNotExist
         request.session.flush()
         messages.error(request, 'Sesión inválida')
         return redirect('atm_seleccionar_localidad')
