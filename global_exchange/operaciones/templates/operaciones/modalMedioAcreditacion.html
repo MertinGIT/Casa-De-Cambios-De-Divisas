@@ -69,6 +69,18 @@
 </div>
 
 <script>
+
+    function esMontoEntero(monto) {
+    const numero = parseFloat(monto);
+    return Number.isInteger(numero);
+    }
+
+    // Función auxiliar para obtener el monto actual
+    function obtenerMontoActual() {
+        const campos = getCampos();
+        return parseFloat(campos.$resultado.val()) || 0;
+    }
+
       function mostrarMensaje(titulo, texto,tipo='warning',recargar) {
     console.log("mostrarMensaje en Pin:", titulo, texto);
     
@@ -356,6 +368,9 @@ function seleccionarLocalidadTauser(localidad) {
     // ✅ Obtener la operación actual
     const campos = getCampos();
     const esVenta = campos.op === 'compra'; // compra = cliente vende, entonces NO mostrar TAUSER
+    const montoActual = obtenerMontoActual();
+    const montoEsEntero = esMontoEntero(montoActual);
+
 
     if (mediosAcreditacionData.length === 0 && esVenta) {
         container.style.display = 'none';
@@ -368,28 +383,41 @@ function seleccionarLocalidadTauser(localidad) {
         
         const tauserCard = document.createElement('div');
         tauserCard.className = 'medio-item';
+
+        const estaDeshabilitado = !montoEsEntero;
+        const idTauser = 'medio-tauser-new';
+
         tauserCard.innerHTML = `
             <input type="radio" 
-                   id="medio-tauser-new" 
+                   id="${idTauser}" 
                    name="medio_acreditacion" 
                    value="tauser-new" 
-                   class="medio-radio">
-            <label for="medio-tauser-new" class="medio-label">
+                   class="medio-radio"
+                   ${estaDeshabilitado ? 'disabled' : ''}>
+            <label for="${idTauser}" class="medio-label ${estaDeshabilitado ? 'medio-deshabilitado' : ''}">
                 <div class="medio-icon">📍</div>
                 <div class="medio-info">
                     <span class="medio-nombre">Tauser - Retiro en sucursal</span>
-                    <span class="medio-desc" id="tauser-desc">Haga clic para seleccionar sucursal</span>
+                    <span class="medio-desc" id="tauser-desc">
+                        ${estaDeshabilitado 
+                            ? '⚠️ Solo disponible para montos enteros' 
+                            : 'Haga clic para seleccionar sucursal'}
+                    </span>
                 </div>
-                <div class="medio-check">✓</div>
+                ${!estaDeshabilitado ? '<div class="medio-check">✓</div>' : ''}
             </label>
         `;
         
-        const radioTauser = tauserCard.querySelector('.medio-radio');
-        radioTauser.addEventListener('change', () => {
-            if (radioTauser.checked) {
-                mostrarModalSeleccionarLocalidad();
-            }
-        });
+        // Solo agregar evento si NO está deshabilitado
+        if (!estaDeshabilitado) {
+            const radioTauser = tauserCard.querySelector('.medio-radio');
+            radioTauser.addEventListener('change', () => {
+                if (radioTauser.checked) {
+                    mostrarModalSeleccionarLocalidad();
+                }
+            });
+        }
+
         
         container.appendChild(tauserCard);
     }

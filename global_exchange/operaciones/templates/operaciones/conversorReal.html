@@ -103,53 +103,28 @@
 <div class="campo fila" id="compra-1">
     <div class="input-icon-wrapper">
         <span class="icono">💵</span>
-
-        {% if monedas %}
-            <select id="origen-compra" name="origen" class="input-select">
-                {% for moneda in monedas %}
-                    {% if moneda.abreviacion == "PYG" %}
-                        <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == origen %}selected{% endif %}>
-                            {{ moneda.nombre }} ({{ moneda.abreviacion }})
-                        </option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        {% else %}
-            <select class="input-select" disabled>
-                <option selected>No hay monedas disponibles</option>
-            </select>
-        {% endif %}
+        <select id="origen-compra" name="origen" class="input-select" disabled>
+            <option value="PYG" selected>Guaraní (PYG)</option>
+        </select>
     </div>
-
-    <input type="text" id="valor-compra" name="valor" class="input-text" placeholder="Monto" />
+    <input type="text" id="valor-compra" name="valor" class="input-text readonly" readonly placeholder="Monto en PYG" />
 </div>
 
 <div class="campo fila" id="compra-2">
     <div class="input-icon-wrapper">
         <span class="icono">💲</span>
-
-        {% if monedas %}
-            <select id="destino-compra" name="destino" class="input-select">
-                {% for moneda in monedas %}
-                    {% if moneda.abreviacion != "PYG" %}
-                        <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == destino %}selected{% endif %}>
-                            {{ moneda.nombre }} ({{ moneda.abreviacion }})
-                        </option>
-                        
-                    {% endif %}
-                {% endfor %}
-            </select>
-        {% else %}
-            <select class="input-select" disabled>
-                <option selected>No hay monedas disponibles</option>
-            </select>
-        {% endif %}
+        <select id="destino-compra" name="destino" class="input-select">
+            {% for moneda in monedas %}
+                {% if moneda.abreviacion != "PYG" %}
+                    <option value="{{ moneda.abreviacion }}" {% if moneda.abreviacion == destino %}selected{% endif %}>
+                        {{ moneda.nombre }} ({{ moneda.abreviacion }})
+                    </option>
+                {% endif %}
+            {% endfor %}
+        </select>
     </div>
-
-    <input type="text" id="resultado-compra" name="resultado" class="input-text readonly"
-        placeholder="Resultado" readonly value="{{ resultado }}" />
+    <input type="text" id="resultado-compra" name="resultado" class="input-text" placeholder="Cantidad a comprar" />
 </div>
-
 <!-- ==== VENTA ==== -->
 <div class="campo fila" id="venta-1" style="display: none">
     <div class="input-icon-wrapper">
@@ -294,35 +269,32 @@
 
 <script>
 
-  function validarMonto(monto) {
-            // Convertir a string
-            const montoStr = monto.toString();
+    function validarMontoMinimo() {
+      const campos = getCampos();
+      const monto = parseFloat(campos.$valor.val());
+      const resultado = parseFloat(campos.$resultado.val());
+      
+      // COMPRA: validar que el monto ingresado (resultado) sea >= 0.5
+      if (campos.op === "venta") {
+        const monedaDestino = campos.$destino.val();
+        if (resultado < 0.5) {
+          cerrarModalConfirmacion()
+          mostrarMensaje("⚠️ Error", `El monto a recibir debe ser mayor o igual a 0.5 ${monedaDestino}`);
+          return false;
+        }
+      }
+      // VENTA: sin cambios
+      else {
+        const monedaOrigen = campos.$origen.val();
+        if (monto < 0.5) {
+          mostrarMensaje("⚠️ Error", `El monto a vender debe ser mayor o igual a 0.5 ${monedaOrigen}`);
+          return false;
+        }
+      }
+      
+      return true;
+    }
 
-            // Separar parte entera y decimal
-            const partes = montoStr.split(".");
-            const enteros = partes[0] || "";
-            const decimales = partes[1] || "";
-            console.log("partes", partes);
-            console.log("enteros", enteros);
-            console.log("decimales", decimales);
-
-            if (enteros.length > 15) {
-                mostrarMensaje("⚠️ Error", "El monto no puede tener más de 15 dígitos antes del punto decimal.");
-                return false;
-            }
-
-            if (decimales.length > 8) {
-                mostrarMensaje("⚠️ Error", "El monto no puede tener más de 8 decimales.");
-                return false;
-            }
-
-            if (!montoStr) {
-                mostrarMensaje("⚠️ Error", "Debe ingresar un monto. No puede dejar el campo vacío.");
-                return false;
-            }
-
-            return true;
-          }
           
           function validarMontoMinimo() {
             const campos = getCampos();
@@ -379,8 +351,8 @@
   });
       $(document).ready(function () {
 
-        const tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));
-        const tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
+        window.tasaVta = parseFloat("{{ tasa_vta|floatformat:2 }}".replace(",", "."));
+        window.tasaCmp = parseFloat("{{ tasa_cmp|floatformat:2 }}".replace(",", "."));
 
         console.log("Tasa Venta:", tasaVta, "Tasa Compra:", tasaCmp);
         console.log("resultado", "{{resultado}}");
@@ -446,114 +418,167 @@
         }
 
         // cálculo instantáneo
-        function calcularResultado() {
-          const campos = getCampos();
-          if (!campos || !campos.$valor) return;
+function calcularResultado() {
+  const campos = getCampos();
+  console.log("Campos: ", campos);
+  
+  // COMPRA: Usuario ingresa moneda extranjera en $resultado, calculamos PYG en $valor
+  if (campos.op === "venta") {
+    if (!campos || !campos.$resultado) return;
 
-          let raw = campos.$valor.val() || "";
-          raw = raw.replace(/[^0-9.]/g, '');
-          const parts = raw.split('.');
-          if (parts.length > 2) raw = parts.shift() + '.' + parts.join('');
-          campos.$valor.val(raw);
-          const monto = parseFloat(raw);
-          const origenVal = campos.$origen.val();
-          const destinoVal = campos.$destino.val();
+    let raw = campos.$resultado.val() || "";
+    raw = raw.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    if (parts.length > 2) raw = parts.shift() + '.' + parts.join('');
+    campos.$resultado.val(raw);
+    const monto = parseFloat(raw);
+    const origenVal = campos.$origen.val();
+    const destinoVal = campos.$destino.val();
 
-          if (!monto || monto <= 0 || !origenVal || !destinoVal || origenVal === destinoVal) {
-            campos.$resultado.val("");
-            return;
-          }
+    if (!monto || monto <= 0 || !origenVal || !destinoVal) {
+      campos.$valor.val("");
+      return;
+    }
 
-          if (!monto || monto <= 0) {
-            campos.$resultado.val("");
-            return;
-          }
-          // formateador
-           //const formatter = new Intl.NumberFormat("es-ES", {
-           //  minimumFractionDigits: 2,
-           //  maximumFractionDigits: 2
-           //});
-          // AJAX para cálculo en el servidor (si tu endpoint responde JSON { resultado, tasa })
-          $.ajax({
-            url: "{% url 'operaciones' %}",
-            type: "POST",
-            data: {
-              csrfmiddlewaretoken: "{{ csrf_token }}",
-              valor: monto,
-              operacion: campos.op,
-              origen: origenVal,
-              destino: destinoVal
-            },
-            success: function (resp) {
-              if (resp && resp.resultado !== undefined && !isNaN(parseFloat(resp.resultado))) {
-                // Caso válido: backend devolvió un número
-                const resultadoNumero = parseFloat(resp.resultado);
-                const resultadoFormateado = resultadoNumero; 
-                campos.$resultado.val(resultadoFormateado);
-                campos.$resultado.data("tasa", resp.tasa);
-                campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
-
-              } else {
-                // Fallback: calculo local inmediato
-                let resultadoCalc = null;
-
-                if (campos.op === "venta") {
-                  if (!tasaVta || tasaVta === 0) {
-                    resultadoCalc = null;
-                  } else {
-                    resultadoCalc = (monto / tasaVta).toFixed(2);
-                  }
-                } else {
-                  if (!tasaCmp || tasaCmp === 0) {
-                    resultadoCalc = null;
-                  } else {
-                    resultadoCalc = (monto * tasaCmp).toFixed(2);
-                  }
-                }
-
-                if (resultadoCalc !== null) {
-                  const resultadoFormateado = parseFloat(resultadoCalc);
-                  campos.$resultado.val(resultadoFormateado);
-                } else {
-                  campos.$resultado.val("No hay cotizacion disponible");
-                }
-              }
-
-              console.log("resp", resp);
-            },
-            error: function () {
-              let resultadoCalc = campos.op === "venta"
-                ? (monto / tasaVta).toFixed(2)
-                : (monto * tasaCmp).toFixed(2);
-                const resultadoFormateado = (parseFloat(resultadoCalc));
-        campos.$resultado.val(resultadoFormateado);
-            }
-          });
-          // cálculo local inmediato
-            let resultadoCalc;
-
-          if (campos.op === "venta") {
-            if (!tasaVta || tasaVta === 0) {
-              resultadoCalc = null; // no hay cotización
-            } else {
-              resultadoCalc = (monto / tasaVta).toFixed(2);
-            }
+    // AJAX para cálculo en el servidor
+    $.ajax({
+      url: "{% url 'operaciones' %}",
+      type: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+        valor: monto,
+        operacion: campos.op,
+        origen: origenVal,
+        destino: destinoVal,
+        modal: 0
+      },
+      success: function (resp) {
+        if (resp && resp.resultado !== undefined && !isNaN(parseFloat(resp.resultado))) {
+          // Caso válido: backend devolvió un número
+          const resultadoNumero = parseFloat(resp.resultado);
+          campos.$valor.val(resultadoNumero);
+          campos.$valor.data("tasa", resp.tasa);
+          campos.$valor.data("fecha_tasa", resp.fecha_tasa);
+        } else {
+          // Fallback: calculo local inmediato
+          let resultadoCalc = null;
+          if (!tasaVta || tasaVta === 0) {
+            resultadoCalc = null;
           } else {
-            if (!tasaCmp || tasaCmp === 0) {
-              resultadoCalc = null; // no hay cotización
-            } else {
-              resultadoCalc = (monto * tasaCmp).toFixed(2);
-            }
+            resultadoCalc = (monto * tasaVta).toFixed(2);
           }
+          if (resultadoCalc !== null) {
+            campos.$valor.val(parseFloat(resultadoCalc));
+          } else {
+            campos.$valor.val("No hay cotizacion disponible");
+          }
+        }
+        console.log("resp", resp);
+      },
+      error: function () {
+        let resultadoCalc = (monto * tasaVta).toFixed(2);
+        campos.$valor.val(parseFloat(resultadoCalc));
+      }
+    });
 
+    // cálculo local inmediato
+    let resultadoCalc;
+    if (!tasaVta || tasaVta === 0) {
+      resultadoCalc = null;
+    } else {
+      resultadoCalc = (monto * tasaVta).toFixed(2);
+    }
+    if (resultadoCalc !== null) {
+      const resultadoFormateado = parseFloat(resultadoCalc);
+      console.log("resultadoCalc formateado:", resultadoFormateado);
+      campos.$valor.val(resultadoFormateado);
+    } else {
+      campos.$valor.val("No hay cotizacion disponible");
+    }
+  } 
+  // VENTA: SIN CAMBIOS - LÓGICA ORIGINAL
+  else {
+    if (!campos || !campos.$valor) return;
+
+    let raw = campos.$valor.val() || "";
+    raw = raw.replace(/[^0-9.]/g, '');
+    const parts = raw.split('.');
+    if (parts.length > 2) raw = parts.shift() + '.' + parts.join('');
+    campos.$valor.val(raw);
+    const monto = parseFloat(raw);
+    const origenVal = campos.$origen.val();
+    const destinoVal = campos.$destino.val();
+
+    if (!monto || monto <= 0 || !origenVal || !destinoVal || origenVal === destinoVal) {
+      campos.$resultado.val("");
+      return;
+    }
+
+    if (!monto || monto <= 0) {
+      campos.$resultado.val("");
+      return;
+    }
+
+    // AJAX para cálculo en el servidor
+    $.ajax({
+      url: "{% url 'operaciones' %}",
+      type: "POST",
+      data: {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+        valor: monto,
+        operacion: campos.op,
+        origen: origenVal,
+        destino: destinoVal
+      },
+      success: function (resp) {
+        if (resp && resp.resultado !== undefined && !isNaN(parseFloat(resp.resultado))) {
+          // Caso válido: backend devolvió un número
+          const resultadoNumero = parseFloat(resp.resultado);
+          const resultadoFormateado = resultadoNumero;
+          campos.$resultado.val(resultadoFormateado);
+          campos.$resultado.data("tasa", resp.tasa);
+          campos.$resultado.data("fecha_tasa", resp.fecha_tasa);
+        } else {
+          // Fallback: calculo local inmediato
+          let resultadoCalc = null;
+          if (!tasaCmp || tasaCmp === 0) {
+            resultadoCalc = null;
+          } else {
+            resultadoCalc = (monto * tasaCmp).toFixed(2);
+          }
           if (resultadoCalc !== null) {
             const resultadoFormateado = parseFloat(resultadoCalc);
-            console.log("resultadoCalc formateado:", resultadoFormateado);
             campos.$resultado.val(resultadoFormateado);
           } else {
             campos.$resultado.val("No hay cotizacion disponible");
           }
         }
+        console.log("resp", resp);
+      },
+      error: function () {
+        let resultadoCalc = (monto * tasaCmp).toFixed(2);
+        const resultadoFormateado = parseFloat(resultadoCalc);
+        campos.$resultado.val(resultadoFormateado);
+      }
+    });
+
+    // cálculo local inmediato
+    let resultadoCalc;
+    if (!tasaCmp || tasaCmp === 0) {
+      resultadoCalc = null;
+    } else {
+      resultadoCalc = (monto * tasaCmp).toFixed(2);
+    }
+    if (resultadoCalc !== null) {
+      const resultadoFormateado = parseFloat(resultadoCalc);
+      console.log("resultadoCalc formateado:", resultadoFormateado);
+      campos.$resultado.val(resultadoFormateado);
+    } else {
+      campos.$resultado.val("No hay cotizacion disponible");
+    }
+  }
+}
+
         // Init y eventos
         actualizarCamposPorOperacion();
         $(document).on("change", "input[name='operacion']", function () {
@@ -562,7 +587,7 @@
         });
 
         // inputs que deben disparar el cálculo
-        $(document).on("input change", "#valor-compra, #valor-venta, #destino-compra, #origen-venta", function () {
+        $(document).on("input change", "#resultado-compra, #valor-venta, #destino-compra, #origen-venta", function () {
           calcularResultado();
         });
 

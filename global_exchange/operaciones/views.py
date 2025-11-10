@@ -186,7 +186,9 @@ def simulador_operaciones(request):
         operacion = request.POST.get("operacion")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
-
+        modal = int(request.POST.get("modal",""))
+        
+        print("monto original: ", valor_input)
         # Validaciones básicas
         if origen == destino:
             return JsonResponse({"error": "La moneda de origen y destino no puede ser la misma."}, status=400)
@@ -218,14 +220,31 @@ def simulador_operaciones(request):
                     print("entra en el else de simulacion de operaciones:", flush=True)
                     print("PB_MONEDA del else:",PB_MONEDA, flush=True)
                     # Cálculos:
+                    print("modal::: ", modal, flush=True)
+                    print("Operaciones::", operacion)
                     if operacion == "venta":
-                        # Cliente entrega PYG, convertimos a moneda extranjera
-                        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-                        TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
-                        resultado_sin_desc = round(valor / TC_VTA_SIN_DESC, 2)
-                        resultado = round(valor / TC_VTA, 2)
-                        ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
-                        print("ganancia_total 244",ganancia_total,flush=True)
+                        if(modal == 0):
+                            # Cliente entrega PYG, convertimos a moneda extranjera
+                            TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                            TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                            resultado_sin_desc = (valor)
+                            resultado = round(valor * TC_VTA, 2)
+                            print("resultadooooo eessss ", resultado, flush = True)
+                            print("Valorrr: ", valor, flush=True)
+                            ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                            print("ganancia_total 244",ganancia_total,flush=True)
+                        elif(modal == 2):
+                            print("Entro ")
+                            TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                            TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                            resultado_sin_desc = round(((valor * TC_VTA) / TC_VTA_SIN_DESC), 2)
+                            resultado = valor
+                            print("resultadooooo eessss ", resultado, flush = True)
+                            print("Valorrr: ", valor, flush=True)
+                            ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                            print("ganancia_total 244",ganancia_total,flush=True)
+
+                        
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))

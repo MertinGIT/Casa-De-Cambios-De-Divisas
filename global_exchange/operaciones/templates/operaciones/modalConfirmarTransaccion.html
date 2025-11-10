@@ -264,25 +264,38 @@
 
     // si no existe resultado calculado todavía, calcular localmente
     let resultadoCalc = campos.$resultado.val();
+      console.log("El resultado del calculo esss......",resultadoCalc)
 
+     if (campos.op === "venta") {
+        console.log("HOLAAAAAA ES VENTA ENTONCES??? ", monto)
+      } else {
+        console.log("HOLAAAAAA ES COMPRA ENTONCES??? ", monto)
+      }
     if (!resultadoCalc) {
       if (campos.op === "venta") {
         resultadoCalc = (monto / tasaVta).toFixed(2);
+        
       } else {
         resultadoCalc = (monto * tasaCmp).toFixed(2);
+        console.log("HOLAAAAAA ES COMPRA ENTONCES??? ", monto)
       }
       campos.$resultado.val(resultadoCalc);
     }
+
+    console.log("Monto en confirmar trnasacionb ", monto)
 
     $.ajax({
       url: "{% url 'operaciones' %}",
       method: "POST",
       data: {
         csrfmiddlewaretoken: "{{ csrf_token }}",
-        valor: campos.$valor.val(),
+        valor: campos.op === "venta"
+      ? (parseFloat(campos.$valor.val()) / window.tasaVta).toFixed(2)
+      : parseFloat(campos.$valor.val()), 
         origen: campos.$origen.val(),
         destino: campos.$destino.val(),
         operacion: campos.op,
+        modal: 2
       },
       success: function (response) {
         // Mostrar el modal con los datos que vinieron del servidor
