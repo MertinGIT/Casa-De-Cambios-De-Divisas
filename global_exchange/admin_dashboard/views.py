@@ -103,6 +103,7 @@ def admin_dashboard(request):
     # 1. Ganancias por Fecha (con filtros aplicados)
     labels_ganancias_fecha = []
     data_ganancias_fecha = []
+    ganancia_acumulada = Decimal('0.0')
     
     dias_rango = (fecha_fin - fecha_inicio).days + 1
     for i in range(dias_rango):
@@ -120,8 +121,9 @@ def admin_dashboard(request):
                 Q(moneda_destino__abreviacion=moneda_filtro)
             )
         
-        ganancia = query.aggregate(total=Sum('ganancia'))['total'] or 0
+        ganancia = query.aggregate(total=Sum('ganancia'))['total'] or Decimal('0.0')
         data_ganancias_fecha.append(float(ganancia))
+        ganancia_acumulada += ganancia
     
     # 2. Ganancias por Divisa (rango filtrado)
     ganancias_por_moneda_query = Transaccion.objects.filter(

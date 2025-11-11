@@ -69,7 +69,9 @@ def listar_transacciones(request):
                     "tipo": t.tipo if t.tipo else "N/A",
                     "estado": t.estado if t.estado else "N/A",
                     "moneda_origen": safe_str(t.moneda_origen),
+                    "moneda_abreviacion_origen": t.moneda_origen.abreviacion if t.moneda_origen else "N/A",
                     "moneda_destino": safe_str(t.moneda_destino),
+                    "moneda_abreviacion_destino": t.moneda_destino.abreviacion if t.moneda_destino else "N/A",
                     "metodo_pago": safe_str(t.metodo_pago),
                     "ganancia": float(t.ganancia) if t.ganancia else 0,
                     "fecha": t.fecha.strftime('%d/%m/%Y %H:%M') if t.fecha else "",
@@ -145,14 +147,14 @@ def cambiar_estado_transaccion(request):
         traceback.print_exc()
         return JsonResponse({"success": False, "error": f"Error interno: {str(e)}"}, status=500)
 
+from roles_permisos.middleware import require_role
 
 @login_required
+@require_role(['ADMIN'])
 def estadisticas_transacciones(request):
     """
     Retorna estadísticas de transacciones para el dashboard.
     """
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Acceso denegado"}, status=403)
     
     from django.db.models import Sum
     

@@ -116,6 +116,9 @@
                     <span class="info-badge" style="background: #dbeafe; color: #1e40af;">{{ moneda_filtro }}</span>
                     {% endif %}
                 </div>
+                <span class="info-badge" style="background: #f0fdf4; color: #16a34a; font-weight: 700; font-size: 0.9rem;">
+                        Total: ₲{{ ganancia_total_rango|floatformat:0 }}
+                    </span>
             </div>
             <div class="chart-wrapper-large">
                 <canvas id="gananciasLineChart"></canvas>
