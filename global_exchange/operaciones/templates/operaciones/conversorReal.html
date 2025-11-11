@@ -528,7 +528,8 @@ function calcularResultado() {
         valor: monto,
         operacion: campos.op,
         origen: origenVal,
-        destino: destinoVal
+        destino: destinoVal,
+        modal: 2
       },
       success: function (resp) {
         if (resp && resp.resultado !== undefined && !isNaN(parseFloat(resp.resultado))) {
