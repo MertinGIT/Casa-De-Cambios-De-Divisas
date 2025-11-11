@@ -245,7 +245,7 @@ def simulador_operaciones(request):
                             resultado = round((valor * TC_VTA), 2)
                             print("resultadooooo eessss ", resultado, flush = True)
                             print("Valorrr: ", valor, flush=True)
-                            ganancia_total = round((resultado * TC_VTA) - (valor * PB_MONEDA), 2)
+                            ganancia_total = round(resultado - (valor * PB_MONEDA), 2)
                             print("ganancia_total 244",ganancia_total,flush=True)
 
                         
