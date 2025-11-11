@@ -225,6 +225,7 @@ async function cargarTransacciones() {
             `${data.transacciones.length} resultado${data.transacciones.length !== 1 ? 's' : ''}`;
         
         data.transacciones.forEach(t => {
+            console.log(t);
             const tr = document.createElement('tr');
             tr.className = t.estado === 'pendiente' ? 'row-pending' : '';
             
@@ -235,7 +236,7 @@ async function cargarTransacciones() {
                 <td><strong>#${t.id}</strong></td>
                 <td>${t.usuario}</td>
                 <td>${t.cliente}</td>
-                <td class="amount">$${parseFloat(t.monto).toLocaleString('es-PY')}</td>
+                <td class="amount">${t.moneda_abreviacion_origen} ${parseFloat(t.monto).toLocaleString('es-PY')}</td>
                 <td><span class="badge badge-type">${t.tipo}</span></td>
                 <td>${estadoBadge}</td>
                 <td class="currency-cell">
@@ -246,7 +247,7 @@ async function cargarTransacciones() {
                     </div>
                 </td>
                 <td>${metodoBadge}</td>
-                <td class="amount profit">$${parseFloat(t.ganancia).toLocaleString('es-PY')}</td>
+                <td class="amount profit">${parseFloat(t.ganancia).toLocaleString('es-PY')} Gs</td>
                 <td class="date">${t.fecha}</td>
                 <td class="actions">
                     ${t.puede_procesar 
