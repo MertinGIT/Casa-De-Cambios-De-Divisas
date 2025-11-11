@@ -113,6 +113,10 @@ def simulador_operaciones(request):
         })
         
     print("data_por_monedaaaaaaaaaa:", data_por_moneda,flush=True)
+    monedas_con_tasas = [
+    m for m in monedas
+    if m["abreviacion"] in data_por_moneda or m["abreviacion"] == "PYG"
+]
     # Comisiones y variables
     COMISION_VTA = 0
     COMISION_COM = 0
@@ -214,7 +218,7 @@ def simulador_operaciones(request):
                     COMISION_VTA = ultimo.get("comision_venta", 0)
                     COMISION_COM = ultimo.get("comision_compra", 0)
                     # ahora leemos precio_base directamente
-                    PB_MONEDA = tasa_default.get("precio_base", 0)
+                    PB_MONEDA = ultimo.get("precio_base", 0)
                     #PB_MONEDA = ultimo["venta"] if operacion == "venta" else ultimo["compra"]
                     TASA_REF_ID = ultimo["id"]
                     print("entra en el else de simulacion de operaciones:", flush=True)
@@ -357,7 +361,7 @@ def simulador_operaciones(request):
     entidades = TipoEntidadFinanciera.objects.filter(estado=True)
     print("context resultado",resultado)    
     context = {
-        'monedas': monedas,
+        'monedas': monedas_con_tasas ,
         'resultado': resultado,
         'ganancia_total': ganancia_total,
         'valor_input': valor_input,
