@@ -40,7 +40,7 @@
           <div class="summary-item highlight">
             <div class="item-icon">💰</div>
             <div class="item-content">
-              <span class="item-label">Monto a recibir(con descuento)</span>
+              <span class="item-label" id="label-con-descuento">Monto a recibir(con descuento)</span>
               <span class="item-value" id="modal-recibir"></span>
             </div>
           </div>
@@ -48,7 +48,7 @@
           <div class="summary-item">
             <div class="item-icon">💳</div>
             <div class="item-content">
-              <span class="item-label">Monto a recibir(sin descuento)</span>
+              <span class="item-label" id="label-sin-descuento">Monto a recibir(sin descuento)</span>
               <span class="item-value" id="modal-sin-descuento"></span>
             </div>
           </div>
@@ -125,6 +125,16 @@
     document.getElementById("modal-tasa").textContent = datos.tasa;
     document.getElementById("modal-comision").textContent = datos.descuento;
     document.getElementById("modal-sin-descuento").textContent = datos.sin_descuento;
+
+    // Actualizar las etiquetas dinámicamente
+    const campos = getCampos();
+    if (campos.op === "venta") {
+        document.getElementById("label-con-descuento").textContent = "Monto a entregar (con descuento)";
+        document.getElementById("label-sin-descuento").textContent = "Monto a entregar (sin descuento)";
+    } else {
+        document.getElementById("label-con-descuento").textContent = "Monto a recibir (con descuento)";
+        document.getElementById("label-sin-descuento").textContent = "Monto a recibir (sin descuento)";
+    }
 
     // Mostrar modal
     const modal = document.getElementById("modal-confirmacion");
@@ -283,14 +293,14 @@
     }
 
     console.log("Monto en confirmar trnasacionb ", monto)
-
+    console.log("campos.$resultado.val()", campos.$resultado.val())
     $.ajax({
       url: "{% url 'operaciones' %}",
       method: "POST",
       data: {
         csrfmiddlewaretoken: "{{ csrf_token }}",
         valor: campos.op === "venta"
-      ? (parseFloat(campos.$valor.val()) / window.tasaVta).toFixed(2)
+      ? (parseFloat(campos.$resultado.val()))
       : parseFloat(campos.$valor.val()), 
         origen: campos.$origen.val(),
         destino: campos.$destino.val(),

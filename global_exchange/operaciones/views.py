@@ -241,8 +241,8 @@ def simulador_operaciones(request):
                             print("Entro ")
                             TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
                             TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
-                            resultado_sin_desc = round(((valor * TC_VTA) / TC_VTA_SIN_DESC), 2)
-                            resultado = valor
+                            resultado_sin_desc = round((valor * TC_VTA_SIN_DESC), 2)
+                            resultado = round((valor * TC_VTA), 2)
                             print("resultadooooo eessss ", resultado, flush = True)
                             print("Valorrr: ", valor, flush=True)
                             ganancia_total = round((resultado * TC_VTA) - (valor * PB_MONEDA), 2)

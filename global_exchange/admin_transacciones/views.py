@@ -145,14 +145,14 @@ def cambiar_estado_transaccion(request):
         traceback.print_exc()
         return JsonResponse({"success": False, "error": f"Error interno: {str(e)}"}, status=500)
 
+from roles_permisos.middleware import require_role
 
 @login_required
+@require_role(['ADMIN'])
 def estadisticas_transacciones(request):
     """
     Retorna estadísticas de transacciones para el dashboard.
     """
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Acceso denegado"}, status=403)
     
     from django.db.models import Sum
     
