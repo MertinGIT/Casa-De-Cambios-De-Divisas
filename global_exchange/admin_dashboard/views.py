@@ -7,6 +7,7 @@ from operaciones.models import Transaccion
 from clientes.models import Cliente
 from monedas.models import Moneda
 from cotizaciones.models import TasaDeCambio
+from django.db.models import Case, When, Value, CharField
 
 def admin_dashboard(request):
     # Fechas
@@ -127,10 +128,20 @@ def admin_dashboard(request):
     
     # 2. Ganancias por Divisa (rango filtrado)
     ganancias_por_moneda_query = Transaccion.objects.filter(
-        fecha__date__gte=fecha_inicio,
-        fecha__date__lte=fecha_fin,
-        estado="confirmada"
+    fecha__date__gte=fecha_inicio,
+    fecha__date__lte=fecha_fin,
+    estado="confirmada"
+).annotate(
+    moneda_operada=Case(
+        # Si moneda_origen es PYG, entonces operó con moneda_destino (COMPRA)
+        When(moneda_origen__abreviacion='PYG', then=F('moneda_destino__abreviacion')),
+        # Si moneda_destino es PYG, entonces operó con moneda_origen (VENTA)
+        When(moneda_destino__abreviacion='PYG', then=F('moneda_origen__abreviacion')),
+        # Si ninguna es PYG (cambio entre extranjeras), usar destino
+        default=F('moneda_destino__abreviacion'),
+        output_field=CharField()
     )
+)
     
     if moneda_filtro != 'todas':
         ganancias_por_moneda_query = ganancias_por_moneda_query.filter(
@@ -140,12 +151,12 @@ def admin_dashboard(request):
     
     ganancias_por_moneda = (
         ganancias_por_moneda_query
-        .values('moneda_destino__abreviacion')
+        .values('moneda_operada')
         .annotate(total_ganancia=Sum('ganancia'))
         .order_by('-total_ganancia')[:5]
     )
     
-    labels_ganancias_moneda = [m['moneda_destino__abreviacion'] for m in ganancias_por_moneda]
+    labels_ganancias_moneda = [m['moneda_operada'] for m in ganancias_por_moneda]
     data_ganancias_moneda = [float(m['total_ganancia']) for m in ganancias_por_moneda]
     
     # 3. Evolución de Tasas de Cambio (últimas tasas por día)

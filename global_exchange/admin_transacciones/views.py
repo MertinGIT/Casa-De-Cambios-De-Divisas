@@ -7,6 +7,7 @@ from operaciones.models import Transaccion
 from django.utils import timezone
 import json
 import traceback
+from roles_permisos.middleware import require_role
 
 def safe_str(obj):
     """Convierte un objeto a string, maneja None y errores."""
@@ -95,6 +96,7 @@ def listar_transacciones(request):
 
 @login_required
 @csrf_exempt
+@require_role(['ADMIN', 'Analista'])
 def cambiar_estado_transaccion(request):
     """
     Cambia el estado de una transacción.
@@ -103,8 +105,6 @@ def cambiar_estado_transaccion(request):
     if request.method != 'POST':
         return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
     
-    if not request.user.is_staff:
-        return JsonResponse({"success": False, "error": "Acceso denegado"}, status=403)
     
     try:
         data = json.loads(request.body)
@@ -147,7 +147,6 @@ def cambiar_estado_transaccion(request):
         traceback.print_exc()
         return JsonResponse({"success": False, "error": f"Error interno: {str(e)}"}, status=500)
 
-from roles_permisos.middleware import require_role
 
 @login_required
 @require_role(['ADMIN'])
