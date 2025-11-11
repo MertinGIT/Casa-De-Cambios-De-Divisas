@@ -114,7 +114,10 @@
     <div class="atm-container">
         <div class="atm-header">
             <h1>Bienvenido, {{ cliente.nombre }}</h1>
-            <p>Cédula: {{ cliente.cedula }}</p>
+            <p><strong>Usuario:</strong> {{ user.username }} | <strong>Cédula:</strong> {{ cliente.cedula }}</p>
+            <p style="margin-top: 10px; padding: 10px 20px; background: rgba(255, 255, 255, 0.2); border-radius: 15px; display: inline-block;">
+        📍 TAUSER: {{ localidad.nombre }}
+    </p>
             <a href="{% url 'atm_logout' %}" class="logout-btn">Cerrar Sesión</a>
         </div>
         

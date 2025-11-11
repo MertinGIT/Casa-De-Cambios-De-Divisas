@@ -7,7 +7,18 @@ from django.db import transaction
 
 from facturacion.models import RangoFacturacion
 class FacturaSeguraService:
-    
+    """
+    Servicio de integración con la **API de FacturaSegura**.
+
+    Esta clase centraliza toda la lógica de conexión y comunicación con el sistema
+    de facturación electrónica, incluyendo generación, cálculo, consulta de estado
+    y descarga del **KuDE (PDF)**.
+
+    Se encarga de:
+    - Gestionar los **rangos de facturación** por usuario.
+    - Construir y enviar los **documentos electrónicos (DE)** al servicio externo.
+    - Manejar las respuestas y errores del API.
+    """
     def __init__(self):
         self.config = settings.FACTURA_SEGURA
         self.api_url = self.config['API_URL']
@@ -20,7 +31,35 @@ class FacturaSeguraService:
     
     def generar_factura_cambio(self, transaccion_data, cliente_data, usuario=None):
         """
-        Genera factura electrónica usando el rango del usuario
+        Genera una **factura electrónica** asociada a una transacción de cambio de divisas.
+
+        Este método se encarga de:
+        - Obtener o crear un rango de facturación activo.
+        - Asignar el siguiente número de factura disponible.
+        - Construir la estructura DE (documento electrónico).
+        - Enviar los datos a la API de FacturaSegura para cálculo y generación.
+
+        **Parámetros:**
+
+        - **transaccion_data (dict):**  
+          Información de la transacción (monto, tipo de cambio, método de pago, etc.).
+
+        - **cliente_data (dict):**  
+          Datos del cliente (nombre, cédula, RUC, correo electrónico, etc.).
+
+        - **usuario (User | None):**  
+          Usuario autenticado que emite la factura.
+
+        **Retorna:**
+
+        - **dict:**  
+          Resultado de la operación con claves:
+          - `success (bool)`
+          - `cdc (str, opcional)`
+          - `operation_id (int, opcional)`
+          - `numero_completo (str, opcional)`
+          - `rango_id (int, opcional)`
+          - `error (str, opcional)`
         """
         # Obtener rango activo del usuario
         rango = self._obtener_rango_usuario(usuario)
@@ -85,7 +124,15 @@ class FacturaSeguraService:
     
     def _obtener_rango_usuario(self, usuario):
         """
-        Obtiene el rango activo del usuario o crea uno por defecto si no existe
+        Obtiene el **rango de facturación activo** del usuario.
+
+        Si no existe uno, se crea automáticamente un rango por defecto.
+
+        **Parámetros:**
+        - **usuario (User):** Usuario autenticado.
+
+        **Retorna:**
+        - **RangoFacturacion | None:** Rango activo o `None` si no aplica.
         """
         if not usuario:
             return None
@@ -112,7 +159,17 @@ class FacturaSeguraService:
 
     def _construir_json_factura(self, transaccion, cliente, establecimiento, punto_expedicion, numero_documento):
         """
-        Construye el JSON resumido de la factura
+        Construye el **JSON del Documento Electrónico (DE)** en formato oficial.
+
+        **Parámetros:**
+        - **transaccion (dict):** Datos de la operación (monto, moneda, tipo_cambio...).
+        - **cliente (dict):** Datos del cliente.
+        - **establecimiento (str):** Código de establecimiento.
+        - **punto_expedicion (str):** Punto de expedición.
+        - **numero_documento (int):** Número fiscal asignado.
+
+        **Retorna:**
+        - **dict:** Estructura lista para enviar al endpoint de cálculo o generación.
         """
         # Determinar tipo de cambio
         #tipo_cambio = transaccion.get('tipo_cambio', 7350)
@@ -135,21 +192,21 @@ class FacturaSeguraService:
             "iTImp": "5",
             "cMoneOpe": "PYG",
             "dCondTiCam": "1",
-            "dTiCam": str(transaccion['tipo_cambio']) if transaccion['moneda'] != 'PYG' else "1",
+            "dTiCam": str(transaccion['tasa_usada']) if transaccion['abreviacion_origen'] != 'PYG' else "1",
             
             # Datos del EMISOR (tu empresa)
             "dRucEm": self.config['RUC_EMISOR'],
             "dDVEmi": self.config['DV_EMISOR'],
             "iTipCont": "1",
             "dNomEmi": "GLOBAL EXCHANGE S.A.",
-            "dDirEmi": "AV. TEST 123",
+            "dDirEmi": "AV. EUSEBIO AYALA KM 4.5",
             "dNumCas": "1543",
             "cDepEmi": "1",
             "dDesDepEmi": "CAPITAL",
             "cCiuEmi": "1",
             "dDesCiuEmi": "ASUNCION (DISTRITO)",
             "dTelEmi": "(0961)988439",
-            "dEmailE": "ggonzar@gmail.com",
+            "dEmailE": "facturacion@globalexchange.com.py",
             "gActEco": [
                 {
                     "cActEco": "74909",
@@ -167,7 +224,7 @@ class FacturaSeguraService:
             "iTipIDRec": "1",
             "dNumIDRec": cliente.get('cedula', '0'),
             "dNomRec": cliente.get('nombre_completo', 'CLIENTE'),
-            "dEmailRec": cliente.get('email', 'cliente@email.com'),
+            "dEmailRec": cliente.get('email', 'leandro.f3418@fpuna.edu.py'),
             
             # Condición de operación
             "iIndPres": "1",
@@ -176,9 +233,9 @@ class FacturaSeguraService:
             # Forma de pago
             "gPaConEIni": [
                 {
-                    "iTiPago": self._mapear_metodo_pago(transaccion['metodo_pago_id']),
+                    "iTiPago": self._mapear_metodo_pago(transaccion['metodo_pago']),
                     "dMonTiPag": str(int(transaccion['monto'] + comision)),
-                    "cMoneTiPag": transaccion['moneda'],
+                    "cMoneTiPag": transaccion['abreviacion_origen'],
                     "dTiCamTiPag": "1"
                 }
             ],
@@ -187,7 +244,14 @@ class FacturaSeguraService:
             "gCamItem": [
                 {
                     "dCodInt": "CAMBIO-001",
-                    "dDesProSer": f"Servicio de cambio {transaccion.get('motivo', '')}",
+                    "dDesProSer": f"Servicio de {transaccion['tipo']} de divisas - "
+                    f"({transaccion['abreviacion_origen']}) → "
+                    f"({transaccion['abreviacion_destino'] }) | "
+                    f"Tasa: {transaccion['tasa_usada']}",
+                    "dInfItem": (
+                        f"Tasa utilizada: {transaccion['tasa_usada']} "
+                        f"{transaccion['abreviacion_origen']}/{transaccion['abreviacion_destino']}"
+                    ),
                     "cUniMed": "77",
                     "dCantProSer": "1",
                     "dPUniProSer": str(transaccion['monto']),
@@ -195,9 +259,9 @@ class FacturaSeguraService:
                     "dDescGloItem": "0",
                     "dAntPreUniIt": "0",
                     "dAntGloPreUniIt": "0",
-                    "iAfecIVA": "1",  # Gravado IVA
-                    "dPropIVA": "100",
-                    "dTasaIVA": "10"
+                    "iAfecIVA": "3",  # Gravado IVA
+                    "dPropIVA": "0",
+                    "dTasaIVA": "0"
                 },
                 {
                     "dCodInt": "COMISION-001",
@@ -209,9 +273,9 @@ class FacturaSeguraService:
                     "dDescGloItem": "0",
                     "dAntPreUniIt": "0",
                     "dAntGloPreUniIt": "0",
-                    "iAfecIVA": "1",
-                    "dPropIVA": "100",
-                    "dTasaIVA": "10"
+                    "iAfecIVA": "3",
+                    "dPropIVA": "0",
+                    "dTasaIVA": "0"
                 }
             ],
             
@@ -220,7 +284,7 @@ class FacturaSeguraService:
             "dCodSeg": "862814791",
             "dDVId": "0",
             "dSisFact": "1",
-            "dInfAdic": f"Transacción: {transaccion.get('referencia', '')}"
+            #"dInfAdic": f"Transacción: {transaccion.get('referencia', '')}"
         }
         return factura
     
@@ -228,7 +292,13 @@ class FacturaSeguraService:
     
     def calcular_de(self, factura_json):
         """
-        Calcula campos de la factura usando la API
+        Envía una factura para que la **API FacturaSegura** calcule los campos automáticos del DE.
+
+        **Parámetros:**
+        - **factura_json (dict):** Documento electrónico base.
+
+        **Retorna:**
+        - **dict | None:** Documento electrónico completo o `None` si hubo error.
         """
         payload = {
             "operation": "calcular_de",
@@ -259,7 +329,13 @@ class FacturaSeguraService:
     
     def generar_de(self, factura_completa):
         """
-        Genera el documento electrónico
+        Envía una factura **ya calculada** para su **generación oficial** en SIFEN.
+
+        **Parámetros:**
+        - **factura_completa (dict):** Documento electrónico final.
+
+        **Retorna:**
+        - **dict:** Resultado con `success`, `cdc`, `operation_id` o mensaje de error.
         """
         payload = {
             "operation": "generar_de",
@@ -300,7 +376,14 @@ class FacturaSeguraService:
     
     def consultar_estado(self, cdc, ruc_emisor):
         """
-        Consulta el estado del documento en SIFEN
+        Consulta el **estado actual en SIFEN** de una factura emitida.
+
+        **Parámetros:**
+        - **cdc (str):** Código de control del comprobante.
+        - **ruc_emisor (str):** RUC del emisor.
+
+        **Retorna:**
+        - **dict | None:** Resultado con datos del estado o `None` si falla.
         """
         payload = {
             "operation": "get_estado_sifen",
@@ -331,7 +414,15 @@ class FacturaSeguraService:
     
     def descargar_kude(self, cdc, ruc_emisor, output_path):
         """
-        Descarga el PDF (KuDE)
+        Descarga el archivo **KuDE (PDF)** correspondiente a una factura electrónica.
+
+        **Parámetros:**
+        - **cdc (str):** Código de control CDC.
+        - **ruc_emisor (str):** RUC del emisor.
+        - **output_path (str):** Ruta destino donde guardar el archivo PDF.
+
+        **Retorna:**
+        - **bool:** `True` si la descarga fue exitosa, `False` en caso de error.
         """
         url = f"{self.api_url}/dwn_kude/{ruc_emisor}/{cdc}"
         
@@ -352,10 +443,8 @@ class FacturaSeguraService:
             return False
     
     def _generar_numero_factura(self):
-        """
-        Genera el siguiente número de factura
-        Debes implementar tu lógica de numeración secuencial
-        """
+        """Obtiene el número de factura secuencial a partir del último registro."""
+
         # IMPORTANTE: Implementar lógica para obtener último número
         from facturacion.models import Factura
         ultimo = Factura.objects.order_by('-numero').first()
@@ -364,16 +453,18 @@ class FacturaSeguraService:
         return "0000001"
     
     def _determinar_tipo_contribuyente(self, cliente):
-        """
-        Determina tipo de contribuyente
-        1: Contribuyente, 2: No contribuyente
-        """
+        """Retorna '1' si el cliente tiene RUC (contribuyente), '2' si no."""
         return "1" if cliente.get('ruc') else "2"
     
     def _mapear_metodo_pago(self, metodo_id):
         """
-        Mapea tu método de pago a los códigos SIFEN
-        1: Efectivo, 2: Cheque, 3: Tarjeta, 4: Tarjeta débito, 5: Transferencia
+        Convierte el ID interno del método de pago al código SIFEN correspondiente.
+
+        **Parámetros:**
+        - **metodo_id (int):** ID del método de pago.
+
+        **Retorna:**
+        - **str:** Código SIFEN (`1`=Efectivo, `3`=Tarjeta, `5`=Transferencia).
         """
         mapeo = {
             1: "1",  # Efectivo

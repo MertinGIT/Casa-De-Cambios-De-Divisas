@@ -40,7 +40,9 @@ from django.db.models import Sum, Case, When, F, DecimalField
 import random
 from django.core.mail import send_mail
 import datetime
+from tauser.models import Localidad
 from roles_permisos.middleware import require_permission
+from tauser.utils import GestorStockTauser
 
 @login_required
 @require_permission('add_transaccion')
@@ -188,7 +190,9 @@ def simulador_operaciones(request):
         operacion = request.POST.get("operacion")
         origen = request.POST.get("origen", "")
         destino = request.POST.get("destino", "")
-
+        modal = int(request.POST.get("modal",""))
+        
+        print("monto original: ", valor_input)
         # Validaciones básicas
         if origen == destino:
             return JsonResponse({"error": "La moneda de origen y destino no puede ser la misma."}, status=400)
@@ -220,14 +224,31 @@ def simulador_operaciones(request):
                     print("entra en el else de simulacion de operaciones:", flush=True)
                     print("PB_MONEDA del else:",PB_MONEDA, flush=True)
                     # Cálculos:
+                    print("modal::: ", modal, flush=True)
+                    print("Operaciones::", operacion)
                     if operacion == "venta":
-                        # Cliente entrega PYG, convertimos a moneda extranjera
-                        TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-                        TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
-                        resultado_sin_desc = round(valor / TC_VTA_SIN_DESC, 2)
-                        resultado = round(valor / TC_VTA, 2)
-                        ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
-                        print("ganancia_total 244",ganancia_total,flush=True)
+                        if(modal == 0):
+                            # Cliente entrega PYG, convertimos a moneda extranjera
+                            TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                            TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                            resultado_sin_desc = (valor)
+                            resultado = round(valor * TC_VTA, 2)
+                            print("resultadooooo eessss ", resultado, flush = True)
+                            print("Valorrr: ", valor, flush=True)
+                            ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                            print("ganancia_total 244",ganancia_total,flush=True)
+                        elif(modal == 2):
+                            print("Entro ")
+                            TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
+                            TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                            resultado_sin_desc = round(((valor * TC_VTA) / TC_VTA_SIN_DESC), 2)
+                            resultado = valor
+                            print("resultadooooo eessss ", resultado, flush = True)
+                            print("Valorrr: ", valor, flush=True)
+                            ganancia_total = round(valor - (resultado * PB_MONEDA), 2)
+                            print("ganancia_total 244",ganancia_total,flush=True)
+
+                        
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
@@ -311,11 +332,11 @@ def simulador_operaciones(request):
     # Obtener medios de acreditación del cliente operativo (como queryset para el template)
     medios_acreditacion = []
     if cliente_operativo:
-        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True).select_related('entidad')
+        medios_qs = MedioAcreditacion.objects.filter(cliente=cliente_operativo, estado=True).select_related('entidad', 'localidad')
         # Serializar para JS: entidad, tipo, campos dinámicos
         medios_acreditacion = []
         for medio in medios_qs:
-            medios_acreditacion.append({
+            medio_data= {
                 'id': medio.id,
                 'entidad': {
                     'id': medio.entidad.id,
@@ -325,7 +346,16 @@ def simulador_operaciones(request):
                 'campos': [
                     {'label': campo['label'], 'value': campo['value']} for campo in medio.dynamic_fields
                 ]
-            })
+            }
+            
+            if medio.localidad:
+                medio_data['localidad'] = {
+                    'id': medio.localidad.id,
+                    'nombre': medio.localidad.nombre,
+                    'direccion': medio.localidad.direccion
+                }
+        
+            medios_acreditacion.append(medio_data)
 
     # Obtener entidades financieras activas
     entidades = TipoEntidadFinanciera.objects.filter(estado=True)
@@ -634,14 +664,8 @@ def guardar_metodo_pago(request):
 def guardar_transaccion(request):
     """
     Guarda una transacción en la base de datos.
-
-    Recibe los datos en JSON: monto, tipo, monedas, tasa, estado y cliente.
-    Asocia la transacción con el usuario autenticado y el cliente operativo.
-
-    :param request: Objeto HTTP con los datos de la transacción.
-    :type request: HttpRequest
-    :return: JsonResponse con la información de la transacción guardada o error.
-    :rtype: JsonResponse
+    Calcula el monto a recibir usando la MISMA lógica que el simulador.
+    Si es TAUSER, realiza una RESERVA de billetes.
     """
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -659,19 +683,34 @@ def guardar_transaccion(request):
         tasa_ref_id = data.get("tasa_ref_id")
         cliente_id = data.get("cliente_id")
         metodo_pago_id = data.get("metodo_pago_id")
+        medio_acreditacion_id = data.get("medio_acreditacion_id")
         ganancia = Decimal(str(data.get("ganancia", "0")))
 
         # Validación de campos obligatorios
         if not (moneda_origen_id and moneda_destino_id and tasa_ref_id and cliente_id):
-            return JsonResponse({"success": False, "error": "Faltan campos obligatorios (incluye cliente_id)"}, status=400)
+            return JsonResponse({"success": False, "error": "Faltan campos obligatorios"}, status=400)
 
         # Obtener instancias de los modelos
         moneda_origen = Moneda.objects.get(id=moneda_origen_id)
         moneda_destino = Moneda.objects.get(id=moneda_destino_id)
         tasa_ref = TasaDeCambio.objects.get(id=tasa_ref_id)
         cliente = Cliente.objects.get(id=cliente_id, estado="activo")
+        
+        medio_acreditacion = MedioAcreditacion.objects.get(
+            id=medio_acreditacion_id, 
+            cliente=cliente, 
+            estado=True
+        )
+        entidad_id = medio_acreditacion.entidad_id
 
-        # Validar que el cliente pertenece al usuario
+        es_tauser = medio_acreditacion.entidad.nombre.strip().lower() == "tauser"
+        if es_tauser and not medio_acreditacion.localidad:
+            return JsonResponse({
+                "success": False, 
+                "error": "El medio Tauser debe tener una localidad asociada"
+            }, status=400)
+
+        # Validar relación usuario-cliente
         if usuario:
             relacion = Usuario_Cliente.objects.filter(
                 id_usuario=usuario, 
@@ -683,28 +722,187 @@ def guardar_transaccion(request):
                     "error": "El cliente no está asociado al usuario"
                 }, status=403)
 
-        # Crear la transacción
-        transaccion = Transaccion.objects.create(
-            usuario=usuario,
-            monto=monto,
-            tipo=tipo,
-            estado=estado,
-            moneda_origen=moneda_origen,
-            moneda_destino=moneda_destino,
-            tasa_usada=tasa_usada,
-            tasa_ref=tasa_ref,
-            cliente=cliente,
-            metodo_pago_id=metodo_pago_id,
-            ganancia=ganancia,
-        )
+        # Obtener descuento del cliente
+        descuento = Decimal('0')
+        if cliente.segmentacion and cliente.segmentacion.estado == "activo":
+            descuento = Decimal(str(cliente.segmentacion.descuento or 0))
 
-        return JsonResponse({
+        # Obtener datos de la tasa
+        COMISION_VTA = Decimal(str(tasa_ref.comision_venta))
+        COMISION_COM = Decimal(str(tasa_ref.comision_compra))
+        PB_MONEDA = Decimal(str(tasa_ref.precio_base))
+
+        print(f"📊 Datos de cálculo:", flush=True)
+        print(f"   Precio base: {PB_MONEDA}", flush=True)
+        print(f"   Comisión venta: {COMISION_VTA}", flush=True)
+        print(f"   Comisión compra: {COMISION_COM}", flush=True)
+        print(f"   Descuento cliente: {descuento}%", flush=True)
+
+        # Calcular monto a recibir
+        if tipo.lower() == 'compra':
+            TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / Decimal('100'))
+            monto_recibir = monto / TC_VTA
+            moneda_recibir = moneda_destino
+            
+            print(f"🔄 COMPRA (guardar):", flush=True)
+            print(f"   TC_VTA: {TC_VTA}", flush=True)
+            print(f"   Cálculo: {monto} / {TC_VTA} = {monto_recibir}", flush=True)
+            
+        else:  # venta
+            TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / Decimal('100')))
+            monto_recibir = monto * TC_COMP
+            moneda_recibir = moneda_destino
+            
+            print(f"🔄 VENTA (guardar):", flush=True)
+            print(f"   TC_COMP: {TC_COMP}", flush=True)
+            print(f"   Cálculo: {monto} * {TC_COMP} = {monto_recibir}", flush=True)
+
+        monto_recibir = round(float(monto_recibir), 2)
+        monto_recibir = Decimal(str(monto_recibir))
+
+        # Determinar estado
+        es_efectivo = int(metodo_pago_id) == 1
+
+        print(f"📌 Método de pago ID: {metodo_pago_id}", flush=True)
+        print(f"📌 Medio de acreditación ID: {medio_acreditacion_id}", flush=True)
+        print(f"📌 Es efectivo: {es_efectivo}", flush=True)
+        print(f"📌 Es Tauser: {es_tauser}", flush=True)
+
+        if es_efectivo:
+            estado_final = 'pendiente'
+            actualizar_saldo_ahora = False
+            print("🔴 EFECTIVO → Estado: PENDIENTE (sin actualizar saldo)", flush=True)
+        else:
+            estado_final = 'confirmada'
+            actualizar_saldo_ahora = True
+            
+            if es_tauser:
+                print("🟢 TAUSER DIGITAL → Estado: CONFIRMADA (actualizará saldo)", flush=True)
+            else:
+                print("🟢 MÉTODO DIGITAL (no Tauser) → Estado: CONFIRMADA (actualizará saldo)", flush=True)
+
+        # ✅ TRANSACCIÓN ATÓMICA
+        with db_transaction.atomic():
+            # Crear la transacción con el monto_recibir calculado
+            transaccion = Transaccion.objects.create(
+                usuario=usuario,
+                monto=monto,
+                tipo=tipo,
+                estado=estado_final,
+                moneda_origen=moneda_origen,
+                moneda_destino=moneda_destino,
+                tasa_usada=tasa_usada,
+                tasa_ref=tasa_ref,
+                cliente=cliente,
+                metodo_pago_id=metodo_pago_id,
+                medio_acreditacion_id=medio_acreditacion_id,
+                ganancia=ganancia,
+                monto_recibir=monto_recibir,
+            )
+
+            # ✅ SI ES TAUSER: RESERVAR BILLETES (72 horas = 4320 minutos)
+            reserva_info = None
+            if es_tauser:
+                try:
+                    
+                    
+                    # La localidad viene del medio de acreditación
+                    localidad = medio_acreditacion.localidad
+                    
+                    print(f"💸 Intentando reservar en TAUSER:", flush=True)
+                    print(f"   Monto a recibir: {monto_recibir} {moneda_recibir.abreviacion}", flush=True)
+                    print(f"   Localidad: {localidad.nombre}", flush=True)
+                    
+                    # Reservar billetes (72 horas = 4320 minutos)
+                    reserva = GestorStockTauser.reservar_efectivo(
+                        transaccion_obj=transaccion,
+                        monto=monto_recibir,
+                        moneda=moneda_recibir,
+                        localidad=localidad,
+                        duracion_minutos=4320  # 72 horas
+                    )
+                    
+                    from django.utils import timezone
+                    
+                    reserva_info = {
+                        'reserva_id': reserva.id,
+                        'expiracion': reserva.expiracion.strftime("%d/%m/%Y %H:%M"),
+                        'expiracion_iso': reserva.expiracion.isoformat(),
+                        'horas_disponibles': 72,
+                        'localidad': localidad.nombre,
+                        'direccion': localidad.direccion
+                    }
+                    
+                    print(f"✅ Reserva TAUSER creada exitosamente ID: {reserva.id}", flush=True)
+                    
+                except ValueError as ve:
+                    # No hay stock suficiente
+                    print(f"❌ Error de stock: {str(ve)}", flush=True)
+                    transaccion.delete()  # Revertir transacción
+                    return JsonResponse({
+                        "success": False,
+                        "error": "Stock insuficiente en TAUSER",
+                        "detail": str(ve)
+                    }, status=400)
+                    
+                except Exception as e:
+                    print(f"❌ Error al reservar en TAUSER: {str(e)}", flush=True)
+                    import traceback
+                    traceback.print_exc()
+                    transaccion.delete()  # Revertir transacción
+                    return JsonResponse({
+                        "success": False,
+                        "error": "Error al reservar billetes",
+                        "detail": str(e)
+                    }, status=500)
+
+            # ✅ ACTUALIZAR SALDO PARA CUALQUIER MÉTODO DIGITAL (no solo Tauser)
+            if actualizar_saldo_ahora and es_tauser:
+                from clientes.models import SaldoCliente
+                
+                print(f"💰 Actualizando saldo (método digital):", flush=True)
+                print(f"   Cliente: {cliente.nombre}", flush=True)
+                print(f"   Moneda a recibir: {moneda_recibir.abreviacion}", flush=True)
+                print(f"   Monto: {monto_recibir}", flush=True)
+                print(f"   Método: {'Tauser' if es_tauser else 'Otro digital'}", flush=True)
+                
+                saldo, created = SaldoCliente.objects.get_or_create(
+                    cliente=cliente,
+                    moneda=moneda_recibir,
+                    defaults={'saldo': Decimal('0')},
+                    localidad=medio_acreditacion.localidad
+                )
+                
+                saldo_anterior = saldo.saldo
+                saldo.saldo += monto_recibir
+                saldo.save()
+            
+                print(f"✅ Saldo actualizado:", flush=True)
+                print(f"   Saldo anterior: {saldo_anterior:.2f} {moneda_recibir.abreviacion}", flush=True)
+                print(f"   Monto agregado: {monto_recibir:.2f} {moneda_recibir.abreviacion}", flush=True)
+                print(f"   Saldo nuevo: {saldo.saldo:.2f} {moneda_recibir.abreviacion}", flush=True)
+            else:
+                print("⚠️ No se actualiza saldo (no es Tauser)", flush=True)
+        # ✅ RESPUESTA CON INFO DE RESERVA
+        response_data = {
             "success": True,
             "id": transaccion.id,
             "estado": transaccion.estado,
             "fecha": transaccion.fecha.strftime("%d/%m/%Y %H:%M"),
             "cliente_nombre": cliente.nombre,
-        })
+            "entidad_id": entidad_id,
+            "saldo_actualizado": actualizar_saldo_ahora,
+            "requiere_deposito": es_efectivo,
+            "es_tauser": es_tauser,
+            "monto_recibir": float(monto_recibir),
+        }
+        
+        # Agregar información de reserva si existe
+        if reserva_info:
+            response_data['reserva'] = reserva_info
+            response_data['mensaje_reserva'] = f"Billetes reservados. Tiene hasta el {reserva_info['expiracion']} para retirar en {reserva_info['localidad']}"
+        
+        return JsonResponse(response_data)
 
     except Moneda.DoesNotExist:
         return JsonResponse({"success": False, "error": "Moneda no encontrada"}, status=404)
@@ -712,10 +910,79 @@ def guardar_transaccion(request):
         return JsonResponse({"success": False, "error": "Tasa de cambio no encontrada"}, status=404)
     except Cliente.DoesNotExist:
         return JsonResponse({"success": False, "error": "Cliente no encontrado o inactivo"}, status=404)
+    except MedioAcreditacion.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Medio de acreditación no encontrado o inactivo"}, status=404)
     except Exception as e:
+        print(f"❌ Error en guardar_transaccion: {str(e)}", flush=True)
+        import traceback
+        traceback.print_exc()
         return JsonResponse({"success": False, "error": "Error al guardar", "detail": str(e)}, status=500)
 
+def verificar_stock_tauser(request):
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
 
+    try:
+        data = json.loads(request.body)
+        localidad_id = data.get("localidad_id")
+        monto_raw = data.get("monto", 0)
+        moneda_abrev = data.get("moneda")
+        
+        # ✅ Redondear el monto a 2 decimales para evitar problemas de precisión
+        monto = Decimal(str(monto_raw)).quantize(Decimal('0.01'))
+        print("La localidad es: ", localidad_id, flush=True)
+        print("Monto redondeado: ", monto, flush=True)
+        print("Moneda: ", moneda_abrev, flush=True)
+        
+        # Validar datos requeridos
+        if not all([localidad_id, monto, moneda_abrev]):
+            return JsonResponse({
+                "success": False, 
+                "error": "Faltan datos requeridos"
+            })
+        
+        # Obtener objetos de la BD
+        localidad = Localidad.objects.get(id=localidad_id)
+        moneda = Moneda.objects.get(abreviacion=moneda_abrev)
+        
+    except (Localidad.DoesNotExist, Moneda.DoesNotExist) as e:
+        return JsonResponse({
+            "success": False, 
+            "error": f"No se encontró: {str(e)}"
+        })
+    except json.JSONDecodeError:
+        return JsonResponse({
+            "success": False, 
+            "error": "JSON inválido"
+        })
+    except Exception as e:
+        return JsonResponse({
+            "success": False, 
+            "error": f"Error inesperado: {str(e)}"
+        })
+
+    # Calcular billetes óptimos
+    billetes, monto_entregado, diferencia, posible = GestorStockTauser.calcular_billetes_optimo(
+        monto=int(monto),
+        moneda=moneda,
+        localidad=localidad
+    )
+
+    if posible:
+        return JsonResponse({
+            "success": True,
+            "cantidad": monto_entregado,  # ✅ Campo requerido por el frontend
+            "mensaje": "✅ Stock disponible. Recuerde que tiene 72 horas para retirar.",
+            "billetes": billetes,
+            "diferencia": str(diferencia)
+        })
+    else:
+        return JsonResponse({
+            "success": False,
+            "cantidad": monto_entregado,  # ✅ Devolver lo que SÍ se puede entregar
+            "mensaje": f"⚠️ No hay suficiente stock en {localidad.nombre} para retirar {monto} {moneda.abreviacion}",
+            "faltante": str(diferencia)
+        })
 def actualizar_estado_transaccion(request):
 
     """
@@ -893,3 +1160,79 @@ def validar_pin(request):
             return JsonResponse({"success": False, "message": "PIN incorrecto"})
 
 
+def obtener_localidades_tauser(request):
+    """Devuelve localidades activas de TAUSER"""
+    localidades = Localidad.objects.filter(activo=True).values('id', 'nombre', 'direccion')
+    return JsonResponse(list(localidades), safe=False)
+
+@require_POST
+def obtener_medio_tauser(request):
+    """
+    Obtiene o crea un medio de acreditación TAUSER para un cliente y localidad específicos.
+    """
+    try:
+        data = json.loads(request.body)
+        cliente_id = data.get('cliente_id')
+        localidad_id = data.get('localidad_id')
+        
+        if not cliente_id or not localidad_id:
+            return JsonResponse({'success': False, 'error': 'Faltan datos'}, status=400)
+        
+        # Obtener cliente y localidad
+        cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id)
+        
+        # Obtener la entidad TAUSER
+        entidad_tauser = TipoEntidadFinanciera.objects.get(nombre__iexact='tauser')
+        
+        # Buscar o crear medio de acreditación
+        medio, created = MedioAcreditacion.objects.get_or_create(
+            cliente=cliente,
+            entidad=entidad_tauser,
+            localidad=localidad,
+            defaults={'estado': True}
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'medio_id': medio.id,
+            'entidad_id': entidad_tauser.id,
+            'created': created
+        })
+        
+    except Cliente.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cliente no encontrado'}, status=404)
+    except Localidad.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Localidad no encontrada'}, status=404)
+    except TipoEntidadFinanciera.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Entidad TAUSER no configurada'}, status=404)
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    """Crea un medio de acreditación Tauser con localidad"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método no permitido'}, status=405)
+    
+    try:
+        data = json.loads(request.body)
+        cliente_id = data.get('cliente_id')
+        localidad_id = data.get('localidad_id')
+        
+        cliente = Cliente.objects.get(id=cliente_id)
+        localidad = Localidad.objects.get(id=localidad_id, activo=True)
+        entidad_tauser = TipoEntidadFinanciera.objects.get(nombre__iexact='tauser')
+        
+        # Crear o actualizar medio
+        medio, created = MedioAcreditacion.objects.update_or_create(
+            cliente=cliente,
+            entidad=entidad_tauser,
+            defaults={'localidad': localidad, 'estado': True}
+        )
+        
+        return JsonResponse({
+            'success': True,
+            'medio_id': medio.id,
+            'created': created
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

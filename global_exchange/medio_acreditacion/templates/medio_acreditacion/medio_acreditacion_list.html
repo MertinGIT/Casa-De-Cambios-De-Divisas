@@ -733,9 +733,14 @@ body {
         <tbody style="text-align: center;">
           {% for medio in medios %}
             <tr>
-              <td data-label="Entidad">{{ medio.entidad }}</td>
+            {% if medio.entidad.nombre|lower == "tauser" %}
+              <td data-label="Entidad">{{ medio.entidad.nombre }} - {{ medio.localidad.nombre }}</td>
+            {% else %}
+              <td data-label="Entidad">{{ medio.entidad.nombre }}</td>
+            {% endif %}
               {% for campo, valor in medio.dynamic_fields.items %}
                 <td data-label="{{ campo|capfirst }}">{{ valor }}</td>
+                
               {% endfor %}
               <td data-label="Estado">{% if medio.estado %}<span class="status-badge status-activo">Activo</span>{% else %}<span class="status-badge status-inactivo">Inactivo</span>{% endif %}</td>
               <td data-label="Acciones">

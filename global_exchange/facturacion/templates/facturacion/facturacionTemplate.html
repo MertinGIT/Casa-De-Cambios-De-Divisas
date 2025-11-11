@@ -4,7 +4,7 @@
 // Después de crear la transacción exitosamente
 async function generarFactura(transaccionId) {
     try {
-        const response = await fetch('/facturas/generar/', {
+        const response = await fetch('/facturas/generar-factura/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -48,4 +48,69 @@ async function consultarEstadoFactura(facturaId) {
         console.error('Error:', error);
     }
 }
+
+async function enviarFacturaDesdeBoton(elemento) {
+    // Obtener el transaccion_id del botón
+    const transaccionId = typeof elemento === 'object' 
+        ? elemento.dataset.transaccionId 
+        : elemento;
+    
+    if (!transaccionId) {
+        alert('❌ No se encontró el ID de transacción');
+        return;
+    }
+    
+    try {
+        // Mostrar mensaje de carga (opcional)
+        const btnTexto = document.querySelector('.btn-generar-factura span');
+        const textoOriginal = btnTexto?.textContent;
+        if (btnTexto) btnTexto.textContent = 'Enviando...';
+        
+        // Llamar al endpoint que envía la factura
+        const response = await fetch('/facturas/enviar-email/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                transaccion_id: transaccionId
+            })
+        });
+        
+        const data = await response.json();
+        
+        // Restaurar texto del botón
+        if (btnTexto) btnTexto.textContent = textoOriginal;
+        
+        if (data.success) {
+            alert('✅ ' + data.message);
+            cerrarModalDeposito(); // Si quieres cerrar el modal
+        } else {
+            alert('❌ ' + data.message);
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Error al enviar la factura');
+    }
+}
+
+// Si no tienes esta función, agrégala
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+
 </script>

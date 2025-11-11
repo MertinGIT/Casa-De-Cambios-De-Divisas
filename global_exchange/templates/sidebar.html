@@ -41,6 +41,12 @@
         <span class="label">Historial</span>
       </a>
     </li>
+    <li>
+      <a href="{% url 'facturacion_view' %}">
+        <span class="icon">&#129534;</span>
+        <span class="label">Facturas</span>
+      </a>
+    </li>
     {% endif %} 
     <li>
       <a href="{% url 'configuracion_usuario' %}"><span class="icon">&#9881;</span>
@@ -117,6 +123,12 @@
         <a href="{% url 'historial_transacciones:historial_usuario' %}">
         <span class="icon">&#128195;</span>
         <span class="label">Historial</span>
+      </a>
+    </li>
+    <li>
+      <a href="{% url 'facturacion_view' %}">
+        <span class="icon">&#129534;</span>
+        <span class="label">Facturas</span>
       </a>
     </li>
     {% endif %}

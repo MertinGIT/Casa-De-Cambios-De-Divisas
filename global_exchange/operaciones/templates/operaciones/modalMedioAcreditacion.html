@@ -44,6 +44,277 @@
     </div>
 </div>
 
+<!-- Modal seleccionar localidad TAUSER -->
+<div id="modal-seleccionar-localidad" class="modal-acreditacion" style="display: none;">
+    <div class="modal-overlay" onclick="cerrarModalLocalidad()"></div>
+    <div class="modal-content-acreditacion">
+        <div class="modal-header-acreditacion">
+            <span class="close-btn" onclick="cerrarModalLocalidad()">&times;</span>
+            <h3 class="modal-title">📍 Seleccione sucursal TAUSER</h3>
+            <p class="modal-subtitle">Elija donde desea retirar su dinero</p>
+        </div>
+
+        <div class="modal-body-acreditacion">
+            <div id="localidades-container" class="localidades-grid">
+                <!-- Se llenarán dinámicamente -->
+            </div>
+        </div>
+
+        <div class="modal-footer-acreditacion">
+            <button type="button" class="btn-modal-acreditacion secondary" onclick="cerrarModalLocalidad()">
+                Cancelar
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    function esMontoEntero(monto) {
+    const numero = parseFloat(monto);
+    return Number.isInteger(numero);
+    }
+
+    // Función auxiliar para obtener el monto actual
+    function obtenerMontoActual() {
+        const campos = getCampos();
+        return parseFloat(campos.$resultado.val()) || 0;
+    }
+
+      function mostrarMensaje(titulo, texto,tipo='warning',recargar) {
+    console.log("mostrarMensaje en Pin:", titulo, texto);
+    
+    if (window.mostrarMensajeModal) {
+      // Mostrar mensaje
+      window.mostrarMensajeModal(titulo, texto,tipo,recargar);
+    } else {
+      console.error("Modal mensaje no disponible desde PIN");
+      alert(titulo + ": " + texto);
+    }
+}
+function mostrarModalSeleccionarLocalidad() {
+    // ✅ NO cerrar el modal de acreditación
+    
+    fetch('/operaciones/api/localidades-tauser/')
+        .then(res => res.json())
+        .then(localidades => {
+            const container = document.getElementById('localidades-container');
+            container.innerHTML = '';
+            
+            localidades.forEach(loc => {
+                const card = document.createElement('div');
+                card.className = 'localidad-card-mini';
+                card.innerHTML = `
+                    <div class="localidad-icon">📍</div>
+                    <div class="localidad-nombre">${loc.nombre}</div>
+                    ${loc.direccion ? `<div class="localidad-direccion">${loc.direccion}</div>` : ''}
+                `;
+                card.onclick = () => seleccionarLocalidadTauser(loc);
+                container.appendChild(card);
+            });
+            
+            document.getElementById('modal-seleccionar-localidad').style.display = 'flex';
+        })
+        .catch(err => {
+            alert('Error al cargar localidades');
+            console.error(err);
+        });
+}
+
+function cerrarModalLocalidad() {
+    document.getElementById('modal-seleccionar-localidad').style.display = 'none';
+    //document.getElementById('modal-acreditacion').style.display = 'flex';
+}
+
+function getCampos2() {
+    const op = $("input[name='operacion']:checked").val();
+    if(op === "venta"){ // compra inputs activos
+      return {
+        $origen: $("#origen-compra"),
+        $destino: $("#destino-compra"),
+        $valor: $("#valor-compra"),
+        $resultado: $("#resultado-compra"),
+        op
+      };
+    } else { // venta inputs activos
+      return {
+        $origen: $("#origen-venta"),
+        $destino: $("#destino-venta"),
+        $valor: $("#valor-venta"),
+        $resultado: $("#resultado-venta"),
+        op
+      };
+    }
+  }
+
+function seleccionarLocalidadTauser(localidad) {
+    const campos = getCampos();
+    const clienteId = {{ cliente_operativo_id }};
+    const monto = parseFloat(campos.$resultado.val()) || 0;
+    const monedaDestino = campos.$destino.val();
+    // ✅ Primero verificamos stock del TAUSER en esta localidad
+    fetch('/operaciones/api/verificar-stock-tauser/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            localidad_id: localidad.id,
+            monto: monto,
+            moneda: monedaDestino
+        })
+    })
+    .then(res => res.json())
+    .then(stockData => {
+        console.log("Stock Data ", stockData)
+        if (!stockData.success) {
+            const errorMsg = stockData.mensaje || stockData.error || "No se pudo verificar el stock";
+            mostrarMensaje("⚠️ Sin stock disponible", errorMsg);
+            return;
+        }
+
+        if (stockData.cantidad <= 0) {
+            mostrarMensaje("ℹ️ Sin stock", "Actualmente no hay fondos disponibles en esta sucursal.");
+            return;
+        }
+
+        // ✅ Luego buscamos o creamos el medio de acreditación TAUSER
+        fetch('/operaciones/api/obtener-medio-tauser/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                cliente_id: clienteId,
+                localidad_id: localidad.id
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                mostrarMensaje("⚠️ Error", "Error al obtener medio TAUSER: " + data.error);
+                return;
+            }
+
+            // ✅ Guardar con el ID real del medio de acreditación
+            medioSeleccionado = {
+                id: data.medio_id,
+                entidad: {
+                    nombre: 'Tauser',
+                    tipo: 'TAUSER',
+                    id: data.entidad_id
+                },
+                localidad: localidad,
+                localidad_id: localidad.id,
+                campos: [],
+                es_tauser: true
+            };
+
+            console.log("✅ Medio TAUSER seleccionado:", medioSeleccionado);
+
+            // Cerrar modal de localidades
+            cerrarModalLocalidad();
+
+            // Mostrar información en el panel inferior
+            const infoAcreditacion = document.getElementById('info-acreditacion');
+            infoAcreditacion.style.display = 'block';
+
+            const detalleEntidad = document.getElementById('detalle-entidad');
+            const infoDetalle = document.querySelector('.info-detalle');
+
+            detalleEntidad.textContent = 'Tauser';
+            infoDetalle.innerHTML = `
+                <div class="detalle-row">
+                    <span class="detalle-label">📍 Sucursal:</span>
+                    <span class="detalle-valor">${localidad.nombre}</span>
+                </div>
+                ${localidad.direccion ? `
+                <div class="detalle-row">
+                    <span class="detalle-label">📌 Dirección:</span>
+                    <span class="detalle-valor">${localidad.direccion}</span>
+                </div>
+                ` : ''}
+                <button type="button" 
+                        onclick="mostrarModalSeleccionarLocalidad()" 
+                        style="width: 100%; margin-top: 1rem; background: #f4f6fb; color: #5d5fef; border: 1px solid #e8ecf7; padding: 0.75rem; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    🔄 Cambiar sucursal
+                </button>
+            `;
+
+            // Habilitar botón de confirmar
+            document.getElementById('btn-confirmar-acreditacion').disabled = false;
+
+            // Animación
+            infoAcreditacion.style.opacity = '0';
+            infoAcreditacion.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                infoAcreditacion.style.transition = 'all 0.3s ease';
+                infoAcreditacion.style.opacity = '1';
+                infoAcreditacion.style.transform = 'translateY(0)';
+            }, 10);
+
+        })
+        .catch(err => {
+            mostrarMensaje("⚠️ Error", "Error al conectar con el servidor");
+            console.error(err);
+        });
+
+    })
+    .catch(err => {
+        mostrarMensaje("⚠️ Error", "Error al verificar stock");
+        console.error(err);
+    });
+}
+</script>
+
+<style>
+.localidades-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.localidad-card-mini {
+    background: white;
+    border: 2px solid #e8ecf7;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.localidad-card-mini:hover {
+    border-color: #5d5fef;
+    transform: translateY(-2px);
+}
+
+.btn-crear-tauser {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 1rem;
+}
+/* Estilo para botón de cambiar sucursal dentro del card */
+.medio-desc button:hover {
+    background: #4a4cd9 !important;
+    transform: translateY(-1px);
+}
+
+/* Estilo para botón de cambiar en info-detalle */
+.info-detalle button:hover {
+    background: #e8ecf7 !important;
+    border-color: #5d5fef !important;
+}
+</style>
+
 <script>
     // Datos simulados desde la BD - en tu implementación vendrán del backend
     const mediosAcreditacionData = JSON.parse('{{ medios_acreditacion|escapejs }}');
@@ -85,85 +356,151 @@
     }
 
     function cargarMediosAcreditacion() {
-        const container = document.getElementById('medios-acreditacion-container');
-        const sinMedios = document.getElementById('sin-medios');
+    const container = document.getElementById('medios-acreditacion-container');
+    const sinMedios = document.getElementById('sin-medios');
 
-        if (mediosAcreditacionData.length === 0) {
-            container.style.display = 'none';
-            sinMedios.style.display = 'block';
-            return;
-        }
+    container.innerHTML = '';
+    sinMedios.style.display = 'none';
 
-        container.innerHTML = '';
-        sinMedios.style.display = 'none';
+    // ✅ Obtener la operación actual
+    const campos = getCampos();
+    const esVenta = campos.op === 'compra'; // compra = cliente vende, entonces NO mostrar TAUSER
+    const montoActual = obtenerMontoActual();
+    const montoEsEntero = esMontoEntero(montoActual);
 
-        mediosAcreditacionData.forEach(medio => {
-            const medioElement = createMedioElement(medio);
-            container.appendChild(medioElement);
-        });
+
+    if (mediosAcreditacionData.length === 0 && esVenta) {
+        container.style.display = 'none';
+        sinMedios.style.display = 'block';
+        return;
     }
 
-    function createMedioElement(medio) {
-        const div = document.createElement('div');
-        div.className = 'medio-item';
+    // ✅ Card especial para TAUSER - SOLO si NO es venta
+    if (!esVenta) {
+        
+        const tauserCard = document.createElement('div');
+        tauserCard.className = 'medio-item';
 
-        // Determinar icono según tipo de entidad
-        let icono = '🏦';
-        switch (medio.entidad.tipo) {
-            case 'BILLETERA':
-                icono = '📱';
-                break;
-            case 'COOPERATIVA':
-                icono = '🏢';
-                break;
-            case 'FINTECH':
-                icono = '💳';
-                break;
+        const estaDeshabilitado = !montoEsEntero;
+        const idTauser = 'medio-tauser-new';
+
+        tauserCard.innerHTML = `
+            <input type="radio" 
+                   id="${idTauser}" 
+                   name="medio_acreditacion" 
+                   value="tauser-new" 
+                   class="medio-radio"
+                   ${estaDeshabilitado ? 'disabled' : ''}>
+            <label for="${idTauser}" class="medio-label ${estaDeshabilitado ? 'medio-deshabilitado' : ''}">
+                <div class="medio-icon">📍</div>
+                <div class="medio-info">
+                    <span class="medio-nombre">Tauser - Retiro en sucursal</span>
+                    <span class="medio-desc" id="tauser-desc">
+                        ${estaDeshabilitado 
+                            ? '⚠️ Solo disponible para montos enteros' 
+                            : 'Haga clic para seleccionar sucursal'}
+                    </span>
+                </div>
+                ${!estaDeshabilitado ? '<div class="medio-check">✓</div>' : ''}
+            </label>
+        `;
+        
+        // Solo agregar evento si NO está deshabilitado
+        if (!estaDeshabilitado) {
+            const radioTauser = tauserCard.querySelector('.medio-radio');
+            radioTauser.addEventListener('change', () => {
+                if (radioTauser.checked) {
+                    mostrarModalSeleccionarLocalidad();
+                }
+            });
         }
 
-        // Renderizar campos dinámicos
-        let camposHtml = '';
+        
+        container.appendChild(tauserCard);
+    }
+    console.log("Medios Acreditacion Data:", mediosAcreditacionData);
+    mediosAcreditacionData.forEach(medio => {
+        console.log("medio", medio);
+        if(medio.entidad.nombre.toLowerCase() != 'tauser'){
+        const medioElement = createMedioElement(medio);
+        container.appendChild(medioElement);
+        }
+    });
+   
+}
+
+
+function createMedioElement(medio) {
+    const div = document.createElement('div');
+    div.className = 'medio-item';
+
+    // Determinar icono según tipo de entidad
+    let icono = '🏦';
+    switch (medio.entidad.tipo) {
+        case 'BILLETERA':
+            icono = '📱';
+            break;
+        case 'COOPERATIVA':
+            icono = '🏢';
+            break;
+        case 'FINTECH':
+            icono = '💳';
+            break;
+        case 'BANCO':
+            icono = '🏦';
+            break;
+    }
+
+    // Renderizar campos dinámicos
+    let camposHtml = '';
+    if (medio.campos && medio.campos.length > 0) {
         medio.campos.forEach(campo => {
             camposHtml += `<div><strong>${campo.label}:</strong> ${campo.value}</div>`;
         });
-
-        div.innerHTML = `
-                <input type="radio" id="medio-${medio.id}" name="medio_acreditacion" value="${medio.id}" class="medio-radio">
-                <label for="medio-${medio.id}" class="medio-label">
-                    <div class="medio-icon">${icono}</div>
-                    <div class="medio-info">
-                        <span class="medio-nombre">${medio.entidad.nombre}</span>
-                        <span class="medio-desc">${camposHtml}</span>
-                    </div>
-                    <div class="medio-check">✓</div>
-                </label>
-            `;
-
-        // Agregar event listener
-        const radio = div.querySelector('.medio-radio');
-        radio.addEventListener('change', () => {
-            if (radio.checked) {
-                seleccionarMedio(medio);
-            }
-        });
-
-        return div;
     }
 
+    div.innerHTML = `
+        <input type="radio" 
+               id="medio-${medio.id}" 
+               name="medio_acreditacion" 
+               value="${medio.id}" 
+               class="medio-radio">
+        <label for="medio-${medio.id}" class="medio-label">
+            <div class="medio-icon">${icono}</div>
+            <div class="medio-info">
+                <span class="medio-nombre">${medio.entidad.nombre}</span>
+                <span class="medio-desc">${camposHtml}</span>
+            </div>
+            <div class="medio-check">✓</div>
+        </label>
+    `;
+
+    // Agregar event listener
+    const radio = div.querySelector('.medio-radio');
+    radio.addEventListener('change', () => {
+        if (radio.checked) {
+            seleccionarMedio(medio);
+        }
+    });
+
+    return div;
+}
+
     function seleccionarMedio(medio) {
-        medioSeleccionado = medio;
-        console.log("entra a la funcion");
+    medioSeleccionado = medio;
 
-        // Mostrar información del medio seleccionado
-        const infoAcreditacion = document.getElementById('info-acreditacion');
-        infoAcreditacion.style.display = 'block';
+    const infoAcreditacion = document.getElementById('info-acreditacion');
+    infoAcreditacion.style.display = 'block';
 
-        // Mostrar todos los campos dinámicos en el detalle
-        const detalleEntidad = document.getElementById('detalle-entidad');
+    const detalleEntidad = document.getElementById('detalle-entidad');
+    const infoDetalle = document.querySelector('.info-detalle');
+
+    // Si el medio es Tauser, mostrar mensaje fijo
+    if (medio.entidad.nombre.trim().toLowerCase() === 'tauser') {
+        detalleEntidad.textContent = 'Tauser';
+        infoDetalle.innerHTML = '<div>Puede retirar sus fondos en su Tauser más cercano.</div>';
+    } else {
         detalleEntidad.textContent = medio.entidad.nombre;
-
-        // Limpiar y mostrar campos dinámicos
-        const infoDetalle = document.querySelector('.info-detalle');
         infoDetalle.innerHTML = '';
         medio.campos.forEach(campo => {
             const row = document.createElement('div');
@@ -171,75 +508,49 @@
             row.innerHTML = `<span class="detalle-label">${campo.label}:</span><span class="detalle-valor">${campo.value}</span>`;
             infoDetalle.appendChild(row);
         });
-        console.log("LLEGA HASTA ACA");
-        // Habilitar botón de confirmar
-        document.getElementById('btn-confirmar-acreditacion').disabled = false;
-
-        // Animación suave
-        infoAcreditacion.style.opacity = '0';
-        infoAcreditacion.style.transform = 'translateY(-10px)';
-
-        setTimeout(() => {
-            infoAcreditacion.style.transition = 'all 0.3s ease';
-            infoAcreditacion.style.opacity = '1';
-            infoAcreditacion.style.transform = 'translateY(0)';
-        }, 10);
     }
 
+    // Habilitar botón de confirmar
+    document.getElementById('btn-confirmar-acreditacion').disabled = false;
+
+    // Animación suave
+    infoAcreditacion.style.opacity = '0';
+    infoAcreditacion.style.transform = 'translateY(-10px)';
+    setTimeout(() => {
+        infoAcreditacion.style.transition = 'all 0.3s ease';
+        infoAcreditacion.style.opacity = '1';
+        infoAcreditacion.style.transform = 'translateY(0)';
+    }, 10);
+}
+
+
     function confirmarAcreditacion() {
-        verificarTasaActualizada(function(tasaActualizada) {
-        console.log("Tasa actualizada123123:", tasaActualizada);
+    verificarTasaActualizada(function(tasaActualizada) {
         if (tasaActualizada) {
-            console.log("Tasa actualizada123123, procediendo a método de pago");
-            
-        
-            console.log("sale por medioSeleccionado");
             if (!medioSeleccionado) {
                 window.mostrarMensajeModal("Info",'Por favor seleccione un medio de acreditación','info');
                 return;
             }
-            
 
-            // 🚨 Si no hay ningún campo definido
-            if (!medioSeleccionado.campos || medioSeleccionado.campos.length === 0) {
-                window.mostrarMensajeModal("Error","El medio seleccionado no tiene datos configurados. Debe completar los datos de acreditación en la Configuracion.");
-                return;
-            }
-
-            // Validar que todos los campos requeridos tengan valor
-            const camposFaltantes = medioSeleccionado.campos.filter(campo => {
-                // si "campo" es un input HTML real
-                let valor = campo.value !== undefined ? campo.value : "";
-                valor = valor.toString().trim();
-                return valor === "";
-            });
-
-            console.log("confirmarAcreditacion",camposFaltantes)
-            if (camposFaltantes.length > 0) {
-                let nombres = camposFaltantes.map(c => c.label || c.name || "(campo)").join(", ");
-                alert("⚠️ El medio seleccionado no tiene datos completos. Debe completar: " + nombres);
-                return;
-            }
-
+            // ✅ Ya no necesitas validaciones especiales, medioSeleccionado.id ya es válido
             window.datosAcreditacion = medioSeleccionado;
 
             // Cerrar modal
             cerrarModalAcreditacion();
 
             if (window.mfaTransacciones) {
-                mostrarModalPin();   // pedir PIN
+                mostrarModalPin();
             } else {
-                procesarTransaccion(); // ir directo
+                procesarTransaccion();
             }
-        }else{
-            //$("#modal-exito").hide();
-            mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente. Tiene que volver a recalcular para usar la última tasa.");
+        } else {
+            mostrarMensaje("Transacción Rechazada", "⚠️ La tasa de cambio usada ya no es la más reciente.");
             $("#modal-pin").fadeOut();
             $("#modal-acreditacion").fadeOut();
-            console.log("elseeeeeee");
             return;
         }
-        })}
+    });
+}
 
     function resetearFormularioAcreditacion() {
         // Limpiar selección
@@ -257,7 +568,7 @@
     }
 
     function irAConfiguracion() {
-        alert('Redirigir a configuración de medios de acreditación');
+        window.location.href = "http://localhost:8000/medios_acreditacion/";
         // Aquí redirigirías al CRUD de medios de acreditación
     }
 

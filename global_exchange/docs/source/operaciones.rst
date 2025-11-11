@@ -12,7 +12,7 @@ Modelos
 
 
 Vistas basadas en función
-------------------------
+-------------------------
 .. autofunction:: operaciones.views.simulador_operaciones
 .. autofunction:: operaciones.views.obtener_clientes_usuario
 .. autofunction:: operaciones.views.set_cliente_operativo
@@ -29,5 +29,3 @@ Vistas basadas en función
 .. autofunction:: operaciones.views.verificar_limites 
 
 
-
-   

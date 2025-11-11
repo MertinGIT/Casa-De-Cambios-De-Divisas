@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-let stripe = Stripe("pk_test_51QftGxBt5QbldnaXiDf1tp29l9rDIfVIcbkvhohEZOpPvpC5eZpvE4xxiOkkLTgKAnoNj0GnZNtdVIwtG3wYLBl700THYNzf68");
+let stripe = Stripe("pk_test_51RrUMoCBWWuGw15YxI7C4OuXPPssTC5uumXgsu0orQ8x0oYnOrL5Ff4kAJTJilUs4qWcMtT6RebNHMdC9PrKm7JQ00JlIT2PBy");
 let elements = stripe.elements();
 let cardElement = null;
 
@@ -508,6 +508,112 @@ function handleMetodoChange(metodSeleccionado) {
     actualizarDesglosePago(metodSeleccionado);
 }
 
+function ocultarMetodosSegunOperacion() {
+    // Obtener directamente el tipo de operación seleccionado
+    const operacionSeleccionada = $("input[name='operacion']:checked").val();
+    
+    console.log("🔍 Operación detectada:", operacionSeleccionada);
+    
+    // Buscar el contenedor del método efectivo
+    const metodoEfectivo = document.querySelector('input[id="efectivo"]');
+    
+    if (metodoEfectivo) {
+        const metodoItem = metodoEfectivo.closest('.metodo-item');
+        
+        if (metodoItem) {
+            let debeOcultarEfectivo = false;
+            let mensajeError = "";
+            
+            if (operacionSeleccionada === "venta") {
+                // En COMPRA: ocultar efectivo siempre
+                debeOcultarEfectivo = true;
+                console.log("❌ Ocultando efectivo (operación: COMPRA)");
+            } else if (operacionSeleccionada === "compra") {
+                // En VENTA: verificar si el monto es entero
+                const campos = getCampos();
+                const montoVentaTexto = campos.$valor.val();
+                const montoVenta = parseFloat(montoVentaTexto) || 0;
+                
+                console.log("💰 Verificando monto de VENTA:", montoVenta);
+                
+                // ✅ Verificar si tiene decimales
+                if (!Number.isInteger(montoVenta) && montoVenta > 0) {
+                    debeOcultarEfectivo = true;
+                    mensajeError = `No se puede pagar en efectivo con cantidades decimales (${montoVenta.toLocaleString('es-PY', {minimumFractionDigits: 2, maximumFractionDigits: 2})}). Por favor, use un método de pago digital.`;
+                    console.log("❌ Ocultando efectivo (monto con decimales)");
+                } else {
+                    console.log("✅ Mostrando efectivo (monto entero válido)");
+                }
+            }
+            
+            // Ocultar o mostrar según validación
+            if (debeOcultarEfectivo) {
+                metodoItem.style.display = 'none';
+                
+                // Si efectivo estaba seleccionado, deseleccionarlo
+                if (metodoEfectivo.checked) {
+                    metodoEfectivo.checked = false;
+                    
+                    // Ocultar el formulario de efectivo si estaba visible
+                    const formEfectivo = document.getElementById('form-efectivo');
+                    const infoPago = document.getElementById('info-pago');
+                    
+                    if (formEfectivo) formEfectivo.style.display = 'none';
+                    if (infoPago) infoPago.style.display = 'none';
+                    
+                    // Deshabilitar botón confirmar
+                    const btnConfirmar = document.getElementById('btn-confirmar-pago');
+                    if (btnConfirmar) btnConfirmar.disabled = true;
+                }
+                
+                // ✅ Mostrar mensaje de advertencia si hay decimales
+                if (mensajeError) {
+                    mostrarMensajeAdvertencia(mensajeError);
+                }
+            } else {
+                // Mostrar efectivo en VENTA con monto entero válido
+                metodoItem.style.display = 'block';
+            }
+        }
+    }
+}
+
+
+// ✅ Nueva función para mostrar mensaje de advertencia
+function mostrarMensajeAdvertencia(mensaje) {
+    // Buscar si ya existe un mensaje de advertencia
+    let alertaExistente = document.getElementById('alerta-efectivo-decimal');
+    
+    if (alertaExistente) {
+        alertaExistente.remove();
+    }
+    
+    // Crear nuevo mensaje
+    const alerta = document.createElement('div');
+    alerta.id = 'alerta-efectivo-decimal';
+    alerta.className = 'alerta-efectivo-decimal';
+    alerta.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 24px;">⚠️</span>
+            <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 4px;">Efectivo no disponible</strong>
+                <span style="font-size: 14px;">${mensaje}</span>
+            </div>
+        </div>
+    `;
+    
+    // Insertar después del título del modal
+    const modalBody = document.querySelector('.modal-body-exito');
+    if (modalBody) {
+        modalBody.insertBefore(alerta, modalBody.firstChild);
+        
+        // Animar entrada
+        setTimeout(() => {
+            alerta.style.opacity = '1';
+            alerta.style.transform = 'translateY(0)';
+        }, 10);
+    }
+}
 function mostrarModalPago() {
     console.log("Mostrando modal método de pago");
     const modal = document.getElementById('modal-metodo');
@@ -515,6 +621,11 @@ function mostrarModalPago() {
     if (!modal) {
         console.error("Modal no encontrado");
         return;
+    }
+    // ✅ Remover alertas anteriores
+    const alertaAnterior = document.getElementById('alerta-efectivo-decimal');
+    if (alertaAnterior) {
+        alertaAnterior.remove();
     }
     
     modal.style.display = 'flex';
@@ -533,6 +644,9 @@ function mostrarModalPago() {
     }
     $("#precio_a_pagar").text(total + " " + moneda_a_pagar);
     
+    // ⭐ NUEVO: Ocultar métodos según tipo de operación
+    ocultarMetodosSegunOperacion();
+    
     // Animación de entrada
     const content = modal.querySelector('.modal-content-exito');
     if (content) {
@@ -547,6 +661,7 @@ function mostrarModalPago() {
     }
     setupNationalFormatters();
 }
+
 
 function setupNationalFormatters() {
     const inputNumero = document.getElementById('numero-nacional');
@@ -837,7 +952,11 @@ function cerrarModalPago() {
     const modal = document.getElementById('modal-metodo');
     
     if (!modal) return;
-    
+    // ✅ Limpiar alerta al cerrar
+    const alerta = document.getElementById('alerta-efectivo-decimal');
+    if (alerta) {
+        alerta.remove();
+    }
     const content = modal.querySelector('.modal-content-exito');
     
     if (content) {
@@ -1801,6 +1920,36 @@ document.addEventListener('keydown', function(e) {
     .opcion-info p {
         font-size: 13px;
     }
+}
+
+/* Alerta de efectivo no disponible */
+.alerta-efectivo-decimal {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border: 2px solid #ffc107;
+    border-left: 5px solid #ff9800;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    color: #856404;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.2);
+}
+
+.alerta-efectivo-decimal strong {
+    color: #ff9800;
+    font-size: 16px;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.alerta-efectivo-decimal:hover {
+    animation: shake 0.5s ease;
 }
 
 

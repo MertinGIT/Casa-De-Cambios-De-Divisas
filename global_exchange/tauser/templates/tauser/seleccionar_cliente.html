@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleccionar Cliente - ATM</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        
+        .atm-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 600px;
+            width: 100%;
+        }
+        
+        .atm-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .atm-header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+        }
+        
+        .atm-header p {
+            margin: 5px 0;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .localidad-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        
+        .atm-body {
+            padding: 30px;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        
+        .cliente-card {
+            background: #f8f9fa;
+            border: 3px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            display: block;
+        }
+        
+        .cliente-card:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        
+        .cliente-card input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            margin: 0;
+        }
+        
+        /* ✅ Selección distintiva */
+        .cliente-card input[type="radio"]:checked + .cliente-content {
+            border-left: 6px solid #667eea;
+            padding-left: 16px;
+            background: linear-gradient(to right, rgba(102, 126, 234, 0.1), transparent);
+        }
+        
+        .cliente-card input[type="radio"]:checked + .cliente-content .cliente-nombre {
+            color: #667eea;
+            font-size: 19px;
+        }
+        
+        .cliente-card input[type="radio"]:checked + .cliente-content .badge-selected {
+            display: inline-block;
+        }
+        
+        /* ✅ Borde animado al seleccionar */
+        .cliente-card:has(input[type="radio"]:checked) {
+            border: 3px solid #667eea;
+            background: linear-gradient(135deg, #f0f4ff 0%, #ffffff 100%);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+            transform: scale(1.02);
+        }
+        
+        .cliente-content {
+            transition: all 0.3s ease;
+            position: relative;
+            pointer-events: none;
+        }
+        
+        .cliente-nombre {
+            font-weight: 700;
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .badge-selected {
+            display: none;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: bounceIn 0.5s;
+        }
+        
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        .cliente-info {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .cliente-info strong {
+            color: #333;
+        }
+        
+        .btn-confirmar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: 700;
+            border-radius: 10px;
+            width: 100%;
+            color: white;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .btn-confirmar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-logout {
+            background: #f3f4f6;
+            border: none;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            width: 100%;
+            color: #666;
+            margin-top: 15px;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .btn-logout:hover {
+            background: #e5e7eb;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="atm-container">
+        <div class="atm-header">
+            <h1>👤 Selecciona tu Cliente</h1>
+            <p><strong>Usuario:</strong> {{ user.username }}</p>
+            <p><strong>Cédula:</strong> {{ user.cedula }}</p>
+            {% if localidad_nombre %}
+            <div class="localidad-badge">
+                📍 {{ localidad_nombre }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="atm-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if clientes %}
+            <form method="post">
+                {% csrf_token %}
+                
+                {% for cliente in clientes %}
+                    <label for="cliente_{{ cliente.id }}" class="cliente-card">
+                        <input type="radio" 
+                               name="cliente_id" 
+                               value="{{ cliente.id }}" 
+                               id="cliente_{{ cliente.id }}"
+                               {% if forloop.first %}checked{% endif %}>
+                        <div class="cliente-content">
+                            <div class="cliente-nombre">
+                                🏢 {{ cliente.nombre }}
+                                <span class="badge-selected">✓ Seleccionado</span>
+                            </div>
+                            <div class="cliente-info">
+                                <strong>RUC:</strong> {{ cliente.ruc }}<br>
+                                <strong>Cédula:</strong> {{ cliente.cedula }}
+                            </div>
+                        </div>
+                    </label>
+                {% endfor %}
+                
+                <button type="submit" class="btn-confirmar">
+                    ✓ Confirmar Cliente
+                </button>
+            </form>
+            {% else %}
+            <div class="alert alert-warning">
+                ⚠️ No tienes clientes asociados. Contacta al administrador.
+            </div>
+            {% endif %}
+            
+            <a href="{% url 'atm_logout' %}" class="btn-logout">
+                ✗ Cerrar Sesión ATM
+            </a>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
