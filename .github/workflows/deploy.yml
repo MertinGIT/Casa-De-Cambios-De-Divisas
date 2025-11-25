@@ -18,10 +18,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Permisos script
-        run: chmod +x deploy-dev.sh
+        run: ./global_exchange/deploy_desarrollo.sh
 
       - name: Ejecutar Deploy DEV
-        run: ./deploy-dev.sh
+        run: ./global_exchange/deploy_desarrollo.sh
 
   deploy-prod:
     name: Deploy Producción (Tag)
@@ -42,7 +42,7 @@ jobs:
         run: echo "Producción versión:" ${{ steps.version.outputs.version }}
 
       - name: Permisos script
-        run: chmod +x deploy-prod.sh
+        run: chmod +x global_exchange/deploy.sh
 
       - name: Ejecutar Deploy Prod
-        run: ./deploy-prod.sh ${{ steps.version.outputs.version }}
+        run: ./global_exchange/deploy.sh $VERSION
