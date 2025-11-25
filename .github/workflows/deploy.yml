@@ -68,7 +68,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Mostrar versión detectada
-        run: echo "Producción versión: ${{ steps.version.outputs.version }}"
+        run: echo "Producción versión:" ${{ steps.version.outputs.version }}
 
       - name: Crear archivo .env si no existe
         run: |
