@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: >
+      sh -c "
+        python manage.py migrate &&
+        python manage.py loaddata initial_data.json || true &&
+        python manage.py shell < global_exchange/core/scripts/default_data.py &&
+        python manage.py runserver 0.0.0.0:8000
+      "
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+      - "9000:9000"   # para Daphne
+    depends_on:
+      - db
+      - redis
+    environment:
+    - REDIS_HOST=redis  
+    env_file:
+      - .env 
+    develop:
+      watch:
+        - action: sync
+          path: .
+          target: /app
+          ignore:
+            - "**/_pycache_/"
+            - "*/.pyc"
+            - "**/.git/"
+            - "**/venv/"
+        - action: rebuild
+          path: requirements.txt
+
+  db:
+    image: postgres:14
+    restart: always
+    environment:
+      POSTGRES_DB: ${DJANGO_DB_NAME}
+      POSTGRES_USER: ${DJANGO_DB_USER}
+      POSTGRES_PASSWORD: ${DJANGO_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:  # Agregar todo este servicio
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:  # Agregar este volumen
