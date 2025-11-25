@@ -32,7 +32,7 @@
           <div class="summary-item">
             <div class="item-icon">💵</div>
             <div class="item-content">
-              <span class="item-label">Monto a entregar</span>
+              <span class="item-label" id="label-recibir">Monto a entregar</span>
               <span class="item-value" id="modal-entregar"></span>
             </div>
           </div>
@@ -128,7 +128,11 @@
 
     // Actualizar las etiquetas dinámicamente
     const campos = getCampos();
+    console.log("datos.valor ", campos.$origen.val())
+    console.log("datos.op ", campos.$destino.val())
     if (campos.op === "venta") {
+        document.getElementById("modal-entregar").textContent = parseFloat(campos.$resultado.val()) + " " + campos.$destino.val();
+        document.getElementById("label-recibir").textContent = "Monto a recibir";
         document.getElementById("label-con-descuento").textContent = "Monto a entregar (con descuento)";
         document.getElementById("label-sin-descuento").textContent = "Monto a entregar (sin descuento)";
     } else {
@@ -312,10 +316,10 @@
         const datos = {
           tipo: campos.op === "venta" ? "Compra" : "Venta",
           entregar: campos.$valor.val() + " " + campos.$origen.val(),
-          recibir: response.resultado + " " + campos.$destino.val(),
+          recibir: response.resultado + " " + campos.$origen.val(),
           tasa: response.tasa + " (" + response.fecha_tasa + ")",
           descuento: response.descuento + "%",
-          sin_descuento: response.resultado_sin_desc + " " + campos.$destino.val(),
+          sin_descuento: response.resultado_sin_desc + " " + campos.$origen.val(),
           ganancia_total:response.ganancia_total,
         };
 

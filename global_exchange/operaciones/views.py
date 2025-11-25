@@ -231,24 +231,24 @@ def simulador_operaciones(request):
                             # Cliente entrega PYG, convertimos a moneda extranjera
                             TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
                             TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
+                            print("valor en simulacion_operaciones: ", valor, flush=True)
                             resultado_sin_desc = (valor)
                             resultado = round(valor * TC_VTA, 2)
-                            print("resultadooooo eessss ", resultado, flush = True)
-                            print("Valorrr: ", valor, flush=True)
+                            print("modal == 0, valor que tiene que entregar en GS: ", resultado, flush = True)
+                            print("modal == 0, Valor que quiere EN USD: ", valor, flush=True)
                             ganancia_total = round(resultado - (valor * PB_MONEDA), 2)
-                            print("ganancia_total 244",ganancia_total,flush=True)
+                            print("modal== 0, ganancia_total en simulacion linea 239: ",ganancia_total,flush=True)
                         elif(modal == 2):
-                            print("Entro ")
+                            print("Entro modal== 2")
                             TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
                             TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA  # sin beneficio
                             resultado_sin_desc = round((valor * TC_VTA_SIN_DESC), 2)
-                            resultado = round((valor * TC_VTA), 2)
-                            print("resultadooooo eessss ", resultado, flush = True)
-                            print("Valorrr: ", valor, flush=True)
+                            resultado =  round((valor * TC_VTA), 2)
+                            print("valor que tiene que entregar en GS: ", resultado, flush = True)
+                            print("Valor que quiere EN USD: ", valor, flush=True)
                             ganancia_total = round(resultado - (valor * PB_MONEDA), 2)
-                            print("ganancia_total 244",ganancia_total,flush=True)
-
-                        
+                            print("ganancia_total 249: ",ganancia_total,flush=True)
+     
                     else:
                         # Cliente entrega moneda extranjera, recibe PYG
                         TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
@@ -256,6 +256,7 @@ def simulador_operaciones(request):
                         resultado_sin_desc = round(valor * TC_COMP_SIN_DESC, 2)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
+                        print("else de simulacion linea 259: ",ganancia_total,flush=True)
         except ValueError:
             resultado = "Monto inválido"
 
