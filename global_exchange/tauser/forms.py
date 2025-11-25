@@ -22,3 +22,14 @@ class LoginATMForm(forms.Form):
         except Cliente.DoesNotExist:
             raise forms.ValidationError('Cédula no encontrada o cliente inactivo')
         return cedula
+
+
+class SeleccionarTransaccionForm(forms.Form):
+    """Formulario para seleccionar una transacción pendiente"""
+    transaccion_id = forms.IntegerField(widget=forms.HiddenInput())
+    metodo_pago = forms.ChoiceField(
+        choices=[('efectivo', 'Efectivo'), ('transferencia', 'Transferencia')],
+        widget=forms.RadioSelect,
+        initial='efectivo',
+        label='Método de Pago'
+    )

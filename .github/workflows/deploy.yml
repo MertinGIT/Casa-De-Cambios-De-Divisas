@@ -1,0 +1,48 @@
+name: Deploy Global Exchange
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - "*"
+
+jobs:
+  deploy-dev:
+    name: Deploy Desarrollo
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Permisos script
+        run: chmod +x deploy-dev.sh
+
+      - name: Ejecutar Deploy DEV
+        run: ./deploy-dev.sh
+
+  deploy-prod:
+    name: Deploy Producción (Tag)
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Obtener versión del tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Mostrar versión
+        run: echo "Producción versión: ${{ steps.version.outputs.version }}"
+
+      - name: Permisos script
+        run: chmod +x deploy-prod.sh
+
+      - name: Ejecutar Deploy Prod
+        run: ./deploy-prod.sh ${{ steps.version.outputs.version }}

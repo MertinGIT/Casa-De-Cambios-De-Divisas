@@ -54,7 +54,7 @@ def  crear_limite(request):
 
         if form.is_valid():
             limite = form.save(commit=False)
-            limite.moneda = Moneda.objects.get(id=1)
+            limite.moneda = Moneda.objects.get(abreviacion="PYG")
             limite.save()
             print("Guardado:", limite.id, limite.limite_diario, limite.limite_mensual, limite.moneda)
 

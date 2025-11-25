@@ -40,7 +40,7 @@
           <div class="summary-item highlight">
             <div class="item-icon">💰</div>
             <div class="item-content">
-              <span class="item-label">Monto a recibir(con descuento)</span>
+              <span class="item-label" id="label-con-descuento">Monto a recibir(con descuento)</span>
               <span class="item-value" id="modal-recibir"></span>
             </div>
           </div>
@@ -48,7 +48,7 @@
           <div class="summary-item">
             <div class="item-icon">💳</div>
             <div class="item-content">
-              <span class="item-label">Monto a recibir(sin descuento)</span>
+              <span class="item-label" id="label-sin-descuento">Monto a recibir(sin descuento)</span>
               <span class="item-value" id="modal-sin-descuento"></span>
             </div>
           </div>
@@ -125,6 +125,16 @@
     document.getElementById("modal-tasa").textContent = datos.tasa;
     document.getElementById("modal-comision").textContent = datos.descuento;
     document.getElementById("modal-sin-descuento").textContent = datos.sin_descuento;
+
+    // Actualizar las etiquetas dinámicamente
+    const campos = getCampos();
+    if (campos.op === "venta") {
+        document.getElementById("label-con-descuento").textContent = "Monto a entregar (con descuento)";
+        document.getElementById("label-sin-descuento").textContent = "Monto a entregar (sin descuento)";
+    } else {
+        document.getElementById("label-con-descuento").textContent = "Monto a recibir (con descuento)";
+        document.getElementById("label-sin-descuento").textContent = "Monto a recibir (sin descuento)";
+    }
 
     // Mostrar modal
     const modal = document.getElementById("modal-confirmacion");
@@ -264,25 +274,38 @@
 
     // si no existe resultado calculado todavía, calcular localmente
     let resultadoCalc = campos.$resultado.val();
+      console.log("El resultado del calculo esss......",resultadoCalc)
 
+     if (campos.op === "venta") {
+        console.log("HOLAAAAAA ES VENTA ENTONCES??? ", monto)
+      } else {
+        console.log("HOLAAAAAA ES COMPRA ENTONCES??? ", monto)
+      }
     if (!resultadoCalc) {
       if (campos.op === "venta") {
         resultadoCalc = (monto / tasaVta).toFixed(2);
+        
       } else {
         resultadoCalc = (monto * tasaCmp).toFixed(2);
+        console.log("HOLAAAAAA ES COMPRA ENTONCES??? ", monto)
       }
       campos.$resultado.val(resultadoCalc);
     }
 
+    console.log("Monto en confirmar trnasacionb ", monto)
+    console.log("campos.$resultado.val()", campos.$resultado.val())
     $.ajax({
       url: "{% url 'operaciones' %}",
       method: "POST",
       data: {
         csrfmiddlewaretoken: "{{ csrf_token }}",
-        valor: campos.$valor.val(),
+        valor: campos.op === "venta"
+      ? (parseFloat(campos.$resultado.val()))
+      : parseFloat(campos.$valor.val()), 
         origen: campos.$origen.val(),
         destino: campos.$destino.val(),
         operacion: campos.op,
+        modal: 2
       },
       success: function (response) {
         // Mostrar el modal con los datos que vinieron del servidor

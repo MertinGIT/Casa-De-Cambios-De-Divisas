@@ -28,4 +28,5 @@ El sistema backend de Global Exchange centraliza la gestión de operaciones de c
    notificaciones
    operaciones
    roles_permisos
-   
+   facturacion
+   tauser

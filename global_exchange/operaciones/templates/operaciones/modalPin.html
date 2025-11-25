@@ -62,8 +62,10 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  
   function mostrarModalPin() {
     console.log("mostrarModalPinnnnnnnnnnnnnnnnn");
     enviarPin();
@@ -255,6 +257,7 @@ function ocultarLoaderTransaccion() {
 }
 
 
+
 // Función separada para procesar y guardar la transacción
 function procesarTransaccion() {
   console.log("Procesando transacción en modalPin");
@@ -308,6 +311,7 @@ function procesarTransaccion() {
     moneda_destino_id: moneda_destino_id,
     tasa_usada: tasaCalculada,
     tasa_ref_id: TASA_REF_ID,
+    medio_acreditacion_id: window.datosAcreditacion.id, 
     cliente_id:  parseInt("{{ cliente_operativo.id }}", 10),
     metodo_pago_id: window.metodoSeleccionado,
     ganancia:window.ganancia_total,
@@ -341,7 +345,7 @@ function procesarTransaccion() {
 
 
     const transaccionId = localResp.id;
-
+    window.transaccionIdParaDescargaFactura = localResp.id;
     // PASO 2: Enviar al banco
     let montoParaBanco, monedaParaBanco;
     
@@ -354,6 +358,7 @@ function procesarTransaccion() {
     }
 
     const transaccionData = {
+      transaccionId: localResp.id,
       email: "{{ email_cliente_operativo }}",
       monto: montoParaBanco,
       moneda: monedaParaBanco,
@@ -375,10 +380,10 @@ function procesarTransaccion() {
       return v === undefined || v === null || v === "";
     });
     if (valoresInvalidos.length > 0) {
-  console.error("❌ Transacción inválida, faltan datos:", valoresInvalidos);
-  mostrarMensaje("⚠️ Error", "La transacción no se pudo enviar. Faltan datos obligatorios.");
-  return; // 🔥 Detener aquí
-}
+      console.error("❌ Transacción inválida, faltan datos:", valoresInvalidos);
+      mostrarMensaje("⚠️ Error", "La transacción no se pudo enviar. Faltan datos obligatorios.");
+      return; // 🔥 Detener aquí
+    }
 
     console.log("🏦 Enviando al banco:", transaccionData);
 
@@ -389,12 +394,12 @@ function procesarTransaccion() {
     })
     .then(resp => resp.json())
     .then(async data => { // 🔥 async aquí
-      console.log("Respuesta del banco:", data);
+      console.log("Respuesta del banco en modalPin:", data);
       ocultarLoaderTransaccion(); // Ocultar loader al recibir respuesta
 
       let estadoFinal = "pendiente";
-      
       if (data.estado === "ok"){
+        
         estadoFinal = "confirmada";
         
         // Guardar transacción globalmente
@@ -450,6 +455,7 @@ function procesarTransaccion() {
             
             return; // 🔥 Detener aquí
           }
+
           
           console.log("✅ Pago con tarjeta exitoso");
         }
@@ -477,15 +483,15 @@ function procesarTransaccion() {
       .then(updateResp => {
         console.log("updateResp",updateResp)
         if (updateResp.success) {
-          if (estadoFinal === "confirmada") {
-            // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
+          // 🔥 SOLO AQUÍ SE MUESTRA EL MODAL DE ÉXITO
+          // Primero generar la factura automática
+          generarFacturaAutomatica(window.transaccionIdParaDescargaFactura).then(() => {
             $("#modal-pin").fadeOut();
-            $("#modal-exito").fadeIn().css("display", "flex");
-          } else {
-            mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
-          }
+            //$("#modal-exito").fadeIn().css("display", "flex");
+            mostrarModalExito();
+          });
         } else {
-          mostrarMensaje("⚠️ Error", "No se pudo actualizar el estado de la transacción");
+          mostrarMensaje("Transacción rechazada", data.mensaje || "Rechazada por el banco",'warning',true);
         }
       })
       .catch(err => {
@@ -569,9 +575,10 @@ function enviarPin() {
 }
 
   // Funcionalidad PIN
+  /*
   document.addEventListener("DOMContentLoaded", function () {
     const pinInputs = document.querySelectorAll(".pin-digit");
-
+    
     pinInputs.forEach((input, index) => {
       input.addEventListener("input", function () {
         // Solo permitir números
@@ -612,13 +619,16 @@ function enviarPin() {
       });
     });
   });
+  */    
 
-  // Cerrar modal con ESC
+
+  // Cerrar modal with ESC
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       cerrarModalPin();
     }
   });
+  
 </script>
 
 <style>

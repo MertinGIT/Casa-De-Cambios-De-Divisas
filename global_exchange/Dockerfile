@@ -14,6 +14,8 @@ RUN pip install --upgrade pip && \
 
 # Copiar código de la aplicación
 COPY . .
+# Asegurar que el seed quede en /app
+COPY poblar_datos_iniciales.py /app/poblar_datos_iniciales.py
 
 # Copiar y dar permisos al script de espera
 COPY wait-for-it.sh /wait-for-it.sh

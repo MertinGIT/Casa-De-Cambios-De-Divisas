@@ -225,6 +225,9 @@ def home(request):
                         print("descuento:", descuento, flush=True)
                         resultado = round(valor * TC_COMP, 2)
                         ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 2)
+                        #Es la misma fórmula que en venta pero invertida,y que el de arriba de este para calcular la ganancia
+                        #ganancia = (PB_MONEDA * valor) - resultado
+
         except ValueError:
             resultado = "Monto inválido"
             COMISION_VTA = 0

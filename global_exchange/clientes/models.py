@@ -1,6 +1,8 @@
 from django.db import models
 from cliente_segmentacion.models import Segmentacion
 from limite_moneda.models import LimiteTransaccion
+from monedas.models import Moneda
+
 class Cliente(models.Model):
     """
     Representa a los clientes registrados en el sistema.
@@ -29,6 +31,7 @@ class Cliente(models.Model):
     """
     nombre = models.CharField(max_length=150)
     cedula = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    ruc = models.CharField(max_length=15, unique=True, blank=True, null=True, help_text="RUC del cliente en formato válido (ej: 8001234-6)")
     email = models.EmailField(unique=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     segmentacion = models.ForeignKey(Segmentacion, on_delete=models.PROTECT)
@@ -43,3 +46,77 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.nombre
+
+
+class SaldoCliente(models.Model):
+    """
+    Saldo disponible de un cliente en cada moneda.
+    
+    Ejemplo:
+        Cliente "Juan" puede tener:
+        - 50,000,000 PYG (entero, sin decimales)
+        - 10,000.50 USD (con decimales)
+        - 5,000.75 EUR (con decimales)
+        
+    Se actualiza cuando:
+        - Deposita en ATM (aumenta)
+        - Retira del ATM (disminuye)
+        - Usa Tauser como medio de acreditación (aumenta)
+    
+    Notas:
+        - max_digits=25: Permite hasta 25 dígitos totales
+        - decimal_places=8: Permite hasta 8 decimales
+        - Rango: -99,999,999,999,999,999.99999999 a 99,999,999,999,999,999.99999999
+        - Para PYG: almacena 50000000.00 (sin usar decimales)
+        - Para USD/EUR: almacena 10000.50000000
+    """
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.CASCADE,
+        related_name='saldos'
+    )
+    moneda = models.ForeignKey(
+        Moneda,
+        on_delete=models.PROTECT,
+        related_name='saldos_clientes'
+    )
+    localidad = models.ForeignKey(  # AGREGAR ESTE CAMPO
+        'tauser.Localidad',
+        on_delete=models.PROTECT,
+        related_name='saldos_clientes',
+        help_text="Localidad/sucursal donde está disponible este saldo"
+    )
+    saldo = models.DecimalField(
+        max_digits=25,  # ✅ Total de dígitos (antes y después del punto)
+        decimal_places=8,  # ✅ Máximo 8 decimales
+        default=0,
+        help_text="Saldo disponible del cliente en esta moneda (soporta hasta 25 dígitos totales)"
+    )
+    ultima_actualizacion = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ('cliente', 'moneda', 'localidad')
+        verbose_name = 'Saldo de Cliente'
+        verbose_name_plural = 'Saldos de Clientes'
+        indexes = [
+            models.Index(fields=['cliente', 'moneda', 'localidad']),
+        ]
+    
+    def __str__(self):
+        # ✅ Mostrar sin decimales si es PYG, con decimales si es otra moneda
+        if self.moneda.abreviacion.upper() == 'PYG':
+            return f"{self.cliente.nombre} - {self.localidad.nombre} - {int(self.saldo):,} {self.moneda.abreviacion}"
+        else:
+            return f"{self.cliente.nombre} - {self.localidad.nombre} - {self.saldo:.2f} {self.moneda.abreviacion}"
+    
+    def saldo_formateado(self):
+        """
+        Retorna el saldo formateado según el tipo de moneda.
+        
+        Returns:
+            str: Saldo formateado (sin decimales para PYG, con 2 decimales para otras)
+        """
+        if self.moneda.abreviacion.upper() == 'PYG':
+            return f"{int(self.saldo):,}"  # Ejemplo: 50,000,000
+        else:
+            return f"{float(self.saldo):,.2f}"  # Ejemplo: 10,000.50

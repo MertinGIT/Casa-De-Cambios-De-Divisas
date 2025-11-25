@@ -7,6 +7,7 @@ from operaciones.models import Transaccion
 from django.utils import timezone
 import json
 import traceback
+from roles_permisos.middleware import require_role
 
 def safe_str(obj):
     """Convierte un objeto a string, maneja None y errores."""
@@ -69,7 +70,9 @@ def listar_transacciones(request):
                     "tipo": t.tipo if t.tipo else "N/A",
                     "estado": t.estado if t.estado else "N/A",
                     "moneda_origen": safe_str(t.moneda_origen),
+                    "moneda_abreviacion_origen": t.moneda_origen.abreviacion if t.moneda_origen else "N/A",
                     "moneda_destino": safe_str(t.moneda_destino),
+                    "moneda_abreviacion_destino": t.moneda_destino.abreviacion if t.moneda_destino else "N/A",
                     "metodo_pago": safe_str(t.metodo_pago),
                     "ganancia": float(t.ganancia) if t.ganancia else 0,
                     "fecha": t.fecha.strftime('%d/%m/%Y %H:%M') if t.fecha else "",
@@ -93,6 +96,7 @@ def listar_transacciones(request):
 
 @login_required
 @csrf_exempt
+@require_role(['ADMIN', 'Analista'])
 def cambiar_estado_transaccion(request):
     """
     Cambia el estado de una transacción.
@@ -101,8 +105,6 @@ def cambiar_estado_transaccion(request):
     if request.method != 'POST':
         return JsonResponse({"success": False, "error": "Método no permitido"}, status=405)
     
-    if not request.user.is_staff:
-        return JsonResponse({"success": False, "error": "Acceso denegado"}, status=403)
     
     try:
         data = json.loads(request.body)
@@ -147,12 +149,11 @@ def cambiar_estado_transaccion(request):
 
 
 @login_required
+@require_role(['ADMIN'])
 def estadisticas_transacciones(request):
     """
     Retorna estadísticas de transacciones para el dashboard.
     """
-    if not request.user.is_staff:
-        return JsonResponse({"error": "Acceso denegado"}, status=403)
     
     from django.db.models import Sum
     

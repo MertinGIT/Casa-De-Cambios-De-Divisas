@@ -11,4 +11,6 @@ urlpatterns = [
     path('activate/<int:pk>/', clientes_views.ClienteActivateView.as_view(), name='clientes-activate'),
     path("check-email/", clientes_views.check_email, name="clientes-check-email"),
     path('check-cedula/', clientes_views.check_cedula, name='check_cedula'),
+    path("check-ruc/", clientes_views.check_ruc, name="clientes-check-ruc"),
+
 ]

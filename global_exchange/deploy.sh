@@ -93,3 +93,6 @@ echo "     • Contraseña: 1234"
 echo ""
 echo "💡 Para conectar con DBeaver usa:"
 echo "   jdbc:postgresql://192.168.100.168:5432/db_global_exchange"
+
+echo "📥 Cargando datos iniciales (idempotente)…"
+docker-compose exec web python poblar_datos_iniciales.py

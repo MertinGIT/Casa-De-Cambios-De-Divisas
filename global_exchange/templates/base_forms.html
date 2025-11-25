@@ -498,3 +498,14 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 })
 </script>
+
+<script>
+$(document).on("input", "#form-accion input[name='ruc']", function() {
+    let valor = this.value.replace(/[^0-9\-]/g, ""); // solo números y guión
+    // Validar formato: máximo 8 dígitos + guion + 1 dígito verificador
+    if (valor.length > 9 && !/^\d{1,8}-\d{1}$/.test(valor)) {
+        valor = valor.replace(/[^0-9\-]/g, "").slice(0, 10);
+    }
+    this.value = valor;
+});
+</script>

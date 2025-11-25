@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleccionar TAUSER</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        
+        .localidades-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .header p {
+            margin: 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .localidades-body {
+            padding: 40px 30px;
+        }
+        
+        .localidades-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .localidad-card {
+            background: white;
+            border: 3px solid #e8ecf7;
+            border-radius: 15px;
+            padding: 30px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .localidad-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+        
+        .localidad-icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+        }
+        
+        .localidad-nombre {
+            font-weight: 700;
+            font-size: 20px;
+            color: #1e2d70;
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .localidad-direccion {
+            font-size: 14px;
+            color: #666;
+            display: block;
+        }
+        
+        .btn-localidad {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-localidad:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .alert {
+            border-radius: 10px;
+            border: none;
+            margin-bottom: 20px;
+        }
+        
+        .sin-localidades {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .sin-localidades-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="localidades-container">
+        <div class="header">
+            <div class="card-icon" style="width: 80px; height: 80px; margin: 0 auto 20px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40px;">
+                🏧
+            </div>
+            <h1>TAUSER</h1>
+            <p>Seleccione su terminal más cercana</p>
+        </div>
+        
+        <div class="localidades-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% if localidades %}
+                <div class="localidades-grid">
+                    {% for localidad in localidades %}
+                    <form method="POST" action="{% url 'atm_seleccionar_localidad' %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <input type="hidden" name="localidad_id" value="{{ localidad.id }}">
+                        <div class="localidad-card">
+                            <div class="localidad-icon">📍</div>
+                            <span class="localidad-nombre">{{ localidad.nombre }}</span>
+                            {% if localidad.direccion %}
+                            <span class="localidad-direccion">{{ localidad.direccion }}</span>
+                            {% endif %}
+                            <button type="submit" class="btn-localidad">
+                                Seleccionar
+                            </button>
+                        </div>
+                    </form>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="sin-localidades">
+                    <div class="sin-localidades-icon">🏦</div>
+                    <h3>No hay TAUSER disponibles</h3>
+                    <p>Por favor, contacte al administrador</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
