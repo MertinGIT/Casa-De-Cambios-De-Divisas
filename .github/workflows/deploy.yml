@@ -17,11 +17,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Verificar Docker Compose
-        run: docker compose version
+      - name: Instalar Docker y Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          docker --version
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Crear archivo .env si no existe
         run: |
@@ -29,7 +33,7 @@ jobs:
             cp global_exchange/.env.example global_exchange/.env || echo "No hay .env.example"
           fi
 
-      - name: Permisos script
+      - name: Dar permisos al script de desarrollo
         run: chmod +x global_exchange/deploy_desarrollo.sh
 
       - name: Ejecutar Deploy DEV
@@ -47,11 +51,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Verificar Docker Compose
-        run: docker compose version
+      - name: Instalar Docker y Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker.io
+          sudo systemctl start docker
+          docker --version
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
 
       - name: Obtener versión del tag
         id: version
@@ -59,8 +67,8 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Mostrar versión
-        run: echo "Producción versión:" ${{ steps.version.outputs.version }}
+      - name: Mostrar versión detectada
+        run: echo "Producción versión: ${{ steps.version.outputs.version }}"
 
       - name: Crear archivo .env si no existe
         run: |
@@ -68,12 +76,12 @@ jobs:
             cp global_exchange/.env.example global_exchange/.env || echo "No hay .env.example"
           fi
 
-      - name: Permisos script
+      - name: Dar permisos al script de producción
         run: chmod +x global_exchange/deploy.sh
 
-      - name: Ejecutar Deploy Prod
-        run: ./global_exchange/deploy.sh ${{ steps.version.outputs.version }}
+      - name: Ejecutar Deploy PROD
         env:
+          VERSION: ${{ steps.version.outputs.version }}
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
-          
+        run: ./global_exchange/deploy.sh $VERSION
