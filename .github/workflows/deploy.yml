@@ -28,15 +28,17 @@ jobs:
 
       - name: Crear archivo .env si no existe
         run: |
-          if [ ! -f global_exchange/.env ]; then
-            cp global_exchange/.env.example global_exchange/.env || echo "No hay .env.example"
+          cd global_exchange
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || echo "DEBUG=True" > .env
           fi
 
       - name: Dar permisos al script de desarrollo
         run: chmod +x global_exchange/deploy_desarrollo.sh
 
       - name: Ejecutar Deploy DEV
-        run: ./global_exchange/deploy_desarrollo.sh
+        working-directory: ./global_exchange
+        run: ./deploy_desarrollo.sh
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
@@ -70,16 +72,18 @@ jobs:
 
       - name: Crear archivo .env si no existe
         run: |
-          if [ ! -f global_exchange/.env ]; then
-            cp global_exchange/.env.example global_exchange/.env || echo "No hay .env.example"
+          cd global_exchange
+          if [ ! -f .env ]; then
+            cp .env.example .env 2>/dev/null || echo "DEBUG=False" > .env
           fi
 
       - name: Dar permisos al script de producción
         run: chmod +x global_exchange/deploy.sh
 
       - name: Ejecutar Deploy PROD
+        working-directory: ./global_exchange
         env:
           VERSION: ${{ steps.version.outputs.version }}
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
-        run: ./global_exchange/deploy.sh $VERSION
+        run: ./deploy.sh $VERSION
