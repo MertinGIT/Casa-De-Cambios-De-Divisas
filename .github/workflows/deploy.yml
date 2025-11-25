@@ -26,65 +26,12 @@ jobs:
       - name: Verificar Docker
         run: docker --version
 
-      - name: Crear script robusto de desarrollo
+      - name: Listar archivos en global_exchange
         run: |
-          cat > global_exchange/deploy_desarrollo.sh << 'EOF'
-          #!/bin/bash
-          set -e
-
-          # Forzar el directorio del script
-          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          cd "$SCRIPT_DIR"
-
-          # Variables
-          COMPOSE_FILE="docker-compose.yml"
-          DOCKER_COMPOSE="/usr/local/bin/docker-compose"
-
-          echo "🛠 Desplegando entorno de desarrollo..."
-          echo "📁 Directorio: $SCRIPT_DIR"
-
-          # Verificar que existe el archivo compose
-          if [ ! -f "$COMPOSE_FILE" ]; then
-            echo "❌ Error: No se encuentra $COMPOSE_FILE"
-            exit 1
-          fi
-
-          # Detener y limpiar contenedores existentes
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" down 2>/dev/null || true
-
-          # Construir y levantar servicios
-          echo "🔨 Construyendo imágenes..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" build
-
-          echo "🚀 Levantando servicios..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d
-
-          # Esperar a que la base de datos esté lista
-          echo "⏳ Esperando que la base de datos inicie..."
-          sleep 10
-
-          # Ejecutar migraciones
-          echo "🔄 Ejecutando migraciones..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T web python manage.py migrate || true
-
-          # Cargar datos iniciales si existe el script
-          echo "📥 Cargando datos iniciales..."
-          if [ -f "core/scripts/default_data.py" ]; then
-            $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T web python core/scripts/default_data.py || true
-          fi
-
-          # Ejecutar poblar.py si existe
-          echo "🏦 Ejecutando poblar.py (TAUSER)..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T web python manage.py shell -c "exec(open('core/scripts/poblar.py').read())" || true
-
-          echo "✅ Despliegue DEV listo en http://localhost:8000"
-
-          # Cargar datos iniciales (idempotente)
-          echo "📥 Cargando datos iniciales (idempotente)…"
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T web python manage.py loaddata initial_data.json || true
-
-          echo "🎉 Despliegue completado exitosamente"
-          EOF
+          echo "Contenido de global_exchange:"
+          ls -la global_exchange/
+          echo "Archivos docker-compose:"
+          ls -la global_exchange/docker-compose*
 
       - name: Crear archivo .env si no existe
         run: |
@@ -92,16 +39,51 @@ jobs:
           if [ ! -f .env ]; then
             cp .env.example .env 2>/dev/null || echo "DEBUG=True" > .env
           fi
+          echo "Contenido de .env:"
+          cat .env
 
-      - name: Dar permisos al script de desarrollo
-        run: chmod +x global_exchange/deploy_desarrollo.sh
-
-      - name: Ejecutar Deploy DEV
+      - name: Deploy Desarrollo
         working-directory: ./global_exchange
-        run: ./deploy_desarrollo.sh
+        run: |
+          echo "🛠 Desplegando entorno de desarrollo..."
+          echo "📁 Directorio actual: $(pwd)"
+          echo "📄 Archivos disponibles:"
+          ls -la
+          
+          # Detener contenedores existentes
+          /usr/local/bin/docker-compose -f docker-compose.yml down 2>/dev/null || true
+          
+          # Construir imágenes
+          echo "🔨 Construyendo imágenes..."
+          /usr/local/bin/docker-compose -f docker-compose.yml build
+          
+          # Levantar servicios
+          echo "🚀 Levantando servicios..."
+          /usr/local/bin/docker-compose -f docker-compose.yml up -d
+          
+          # Esperar a que la base de datos esté lista
+          echo "⏳ Esperando que la base de datos inicie..."
+          sleep 10
+          
+          # Ejecutar migraciones
+          echo "🔄 Ejecutando migraciones..."
+          /usr/local/bin/docker-compose -f docker-compose.yml exec -T web python manage.py migrate || true
+          
+          # Cargar datos iniciales
+          echo "📥 Cargando datos iniciales..."
+          /usr/local/bin/docker-compose -f docker-compose.yml exec -T web python manage.py loaddata initial_data.json || true
+          
+          echo "✅ Despliegue DEV completado"
         env:
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
+
+      - name: Mostrar logs de contenedores
+        if: failure()
+        working-directory: ./global_exchange
+        run: |
+          echo "📋 Logs de docker-compose:"
+          /usr/local/bin/docker-compose -f docker-compose.yml logs --tail=50
 
   deploy-prod:
     name: Deploy Producción (Tag)
@@ -130,54 +112,12 @@ jobs:
       - name: Mostrar versión detectada
         run: echo "Producción versión:" ${{ steps.version.outputs.version }}
 
-      - name: Crear script robusto de producción
+      - name: Listar archivos en global_exchange
         run: |
-          cat > global_exchange/deploy.sh << 'EOF'
-          #!/bin/bash
-          set -e
-
-          # Forzar el directorio del script
-          SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-          cd "$SCRIPT_DIR"
-
-          # Variables
-          VERSION="${1:-latest}"
-          COMPOSE_FILE="docker-compose.prod.yml"
-          DOCKER_COMPOSE="/usr/local/bin/docker-compose"
-
-          echo "🚀 Desplegando entorno de PRODUCCIÓN versión: $VERSION"
-          echo "📁 Directorio: $SCRIPT_DIR"
-
-          # Verificar que existe el archivo compose
-          if [ ! -f "$COMPOSE_FILE" ]; then
-            echo "❌ Error: No se encuentra $COMPOSE_FILE"
-            exit 1
-          fi
-
-          # Detener y limpiar contenedores existentes
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" down 2>/dev/null || true
-
-          # Construir y levantar servicios
-          echo "🔨 Construyendo imágenes para producción..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" build --build-arg VERSION="$VERSION"
-
-          echo "🚀 Levantando servicios en producción..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" up -d
-
-          # Esperar a que la base de datos esté lista
-          echo "⏳ Esperando que la base de datos inicie..."
-          sleep 15
-
-          # Ejecutar migraciones
-          echo "🔄 Ejecutando migraciones..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T web python manage.py migrate
-
-          # Colectar archivos estáticos
-          echo "📦 Colectando archivos estáticos..."
-          $DOCKER_COMPOSE -f "$COMPOSE_FILE" exec -T web python manage.py collectstatic --noinput || true
-
-          echo "✅ Despliegue PROD versión $VERSION completado exitosamente"
-          EOF
+          echo "Contenido de global_exchange:"
+          ls -la global_exchange/
+          echo "Archivos docker-compose:"
+          ls -la global_exchange/docker-compose*
 
       - name: Crear archivo .env si no existe
         run: |
@@ -186,13 +126,44 @@ jobs:
             cp .env.example .env 2>/dev/null || echo "DEBUG=False" > .env
           fi
 
-      - name: Dar permisos al script de producción
-        run: chmod +x global_exchange/deploy.sh
-
-      - name: Ejecutar Deploy PROD
+      - name: Deploy Producción
         working-directory: ./global_exchange
         env:
           VERSION: ${{ steps.version.outputs.version }}
           DOCKER_BUILDKIT: 1
           COMPOSE_DOCKER_CLI_BUILD: 1
-        run: ./deploy.sh $VERSION
+        run: |
+          echo "🚀 Desplegando entorno de PRODUCCIÓN versión: $VERSION"
+          echo "📁 Directorio actual: $(pwd)"
+          
+          # Detener contenedores existentes
+          /usr/local/bin/docker-compose -f docker-compose.prod.yml down 2>/dev/null || true
+          
+          # Construir imágenes
+          echo "🔨 Construyendo imágenes para producción..."
+          /usr/local/bin/docker-compose -f docker-compose.prod.yml build --build-arg VERSION="$VERSION"
+          
+          # Levantar servicios
+          echo "🚀 Levantando servicios..."
+          /usr/local/bin/docker-compose -f docker-compose.prod.yml up -d
+          
+          # Esperar a que la base de datos esté lista
+          echo "⏳ Esperando que la base de datos inicie..."
+          sleep 15
+          
+          # Ejecutar migraciones
+          echo "🔄 Ejecutando migraciones..."
+          /usr/local/bin/docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
+          
+          # Colectar archivos estáticos
+          echo "📦 Colectando archivos estáticos..."
+          /usr/local/bin/docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput || true
+          
+          echo "✅ Despliegue PROD versión $VERSION completado"
+
+      - name: Mostrar logs de contenedores
+        if: failure()
+        working-directory: ./global_exchange
+        run: |
+          echo "📋 Logs de docker-compose:"
+          /usr/local/bin/docker-compose -f docker-compose.prod.yml logs --tail=50
