@@ -236,8 +236,8 @@
                             <span class="badge compra">Compra</span>
                             {% endif %}
                         </td>
-                        <td data-label="Monto" class="amount">{{ t.monto|floatformat:0 }}</td>
-                        <td data-label="Ganancia" class="amount">{{ t.ganancia|floatformat:0 }}</td>
+                        <td data-label="Monto" class="amount">GS {{  t.monto|floatformat:0 }} </td>
+                        <td data-label="Ganancia" class="amount"> GS {{ t.ganancia|floatformat:0 }}</td>
                         <td data-label="Fecha">{{ t.fecha|date:"d/m/Y H:i" }}</td>
                     </tr>
                     {% empty %}

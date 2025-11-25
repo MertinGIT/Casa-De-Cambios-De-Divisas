@@ -129,8 +129,8 @@
     // Actualizar las etiquetas dinámicamente
     const campos = getCampos();
     if (campos.op === "venta") {
-        document.getElementById("label-con-descuento").textContent = "Monto a entregar (con descuento)";
-        document.getElementById("label-sin-descuento").textContent = "Monto a entregar (sin descuento)";
+        document.getElementById("label-con-descuento").textContent = "Monto a recibir (con benefinicio)";
+        document.getElementById("label-sin-descuento").textContent = "Monto a recibir (sin benefinicio)";
     } else {
         document.getElementById("label-con-descuento").textContent = "Monto a recibir (con descuento)";
         document.getElementById("label-sin-descuento").textContent = "Monto a recibir (sin descuento)";
@@ -300,7 +300,7 @@
       data: {
         csrfmiddlewaretoken: "{{ csrf_token }}",
         valor: campos.op === "venta"
-      ? (parseFloat(campos.$resultado.val()))
+      ? (parseFloat(campos.$resultado.val()/ window.tasaVta))
       : parseFloat(campos.$valor.val()), 
         origen: campos.$origen.val(),
         destino: campos.$destino.val(),

@@ -419,17 +419,28 @@ def ensure_welcome_notification(moneda_map):
             "fecha": timezone.now(),
         },
     )
+    
+    
 def ensure_demo_transactions_and_invoice(users, moneda_map):
     """
-    Genera 100 transacciones demo aplicando la lógica EXACTA del simulador real:
-    if operacion == "venta": (cliente entrega PYG)
-        - Calcula ganancia con TC_VTA
-    else: (cliente entrega moneda extranjera)
-        - Calcula ganancia con TC_COMP
+    Genera SOLO 5 transacciones demo usando la lógica REAL del simulador:
+
+    - tipo == "venta": cliente entrega PYG → compra moneda extranjera
+        * monto          = monto en moneda extranjera
+        * monto_recibir  = monto en PYG
+
+    - tipo == "compra": cliente entrega moneda extranjera → recibe PYG
+        * monto          = monto en PYG
+        * monto_recibir  = monto en moneda extranjera
+
+    Todas las transacciones se generan:
+    - con estado = 'confirmada'
+    - con fecha = hoy (para que impacten límites diario y mensual)
     """
+
     from decimal import Decimal
     from django.utils import timezone
-    from datetime import timedelta, datetime
+    from datetime import datetime
     import random
 
     Transaccion = get_model("operaciones.Transaccion")
@@ -439,7 +450,7 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
     MedioAcreditacion = get_model("medio_acreditacion.MedioAcreditacion")
 
     usuario_asociado = users.get("usuario_asociado")
-    clientes = list(Cliente.objects.all()[:3])
+    clientes = list(Cliente.objects.all())
     metodo_efectivo = MetodoPago.objects.filter(nombre__iexact="Efectivo").first()
     tasas = list(TasaDeCambio.objects.filter(estado=True))
 
@@ -448,106 +459,129 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
         return
 
     total_existentes = Transaccion.objects.count()
-    if total_existentes >= 100:
+    if total_existentes >= 5:
         print(f"✅ Ya existen {total_existentes} transacciones.")
         return
 
-    print("📊 Generando 100 transacciones demo con la lógica del simulador...")
+    print("📊 Generando SOLO 5 transacciones demo...")
 
-    operaciones = ["venta", "compra"]  # igual que en tu simulador
-    estados = ["pendiente", "confirmada"]
-    monedas_extranjeras = ["USD", "EUR", "ARS"]
+    operaciones = ["venta", "compra"]  # vista del cliente
+    monedas_extranjeras = ["USD", "EUR"]
     hoy = timezone.now()
 
-    for i in range(100 - total_existentes):
-        cliente = random.choice(clientes)
+    for i in range(5 - total_existentes):
+
+        # Cliente operativo REAL del usuario asociado
+        from cliente_usuario.models import Usuario_Cliente
+        uc = Usuario_Cliente.objects.filter(id_usuario=usuario_asociado).select_related("id_cliente__segmentacion").first()
+        if not uc:
+            print("⚠️ El usuario_asociado no tiene cliente asociado.")
+            return
+
+        cliente = uc.id_cliente
+        segmento = cliente.segmentacion
+        descuento = Decimal(segmento.descuento if segmento else 0)
+
         operacion = random.choice(operaciones)
-        estado = random.choice(estados)
+
         moneda_ext = moneda_map.get(random.choice(monedas_extranjeras))
-        tasa = TasaDeCambio.objects.filter(moneda_destino=moneda_ext).first()
+        print("moneda_ext:", moneda_ext, flush=True)
+        tasa = TasaDeCambio.objects.filter(moneda_destino=moneda_ext, estado=True).first()
+        print("tasa:", tasa, flush=True)
         medio = MedioAcreditacion.objects.filter(cliente=cliente).first()
 
-        if not tasa:
-            print(f"⚠️ No hay tasa para {moneda_ext.abreviacion}.")
+        if not tasa or not medio:
+            print("⚠️ Falta tasa o medio de acreditación, se salta esta iteración.")
             continue
 
-        # Fecha aleatoria entre hoy y hace 90 días
-        dias_atras = random.randint(0, 90)
-        hora_random = random.randint(8, 20)
-        minuto_random = random.randint(0, 59)
-        fecha_random = timezone.make_aware(datetime.combine(
-            (hoy - timedelta(days=dias_atras)).date(),
-            datetime.min.time()
-        )).replace(hour=hora_random, minute=minuto_random)
-
         PB_MONEDA = tasa.precio_base
+        print("PB_MONEDA:", PB_MONEDA, flush=True)
         COMISION_VTA = tasa.comision_venta
+        print("COMISION_VTA:", COMISION_VTA, flush=True)
         COMISION_COM = tasa.comision_compra
-        descuento = Decimal(random.choice([0, 5, 10]))  # % descuento simulado
+        print("COMISION_COM:", COMISION_COM, flush=True)
 
-        # ===================================
-        # CASO: operacion == "venta"
-        # Cliente entrega PYG → compra moneda extranjera
-        # ===================================
+        # Fecha SIEMPRE HOY para que cuente en límite diario y mensual
+        h = random.randint(8, 20)
+        m = random.randint(0, 59)
+
+        fecha_random = timezone.make_aware(datetime.combine(
+            hoy.date(),
+            datetime.min.time()
+        )).replace(hour=h, minute=m)
+
+        # Forzar estado confirmada para que afecte límites
+        estado = "confirmada"
+
+        # ===================================================
+        # CASO 1: VENTA (cliente entrega PYG → compra USD/EUR)
+        # ===================================================
         if operacion == "venta":
-            modal = random.choice([0, 2])
+            # Cliente entrega GUARANÍES → compra moneda extranjera
             moneda_origen = moneda_map.get("PYG")
             moneda_destino = moneda_ext
-            valor = Decimal(random.randint(300_000, 2_000_000))  # entrega PYG
+
+            # LO QUE ENTREGA EN GUARANÍES
+            valor_gs = Decimal(random.randint(300_000, 2_000_000))
+            print("valor(LO QUE ENTREGA EN GUARANIES) en poblar_datos_iniciales:", valor_gs, flush=True)
 
             TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-            TC_VTA_SIN_DESC = PB_MONEDA + COMISION_VTA
-
-            if modal == 0:
-                resultado_sin_desc = valor
-                resultado = round(valor * TC_VTA, 2)
-                ganancia_total = round(resultado - (valor * PB_MONEDA), 0)
-            elif modal == 2:
-                resultado_sin_desc = round(valor * TC_VTA_SIN_DESC, 2)
-                resultado = round(valor * TC_VTA, 2)
-                ganancia_total = round(resultado - (valor * PB_MONEDA), 0)
-            else:
-                resultado_sin_desc = valor
-                resultado = round(valor * TC_VTA, 2)
-                ganancia_total = round(resultado - (valor * PB_MONEDA), 0)
-
-            monto_base = valor
-            monto_recibir = (monto_base / TC_VTA).quantize(Decimal("0.01"))
+            print("TC_VTA en poblar_datos_iniciales (VENTA):", TC_VTA, flush=True)
             tasa_usada = TC_VTA
-            detalle = f"💵 VENTA (cliente entrega PYG) {monto_base:,} PYG → {moneda_destino.abreviacion}"
 
-        # ===================================
-        # CASO: else → Cliente entrega moneda extranjera, recibe PYG
-        # ===================================
+            # Moneda extranjera que recibe el cliente
+            monto_extranjero = (valor_gs / TC_VTA).quantize(Decimal("0.01"))
+            print("monto_extranjero(valor_gs / TC_VTA) en poblar_datos_iniciales (VENTA):", monto_extranjero, flush=True)
+
+            # GANANCIA: lo que cobras en Gs - lo que te costaría a PB_MONEDA
+            ganancia_total = round(valor_gs - (monto_extranjero * PB_MONEDA), 2)
+            print("ganancia_total en poblar_datos_iniciales (VENTA):", ganancia_total, flush=True)
+
+            # Patrón:
+            # - monto          → EXTRANJERO   (monto_extranjero)
+            # - monto_recibir  → GUARANÍES    (valor_gs)
+            monto_db = monto_extranjero
+            monto_recibir_db = valor_gs
+
+        # ===================================================
+        # CASO 2: COMPRA (cliente entrega USD/EUR → recibe PYG)
+        # ===================================================
         else:
+            # Cliente entrega moneda extranjera → recibe PYG
             moneda_origen = moneda_ext
             moneda_destino = moneda_map.get("PYG")
 
-            if moneda_origen.abreviacion in ["USD", "EUR"]:
-                valor = Decimal(random.uniform(50, 1000)).quantize(Decimal("0.01"))
-            elif moneda_origen.abreviacion == "ARS":
-                valor = Decimal(random.randint(1000, 50000))
-            else:
-                valor = Decimal(random.randint(100, 1500))
+            valor_ext = Decimal(random.randint(50, 600))  # LO QUE ENTREGA EN USD/EUR
+            print("valor(LO QUE ENTREGA EN EXTRANJERO) en poblar_datos_iniciales:", valor_ext, flush=True)
 
+            # Tasa con descuento en COMPRA
             TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
-            TC_COMP_SIN_DESC = PB_MONEDA - COMISION_COM
-
-            resultado_sin_desc = round(valor * TC_COMP_SIN_DESC, 2)
-            resultado = round(valor * TC_COMP, 2)
-            ganancia_total = round(valor * (COMISION_COM * (1 - descuento / 100)), 0)
-
-            monto_base = valor
-            monto_recibir = resultado
+            print("TC_COMP en poblar_datos_iniciales (COMPRA):", TC_COMP, flush=True)
             tasa_usada = TC_COMP
-            detalle = f"💸 COMPRA (cliente entrega {moneda_origen.abreviacion}) {monto_base:,} → PYG"
 
-        # === Crear transacción ===
+            # Gs que recibe el cliente
+            monto_gs = round(valor_ext * TC_COMP, 2)
+            print("monto_gs(valor_ext * TC_COMP) en poblar_datos_iniciales:", monto_gs, flush=True)
+
+            # GANANCIA EXACTA DEL SIMULADOR
+            ganancia_total = round(
+                valor_ext * (COMISION_COM * (1 - descuento / 100)),
+                2
+            )
+            print("ganancia_total en poblar_datos_iniciales (COMPRA):", ganancia_total, flush=True)
+
+            # Patrón:
+            # - monto          → GUARANÍES    (monto_gs)
+            # - monto_recibir  → EXTRANJERO   (valor_ext)
+            monto_db = monto_gs
+            monto_recibir_db = valor_ext
+
+        # ====== CREAR TRANSACCIÓN ======
         transaccion = Transaccion.objects.create(
             usuario=usuario_asociado,
             cliente=cliente,
-            monto=monto_base,
-            tipo=operacion,  # mantiene coherencia con tu campo tipo = "venta"/"compra"
+            monto=monto_db,
+            tipo=operacion,
             estado=estado,
             ganancia=Decimal(ganancia_total),
             metodo_pago=metodo_efectivo,
@@ -556,22 +590,18 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
             moneda_destino=moneda_destino,
             tasa_usada=tasa_usada,
             tasa_ref=tasa,
-            monto_recibir=monto_recibir,
-            fecha_procesado=fecha_random if estado == "confirmada" else None,
-            procesado_por=usuario_asociado if estado == "confirmada" else None,
+            monto_recibir=monto_recibir_db,
+            fecha_procesado=fecha_random,
+            procesado_por=usuario_asociado,
         )
 
-        # Forzar fecha aleatoria sin romper auto_now_add
+        # Forzar fecha (para no romper auto_now_add)
         Transaccion.objects.filter(pk=transaccion.pk).update(
             fecha=fecha_random,
-            fecha_procesado=fecha_random if estado == "confirmada" else None,
+            fecha_procesado=fecha_random,
         )
 
-        print(
-            f"{i+1:03d}. {detalle} | Ganancia: {int(ganancia_total)} Gs | Fecha: {fecha_random.strftime('%Y-%m-%d %H:%M')}"
-        )
-
-    print("✅ 100 transacciones demo generadas correctamente con la lógica del simulador.")
+    print("✅ Se generaron 5 transacciones con la lógica real del simulador.")
 
 
 
