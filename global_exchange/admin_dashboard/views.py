@@ -78,10 +78,25 @@ def admin_dashboard(request):
     )
     
     # ✅ CORREGIDO: Últimas 5 transacciones confirmadas
-    ultimas_transacciones = Transaccion.objects.filter(
-        estado="confirmada"
-    ).order_by('-fecha')[:5]
-    
+    ultimas_transacciones = (
+        Transaccion.objects
+        .filter(estado="confirmada")
+        .select_related("moneda_origen", "moneda_destino", "tasa_ref")
+        .annotate(
+            monto_mostrar=Case(
+                # Si es VENTA → monto (extranjero) * tasa_usada → Gs
+                When(
+                    tipo__iexact="venta",
+                    then=F("monto") * F("tasa_usada")
+                ),
+                # Si es COMPRA → monto tal cual (ya está en Gs)
+                default=F("monto"),
+                output_field=DecimalField()
+            )
+        )
+        .order_by('-fecha')[:5]
+    )
+
     # ✅ NUEVO: Calcular ganancia total del rango filtrado
     query_ganancia_rango = Transaccion.objects.filter(
         fecha__date__gte=fecha_inicio,
@@ -246,6 +261,8 @@ def admin_dashboard(request):
     }
     
     return render(request, 'dashboard.html', context)
+
+
 def obtener_ganancias_por_rango(dias_hacia_atras):
     """
     Retorna dos listas: labels (día/mes) y datos de ganancias (float)
