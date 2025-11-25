@@ -39,7 +39,7 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Mostrar versión
-        run: echo "Producción versión: ${{ steps.version.outputs.version }}"
+        run: echo "Producción versión:" ${{ steps.version.outputs.version }}
 
       - name: Permisos script
         run: chmod +x deploy-prod.sh
