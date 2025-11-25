@@ -17,11 +17,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verificar Docker Compose
+        run: docker compose version
+
+      - name: Crear archivo .env si no existe
+        run: |
+          if [ ! -f global_exchange/.env ]; then
+            cp global_exchange/.env.example global_exchange/.env || echo "No hay .env.example"
+          fi
+
       - name: Permisos script
-        run: ./global_exchange/deploy_desarrollo.sh
+        run: chmod +x global_exchange/deploy_desarrollo.sh
 
       - name: Ejecutar Deploy DEV
         run: ./global_exchange/deploy_desarrollo.sh
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
 
   deploy-prod:
     name: Deploy Producción (Tag)
@@ -32,6 +47,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Verificar Docker Compose
+        run: docker compose version
+
       - name: Obtener versión del tag
         id: version
         run: |
@@ -41,8 +62,18 @@ jobs:
       - name: Mostrar versión
         run: echo "Producción versión:" ${{ steps.version.outputs.version }}
 
+      - name: Crear archivo .env si no existe
+        run: |
+          if [ ! -f global_exchange/.env ]; then
+            cp global_exchange/.env.example global_exchange/.env || echo "No hay .env.example"
+          fi
+
       - name: Permisos script
         run: chmod +x global_exchange/deploy.sh
 
       - name: Ejecutar Deploy Prod
-        run: ./global_exchange/deploy.sh $VERSION
+        run: ./global_exchange/deploy.sh ${{ steps.version.outputs.version }}
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+          
