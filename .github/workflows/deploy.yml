@@ -17,15 +17,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Instalar Docker y Docker Compose
+      - name: Instalar Docker Compose
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io
-          sudo systemctl start docker
-          docker --version
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
+
+      - name: Verificar Docker
+        run: docker --version
 
       - name: Crear archivo .env si no existe
         run: |
@@ -51,15 +50,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Instalar Docker y Docker Compose
+      - name: Instalar Docker Compose
         run: |
-          sudo apt-get update
-          sudo apt-get install -y docker.io
-          sudo systemctl start docker
-          docker --version
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
+
+      - name: Verificar Docker
+        run: docker --version
 
       - name: Obtener versión del tag
         id: version
