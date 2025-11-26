@@ -19,7 +19,7 @@ from django.urls import path, include
 from usuarios import views as usuarios_views, urls as usuarios_urls
 from cliente_usuario import urls as cliente_usuario_urls
 from admin_dashboard import views as admin_views
-from django.conf.urls import handler404
+from django.conf.urls import handler404, handler403
 from django.shortcuts import render, redirect
 from django.conf import settings
 from django.conf.urls.static import static
@@ -77,16 +77,8 @@ urlpatterns = [
 
 def custom_404_view(request, exception):
     return render(request, "404.html", status=404)
-def error_403_view(request, exception=None):
-    user = request.user
-    if user.is_authenticated:
-        if user.groups.filter(name='ADMIN').exists() or user.groups.filter(name='Analista').exists():
-            return render(request, '403_admin.html', status=403)
-    return render(request, '403.html', status=403)
 
 handler404 = custom_404_view
-
-handler403 = error_403_view
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL,

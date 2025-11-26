@@ -7,7 +7,7 @@ from operaciones.models import Transaccion
 from django.utils import timezone
 import json
 import traceback
-from roles_permisos.middleware import require_role
+from roles_permisos.middleware import require_role, require_permission
 
 def safe_str(obj):
     """Convierte un objeto a string, maneja None y errores."""
@@ -17,6 +17,7 @@ def safe_str(obj):
         return "N/A"
 
 @login_required
+@require_role(['ADMIN', 'Analista'])
 def listar_transacciones(request):
     """
     Lista todas las transacciones con filtros opcionales.
@@ -149,7 +150,7 @@ def cambiar_estado_transaccion(request):
 
 
 @login_required
-@require_role(['ADMIN'])
+@require_role(['ADMIN', 'Analista'])
 def estadisticas_transacciones(request):
     """
     Retorna estadísticas de transacciones para el dashboard.
