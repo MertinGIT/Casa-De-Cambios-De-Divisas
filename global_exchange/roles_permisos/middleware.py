@@ -30,6 +30,7 @@ class RoleBasedMiddleware:
             '/editarperfil/': ['Usuario Asociado', 'Usuario'],
             '/operaciones/': ['Usuario Asociado'],
             '/historial/': ['Usuario Asociado'],
+            '/facturas/': ['Usuario Asociado'],
             '/medios_acreditacion/': ['Usuario Asociado'],
             '/medios_acreditacion/': ['Usuario Asociado'],
             '/configuracion/mfa_configuration/': ['Usuario Asociado'],
@@ -53,7 +54,10 @@ class RoleBasedMiddleware:
             return response
         else:
             # Usuario no tiene permisos
-            return render(request, "403.html", status=403)
+            if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name='Analista').exists():
+                return render(request, '403_admin.html', status=403)
+            return render(request, '403.html', status=403)
+
 
 
     def _is_protected_route(self, path):
@@ -91,7 +95,9 @@ def require_role(allowed_roles):
             if request.user.groups.filter(name__in=allowed_roles).exists():
                 return view_func(request, *args, **kwargs)
             else:
-                return render(request, "403.html", status=403)
+                if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name='Analista').exists():
+                    return render(request, '403_admin.html', status=403)
+                return render(request, '403.html', status=403)
         return wrapped_view
     return decorator
 
@@ -113,6 +119,8 @@ def require_permission(permission_codename):
             if request.user.user_permissions.filter(codename=permission_codename).exists():
                 return view_func(request, *args, **kwargs)
             else:
-                return render(request, "403.html", status=403)
+                if request.user.groups.filter(name='ADMIN').exists() or request.user.groups.filter(name='Analista').exists():
+                    return render(request, '403_admin.html', status=403)
+                return render(request, '403.html', status=403)
         return wrapped_view
     return decorator
