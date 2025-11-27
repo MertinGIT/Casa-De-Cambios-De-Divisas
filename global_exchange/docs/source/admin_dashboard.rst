@@ -7,4 +7,5 @@ Aplicación que gestiona el panel de administración y las funcionalidades de su
 Vistas
 ------
 .. autofunction:: admin_dashboard.views.admin_dashboard
+.. autofunction:: admin_dashboard.views.obtener_ganancias_por_rango
 

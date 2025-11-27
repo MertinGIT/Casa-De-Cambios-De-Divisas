@@ -30,3 +30,4 @@ El sistema backend de Global Exchange centraliza la gestión de operaciones de c
    roles_permisos
    facturacion
    tauser
+   admin_dashboard

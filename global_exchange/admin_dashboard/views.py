@@ -10,6 +10,17 @@ from cotizaciones.models import TasaDeCambio
 from django.db.models import Case, When, Value, CharField
 
 def admin_dashboard(request):
+    """
+    Vista principal del panel administrativo.
+
+    - Calcula estadísticas del día actual: ganancias, número de transacciones,
+    clientes activos, clientes nuevos y moneda más operada.
+    - Permite filtrar por rango de fechas y por moneda específica.
+    - Genera los datos necesarios para los gráficos de ganancias por fecha,
+    ganancias por divisa y evolución de tasas de cambio.
+    - Obtiene además las últimas transacciones confirmadas y el ranking de monedas operadas.
+    - Renderiza el template ``dashboard.html`` enviando todos los datos procesados.
+    """
     # Fechas
     fecha_actual = timezone.localdate()
     hoy = timezone.localdate()
@@ -54,28 +65,78 @@ def admin_dashboard(request):
         creado_en__month=hoy.month
     ).count()
     
-    moneda_mas_operada_data = Transaccion.objects.filter(
-        estado="confirmada",
-        fecha__month=hoy.month
-    ).values("moneda_destino__abreviacion").annotate(
-        total=Count("id")
-    ).order_by("-total").first()
-    
-    moneda_mas_operada = moneda_mas_operada_data['moneda_destino__abreviacion'] if moneda_mas_operada_data else 'N/A'
-    total_operaciones = moneda_mas_operada_data['total'] if moneda_mas_operada_data else 0
+    moneda_mas_operada_data = (
+        Transaccion.objects
+        .filter(
+            estado="confirmada",
+            fecha__date=hoy,          # 👈 SOLO de hoy (no por mes)
+        )
+        .annotate(
+            # Moneda realmente operada (siempre la NO PYG)
+            moneda_operada=Case(
+                When(moneda_origen__abreviacion='PYG', then=F('moneda_destino__abreviacion')),
+                When(moneda_destino__abreviacion='PYG', then=F('moneda_origen__abreviacion')),
+                default=F('moneda_destino__abreviacion'),
+                output_field=CharField(),
+            ),
+            nombre_moneda_operada=Case(
+                When(moneda_origen__abreviacion='PYG', then=F('moneda_destino__nombre')),
+                When(moneda_destino__abreviacion='PYG', then=F('moneda_origen__nombre')),
+                default=F('moneda_destino__nombre'),
+                output_field=CharField(),
+            ),
+        )
+        .exclude(moneda_operada='PYG')   # 👈 sacamos PYG del resultado
+        .values('moneda_operada', 'nombre_moneda_operada')
+        .annotate(total_operaciones=Count('id'))  # 👈 total de esa moneda (compra+venta)
+        .order_by('-total_operaciones')
+        .first()
+    )
+
+    moneda_mas_operada = (
+        moneda_mas_operada_data['moneda_operada']
+        if moneda_mas_operada_data else 'N/A'
+    )
+
+    total_operaciones = (
+        moneda_mas_operada_data['total_operaciones']
+        if moneda_mas_operada_data else 0
+    )
+    print("moneda_mas_operada_data: ",moneda_mas_operada_data, flush=True)
     
     # Top monedas del día (SIN CAMBIOS)
     top_monedas = (
         Transaccion.objects
-        .filter(estado="confirmada", fecha__date=hoy)
-        .values('moneda_destino__abreviacion', 'moneda_destino__nombre')
+        .filter(
+            estado="confirmada",
+            fecha__date=hoy,
+        )
+        .annotate(
+            # Moneda realmente operada (siempre la NO PYG)
+            moneda_operada=Case(
+                When(moneda_origen__abreviacion='PYG', then=F('moneda_destino__abreviacion')),
+                When(moneda_destino__abreviacion='PYG', then=F('moneda_origen__abreviacion')),
+                default=F('moneda_destino__abreviacion'),
+                output_field=CharField(),
+            ),
+            nombre_moneda_operada=Case(
+                When(moneda_origen__abreviacion='PYG', then=F('moneda_destino__nombre')),
+                When(moneda_destino__abreviacion='PYG', then=F('moneda_origen__nombre')),
+                default=F('moneda_destino__nombre'),
+                output_field=CharField(),
+            ),
+        )
+        # Acá sacás PYG directamente
+        .exclude(moneda_operada='PYG')
+        .values('moneda_operada', 'nombre_moneda_operada')
         .annotate(
             total=Count('id'),
             compras=Count('id', filter=Q(tipo='compra')),
-            ventas=Count('id', filter=Q(tipo='venta'))
+            ventas=Count('id', filter=Q(tipo='venta')),
         )
         .order_by('-total')[:4]
     )
+    print("topdek: ",top_monedas, flush=True)
     
     # ✅ CORREGIDO: Últimas 5 transacciones confirmadas
     ultimas_transacciones = (
@@ -265,8 +326,14 @@ def admin_dashboard(request):
 
 def obtener_ganancias_por_rango(dias_hacia_atras):
     """
-    Retorna dos listas: labels (día/mes) y datos de ganancias (float)
-    para los últimos `dias_hacia_atras` días.
+    Retorna etiquetas y valores de ganancias para los últimos `dias_hacia_atras` días.
+
+    - Recorre día por día desde la fecha actual hacia atrás.
+    - Calcula la ganancia total diaria considerando solo transacciones confirmadas.
+    - Devuelve dos listas paralelas:
+        * labels: fechas en formato día/mes.
+        * data: ganancias correspondientes en float.
+    - Utilizada para alimentar gráficos de evolución de ganancias.
     """
     hoy = timezone.localdate()
     dias = [hoy - timedelta(days=i) for i in range(dias_hacia_atras-1, -1, -1)]
