@@ -5,7 +5,7 @@ Crea SOLO si no existen:
 - Usuarios base (superadmin, analista, usuario, usuario_asociado)
 - Segmentaciones (VIP 10%, CORPORATIVO 5%, MINORISTA 0%)
 - Clientes demo y relaciones Usuario-Cliente
-- Monedas (PYG, USD, EUR, BRL, ARS)
+- Monedas (PYG, USD, EUR)
 - Tasas de cambio base (precio_base + comisiones)
 - Métodos de pago (Efectivo, Transferencia, Tarjeta)
 - Medios de acreditación y tipos básicos
@@ -150,15 +150,15 @@ def ensure_users(groups):
 
     # === Usuarios Asociados ===
     uas1 = safe_user_get_or_create(
-        "usuario_asociado", "uasociado1@empresa.com", "33333333", "Global123",
+        "usuario_asociado", "leandro.f3418@fpuna.edu.py", "33333333", "Global123",
         groups["Usuario Asociado"], extra_groups=[groups["Usuario"]]
     )
     uas2 = safe_user_get_or_create(
-        "usuario_asociado2", "uasociado2@empresa.com", "44444444", "Global123",
+        "usuario_asociado2", "rodriguezmartinv02@gmail.com", "44444444", "Global123",
         groups["Usuario Asociado"], extra_groups=[groups["Usuario"]]
     )
     uas3 = safe_user_get_or_create(
-        "usuario_asociado3", "uasociado3@empresa.com", "55555555", "Global123",
+        "usuario_asociado3", "alanalcaraz010@gmail.com", "55555555", "Global123",
         groups["Usuario Asociado"], extra_groups=[groups["Usuario"]]
     )
 
@@ -171,82 +171,82 @@ def ensure_users(groups):
         "usuario_asociado3": uas3,
     }
 
-def ensure_demo_invoices(users):
-    """
-    Genera 5 facturas demo asociadas a transacciones confirmadas,
-    usando los rangos de facturación disponibles.
-    """
-    from django.utils import timezone
-    from decimal import Decimal
-    import random
-    import uuid
+# def ensure_demo_invoices(users):
+#     """
+#     Genera 5 facturas demo asociadas a transacciones confirmadas,
+#     usando los rangos de facturación disponibles.
+#     """
+#     from django.utils import timezone
+#     from decimal import Decimal
+#     import random
+#     import uuid
 
-    Factura = get_model("facturacion.Factura")
-    RangoFacturacion = get_model("facturacion.RangoFacturacion")
-    Transaccion = get_model("operaciones.Transaccion")
-    Cliente = get_model("clientes.Cliente")
+#     Factura = get_model("facturacion.Factura")
+#     RangoFacturacion = get_model("facturacion.RangoFacturacion")
+#     Transaccion = get_model("operaciones.Transaccion")
+#     Cliente = get_model("clientes.Cliente")
 
-    usuario_asociado = users.get("usuario_asociado")
+#     usuario_asociado = users.get("usuario_asociado")
 
-    if not usuario_asociado:
-        print("⚠️ No se encontró el usuario_asociado.")
-        return
+#     if not usuario_asociado:
+#         print("⚠️ No se encontró el usuario_asociado.")
+#         return
 
-    # Buscar o crear rango de facturación del usuario_asociado
-    rango, _ = RangoFacturacion.objects.get_or_create(
-        establecimiento="001",
-        punto_expedicion="003",
-        usuario=usuario_asociado,
-        defaults={
-            "numero_inicio": 1,
-            "numero_fin": 50,
-            "numero_actual": 1,
-            "activo": True,
-        },
-    )
+#     # Buscar o crear rango de facturación del usuario_asociado
+#     rango, _ = RangoFacturacion.objects.get_or_create(
+#         establecimiento="001",
+#         punto_expedicion="003",
+#         usuario=usuario_asociado,
+#         defaults={
+#             "numero_inicio": 1,
+#             "numero_fin": 50,
+#             "numero_actual": 1,
+#             "activo": True,
+#         },
+#     )
 
-    # Buscar transacciones confirmadas sin factura
-    transacciones = list(
-        Transaccion.objects.filter(estado="confirmada", factura__isnull=True)[:5]
-    )
+#     # Buscar transacciones confirmadas sin factura
+#     transacciones = list(
+#         Transaccion.objects.filter(estado="confirmada", factura__isnull=True)[:5]
+#     )
 
-    if not transacciones:
-        print("⚠️ No hay transacciones confirmadas disponibles para facturar.")
-        return
+#     if not transacciones:
+#         print("⚠️ No hay transacciones confirmadas disponibles para facturar.")
+#         return
 
-    print("🧾 Generando facturas demo...")
+#     print("🧾 Generando facturas demo...")
 
-    for i, t in enumerate(transacciones, 1):
-        # Obtener número de factura del rango
-        try:
-            numero_doc = rango.obtener_siguiente_numero()
-        except Exception as e:
-            print(f"⚠️ No se pudo obtener número de rango: {e}")
-            break
+#     for i, t in enumerate(transacciones, 1):
+#         # Obtener número de factura del rango
+#         try:
+#             numero_doc = rango.obtener_siguiente_numero()
+#         except Exception as e:
+#             print(f"⚠️ No se pudo obtener número de rango: {e}")
+#             break
 
-        # Crear factura
-        f = Factura.objects.create(
-            cliente=t.cliente,
-            transaccion=t,
-            monto_total=t.monto,
-            moneda=t.moneda_destino.abreviacion,
-            tipo_cambio=t.tasa_usada,
-            estado="aprobado",
-            estado_sifen="APROBADO",
-            descripcion_sifen="Factura de prueba generada automáticamente",
-            fecha_emision=t.fecha_procesado or timezone.now(),
-            fecha_aprobacion=timezone.now(),
-            creado_por=usuario_asociado,
-            rango_utilizado=rango,
-            establecimiento=rango.establecimiento,
-            punto_expedicion=rango.punto_expedicion,
-            numero_documento=numero_doc,
-            cdc=str(uuid.uuid4().hex)[:44],  # genera un CDC aleatorio válido de 44 caracteres
-        )
+#         # Crear factura
+#         f = Factura.objects.create(
+#             cliente=t.cliente,
+#             transaccion=t,
+#             monto_total=t.monto,
+#             moneda=t.moneda_destino.abreviacion,
+#             tipo_cambio=t.tasa_usada,
+#             estado="aprobado",
+#             estado_sifen="APROBADO",
+#             descripcion_sifen="Factura de prueba generada automáticamente",
+#             fecha_emision=t.fecha_procesado or timezone.now(),
+#             fecha_aprobacion=timezone.now(),
+#             creado_por=usuario_asociado,
+#             rango_utilizado=rango,
+#             establecimiento=rango.establecimiento,
+#             punto_expedicion=rango.punto_expedicion,
+#             numero_documento=numero_doc,
+#             cdc=str(uuid.uuid4().hex)[:44],  # genera un CDC aleatorio válido de 44 caracteres
+#         )
 
-        print(f"✅ Factura {f.numero} generada para transacción #{t.id} ({t.tipo})")
+#         print(f"✅ Factura {f.numero} generada para transacción #{t.id} ({t.tipo})")
 
-    print("🧾 5 facturas demo creadas correctamente.")
+#     print("🧾 5 facturas demo creadas correctamente.")
 
 
 def ensure_segmentations_and_clients(users):
@@ -274,9 +274,9 @@ def ensure_segmentations_and_clients(users):
         )
         return c
 
-    c1 = crear_cliente("Cliente VIP S.A.", "vip@cliente.com", "12345678-0", "48273649", "0987343243", seg_vip)
-    c2 = crear_cliente("Cliente Corp. Ltda.", "corp@cliente.com", "87965432-1", "50198273", "0987654321", seg_corp)
-    c3 = crear_cliente("Cliente Minorista", "minorista@cliente.com", "43218765-2", "63092718", "0987123456", seg_min)
+    c1 = crear_cliente("Cliente VIP S.A.", "leandro.f3418@fpuna.edu.py", "12345678-0", "48273649", "0987343243", seg_vip)
+    c2 = crear_cliente("Cliente Corp. Ltda.", "rodriguezmartinv02@gmail.com", "87965432-1", "50198273", "0987654321", seg_corp)
+    c3 = crear_cliente("Cliente Minorista", "alanalcaraz010@gmail.com", "43218765-2", "63092718", "0987123456", seg_min)
 
     # === Asignaciones MANUALES de usuarios asociados ===
     usuario_asociado1 = users.get("usuario_asociado")
@@ -331,8 +331,6 @@ def ensure_currencies_and_rates():
         ("PYG", "Guaraní paraguayo"),
         ("USD", "Dólar estadounidense"),
         ("EUR", "Euro"),
-        ("BRL", "Real brasileño"),
-        ("ARS", "Peso argentino"),
     ]
     created = {}
 
@@ -348,8 +346,6 @@ def ensure_currencies_and_rates():
     base_rates = {
         "USD": 7300,
         "EUR": 7900,
-        "BRL": 1400,
-        "ARS": 40,
     }
 
     hoy = timezone.now().date()
@@ -389,7 +385,7 @@ def ensure_currencies_and_rates():
                 delta = random.randint(0, 40)
                 pb = Decimal(str(pb_base + delta))
             else:
-                # Para USD / EUR / BRL variación normal ±70
+                # Para USD / EUR variación normal ±70
                 delta = random.randint(-70, 70)
                 pb = Decimal(str(max(1, pb_base + delta)))  # nunca negativo
             cc = Decimal(str(random.randint(40, 80)))   # comisión compra
@@ -433,8 +429,8 @@ def ensure_limits_per_currency(moneda_map):
             LimiteTransaccion,
             moneda=moneda_pyg,
             defaults={
-                "limite_diario": Decimal("100000000"),  
-                "limite_mensual": Decimal("800000000"),  
+                "limite_diario": Decimal("100000000"),
+                "limite_mensual": Decimal("800000000"),
                 "estado": "activo"
             },
         )
@@ -463,8 +459,8 @@ def ensure_welcome_notification(moneda_map):
             "fecha": timezone.now(),
         },
     )
-    
-    
+
+
 def ensure_demo_transactions_and_invoice(users, moneda_map):
     """
     Genera transacciones demo usando la lógica REAL del simulador:
@@ -780,8 +776,8 @@ def run():
     print("… Transacciones demo y factura (si modelo existe)")
     ensure_demo_transactions_and_invoice(users, moneda_map)
 
-    print("… Facturas demo asociadas a transacciones")
-    ensure_demo_invoices(users)
+    #print("… Facturas demo asociadas a transacciones")
+    #ensure_demo_invoices(users)
 
     # Marcar MFA por defecto desactivado en los usuarios nuevos (si campos existen)
     for u in users.values():
