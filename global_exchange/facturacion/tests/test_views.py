@@ -1,6 +1,7 @@
 from django.test import TestCase, Client
 from django.urls import reverse
-from django.contrib.auth import get_user_model
+from usuarios.models import CustomUser
+from django.contrib.auth.models import Group
 from facturacion.models import Factura, RangoFacturacion
 from operaciones.models import Transaccion
 from clientes.models import Cliente
@@ -13,14 +14,21 @@ from decimal import Decimal
 from django.utils import timezone
 from datetime import timedelta
 
-User = get_user_model()
 
 
 class FacturacionViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.user = User.objects.create_user(
-            username="testuser", password="pass")
+        self.grupo, _ = Group.objects.get_or_create(name='Usuario Asociado')
+        self.user = CustomUser.objects.create_user(
+            username='user',
+            email='user@test.com',
+            password='userpass',
+        )
+        self.user.groups.add(self.grupo)
+        self.user.save()
+        self.client.login(username='user', password='userpass')
+
         self.client.force_login(self.user)
         self.cdc1 = "01025957333001003000000122025102212707563796"
         self.cdc2 = "01025957333001003000005012025103016486858378"
