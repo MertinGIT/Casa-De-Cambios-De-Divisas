@@ -139,7 +139,7 @@ def generar_factura_transaccion(request):
         
         # Preparar datos
         transaccion_data = {
-            'monto': float(transaccion.monto),
+            'monto': float(transaccion.monto) if transaccion.tipo == 'compra' else float(transaccion.monto_recibir),
             'abreviacion_origen': transaccion.moneda_origen.abreviacion,  
             'abreviacion_destino': transaccion.moneda_destino.abreviacion,  
             'tasa_usada': float(transaccion.tasa_usada),
