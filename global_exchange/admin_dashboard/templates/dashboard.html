@@ -184,8 +184,8 @@
                             {% if moneda.moneda_destino__abreviacion == 'ARS' %}🇦🇷{% endif %}
                         </span>
                         <div class="moneda-details">
-                            <span class="moneda-code">{{ moneda.moneda_destino__abreviacion }}</span>
-                            <span class="moneda-name">{{ moneda.moneda_destino__nombre }}</span>
+                            <span class="moneda-code">{{ moneda.moneda_operada }}</span>
+                            <span class="moneda-name">{{ moneda.nombre_moneda_operada }}</span>
                         </div>
                     </div>
                     <div class="moneda-stats">
@@ -236,8 +236,8 @@
                             <span class="badge compra">Compra</span>
                             {% endif %}
                         </td>
-                        <td data-label="Monto" class="amount">GS {{  t.monto_mostrar|floatformat:0 }} </td>
-                        <td data-label="Ganancia" class="amount"> GS {{ t.ganancia|floatformat:0 }}</td>
+                        <td data-label="Monto" class="amount"> {{ t.monto_mostrar|floatformat:0 }} PYG</td>
+                        <td data-label="Ganancia" class="amount"> {{ t.ganancia|floatformat:0 }} PYG</td>
                         <td data-label="Fecha">{{ t.fecha|date:"d/m/Y H:i" }}</td>
                     </tr>
                     {% empty %}
