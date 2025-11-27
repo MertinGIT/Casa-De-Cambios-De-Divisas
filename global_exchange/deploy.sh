@@ -1,6 +1,29 @@
 #!/bin/bash
-
 echo "🚀 Desplegando Global Exchange en producción..."
+# ❗ Hace que el script falle si algún comando falla
+set -e
+# ============================
+# 🏷  OBTENER ÚLTIMO TAG DE GIT
+# ============================
+echo "🔍 Buscando último tag de Git..."
+git fetch --tags --force >/dev/null 2>&1 || true
+
+ULTIMO_TAG=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+
+if [ -z "$ULTIMO_TAG" ]; then
+    echo "⚠️  No se encontró ningún tag. Usando 'latest' por defecto."
+    ULTIMO_TAG="latest"
+fi
+
+echo "🏷  Versión a desplegar: $ULTIMO_TAG"
+
+# Exportar para que docker-compose lo pueda usar (${APP_VERSION})
+export APP_VERSION="$ULTIMO_TAG"
+
+# Si QUERÉS desplegar exactamente el código de ese tag (opcional):
+git checkout "$ULTIMO_TAG"
+
+
 
 # Detener y limpiar contenedores previos
 echo "🧹 Limpiando contenedores anteriores..."
