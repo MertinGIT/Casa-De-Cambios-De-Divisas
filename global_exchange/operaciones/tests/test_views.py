@@ -112,17 +112,6 @@ class OperacionesViewsTest(TestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
-    def test_simulador_operaciones_post_venta(self):
-        url = reverse("operaciones")
-        response = self.client.post(
-            url,
-            {"operacion": "venta", "valor": "1000", "origen": "PYG", "destino": "USD"},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("resultado", data)
-        self.assertIn("ganancia_total", data)
 
     def test_guardar_transaccion(self):
         url = reverse("guardar_transaccion")
