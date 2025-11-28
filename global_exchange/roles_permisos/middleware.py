@@ -34,10 +34,24 @@ class RoleBasedMiddleware:
             '/medios_acreditacion/': ['Usuario Asociado'],
             '/medios_acreditacion/': ['Usuario Asociado'],
             '/configuracion/mfa_configuration/': ['Usuario Asociado'],
+            r"^/facturas/.*$": ['ADMIN', 'Analista', 'Usuario', 'Usuario Asociado'],
         }
 
     def __call__(self, request):
         path = request.path
+        
+        #Excluir facturación completamente
+        FACTURACION_PATHS = [
+            "/facturas/estado/",
+            "/facturas/generar-factura/",
+            "/facturas/consultar-factura/",
+            "/facturas/descargar-factura/",
+        ]
+
+        # Excluir cualquier ruta que pertenezca a facturación
+        if any(path.startswith(p) for p in FACTURACION_PATHS):
+            return self.get_response(request)
+
 
         # Si no es una ruta protegida, continuar
         if not self._is_protected_route(path):

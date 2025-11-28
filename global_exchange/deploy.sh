@@ -1,10 +1,10 @@
 #!/bin/bash
 echo "🚀 Desplegando Global Exchange en producción..."
-# ❗ Hace que el script falle si algún comando falla
-# set -e
-# # ============================
-# # 🏷  OBTENER ÚLTIMO TAG DE GIT
-# # ============================
+set -e
+
+# ============================
+# 🏷  OBTENER ÚLTIMO TAG DE GIT
+# ============================
 # echo "🔍 Buscando último tag de Git..."
 # git fetch --tags --force >/dev/null 2>&1 || true
 
@@ -17,65 +17,72 @@ echo "🚀 Desplegando Global Exchange en producción..."
 
 # echo "🏷  Versión a desplegar: $ULTIMO_TAG"
 
-# Exportar para que docker-compose lo pueda usar (${APP_VERSION})
-#export APP_VERSION="$ULTIMO_TAG"
+# # Exportar para que docker-compose lo pueda usar (${APP_VERSION})
+# export APP_VERSION="$ULTIMO_TAG"
 
-# Si QUERÉS desplegar exactamente el código de ese tag (opcional):
-#git checkout "$ULTIMO_TAG"
+# # Si querés desplegar exactamente el código de ese tag (opcional):
+# git checkout "$ULTIMO_TAG"
 
 
+FILE="docker-compose.prod.yml"
 
-# Detener y limpiar contenedores previos
-echo "🧹 Limpiando contenedores anteriores..."
-docker-compose -f docker-compose.prod.yml down
+# ============================
+# 🧹 Detener y limpiar previos
+# ============================
+echo "🧹 Deteniendo y limpiando contenedores anteriores..."
+docker compose -f "$FILE" down -v --remove-orphans
 
-# Limpiar volumen de PostgreSQL si necesitas una instalación limpia
-# Descomenta la siguiente línea si quieres reiniciar la base de datos
-# docker volume rm $(docker volume ls -q | grep postgres_data) 2>/dev/null || true
-
-# Construir y levantar servicios
+# ============================
+# 🔨 Build + Up
+# ============================
 echo "🔨 Construyendo servicios..."
-docker-compose -f docker-compose.prod.yml build
+docker compose -f "$FILE" build --pull
 
-echo "🚀 Levantando servicios..."
-docker-compose -f docker-compose.prod.yml up -d
+echo "🚀 Levantando servicios en segundo plano..."
+docker compose -f "$FILE" up -d
 
-# Esperar a que los servicios estén listos
+# ============================
+# ⏳ Esperar inicio
+# ============================
 echo "⏳ Esperando a que los servicios estén listos..."
-sleep 15
+sleep 10
 
-# Verificar estado de los contenedores
-echo "📊 Estado de los contenedores:"
-docker-compose -f docker-compose.prod.yml ps
+echo "📊 Estado de contenedores inicial:"
+docker compose -f "$FILE" ps
 
-# Verificar que db esté healthy
+# ============================
+# 🔍 Esperar health de PostgreSQL
+# ============================
 echo "🔍 Verificando salud de PostgreSQL..."
+
 MAX_ATTEMPTS=30
 ATTEMPT=0
 
-until [ "$(docker-compose -f docker-compose.prod.yml ps db --format json | grep -o '"Health":"[^"]*"' | cut -d'"' -f4)" = "healthy" ] || [ $ATTEMPT -eq $MAX_ATTEMPTS ]; do
+until [ "$(docker compose -f "$FILE" ps --format json db | grep -o '"Health":"[^"]*"' | cut -d'"' -f4)" = "healthy" ] || [ $ATTEMPT -ge $MAX_ATTEMPTS ]; do
     ATTEMPT=$((ATTEMPT+1))
-    echo "Esperando PostgreSQL... Intento $ATTEMPT/$MAX_ATTEMPTS"
+    echo "⏳ PostgreSQL no está listo... ($ATTEMPT/$MAX_ATTEMPTS)"
     sleep 2
 done
 
-if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-    echo "❌ Error: PostgreSQL no está saludable después de $MAX_ATTEMPTS intentos"
-    echo "Logs de PostgreSQL:"
-    docker-compose -f docker-compose.prod.yml logs db
+if [ $ATTEMPT -ge $MAX_ATTEMPTS ]; then
+    echo "❌ PostgreSQL no está saludable después de $MAX_ATTEMPTS intentos"
+    docker compose -f "$FILE" logs db
     exit 1
 fi
 
-echo "✅ PostgreSQL está saludable"
+echo "✅ PostgreSQL está healthy"
 
-# Configurar PostgreSQL para aceptar conexiones remotas
+# ============================
+# 🔧 Configuración PostgreSQL remota
+# ============================
 echo "🔧 Configurando PostgreSQL para conexiones remotas..."
-chmod +x configure-postgres.sh 2>/dev/null || true
-./configure-postgres.sh 2>/dev/null || {
-    echo "⚠️  Script de configuración no encontrado, configurando manualmente..."
-    
-    # Configuración manual inline
-    docker-compose -f docker-compose.prod.yml exec -T db bash -c "cat > /var/lib/postgresql/data/pg_hba.conf << 'EOF'
+
+if [ -f configure-postgres.sh ]; then
+    chmod +x configure-postgres.sh
+    ./configure-postgres.sh || true
+else
+    echo "⚠️ No se encontró configure-postgres.sh. Configurando manualmente..."
+    docker compose -f "$FILE" exec -T db bash -c "cat > /var/lib/postgresql/data/pg_hba.conf << 'EOF'
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 local   all             all                                     trust
 host    all             all             127.0.0.1/32            trust
@@ -84,46 +91,53 @@ host    all             all             0.0.0.0/0               md5
 host    all             all             192.168.0.0/16          md5
 host    all             all             172.0.0.0/8             md5
 EOF"
-    
-    docker-compose -f docker-compose.prod.yml exec -T db bash -c "su - postgres -c 'pg_ctl reload -D /var/lib/postgresql/data'"
-    sleep 3
-}
+    docker compose -f "$FILE" exec -T db bash -c "psql -U postgres -c 'SELECT 1'" # Reload seguro
+fi
 
-# Ejecutar migraciones
+sleep 3
+
+# ============================
+# 🔄 Migraciones + Static
+# ============================
 echo "🔄 Ejecutando migraciones..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py makemigrations
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py migrate
+docker compose -f "$FILE" exec -T web python manage.py migrate --noinput
 
-# Copiar archivos estáticos
 echo "📦 Copiando archivos estáticos..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectstatic --noinput
+docker compose -f "$FILE" exec -T web python manage.py collectstatic --noinput
 
-# Verificar servicios
-echo "📊 Estado final de servicios:"
-docker-compose -f docker-compose.prod.yml ps
+# ============================
+# ✅ Verificar static en Nginx
+# ============================
+echo "🔍 Verificando archivos estáticos en Nginx..."
+docker compose -f "$FILE" exec -T nginx ls -la /app/staticfiles
 
+# ============================
+# 📥 Cargar datos iniciales
+# ============================
 echo "📥 Cargando datos iniciales..."
-docker-compose -f docker-compose.prod.yml exec -T web python manage.py shell < global_exchange/core/scripts/default_data.py
+docker compose -f "$FILE" exec -T web python manage.py shell < global_exchange/core/scripts/default_data.py
 
-echo "🏦 Ejecutando poblar datos inicial..."
-docker-compose -f docker-compose.prod.yml exec -T web python poblar_datos_iniciales.py
+echo "🏦 Ejecutando poblar datos iniciales..."
+docker compose -f "$FILE" exec -T web python poblar_datos_iniciales.py
 
 echo "🏦 Ejecutando poblar.py (TAUSER)..."
-docker-compose -f docker-compose.prod.yml exec -T web python poblar.py
+docker compose -f "$FILE" exec -T web python poblar.py
 
-
-
+# ============================
+# 🏁 Final
+# ============================
 echo ""
 echo "✅ Despliegue completado exitosamente!"
 echo ""
 echo "📌 URLs de acceso:"
-echo "   - Aplicación web: http://192.168.100.168"
-echo "   - Base de datos PostgreSQL:"
-echo "     • Host: 192.168.100.168"
-echo "     • Puerto: 5432"
-echo "     • Base de datos: db_global_exchange"
-echo "     • Usuario: postgres"
-echo "     • Contraseña: 1234"
+echo "   - Web: http://192.168.100.168"
 echo ""
-echo "💡 Para conectar con DBeaver usa:"
+echo "🗄 PostgreSQL:"
+echo "   - Host: 192.168.100.168"
+echo "   - Puerto: 5432"
+echo "   - Base: db_global_exchange"
+echo "   - Usuario: postgres"
+echo "   - Contraseña: 1234"
+echo ""
+echo "💡 Conexión DBeaver:"
 echo "   jdbc:postgresql://192.168.100.168:5432/db_global_exchange"
