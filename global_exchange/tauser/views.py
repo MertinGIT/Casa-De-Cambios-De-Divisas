@@ -2,7 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction as db_transaction
 from django.db.models import Sum, Q
+from django.http import JsonResponse
 from clientes.models import Cliente
+from facturacion.models import RangoFacturacion
 from operaciones.models import Transaccion
 from .forms import LoginATMForm, SeleccionarTransaccionForm
 from tauser.models import StockTauser, Localidad
@@ -12,6 +14,7 @@ from django.utils import timezone
 from usuarios.models import CustomUser  # ✅ Importar CustomUser
 from cliente_usuario.models import Usuario_Cliente  # ✅ Importar relación usuario-cliente
 from functools import wraps
+from facturacion.services import FacturaSeguraService
 
 
 # ==================== SESIÓN ATM ====================
@@ -520,9 +523,9 @@ def atm_depositar(request):
                         # Construir los datos esperados
                         transaccion_data = {
                             'monto': float(transaccion.monto),
-                            'moneda_origen': transaccion.moneda_origen.abreviacion,
-                            'moneda_destino': transaccion.moneda_destino.abreviacion,
-                            'tasa_usada': float(transaccion.tasa_ref.valor) if getattr(transaccion, 'tasa_ref', None) else None,
+                            'abreviacion_origen': transaccion.moneda_origen.abreviacion,
+                            'abreviacion_destino': transaccion.moneda_destino.abreviacion,
+                            'tasa_usada': float(transaccion.tasa_usada),
                             'referencia': transaccion.id,
                             'metodo_pago': transaccion.metodo_pago.nombre if getattr(transaccion, 'metodo_pago', None) else None,
                             'tipo': transaccion.tipo,
@@ -536,15 +539,55 @@ def atm_depositar(request):
                             'ruc': cliente.ruc,
                             'dv_ruc': getattr(cliente, 'dv_ruc', None),
                         }
+                        user_id = request.session.get('atm_user_id')
+                        usuario = CustomUser.objects.get(id=user_id) if user_id else None
 
                         # Llamada corregida
-                        factura = FacturaSeguraService.generar_factura_cambio(
+                        service = FacturaSeguraService()
+                        factura = service.generar_factura_cambio(
                             transaccion_data,
                             cliente_data,
-                            usuario=request.user if getattr(request, 'user', None) and request.user.is_authenticated else None
+                            usuario=usuario
                         )
-
-                        print(f"✅ Factura generada: {factura.numero_factura}", flush=True)
+                        if factura.get('success'):
+                            rango = RangoFacturacion.objects.get(id=factura['rango_id'])
+                            numero_completo = factura['numero_completo']
+                            partes = numero_completo.split('-')
+                            
+                            # Guardar factura
+                            factura = Factura.objects.create(
+                                establecimiento=partes[0],
+                                punto_expedicion=partes[1],
+                                numero_documento=partes[2],
+                                cdc=factura['cdc'],
+                                cliente=cliente,
+                                transaccion=transaccion,
+                                rango_utilizado=rango,
+                                monto_total=transaccion.monto,
+                                moneda=transaccion.moneda_origen.nombre,
+                                tipo_cambio=transaccion.tasa_usada,
+                                operation_id=factura['operation_id'],
+                                creado_por=usuario
+                            )
+                            
+                            resumen = service.factura_resumida(factura)
+                            factura.json_factura = resumen
+                            factura.save()
+                            
+                            return JsonResponse({
+                                'success': True,
+                                'factura_id': factura.id,
+                                'numero_factura': factura.numero_completo,
+                                'cdc': factura['cdc'],
+                                'resumen': resumen,  
+                                'numeros_restantes': rango.numeros_disponibles,
+                                'message': 'Factura generada exitosamente'
+                            })
+                        else:
+                            return JsonResponse({
+                                'success': False,
+                                'error': factura.get('error')
+                            }, status=400)
                     
                 except Exception as e:
                     # ❌ NO FALLAR si hay error en facturación

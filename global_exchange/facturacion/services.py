@@ -32,46 +32,28 @@ class FacturaSeguraService:
     def generar_factura_cambio(self, transaccion_data, cliente_data, usuario=None):
         """
         Genera una **factura electrónica** asociada a una transacción de cambio de divisas.
-
-        Este método se encarga de:
-        - Obtener o crear un rango de facturación activo.
-        - Asignar el siguiente número de factura disponible.
-        - Construir la estructura DE (documento electrónico).
-        - Enviar los datos a la API de FacturaSegura para cálculo y generación.
-
-        **Parámetros:**
-
-        - **transaccion_data (dict):**  
-          Información de la transacción (monto, tipo de cambio, método de pago, etc.).
-
-        - **cliente_data (dict):**  
-          Datos del cliente (nombre, cédula, RUC, correo electrónico, etc.).
-
-        - **usuario (User | None):**  
-          Usuario autenticado que emite la factura.
-
-        **Retorna:**
-
-        - **dict:**  
-          Resultado de la operación con claves:
-          - `success (bool)`
-          - `cdc (str, opcional)`
-          - `operation_id (int, opcional)`
-          - `numero_completo (str, opcional)`
-          - `rango_id (int, opcional)`
-          - `error (str, opcional)`
+        (Documentación igual que antes)
         """
+        print("DEBUG: Iniciando generación de factura de cambio...", flush=True)
+        print(f"DEBUG: transaccion_data: {transaccion_data}", flush=True)
+        print(f"DEBUG: cliente_data: {cliente_data}", flush=True)
+        print(f"DEBUG: usuario: {usuario}", flush=True)
+
         # Obtener rango activo del usuario
         rango = self._obtener_rango_usuario(usuario)
+        print(f"DEBUG: rango obtenido: {rango}", flush=True)
         
         if not rango:
+            print("DEBUG: No se encontró rango de facturación para el usuario", flush=True)
             return {
                 'success': False,
                 'error': 'No tienes un rango de facturación asignado'
             }
         
         # Verificar si hay números disponibles
+        print(f"DEBUG: números disponibles en rango: {rango.numeros_disponibles}", flush=True)
         if rango.numeros_disponibles <= 0:
+            print("DEBUG: Rango agotado", flush=True)
             return {
                 'success': False,
                 'error': f'Rango agotado. Último número: {rango.numero_fin}'
@@ -79,12 +61,13 @@ class FacturaSeguraService:
         
         # Alerta si quedan pocos números
         if rango.numeros_disponibles <= 10:
-            print(f"⚠️  ADVERTENCIA: Solo quedan {rango.numeros_disponibles} números disponibles")
+            print(f"⚠️  ADVERTENCIA: Solo quedan {rango.numeros_disponibles} números disponibles", flush=True)
         
         try:
             with transaction.atomic():
                 # Obtener siguiente número (incrementa automáticamente)
                 numero_doc = rango.obtener_siguiente_numero()
+                print(f"DEBUG: número de documento asignado: {numero_doc}", flush=True)
                 
                 # Construir JSON con el número asignado
                 factura_json = self._construir_json_factura(
@@ -94,34 +77,39 @@ class FacturaSeguraService:
                     punto_expedicion=rango.punto_expedicion,
                     numero_documento=numero_doc
                 )
+                print(f"DEBUG: factura_json construido: {factura_json}", flush=True)
                 
                 # Calcular y generar
                 factura_calculada = self.calcular_de(factura_json)
+                print(f"DEBUG: factura_calculada: {factura_calculada}", flush=True)
                 
                 if not factura_calculada:
-                    # Si falla, revertir el incremento
+                    print("DEBUG: Error al calcular factura, revertiendo incremento", flush=True)
                     rango.numero_actual -= 1
                     rango.save()
                     return {'error': 'Error al calcular factura'}
                 
                 resultado = self.generar_de(factura_calculada)
+                print(f"DEBUG: resultado de generar_de: {resultado}", flush=True)
                 
                 if resultado.get('success'):
                     resultado['numero_completo'] = f"{rango.establecimiento}-{rango.punto_expedicion}-{numero_doc}"
                     resultado['rango_id'] = rango.id
+                    print(f"DEBUG: Factura generada exitosamente: {resultado}", flush=True)
                 else:
-                    # Si falla, revertir el incremento
+                    print("DEBUG: Error al generar factura, revertiendo incremento", flush=True)
                     rango.numero_actual -= 1
                     rango.save()
-                
+                print("DEBUG: resultado final de generar_factura_cambio:", resultado, flush=True)
                 return resultado
                 
         except ValidationError as e:
+            print(f"DEBUG: ValidationError: {e}", flush=True)
             return {
                 'success': False,
                 'error': str(e)
             }
-    
+            
     def _obtener_rango_usuario(self, usuario):
         """
         Obtiene el **rango de facturación activo** del usuario.
