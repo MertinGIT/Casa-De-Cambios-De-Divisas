@@ -149,7 +149,7 @@ function getCampos2() {
 
 function seleccionarLocalidadTauser(localidad) {
     const campos = getCampos();
-    const clienteId = {{ cliente_operativo_id }};
+    const clienteId = "{{ cliente_operativo_id }}";
     const monto = parseFloat(campos.$resultado.val()) || 0;
     const monedaDestino = campos.$destino.val();
     // ✅ Primero verificamos stock del TAUSER en esta localidad
