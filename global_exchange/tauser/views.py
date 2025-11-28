@@ -522,7 +522,7 @@ def atm_depositar(request):
                             'monto': float(transaccion.monto),
                             'moneda_origen': transaccion.moneda_origen.abreviacion,
                             'moneda_destino': transaccion.moneda_destino.abreviacion,
-                            'tasa_usada': float(transaccion.tasa_ref.valor) if getattr(transaccion, 'tasa_ref', None) else None,
+                            'tasa_usada': float(transaccion.tasa_ref.precio_base) if getattr(transaccion, 'tasa_ref', None) else None,
                             'referencia': transaccion.id,
                             'metodo_pago': transaccion.metodo_pago.nombre if getattr(transaccion, 'metodo_pago', None) else None,
                             'tipo': transaccion.tipo,

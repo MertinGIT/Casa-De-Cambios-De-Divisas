@@ -4,7 +4,7 @@ from datetime import datetime
 
 # ========== CONFIGURACIÓN ==========
 API_URL = "https://apitest.facturasegura.com.py/misife00/v1/esi"
-TOKEN = "eyJ2ZXIiOiI1IiwidWlkIjoiMWVlOTRiNmI3MDgyNDBhMDhiY2E5YTgwZWExODJhOTgiLCJzaWQiOjAsImV4cCI6MH0.aPfwVQ.tcnm1XzTnrCnhXyVaOKP9ljPxfo"  # 🔥 Reemplazar con tu token real
+TOKEN = "eyJ2ZXIiOiI1IiwidWlkIjoiMWVlOTRiNmI3MDgyNDBhMDhiY2E5YTgwZWExODJhOTgiLCJzaWQiOjAsImV4cCI6MH0.aPDVkw.B34aUmcoXI5i-gJxrvoSMW0qE5Y"  # 🔥 Reemplazar con tu token real
 
 # Datos del emisor (tu empresa)
 RUC_EMISOR = "2595733"

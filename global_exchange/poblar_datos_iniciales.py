@@ -274,9 +274,9 @@ def ensure_segmentations_and_clients(users):
         )
         return c
 
-    c1 = crear_cliente("Cliente VIP S.A.", "leandro.f3418@fpuna.edu.py", "12345678-0", "48273649", "0987343243", seg_vip)
-    c2 = crear_cliente("Cliente Corp. Ltda.", "rodriguezmartinv02@gmail.com", "87965432-1", "50198273", "0987654321", seg_corp)
-    c3 = crear_cliente("Cliente Minorista", "alanalcaraz010@gmail.com", "43218765-2", "63092718", "0987123456", seg_min)
+    c1 = crear_cliente("Cliente VIP S.A.", "leandro.f3418@fpuna.edu.py", "12345678-0", "5209767", "0987343243", seg_vip)
+    c2 = crear_cliente("Cliente Corp. Ltda.", "rodriguezmartinv02@gmail.com", "87965432-1", "5209768", "0987654321", seg_corp)
+    c3 = crear_cliente("Cliente Minorista", "alanalcaraz010@gmail.com", "43218765-2", "5209769", "0987123456", seg_min)
 
     # === Asignaciones MANUALES de usuarios asociados ===
     usuario_asociado1 = users.get("usuario_asociado")
@@ -328,8 +328,8 @@ def ensure_currencies_and_rates():
 
     # === Monedas base ===
     monedas_def = [
-        ("PYG", "Guaraní paraguayo"),
-        ("USD", "Dólar estadounidense"),
+        ("PYG", "Guaraní"),
+        ("USD", "Dólar"),
         ("EUR", "Euro"),
     ]
     created = {}
