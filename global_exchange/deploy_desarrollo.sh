@@ -21,10 +21,12 @@ echo "📥 Cargando datos iniciales..."
 docker-compose exec web python manage.py loaddata initial_data.json || true
 docker-compose exec web python manage.py shell < global_exchange/core/scripts/default_data.py
 
+echo "📥 Cargando datos iniciales (idempotente)…"
+docker-compose exec web python poblar_datos_iniciales.py
+
 echo "🏦 Ejecutando poblar.py (TAUSER)..."
 docker-compose exec web python poblar.py
 
 echo "✅ Despliegue DEV listo en http://localhost:8000"
 
-echo "📥 Cargando datos iniciales (idempotente)…"
-docker-compose exec web python poblar_datos_iniciales.py
+
