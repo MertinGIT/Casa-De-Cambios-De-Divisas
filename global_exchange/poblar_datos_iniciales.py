@@ -150,7 +150,7 @@ def ensure_users(groups):
 
     # === Usuarios Asociados ===
     uas1 = safe_user_get_or_create(
-        "usuario_asociado", "leandro.f3418@fpuna.edu.py", "33333333", "Global123",
+        "usuario_asociado", "leandro.f3418@fpuna.edu.py", "5209767", "Global123",
         groups["Usuario Asociado"], extra_groups=[groups["Usuario"]]
     )
     uas2 = safe_user_get_or_create(
@@ -274,9 +274,9 @@ def ensure_segmentations_and_clients(users):
         )
         return c
 
-    c1 = crear_cliente("Cliente VIP S.A.", "leandro.f3418@fpuna.edu.py", "12345678-0", "48273649", "0987343243", seg_vip)
-    c2 = crear_cliente("Cliente Corp. Ltda.", "rodriguezmartinv02@gmail.com", "87965432-1", "50198273", "0987654321", seg_corp)
-    c3 = crear_cliente("Cliente Minorista", "alanalcaraz010@gmail.com", "43218765-2", "63092718", "0987123456", seg_min)
+    c1 = crear_cliente("Cliente VIP S.A.", "leandro.f3418@fpuna.edu.py", "12345678-0", "5209767", "0987343243", seg_vip)
+    c2 = crear_cliente("Cliente Corp. Ltda.", "rodriguezmartinv02@gmail.com", "87965432-1", "5209766", "0987654321", seg_corp)
+    c3 = crear_cliente("Cliente Minorista", "alanalcaraz010@gmail.com", "43218765-2", "5209765", "0987123456", seg_min)
 
     # === Asignaciones MANUALES de usuarios asociados ===
     usuario_asociado1 = users.get("usuario_asociado")
@@ -328,8 +328,8 @@ def ensure_currencies_and_rates():
 
     # === Monedas base ===
     monedas_def = [
-        ("PYG", "Guaraní paraguayo"),
-        ("USD", "Dólar estadounidense"),
+        ("PYG", "Guaraní"),
+        ("USD", "Dólar"),
         ("EUR", "Euro"),
     ]
     created = {}
@@ -490,6 +490,7 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
     MetodoPago = get_model("metodos_pagos.MetodoPago")
     TasaDeCambio = get_model("cotizaciones.TasaDeCambio")
     MedioAcreditacion = get_model("medio_acreditacion.MedioAcreditacion")
+    RangoFacturacion = get_model("facturacion.RangoFacturacion")  
 
     usuario_asociado = users.get("usuario_asociado")
     clientes = list(Cliente.objects.all())
@@ -499,7 +500,29 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
     if not usuario_asociado or not clientes or not metodo_efectivo or not tasas:
         print("⚠️ Faltan datos base.")
         return
+    
+    #CREAR RANGO DE FACTURACIÓN UNA SOLA VEZ SI NO EXISTE
+    rango = (
+        RangoFacturacion.objects
+        .filter(usuario=usuario_asociado, activo=True)
+        .order_by('numero_actual')
+        .first()
+    )
 
+    if not rango:
+        rango = RangoFacturacion.objects.create(
+            establecimiento='001',
+            punto_expedicion='003',
+            numero_inicio=1,
+            numero_fin=50,
+            numero_actual=1,
+            usuario=usuario_asociado,
+            activo=True,
+        )
+        print(f"✅ Rango de facturación creado para {usuario_asociado}: {rango}", flush=True)
+    else:
+        print(f"🔁 Rango de facturación ya existente para {usuario_asociado}: {rango}", flush=True)
+    
     total_existentes = Transaccion.objects.count()
     OBJETIVO = 120
 
@@ -533,9 +556,9 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
         operacion = random.choice(operaciones)
 
         moneda_ext = moneda_map.get(random.choice(monedas_extranjeras))
-        print("moneda_ext:", moneda_ext, flush=True)
+        #print("moneda_ext:", moneda_ext, flush=True)
         tasa = TasaDeCambio.objects.filter(moneda_destino=moneda_ext, estado=True).first()
-        print("tasa:", tasa, flush=True)
+        #print("tasa:", tasa, flush=True)
         medio = MedioAcreditacion.objects.filter(cliente=cliente).first()
 
         if not tasa or not medio:
@@ -543,11 +566,11 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
             continue
 
         PB_MONEDA = tasa.precio_base
-        print("PB_MONEDA:", PB_MONEDA, flush=True)
+        #print("PB_MONEDA:", PB_MONEDA, flush=True)
         COMISION_VTA = tasa.comision_venta
-        print("COMISION_VTA:", COMISION_VTA, flush=True)
+        #print("COMISION_VTA:", COMISION_VTA, flush=True)
         COMISION_COM = tasa.comision_compra
-        print("COMISION_COM:", COMISION_COM, flush=True)
+        #print("COMISION_COM:", COMISION_COM, flush=True)
 
         # ====== FECHA ======
         h = random.randint(8, 20)
@@ -581,17 +604,17 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
             moneda_destino = moneda_ext
 
             valor_gs = Decimal(random.randint(300_000, 800_000))
-            print("valor(LO QUE ENTREGA EN GUARANIES) en poblar_datos_iniciales:", valor_gs, flush=True)
+            #print("valor(LO QUE ENTREGA EN GUARANIES) en poblar_datos_iniciales:", valor_gs, flush=True)
 
             TC_VTA = PB_MONEDA + COMISION_VTA - (COMISION_VTA * descuento / 100)
-            print("TC_VTA en poblar_datos_iniciales (VENTA):", TC_VTA, flush=True)
+            #print("TC_VTA en poblar_datos_iniciales (VENTA):", TC_VTA, flush=True)
             tasa_usada = TC_VTA
 
             monto_extranjero = (valor_gs / TC_VTA).quantize(Decimal("0.01"))
-            print("monto_extranjero(valor_gs / TC_VTA) en poblar_datos_iniciales (VENTA):", monto_extranjero, flush=True)
+            #print("monto_extranjero(valor_gs / TC_VTA) en poblar_datos_iniciales (VENTA):", monto_extranjero, flush=True)
 
             ganancia_total = round(valor_gs - (monto_extranjero * PB_MONEDA), 2)
-            print("ganancia_total en poblar_datos_iniciales (VENTA):", ganancia_total, flush=True)
+            #print("ganancia_total en poblar_datos_iniciales (VENTA):", ganancia_total, flush=True)
 
             monto_db = monto_extranjero      # EXTRANJERO
             monto_recibir_db = valor_gs      # GUARANÍES
@@ -604,20 +627,20 @@ def ensure_demo_transactions_and_invoice(users, moneda_map):
             moneda_destino = moneda_map.get("PYG")
 
             valor_ext = Decimal(random.randint(50, 200))
-            print("valor(LO QUE ENTREGA EN EXTRANJERO) en poblar_datos_iniciales:", valor_ext, flush=True)
+            #print("valor(LO QUE ENTREGA EN EXTRANJERO) en poblar_datos_iniciales:", valor_ext, flush=True)
 
             TC_COMP = PB_MONEDA - (COMISION_COM - (COMISION_COM * descuento / 100))
-            print("TC_COMP en poblar_datos_iniciales (COMPRA):", TC_COMP, flush=True)
+            #print("TC_COMP en poblar_datos_iniciales (COMPRA):", TC_COMP, flush=True)
             tasa_usada = TC_COMP
 
             monto_gs = round(valor_ext * TC_COMP, 2)
-            print("monto_gs(valor_ext * TC_COMP) en poblar_datos_iniciales:", monto_gs, flush=True)
+            #print("monto_gs(valor_ext * TC_COMP) en poblar_datos_iniciales:", monto_gs, flush=True)
 
             ganancia_total = round(
                 valor_ext * (COMISION_COM * (1 - descuento / 100)),
                 2
             )
-            print("ganancia_total en poblar_datos_iniciales (COMPRA):", ganancia_total, flush=True)
+            #print("ganancia_total en poblar_datos_iniciales (COMPRA):", ganancia_total, flush=True)
 
             monto_db = monto_gs           # GUARANÍES
             monto_recibir_db = valor_ext  # EXTRANJERO
@@ -684,6 +707,15 @@ def ensure_payment_and_accreditation():
             "tipo": "BILLETERA",
             "estado": True,
             "comision": 0.30
+        }
+    )
+    tauser, _ = safe_get_or_create(
+        TipoEntidadFinanciera,
+        nombre="TAUSER",
+        defaults={
+            "tipo": "TAUSER",
+            "estado": True,
+            "comision": 0.0  # O el valor que vos quieras
         }
     )
 

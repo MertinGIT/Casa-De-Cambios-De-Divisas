@@ -24,7 +24,7 @@ print("="*50)
 localidades = Localidad.objects.filter(activo=True)
 
 if not localidades.exists():
-    print(" ERROR: No hay localidades creadas. Ejecuta primero poblar_inicial.py")
+    print(" ERROR: No hay localidades creadas. Ejecuta primero poblar.py")
     exit()
 
 print(f"\n Localidades encontradas: {localidades.count()}")

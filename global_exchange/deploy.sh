@@ -102,6 +102,17 @@ docker-compose -f docker-compose.prod.yml exec -T web python manage.py collectst
 echo "📊 Estado final de servicios:"
 docker-compose -f docker-compose.prod.yml ps
 
+echo "📥 Cargando datos iniciales..."
+docker-compose -f docker-compose.prod.yml exec -T web python manage.py shell < global_exchange/core/scripts/default_data.py
+
+echo "🏦 Ejecutando poblar datos inicial..."
+docker-compose -f docker-compose.prod.yml exec -T web python poblar_datos_iniciales.py
+
+echo "🏦 Ejecutando poblar.py (TAUSER)..."
+docker-compose -f docker-compose.prod.yml exec -T web python poblar.py
+
+
+
 echo ""
 echo "✅ Despliegue completado exitosamente!"
 echo ""
@@ -116,6 +127,3 @@ echo "     • Contraseña: 1234"
 echo ""
 echo "💡 Para conectar con DBeaver usa:"
 echo "   jdbc:postgresql://192.168.100.168:5432/db_global_exchange"
-
-echo "📥 Cargando datos iniciales (idempotente)…"
-docker-compose exec web python poblar_datos_iniciales.py
